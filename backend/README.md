@@ -1,0 +1,354 @@
+# Blog FR - Backend API
+
+一个基于 FastAPI + PostgreSQL + SQLModel 的博客后端服务。
+
+---
+
+## 🚀 快速开始
+
+### 前置要求
+
+- Docker & Docker Compose
+- Python 3.13+
+- PostgreSQL 17（可选，用 Docker）
+
+### 启动服务
+
+```bash
+# 从项目根目录启动（包含数据库）
+cd ..
+docker compose up backend
+
+# 或者只启动后端（需要数据库已运行）
+docker compose up -d db
+docker compose up backend
+```
+
+访问 API：`http://localhost:8000`
+API 文档：`http://localhost:8000/docs`
+
+---
+
+## 📦 Docker 构建
+
+### 理解多阶段构建
+
+这个项目的 Dockerfile 有两个阶段：
+
+```
+development 阶段          production 阶段
+    ↓                         ↓
+包含所有依赖             只包含运行依赖
+• fastapi ✅             • fastapi ✅
+• pytest ✅              • pytest ❌
+• jupyter ✅             • jupyter ❌
+• ipdb ✅                • ipdb ❌
+    ↓                         ↓
+用于本地开发             用于生产部署
+运行测试                 体积小，启动快
+交互式调试
+```
+
+### 生产镜像（默认）
+
+```bash
+# docker-compose 默认构建这个
+docker compose build backend
+
+# 或者手动指定
+docker build --target production -t blog-fr-prod .
+
+# 运行
+docker compose up backend
+```
+
+**特点**：
+- ✅ 体积小（只有必需依赖）
+- ✅ 启动快
+- ✅ 安全（没有测试工具）
+- ❌ 无法运行测试
+
+### 开发镜像
+
+```bash
+# 构建开发镜像
+docker build --target development -t blog-fr-dev .
+
+# 交互式运行（进入容器）
+docker run -it --rm \
+  -v $(pwd):/app \
+  -e DATABASE_URL="postgresql://postgres:postgres@host.docker.internal:5433/blog_fr" \
+  blog-fr-dev bash
+
+# 在容器内运行 Jupyter
+jupyter notebook --ip=0.0.0.0 --allow-root
+
+# 或运行测试
+pytest tests/
+```
+
+---
+
+## 💻 本地开发（推荐）
+
+### 1. 安装依赖
+
+```bash
+cd backend
+
+# 安装所有依赖（包括开发工具）
+uv sync --all-extras
+```
+
+### 2. 启动后端
+
+```bash
+# 方式 A：使用 Docker 数据库
+docker compose up -d db  # 先启动数据库
+
+# 然后本地启动后端（有热更新）
+fastapi run app/main.py --reload
+
+# 或者
+uv run fastapi run app/main.py --reload
+```
+
+### 3. 启动 Jupyter（可选）
+
+```bash
+jupyter notebook
+```
+
+在浏览器打开 `http://localhost:8888`
+
+### 4. 运行测试
+
+```bash
+# 运行所有测试
+pytest
+
+# 运行特定文件的测试
+pytest tests/test_api.py
+
+# 显示详细输出
+pytest -v
+
+# 运行并显示打印语句
+pytest -s
+```
+
+---
+
+## 🗂️ 项目结构
+
+```
+backend/
+├── app/
+│   ├── main.py          # FastAPI 应用入口
+│   ├── models.py        # 数据库模型 (SQLModel)
+│   ├── schemas.py       # 请求/响应数据模型
+│   ├── api/
+│   │   └── routes/      # API 路由
+│   └── db/
+│       └── session.py   # 数据库会话
+├── tests/               # 单元测试
+├── alembic/             # 数据库迁移
+├── Dockerfile           # 多阶段构建
+├── pyproject.toml       # 项目配置 + 依赖
+└── README.md            # 本文件
+```
+
+---
+
+## 🗄️ 数据库
+
+### 连接信息
+
+| 项目 | 值 |
+|------|-----|
+| Host | `localhost` 或 `db`（容器内） |
+| Port | `5433`（本地）或 `5432`（容器内） |
+| User | `postgres` |
+| Password | `postgres` |
+| Database | `blog_fr` |
+
+详见项目根目录的 `.env` 文件。
+
+### 数据库迁移
+
+```bash
+# 创建新迁移
+alembic revision --autogenerate -m "add avatar column"
+
+# 执行迁移
+alembic upgrade head
+
+# 回滚一个版本
+alembic downgrade -1
+```
+
+### 查看数据库
+
+```bash
+# 通过命令行
+docker compose exec db psql -U postgres -d blog_fr
+
+# 通过 Adminer Web 界面
+# 访问 http://localhost:8080（如果已启动）
+```
+
+---
+
+## 🔧 依赖管理
+
+### 添加依赖
+
+```bash
+# 添加到主依赖
+uv add fastapi
+
+# 添加到开发依赖
+uv add --group dev pytest
+
+# 锁定依赖
+uv lock
+```
+
+### 主要依赖
+
+| 包 | 用途 |
+|-----|------|
+| `fastapi` | Web 框架 |
+| `uvicorn` | ASGI 服务器 |
+| `sqlmodel` | ORM + 数据验证 |
+| `psycopg2` | PostgreSQL 驱动 |
+| `alembic` | 数据库迁移 |
+| `pyjwt` | JWT 认证 |
+| `passlib` | 密码哈希 |
+
+### 开发依赖
+
+| 包 | 用途 |
+|-----|------|
+| `pytest` | 单元测试 |
+| `jupyter` | 交互式开发 |
+| `ipython` | 增强型 Python Shell |
+| `ipdb` | 交互式调试器 |
+
+---
+
+## 📝 环境变量
+
+复制 `.env.example` 为 `.env`，修改配置：
+
+```bash
+cp .env.example .env
+```
+
+主要配置：
+
+```env
+# 数据库
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=blog_fr
+
+# 后端
+ENVIRONMENT=development
+SECRET_KEY=your_jwt_secret_key
+
+# 生成安全的 SECRET_KEY
+# openssl rand -hex 32
+```
+
+---
+
+## 🧪 开发工作流
+
+### 日常开发
+
+```bash
+# 终端 1：启动数据库 + 后端（Docker）
+docker compose up backend
+
+# 终端 2：启动前端（本地）
+cd ../frontend
+npm run dev
+
+# 终端 3：运行测试（本地）
+cd ../backend
+pytest --watch
+```
+
+### 测试新功能
+
+```bash
+# 创建 Jupyter 笔记本
+jupyter notebook
+
+# 快速测试数据库查询
+# 在笔记本中：
+# from app.db.session import get_db
+# db = next(get_db())
+# users = db.query(User).all()
+```
+
+### 准备部署
+
+```bash
+# 构建生产镜像
+docker build --target production -t blog-fr-prod .
+
+# 运行生产镜像
+docker run -p 8000:8000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e SECRET_KEY="..." \
+  blog-fr-prod
+```
+
+---
+
+## 🐛 调试
+
+### 使用 ipdb
+
+```python
+import ipdb; ipdb.set_trace()  # 在代码中设置断点
+```
+
+### 查看日志
+
+```bash
+# 查看容器日志
+docker compose logs -f backend
+
+# 查看最后 100 行
+docker compose logs --tail 100 backend
+```
+
+### 进入容器调试
+
+```bash
+# 进入正在运行的容器
+docker compose exec backend bash
+
+# 启动 Python REPL
+python
+>>> from app.main import app
+>>> # 现在可以导入你的应用
+```
+
+---
+
+## 📚 相关文档
+
+- [FastAPI 官方文档](https://fastapi.tiangolo.com)
+- [SQLModel 文档](https://sqlmodel.tiangolo.com)
+- [Alembic 文档](https://alembic.sqlalchemy.org)
+- [PostgreSQL 文档](https://www.postgresql.org/docs)
+
+---
+
+## 📝 许可证
+
+MIT

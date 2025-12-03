@@ -1,0 +1,92 @@
+# ==========================================
+# 开发环境 Docker Compose
+# ==========================================
+# 用法：docker compose -f docker-compose.dev.yml up
+#
+# 区别于生产环境：
+# • 使用 development 阶段（包含 pytest、jupyter）
+# • 挂载源代码卷（有热更新）
+# • 更详细的日志输出
+# • 禁用健康检查重启
+
+services:
+  # ==========================================
+  # PostgreSQL 数据库
+  # ==========================================
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # 数据持久化
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # 宿主机 5433 → 容器 5432
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # 后端 API（开发模式）
+  # ==========================================
+  backend:
+    # 构建开发镜像
+    build:
+      context: ./backend
+      target: development # ← 关键：使用 development 阶段
+    user: "${UID}:${GID}"  # <--- 添加这一行
+    # 挂载源代码（热更新）
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+
+    ports:
+      - "8000:8000"
+
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: ${ENVIRONMENT}
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # 开发模式：启用热更新
+    command: fastapi run --workers 1 app/main.py --reload
+
+  # ==========================================
+  # 前端（开发模式）
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+
+    # 挂载源代码（热更新）
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      - backend
+
+# ==========================================
+# 数据卷
+# ==========================================
+volumes:
+  postgres_data:

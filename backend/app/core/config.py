@@ -1,0 +1,97 @@
+import os
+from typing import Literal
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """
+    应用配置 - 简化版
+
+    核心思想：直接使用 DATABASE_URL，避免解析 URL 组件的复杂性
+
+    优点：
+    1. 配置简洁：只需要一个 DATABASE_URL
+    2. 无需解析：避免 Pydantic v2 的 PostgresDsn API 变更问题
+    3. 驱动切换：通过简单的字符串替换实现同步/异步切换
+    4. 环境隔离：
+       - .env      → Docker 容器内（db:5432）
+       - .env.test → 宿主机开发（localhost:5432 或 5433）
+    """
+
+    # 环境配置
+    environment: Literal["local", "production", "test"] = "local"
+
+    # 安全配置
+    SECRET_KEY: str = Field(
+        default="changethis-please-use-openssl-rand-hex-32", description="JWT 签名密钥"
+    )
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        default=60 * 24 * 7, description="访问令牌过期时间（分钟）"
+    )  # 7 天
+
+    # 数据库 URL（必须提供）
+    # 格式：postgresql://user:password@host:port/database
+    database_url: str = Field(..., description="完整的数据库连接 URL")
+
+    # 以下字段仅用于 docker-compose 初始化数据库（可选）
+    postgres_user: str = ""
+    postgres_password: str = ""
+    postgres_db: str = ""
+    postgres_server: str = ""
+    postgres_port: int = 5432
+
+    model_config = SettingsConfigDict(
+        env_file="../.env.test" if os.getenv("ENVIRONMENT") == "test" else "../.env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+
+    @property
+    def sync_database_url(self) -> str:
+        """
+        同步数据库 URL（使用 psycopg 驱动）
+
+        用于：SQLModel/SQLAlchemy 同步操作、Jupyter Notebook
+        """
+        url = self.database_url
+        # postgresql:// → postgresql+psycopg://
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+psycopg://", 1)
+        # postgresql+asyncpg:// → postgresql+psycopg://
+        if "+asyncpg" in url:
+            return url.replace("+asyncpg", "+psycopg")
+        return url
+
+    @property
+    def async_database_url(self) -> str:
+        """
+        异步数据库 URL（使用 asyncpg 驱动）
+
+        用于：FastAPI 异步接口、Alembic 异步迁移
+        """
+        url = self.database_url
+        # postgresql:// → postgresql+asyncpg://
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # postgresql+psycopg:// → postgresql+asyncpg://
+        if "+psycopg" in url:
+            return url.replace("+psycopg", "+asyncpg")
+        return url
+
+    # ==========================================
+    # 兼容旧代码的别名
+    # ==========================================
+    @property
+    def postgres_url(self) -> str:
+        """同步 URL 别名（兼容旧代码）"""
+        return self.sync_database_url
+
+    @property
+    def async_postgres_url(self) -> str:
+        """异步 URL 别名（兼容旧代码）"""
+        return self.async_database_url
+
+
+settings = Settings()  # type: ignore
