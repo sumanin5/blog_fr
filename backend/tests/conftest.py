@@ -102,45 +102,13 @@ async def session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 
             yield session
 
-        # 回滚外层事务，撤销所有更改（包括已 commit 的）
+        # 回滚外层事务，撤销所有更改（包括 savepoint 的提交）
         await conn.rollback()
 
 
 # ============================================================
-# Client Fixtures
+# API 客户端 Fixtures
 # ============================================================
 
+# 这里的 async_client 已经被移动到 tests/api/conftest.py
 
-@pytest.fixture(scope="function")
-def client() -> Generator[TestClient, None, None]:
-    """
-    同步测试客户端 (TestClient)
-
-    用于测试同步接口或简单的集成测试
-    """
-    with TestClient(app) as c:
-        yield c
-
-
-@pytest.fixture(scope="function")
-async def async_client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """
-    异步测试客户端 (AsyncClient)
-
-    用于测试异步接口，支持 async/await
-    覆盖 get_async_session 依赖，使用测试会话
-    """
-
-    # 覆盖依赖项，让 app 使用测试会话而不是真实数据库连接
-    async def override_get_session():
-        yield session
-
-    app.dependency_overrides[get_async_session] = override_get_session
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
-        yield ac
-
-    # 清理依赖覆盖
-    app.dependency_overrides.clear()

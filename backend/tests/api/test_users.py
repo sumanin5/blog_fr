@@ -37,7 +37,7 @@ async def test_register_user_duplicate_username(async_client: AsyncClient):
             "password": "password123",
         },
     )
-    
+
     # 尝试注册相同用户名的用户
     response = await async_client.post(
         "/users/register",
@@ -62,7 +62,7 @@ async def test_register_user_duplicate_email(async_client: AsyncClient):
             "password": "password123",
         },
     )
-    
+
     # 尝试注册相同邮箱的用户
     response = await async_client.post(
         "/users/register",
@@ -92,14 +92,17 @@ async def test_login_success(async_client: AsyncClient):
             "password": password,
         },
     )
-    
+
     # 登录
+    # 注意：OAuth2PasswordRequestForm 期望的是表单数据 (application/x-www-form-urlencoded)
+    # 而不是 JSON 数据
     response = await async_client.post(
         "/users/login",
-        json={
+        data={
             "username": "loginuser",
             "password": password,
         },
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -118,14 +121,15 @@ async def test_login_wrong_password(async_client: AsyncClient):
             "password": "password123",
         },
     )
-    
+
     # 尝试用错误密码登录
     response = await async_client.post(
         "/users/login",
-        json={
+        data={
             "username": "wrongpassuser",
             "password": "wrongpassword",
         },
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json()["detail"] == "Incorrect username or password"
@@ -135,9 +139,10 @@ async def test_login_nonexistent_user(async_client: AsyncClient):
     """测试不存在的用户登录"""
     response = await async_client.post(
         "/users/login",
-        json={
+        data={
             "username": "nonexistent",
             "password": "password123",
         },
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

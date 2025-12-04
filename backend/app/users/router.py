@@ -77,9 +77,16 @@ async def register_user(
     return user
 
 
+from datetime import timedelta
+
+from app.core.config import settings
+from app.core.security import create_access_token
+from fastapi.security import OAuth2PasswordRequestForm
+
 @router.post("/login", summary="用户登录", description="使用用户名/邮箱和密码登录")
 async def login(
-    user_in: UserLogin, session: Annotated[AsyncSession, Depends(get_async_session)]
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """
     用户登录
@@ -88,9 +95,9 @@ async def login(
     - **password**: 密码
 
     Returns:
-        JWT token（简化版，实际项目需要实现完整的 JWT）
+        JWT token
     """
-    user = await crud.authenticate_user(session, user_in.username, user_in.password)
+    user = await crud.authenticate_user(session, form_data.username, form_data.password)
 
     if not user:
         raise HTTPException(
@@ -99,9 +106,13 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # TODO: 生成真正的 JWT token
-    # 这里简化处理，返回 user_id 作为 token
-    return {"access_token": str(user.id), "token_type": "bearer"}
+    # 生成真正的 JWT token
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=user.id, expires_delta=access_token_expires
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 # ========================================

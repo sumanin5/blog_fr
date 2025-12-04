@@ -57,7 +57,7 @@ class UserRegister(BaseModel):
 class UserCreate(UserBase):
     """创建用户的请求模型（管理员使用，包含角色等字段）"""
 
-    password: str = Field(..., min_length=6, max_length=100, description="密码")
+    password: str = Field(..., min_length=4, max_length=100, description="密码")
 
     model_config = {
         "json_schema_extra": {
@@ -84,10 +84,6 @@ class UserUpdate(BaseModel):
         None, min_length=6, max_length=100, description="密码"
     )
     is_active: Optional[bool] = Field(None, description="是否激活")
-    role: Optional[UserRole] = Field(None, description="用户角色")
-    full_name: Optional[str] = Field(None, max_length=100, description="全名")
-    bio: Optional[str] = Field(None, max_length=500, description="用户简介")
-    avatar: Optional[HttpUrl] = Field(None, description="用户头像 URL")
     role: Optional[UserRole] = Field(None, description="用户角色")
     full_name: Optional[str] = Field(None, max_length=100, description="全名")
     bio: Optional[str] = Field(None, max_length=500, description="用户简介")
@@ -145,3 +141,9 @@ class Token(BaseModel):
 
     access_token: str = Field(..., description="访问令牌")
     token_type: str = Field(default="bearer", description="令牌类型")
+
+
+class TokenPayload(BaseModel):
+    """JWT 载荷模型"""
+
+    sub: str | None = None

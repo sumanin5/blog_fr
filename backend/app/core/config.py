@@ -42,6 +42,17 @@ class Settings(BaseSettings):
     postgres_server: str = ""
     postgres_port: int = 5432
 
+    # ==========================================
+    # 初始化数据配置（默认超级管理员）
+    # ==========================================
+    FIRST_SUPERUSER: str = Field(default="admin", description="默认超级管理员用户名")
+    FIRST_SUPERUSER_PASSWORD: str = Field(
+        default="123456", description="默认超级管理员密码"
+    )
+    FIRST_SUPERUSER_EMAIL: str = Field(
+        default="admin@example.com", description="默认超级管理员邮箱"
+    )
+
     model_config = SettingsConfigDict(
         env_file="../.env.test" if os.getenv("ENVIRONMENT") == "test" else "../.env",
         env_ignore_empty=True,

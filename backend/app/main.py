@@ -1,6 +1,12 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.initial_data import init_db
 from app.users.router import router as users_router
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -12,6 +18,8 @@ origins = [
     "http://localhost:5173",  # Vite 开发服务器
     "http://localhost:3000",  # 备用端口
     "http://127.0.0.1:5173",
+    "http://localhost:5174",  # Vite 开发服务器
+    "http://127.0.0.1:5174",  # Vite 开发服务器
 ]
 
 app.add_middleware(
@@ -23,9 +31,26 @@ app.add_middleware(
 )
 
 
+# ============================================================
+# 启动事件：初始化数据库数据
+# ============================================================
+@app.on_event("startup")
+async def startup_event():
+    """在应用启动时运行初始化脚本"""
+    try:
+        logger.info("开始初始化数据库数据...")
+        await init_db()
+        logger.info("数据库初始化完成")
+    except Exception as e:
+        logger.error(f"启动时初始化数据失败: {e}")
+        # 可选：根据需要决定是否让启动失败
+        # raise
+
+
 @app.get("/")
 async def read_root():
     return {"Hello": "fastapi"}
+
 
 # ============================================================
 # 包含用户路由

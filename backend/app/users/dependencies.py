@@ -24,6 +24,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 # ========================================
 
 
+import jwt
+import uuid
+from app.core.config import settings
+from app.core.security import ALGORITHM
+from app.users.schema import TokenPayload
+
 async def get_current_user(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     token: Annotated[str, Depends(oauth2_scheme)],
@@ -41,22 +47,34 @@ async def get_current_user(
     Raises:
         HTTPException: 如果 token 无效或用户不存在
     """
-    # TODO: 实现 JWT token 验证
-    # 这里简化处理，实际项目需要验证 JWT token
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # 示例：假设 token 就是 user_id
     try:
-        user_id = int(token)
-        user = await crud.get_user_by_id(session, user_id)
+        # 解码 JWT token
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[ALGORITHM]
+        )
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        token_data = TokenPayload(sub=user_id)
+    except jwt.PyJWTError:
+        raise credentials_exception
+
+    try:
+        # 将 sub (str) 转换为 UUID
+        # 注意：这里的 token_data.sub 是字符串格式的 UUID
+        user_uuid = uuid.UUID(token_data.sub)
+        user = await crud.get_user_by_id(session, user_uuid)
         if user is None:
             raise credentials_exception
         return user
-    except ValueError:
+    except (ValueError, AttributeError):
+        # 如果 UUID 格式错误或转换失败
         raise credentials_exception
 
 
@@ -81,6 +99,27 @@ async def get_current_active_user(
         )
     return current_user
 
+async def get_current_adminuser(
+    current_user: Annotated[User, Depends(get_current_active_user)]
+) -> User:
+    """
+    获取当前超级用户
+
+    Args:
+        current_user: 当前用户
+
+    Returns:
+        当前用户对象
+
+    Raises:
+        HTTPException: 如果用户不是超级用户
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+        )
+    return current_user
+
 
 async def get_current_superuser(
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -97,7 +136,7 @@ async def get_current_superuser(
     Raises:
         HTTPException: 如果用户不是超级用户
     """
-    if not current_user.is_superuser:
+    if not current_user.is_superadmin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
