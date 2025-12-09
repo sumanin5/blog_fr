@@ -1,122 +1,123 @@
-# React 前端 API 集成指南
+# React 前端 API 手动集成指南 (匠人模式)
 
-> 本文档基于 `openapi.json` API 规范，指导如何在 React 前端项目中设计和实现 API 请求逻辑。
+> 🔨 **关于本指南**
+> 本文档详细介绍了如何**纯手工**打造一个健壮的前端 API 层。
+> 虽然现在有自动生成工具，但理解这个"手工打造"的过程对于掌握前端架构至关重要。这就像学习自动驾驶前，你必须先学会如何握住方向盘。
 
 ---
 
 ## 目录
 
-1. [API 概览](#1-api-概览)
-2. [前端项目结构规划](#2-前端项目结构规划)
-3. [第一步：安装必要依赖](#3-第一步安装必要依赖)
-4. [第二步：创建 API 服务层](#4-第二步创建-api-服务层)
-5. [第三步：创建 TypeScript 类型定义](#5-第三步创建-typescript-类型定义)
-6. [第四步：实现认证状态管理](#6-第四步实现认证状态管理)
-7. [第五步：创建功能页面](#7-第五步创建功能页面)
-8. [第六步：路由配置](#8-第六步路由配置)
-9. [最佳实践与注意事项](#9-最佳实践与注意事项)
+1. [API 概览：我们的菜单](#1-api-概览我们的菜单)
+2. [城市规划：项目结构](#2-城市规划项目结构)
+3. [第一步：装备工具 (Axios)](#3-第一步装备工具-axios)
+4. [第二步：建设基础设施 (API Layer)](#4-第二步建设基础设施-api-layer)
+5. [第三步：制定法律契约 (TypeScript Types)](#5-第三步制定法律契约-typescript-types)
+6. [第四步：建立广播系统 (Auth Context)](#6-第四步建立广播系统-auth-context)
+7. [第五步：装修店面 (Pages)](#7-第五步装修店面-pages)
+8. [第六步：交通管制 (Router)](#8-第六步交通管制-router)
+9. [建筑规范 (最佳实践)](#9-建筑规范-最佳实践)
 
 ---
 
-## 1. API 概览
+## 1. API 概览：我们的菜单
 
-根据 `openapi.json`，后端提供以下 **用户相关 API**：
+在开始烹饪（写代码）之前，我们需要先看看后厨（后端）提供了什么菜单（API）。
+根据 `openapi.json`，后端为我们准备了以下**用户套餐**：
 
-| 方法     | 路径               | 功能                       | 认证          |
-| -------- | ------------------ | -------------------------- | ------------- |
-| `POST`   | `/users/register`  | 注册新用户                 | ❌ 不需要     |
-| `POST`   | `/users/login`     | 用户登录                   | ❌ 不需要     |
-| `GET`    | `/users/me`        | 获取当前用户信息           | ✅ 需要 Token |
-| `PUT`    | `/users/me`        | 更新当前用户信息           | ✅ 需要 Token |
-| `DELETE` | `/users/me`        | 删除当前用户               | ✅ 需要 Token |
-| `GET`    | `/users/`          | 获取用户列表（管理员）     | ✅ 需要 Token |
-| `GET`    | `/users/{user_id}` | 获取指定用户信息（管理员） | ✅ 需要 Token |
-| `PUT`    | `/users/{user_id}` | 更新指定用户信息（管理员） | ✅ 需要 Token |
-| `DELETE` | `/users/{user_id}` | 删除指定用户（管理员）     | ✅ 需要 Token |
+| 菜名 (功能) | 路径 (Path)       | 做法 (Method) | 价格 (认证) |
+| ----------- | ----------------- | ------------- | ----------- |
+| **注册**    | `/users/register` | `POST`        | 🆓 免费     |
+| **登录**    | `/users/login`    | `POST`        | 🆓 免费     |
+| **我是谁?** | `/users/me`       | `GET`         | 🎫 需门票   |
+| **更新我**  | `/users/me`       | `PUT`         | 🎫 需门票   |
+| **注销我**  | `/users/me`       | `DELETE`      | 🎫 需门票   |
+| **查户口**  | `/users/`         | `GET`         | 👮 管理员   |
+| **查某人**  | `/users/{id}`     | `GET`         | 👮 管理员   |
 
-### 认证方式
+### 🎫 门票规则 (认证方式)
 
-- **类型**: OAuth2 Password Bearer
-- **Token URL**: `/users/login`
-- **请求头格式**: `Authorization: Bearer <access_token>`
+- **类型**: OAuth2 Password Bearer (一种标准的检票方式)
+- **检票口**: `/users/login`
+- **门票格式**: 你需要在请求头里大喊：`Authorization: Bearer <你的Token>`
 
 ---
 
-## 2. 前端项目结构规划
+## 2. 城市规划：项目结构
 
-基于当前项目结构，建议按以下方式组织代码：
+一个好的项目结构就像一个规划良好的城市，每个区域都有明确的职能，互不干扰。
 
 ```
 frontend/src/
-├── api/                    # 🆕 API 服务层
-│   ├── client.ts           # Axios 实例配置
-│   ├── auth.ts             # 认证相关 API
-│   └── users.ts            # 用户相关 API
-├── types/                  # 🆕 TypeScript 类型定义
-│   └── user.ts             # 用户相关类型
-├── hooks/                  # 🆕 自定义 Hooks
-│   ├── useAuth.ts          # 认证 Hook
-│   └── useUser.ts          # 用户数据 Hook
-├── contexts/               # 🆕 React Context
-│   └── AuthContext.tsx     # 认证状态管理
-├── pages/                  # 页面组件
-│   ├── Home.tsx
-│   ├── About.tsx
-│   ├── Dashboard.tsx
-│   ├── auth/               # 🆕 认证页面
-│   │   ├── Login.tsx
-│   │   └── Register.tsx
-│   └── users/              # 🆕 用户管理页面
-│       ├── Profile.tsx     # 个人信息页
-│       └── UserList.tsx    # 用户列表（管理员）
-├── components/             # 可复用组件
-│   └── ui/
-├── Layout.tsx
-├── App.tsx
-└── main.tsx
+├── api/                    # � 【基础设施区】处理所有对外通信
+│   ├── client.ts           # 总机房 (Axios 配置)
+│   ├── auth.ts             # 签证中心 (登录注册)
+│   └── users.ts            # 人口管理局 (用户增删改查)
+├── types/                  # 📜 【档案馆】存放所有法律文件 (类型定义)
+│   └── user.ts             # 用户档案格式定义
+├── hooks/                  # � 【工具站】提供便捷的挂钩
+│   ├── useAuth.ts          # 快速获取身份信息
+│   └── useUser.ts          # 快速获取用户数据
+├── contexts/               # 📡 【广播塔】全局状态管理
+│   └── AuthContext.tsx     # 身份广播系统
+├── pages/                  # 🏪 【商业区】用户直接看到的页面
+│   ├── auth/               # 登录/注册大厅
+│   └── users/              # 用户中心
+├── components/             # 🧱 【建材市场】通用的砖块和组件
+└── App.tsx                 # 🗺️ 【交通枢纽】路由配置
 ```
 
 ---
 
-## 3. 第一步：安装必要依赖
+## 3. 第一步：装备工具 (Axios)
 
-在开始之前，你需要安装 HTTP 请求库。推荐使用 **Axios**：
+在开始建设之前，我们需要一把趁手的兵器来处理 HTTP 请求。**Axios** 就是前端界的"瑞士军刀"。
 
 ```bash
 cd frontend
 npm install axios
 ```
 
-**为什么选择 Axios？**
+**为什么不直接用手 (fetch) 抓？**
+虽然浏览器自带 `fetch`，但 Axios 就像给 `fetch` 穿上了钢铁侠战衣：
 
-- 自动转换 JSON 数据
-- 支持请求/响应拦截器（非常适合处理 Token）
-- 更好的错误处理
-- 支持请求取消
+- **自动翻译**: 它能自动把 JSON 字符串变成 JS 对象，不用你手动 `JSON.parse`。
+- **安检门 (拦截器)**: 可以在请求发出前和回来后自动进行检查（比如自动塞 Token）。
+- **自带保镖**: 遇到 404 或 500 错误会自动报错，不用你手动检查 `ok` 状态。
 
 ---
 
-## 4. 第二步：创建 API 服务层
+## 4. 第二步：建设基础设施 (API Layer)
 
-### 4.1 创建 Axios 实例 (`src/api/client.ts`)
+这一步我们要建立与后端通信的专用通道。
+
+### 4.1 建设总机房 (`src/api/client.ts`)
+
+这是所有请求的**必经之路**。我们在这里设置"关卡"，确保每个发出的请求都符合规范。
 
 ```typescript
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-// 创建 Axios 实例
+// 1. 创建一个专属的 HTTP 客户端
+// 就像是专门开通了一条通往后端的专线
 const apiClient = axios.create({
+  // 自动读取环境变量中的地址，开发环境默认为 localhost:8000
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  // 设置超时时间，防止请求"死等"
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// 请求拦截器：自动添加 Token
+// 2. 设置【出发安检】(请求拦截器)
+// 每个请求出发前，都要经过这里
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // 从口袋里(localStorage)掏出通行证(Token)
     const token = localStorage.getItem("access_token");
     if (token) {
+      // 如果有证，就把它贴在请求头里
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -124,13 +125,16 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 响应拦截器：处理常见错误
+// 3. 设置【回程安检】(响应拦截器)
+// 每个请求回来后，都要经过这里
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => response, // 如果一切正常，直接放行
   (error: AxiosError) => {
+    // 如果被拦下了，且原因是 401 (未授权/票过期)
     if (error.response?.status === 401) {
-      // Token 过期或无效，清除本地存储并跳转登录页
+      // 撕掉过期的票
       localStorage.removeItem("access_token");
+      // 强制遣返到登录页
       window.location.href = "/login";
     }
     return Promise.reject(error);
@@ -140,13 +144,9 @@ apiClient.interceptors.response.use(
 export default apiClient;
 ```
 
-**设计要点：**
+### 4.2 建设签证中心 (`src/api/auth.ts`)
 
-- 使用环境变量 `VITE_API_URL` 配置 API 基础地址
-- 请求拦截器自动从 `localStorage` 读取并添加 Token
-- 响应拦截器统一处理 401 未授权错误
-
-### 4.2 创建认证 API (`src/api/auth.ts`)
+这个文件专门处理"进出门"的业务。
 
 ```typescript
 import apiClient from "./client";
@@ -158,7 +158,7 @@ import type {
 } from "@/types/user";
 
 export const authApi = {
-  // 用户注册
+  // 📝 注册业务
   register: async (data: UserRegister): Promise<UserResponse> => {
     const response = await apiClient.post<UserResponse>(
       "/users/register",
@@ -167,7 +167,10 @@ export const authApi = {
     return response.data;
   },
 
-  // 用户登录（注意：登录使用 form-urlencoded 格式）
+  // 🔑 登录业务
+  // 注意：这里有个特殊的规矩！
+  // OAuth2 标准要求登录必须用 "表单格式" (form-urlencoded) 提交，
+  // 而不是普通的 JSON。这就像去某些政府部门办事必须填纸质表格一样。
   login: async (credentials: LoginCredentials): Promise<TokenResponse> => {
     const formData = new URLSearchParams();
     formData.append("username", credentials.username);
@@ -178,6 +181,7 @@ export const authApi = {
       formData,
       {
         headers: {
+          // 显式声明：我交的是表格，不是 JSON
           "Content-Type": "application/x-www-form-urlencoded",
         },
       }
@@ -185,7 +189,7 @@ export const authApi = {
     return response.data;
   },
 
-  // 获取当前用户信息
+  // 👤 获取当前身份
   getCurrentUser: async (): Promise<UserResponse> => {
     const response = await apiClient.get<UserResponse>("/users/me");
     return response.data;
@@ -193,28 +197,27 @@ export const authApi = {
 };
 ```
 
-**⚠️ 重要提示：**
-登录接口使用 `application/x-www-form-urlencoded` 而非 JSON！这是 OAuth2 Password Bearer 的标准格式。
+### 4.3 建设人口管理局 (`src/api/users.ts`)
 
-### 4.3 创建用户 API (`src/api/users.ts`)
+这个文件处理所有关于"人"的操作。
 
 ```typescript
 import apiClient from "./client";
 import type { UserResponse, UserUpdate, UserListResponse } from "@/types/user";
 
 export const usersApi = {
-  // 更新当前用户信息
+  // ✏️ 修改自己的档案
   updateCurrentUser: async (data: UserUpdate): Promise<UserResponse> => {
     const response = await apiClient.put<UserResponse>("/users/me", data);
     return response.data;
   },
 
-  // 删除当前用户账号
+  // 🗑️ 注销户口
   deleteCurrentUser: async (): Promise<void> => {
     await apiClient.delete("/users/me");
   },
 
-  // 获取用户列表（管理员）
+  // 📋 查阅花名册 (管理员专用)
   getUsers: async (params?: {
     skip?: number;
     limit?: number;
@@ -226,13 +229,13 @@ export const usersApi = {
     return response.data;
   },
 
-  // 获取指定用户信息（管理员）
+  // 🔍 调查特定人员 (管理员专用)
   getUserById: async (userId: string): Promise<UserResponse> => {
     const response = await apiClient.get<UserResponse>(`/users/${userId}`);
     return response.data;
   },
 
-  // 更新指定用户信息（管理员）
+  // ✏️ 修改他人档案 (管理员专用)
   updateUserById: async (
     userId: string,
     data: UserUpdate
@@ -244,7 +247,7 @@ export const usersApi = {
     return response.data;
   },
 
-  // 删除指定用户（管理员）
+  // 🗑️ 强制注销他人 (管理员专用)
   deleteUserById: async (userId: string): Promise<void> => {
     await apiClient.delete(`/users/${userId}`);
   },
@@ -253,52 +256,54 @@ export const usersApi = {
 
 ---
 
-## 5. 第三步：创建 TypeScript 类型定义
+## 5. 第三步：制定法律契约 (TypeScript Types)
 
-创建 `src/types/user.ts`：
+在 TypeScript 的世界里，**类型定义 (Interface/Type)** 就是法律契约。它规定了数据必须长什么样，多一个字段、少一个字段、类型不对，编译器都会立刻报警。
+
+创建 `src/types/user.ts`，这是我们与后端达成的"协议"：
 
 ```typescript
-// 用户角色枚举
+// 🎭 角色定义：只能是这三种之一，写错编译器会打手板
 export type UserRole = "user" | "admin" | "superadmin";
 
-// 用户注册请求
+// 📝 注册表单契约
 export interface UserRegister {
-  username: string; // 必填，3-50字符
-  email: string; // 必填，邮箱格式
-  password: string; // 必填，6-100字符
-  full_name?: string; // 可选，最多100字符
-  bio?: string; // 可选，最多500字符
-  avatar?: string; // 可选，URL格式
+  username: string; // 必填，没名字怎么行
+  email: string; // 必填，联系方式
+  password: string; // 必填，钥匙
+  full_name?: string; // 可选，不想说可以不说
+  bio?: string; // 可选，个性签名
+  avatar?: string; // 可选，头像
 }
 
-// 登录凭证
+// 🔑 登录凭证契约
 export interface LoginCredentials {
   username: string;
   password: string;
 }
 
-// Token 响应（根据实际后端返回调整）
+// 🎫 门票契约 (后端发给我们的票长这样)
 export interface TokenResponse {
   access_token: string;
   token_type: string;
 }
 
-// 用户响应
+// 👤 用户档案契约 (后端返回的用户信息长这样)
 export interface UserResponse {
-  id: string; // UUID
+  id: string; // 身份证号 (UUID)
   username: string;
   email: string;
-  is_active: boolean;
-  role: UserRole;
+  is_active: boolean; // 账号是否活着
+  role: UserRole; // 身份
   full_name?: string;
   bio?: string;
   avatar?: string;
-  created_at: string; // ISO 日期字符串
+  created_at: string; // 出生日期
   updated_at: string;
   last_login?: string;
 }
 
-// 用户更新请求（所有字段可选）
+// ✏️ 更新请求契约 (所有字段都是可选的，想改哪个改哪个)
 export interface UserUpdate {
   username?: string;
   email?: string;
@@ -310,17 +315,17 @@ export interface UserUpdate {
   avatar?: string;
 }
 
-// 用户列表响应
+// 📋 列表响应契约
 export interface UserListResponse {
-  total: number;
-  users: UserResponse[];
+  total: number; // 总人数
+  users: UserResponse[]; // 一群人的数组
 }
 
-// API 错误响应
+// 🚫 错误响应契约 (后端报错时会返回这个)
 export interface ValidationError {
-  loc: (string | number)[];
-  msg: string;
-  type: string;
+  loc: (string | number)[]; // 哪里错了
+  msg: string; // 错哪了
+  type: string; // 错误类型
 }
 
 export interface HTTPValidationError {
@@ -330,11 +335,13 @@ export interface HTTPValidationError {
 
 ---
 
-## 6. 第四步：实现认证状态管理
+## 6. 第四步：建立广播系统 (Auth Context)
 
-使用 React Context 管理全局认证状态。
+**Context** 是 React 的"全城广播系统"。
+如果没有它，你想在"个人中心"页面知道当前是谁登录了，你得从最顶层一层层传下来，非常麻烦。
+有了它，任何组件只要"订阅"这个广播，就能随时知道：**"现在是谁登录？"、"我登录了吗？"**。
 
-### 6.1 创建 AuthContext (`src/contexts/AuthContext.tsx`)
+### 6.1 搭建广播塔 (`src/contexts/AuthContext.tsx`)
 
 ```typescript
 import {
@@ -351,57 +358,71 @@ import type {
   UserRegister,
 } from "@/types/user";
 
+// 定义广播内容的格式
 interface AuthContextType {
-  user: UserResponse | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: UserRegister) => Promise<void>;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
+  user: UserResponse | null; // 当前用户是谁？(没登录就是 null)
+  isLoading: boolean; // 正在检查登录状态吗？
+  isAuthenticated: boolean; // 是否已登录？(方便判断)
+  login: (credentials: LoginCredentials) => Promise<void>; // 登录动作
+  register: (data: UserRegister) => Promise<void>; // 注册动作
+  logout: () => void; // 注销动作
+  refreshUser: () => Promise<void>; // 刷新用户数据动作
 }
 
+// 创建频道
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// 广播塔组件 (Provider)
+// 它包裹住整个应用，向内部所有组件提供数据
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 页面加载时检查登录状态
+  // 🔄 初始化：应用一启动，先检查口袋里有没有票
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (token) {
+      // 有票，去后端问问这张票是谁的
       refreshUser().finally(() => setIsLoading(false));
     } else {
+      // 没票，那就是没登录
       setIsLoading(false);
     }
   }, []);
 
+  // 刷新用户数据
   const refreshUser = async () => {
     try {
       const userData = await authApi.getCurrentUser();
       setUser(userData);
     } catch {
+      // 如果票是假的或过期的，扔掉它
       localStorage.removeItem("access_token");
       setUser(null);
     }
   };
 
+  // 登录动作
   const login = async (credentials: LoginCredentials) => {
+    // 1. 去后端换票
     const tokenData = await authApi.login(credentials);
+    // 2. 把票揣兜里
     localStorage.setItem("access_token", tokenData.access_token);
+    // 3. 查查这张票是谁的，并更新状态
     await refreshUser();
   };
 
+  // 注册动作
   const register = async (data: UserRegister) => {
     await authApi.register(data);
     // 注册成功后可以选择自动登录
     // await login({ username: data.username, password: data.password });
   };
 
+  // 注销动作
   const logout = () => {
-    localStorage.removeItem("access_token");
-    setUser(null);
+    localStorage.removeItem("access_token"); // 撕票
+    setUser(null); // 清空用户状态
   };
 
   return (
@@ -421,7 +442,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// 自定义 Hook
+// 📻 接收器 (Custom Hook)
+// 组件想听广播，就调用这个 hook
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -431,7 +453,9 @@ export function useAuth() {
 }
 ```
 
-### 6.2 在 main.tsx 中包裹 AuthProvider
+### 6.2 启动广播塔 (`src/main.tsx`)
+
+我们需要在应用的**最顶层**启动这个广播系统。
 
 ```typescript
 import { StrictMode } from "react";
@@ -442,6 +466,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+    {/* 把整个 App 包裹在 AuthProvider 里，这样所有页面都能接收到广播 */}
     <AuthProvider>
       <App />
     </AuthProvider>
@@ -451,9 +476,13 @@ createRoot(document.getElementById("root")!).render(
 
 ---
 
-## 7. 第五步：创建功能页面
+## 7. 第五步：装修店面 (Pages)
 
-### 7.1 登录页面 (`src/pages/auth/Login.tsx`)
+基础设施都建好了，现在开始装修用户真正看到的页面。
+
+### 7.1 登录大厅 (`src/pages/auth/Login.tsx`)
+
+这里是用户进入系统的第一站。
 
 ```typescript
 import { useState, FormEvent } from "react";
@@ -461,23 +490,28 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
+  // 状态管理：记录用户输入
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // 从广播里拿到 login 方法
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // 阻止表单默认提交刷新页面
     setError("");
     setIsLoading(true);
 
     try {
+      // 调用广播里的登录方法
       await login({ username, password });
+      // 登录成功，跳转到仪表盘
       navigate("/dashboard");
     } catch (err: any) {
+      // 登录失败，显示后端返回的错误信息
       setError(err.response?.data?.detail || "登录失败，请检查用户名和密码");
     } finally {
       setIsLoading(false);
@@ -489,6 +523,7 @@ export default function Login() {
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
         <h2 className="text-2xl font-bold text-center mb-6">用户登录</h2>
 
+        {/* 错误提示条 */}
         {error && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
             {error}
@@ -539,7 +574,7 @@ export default function Login() {
 }
 ```
 
-### 7.2 注册页面 (`src/pages/auth/Register.tsx`)
+### 7.2 注册大厅 (`src/pages/auth/Register.tsx`)
 
 ```typescript
 import { useState, FormEvent } from "react";
@@ -568,13 +603,12 @@ export default function Register() {
     e.preventDefault();
     setError("");
 
-    // 验证密码匹配
+    // 🛡️ 前端先做第一轮检查
     if (formData.password !== formData.confirmPassword) {
       setError("两次输入的密码不一致");
       return;
     }
 
-    // 验证密码长度
     if (formData.password.length < 6) {
       setError("密码至少需要6个字符");
       return;
@@ -589,8 +623,10 @@ export default function Register() {
         password: formData.password,
         full_name: formData.full_name || undefined,
       });
+      // 注册成功，带话跳转到登录页
       navigate("/login", { state: { message: "注册成功，请登录" } });
     } catch (err: any) {
+      // 处理后端返回的详细错误（可能是数组）
       const detail = err.response?.data?.detail;
       if (Array.isArray(detail)) {
         setError(detail.map((d: any) => d.msg).join(", "));
@@ -698,7 +734,9 @@ export default function Register() {
 }
 ```
 
-### 7.3 个人资料页面 (`src/pages/users/Profile.tsx`)
+### 7.3 个人资料室 (`src/pages/users/Profile.tsx`)
+
+这是一个**受保护**的页面，只有登录后才能看到。
 
 ```typescript
 import { useState, useEffect } from "react";
@@ -717,6 +755,7 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
+  // 当 user 数据变化时，同步到表单
   useEffect(() => {
     if (user) {
       setFormData({
@@ -733,12 +772,14 @@ export default function Profile() {
     setMessage({ type: "", text: "" });
 
     try {
+      // 调用更新 API
       await usersApi.updateCurrentUser({
         username: formData.username,
         email: formData.email,
         full_name: formData.full_name || undefined,
         bio: formData.bio || undefined,
       });
+      // 更新成功后，刷新全局用户状态
       await refreshUser();
       setIsEditing(false);
       setMessage({ type: "success", text: "个人信息更新成功！" });
@@ -757,7 +798,7 @@ export default function Profile() {
 
     try {
       await usersApi.deleteCurrentUser();
-      logout();
+      logout(); // 删号后自动注销
     } catch (err: any) {
       setMessage({
         type: "error",
@@ -929,9 +970,11 @@ export default function Profile() {
 
 ---
 
-## 8. 第六步：路由配置
+## 8. 第六步：交通管制 (Router)
 
-更新 `App.tsx` 添加新路由：
+最后，我们需要配置路由，决定哪些页面是公开的，哪些是需要"门票"的。
+
+更新 `App.tsx`：
 
 ```typescript
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -946,7 +989,11 @@ import Register from "@/pages/auth/Register";
 import Profile from "@/pages/users/Profile";
 import Layout from "@/Layout";
 
-// 受保护的路由组件
+// 🛡️ 路由守卫组件
+// 它的职责：检查你有没有登录
+// - 如果正在检查中：显示 Loading
+// - 如果没登录：踢回登录页
+// - 如果登录了：放行
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -967,16 +1014,16 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 公开路由（无需登录） */}
+        {/* 🟢 绿灯区：公开路由（无需登录） */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* 需要布局的路由 */}
+        {/* 🟡 混合区：需要布局的路由 */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="about" element={<About />} />
 
-          {/* 受保护的路由（需要登录） */}
+          {/* 🔴 红灯区：受保护的路由（必须登录） */}
           <Route
             path="dashboard"
             element={
@@ -995,7 +1042,7 @@ function App() {
           />
         </Route>
 
-        {/* 404 页面 */}
+        {/* 404 迷路区 */}
         <Route path="*" element={<div>404 Not Found</div>} />
       </Routes>
     </BrowserRouter>
@@ -1007,34 +1054,27 @@ export default App;
 
 ---
 
-## 9. 最佳实践与注意事项
+## 9. 建筑规范 (最佳实践)
 
-### 9.1 安全性
+### 9.1 安全性：不要把钥匙藏在门口地毯下
 
-1. **永远不要在代码中硬编码 API URL**
+1.  **URL 不要写死**
+    ❌ `const API_URL = "http://localhost:8000";` (上线必挂)
+    ✅ `const API_URL = import.meta.env.VITE_API_URL;` (灵活多变)
 
-   ```typescript
-   // ❌ 错误
-   const API_URL = "http://localhost:8000";
+2.  **创建 `.env` 文件**
+    告诉程序：开发环境的后端在哪里。
 
-   // ✅ 正确 - 使用环境变量
-   const API_URL = import.meta.env.VITE_API_URL;
-   ```
+    ```env
+    VITE_API_URL=http://localhost:8000
+    ```
 
-2. **创建 `.env` 文件**
+### 9.2 错误处理：优雅地告诉用户出错了
 
-   ```env
-   VITE_API_URL=http://localhost:8000
-   ```
-
-3. **Token 存储考虑**
-   - `localStorage`: 简单但易受 XSS 攻击
-   - `httpOnly Cookie`: 更安全，需要后端配合
-
-### 9.2 错误处理
+不要直接把 `Object Object` 甩给用户看。
 
 ```typescript
-// 创建统一的错误处理工具
+// 创建一个翻译官，把晦涩的错误对象变成人话
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const detail = error.response?.data?.detail;
@@ -1048,9 +1088,9 @@ export function getErrorMessage(error: unknown): string {
 }
 ```
 
-### 9.3 加载状态 UI
+### 9.3 用户体验：别让用户干等
 
-推荐使用骨架屏或加载指示器提升用户体验：
+加个 Loading 动画，告诉用户"我在努力加载中"。
 
 ```typescript
 function LoadingSpinner() {
@@ -1062,38 +1102,20 @@ function LoadingSpinner() {
 }
 ```
 
-### 9.4 开发流程建议
+---
 
-1. **先完成认证模块** → Login, Register, AuthContext
-2. **测试 API 连接** → 确保能正常登录获取 Token
-3. **逐步添加功能页面** → Profile → UserList (管理员)
-4. **优化 UI/UX** → 添加加载状态、错误提示、表单验证
+## 🔨 匠人精神总结
 
-### 9.5 推荐的学习资源
+通过手动编写这些代码，你现在应该明白了：
 
-- [Axios 官方文档](https://axios-http.com/)
-- [React Router v6 文档](https://reactrouter.com/)
-- [React Context 详解](https://react.dev/learn/passing-data-deeply-with-context)
+1.  **Axios** 是如何作为信使在前后端之间穿梭的。
+2.  **Interceptors** 是如何像安检一样自动处理 Token 的。
+3.  **Context** 是如何像广播一样让全局知道"我是谁"的。
+4.  **Types** 是如何像法律一样约束数据格式的。
+
+虽然自动生成工具能帮我们省去很多体力活，但理解这些底层逻辑，能让你在遇到问题时（比如 Token 刷新失败、权限控制失效）迅速定位病灶，成为真正的架构师。
 
 ---
 
-## 快速开始清单
-
-按以下顺序创建文件：
-
-- [ ] 1. `npm install axios`
-- [ ] 2. 创建 `src/types/user.ts`
-- [ ] 3. 创建 `src/api/client.ts`
-- [ ] 4. 创建 `src/api/auth.ts`
-- [ ] 5. 创建 `src/api/users.ts`
-- [ ] 6. 创建 `src/contexts/AuthContext.tsx`
-- [ ] 7. 修改 `src/main.tsx` 添加 AuthProvider
-- [ ] 8. 创建 `src/pages/auth/Login.tsx`
-- [ ] 9. 创建 `src/pages/auth/Register.tsx`
-- [ ] 10. 创建 `src/pages/users/Profile.tsx`
-- [ ] 11. 更新 `src/App.tsx` 路由配置
-
----
-
-_文档创建时间: 2025-12-04_
+_文档更新时间: 2025-12-04_
 _基于 OpenAPI 3.1.0 规范_

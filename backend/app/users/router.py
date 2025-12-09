@@ -5,9 +5,12 @@
 """
 
 import uuid
+from datetime import timedelta
 from typing import Annotated
 
+from app.core.config import settings
 from app.core.db import get_async_session
+from app.core.security import create_access_token
 from app.users import crud
 from app.users.dependencies import (
     get_current_active_user,
@@ -15,14 +18,15 @@ from app.users.dependencies import (
 )
 from app.users.model import User, UserRole
 from app.users.schema import (
+    TokenResponse,
     UserCreate,
     UserListResponse,
-    UserLogin,
     UserRegister,
     UserResponse,
     UserUpdate,
 )
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # ========================================
@@ -77,13 +81,12 @@ async def register_user(
     return user
 
 
-from datetime import timedelta
-
-from app.core.config import settings
-from app.core.security import create_access_token
-from fastapi.security import OAuth2PasswordRequestForm
-
-@router.post("/login", summary="用户登录", description="使用用户名/邮箱和密码登录")
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="用户登录",
+    description="使用用户名/邮箱和密码登录",
+)
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[AsyncSession, Depends(get_async_session)],

@@ -147,3 +147,10 @@ class TokenPayload(BaseModel):
     """JWT 载荷模型"""
 
     sub: str | None = None
+
+
+class TokenResponse(BaseModel):
+    """JWT Token 响应模型"""
+
+    access_token: str = Field(..., description="访问令牌")
+    token_type: str = Field(default="bearer", description="令牌类型")
