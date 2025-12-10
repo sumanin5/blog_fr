@@ -245,120 +245,88 @@ async function loginUser(page: Page, user: TestUser): Promise<void> {
 
 /**
  * ========================================================================
- * 🧪 测试套件：用户认证流程（优化版 - 单用户模式）
+ * 🧪 测试套件：用户认证流程
  * ========================================================================
  *
- * 【优化说明】
- * 原方案：每个测试创建新用户 → 执行测试 → 清理用户
- * 新方案：测试套件开始创建一个用户 → 所有测试共用 → 测试套件结束清理
+ * test.describe() 的作用：
+ * - 创建一个测试套件（Test Suite），把相关的测试组织在一起
+ * - 类似于文件夹，方便管理和查看测试报告
+ * - 可以共享 beforeEach、afterEach 等钩子函数
  *
- * 【优势】
- * 1. 减少数据库操作：从 N 次注册/删除 → 1 次注册/删除
- * 2. 加快测试速度：减少网络请求和等待时间
- * 3. 更符合真实场景：真实用户不会每次都注册新账号
- *
- * 【注意事项】
- * - 测试之间需要注意状态管理（登录/登出）
- * - beforeEach 需要确保每个测试开始前状态一致
- * - 如果某个测试失败，不会影响其他测试
+ * 测试套件的好处：
+ * 1. 结构清晰：一眼就能看出测试的分类
+ * 2. 报告易读：测试失败时，能快速定位是哪个模块出问题
+ * 3. 代码复用：套件内的测试可以共享变量和钩子函数
  */
 test.describe("用户认证流程", () => {
   /**
    * 【变量声明】
-   * 定义一个变量用于存储整个测试套件共用的用户信息
-   * 在 beforeAll 中初始化并注册，在 afterAll 中清理
+   * 定义一个变量用于存储当前测试的用户信息
+   * 在 beforeEach 中初始化，在各个测试用例中使用
    */
   let testUser: TestUser;
-
-  /**
-   * ====================================================================
-   * 🔧 测试生命周期钩子：beforeAll（只运行一次）
-   * ====================================================================
-   *
-   * beforeAll 是什么？
-   * - 在所有测试开始前只运行一次的钩子函数
-   * - 用于执行耗时的设置操作（如创建测试用户）
-   *
-   * 与 beforeEach 的区别：
-   * - beforeAll: 整个测试套件开始前运行一次
-   * - beforeEach: 每个测试用例前都运行
-   *
-   * 本钩子做了什么？
-   * 1. 创建一个唯一的测试用户
-   * 2. 注册这个用户到数据库
-   * 3. 等待注册完成
-   */
-  test.beforeAll(async ({ browser }) => {
-    // 创建一个新的浏览器上下文用于注册
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // 1. 创建唯一测试用户
-      testUser = createTestUser();
-      console.log(`\n📝 创建测试用户: ${testUser.username}`);
-
-      // 2. 注册用户
-      await registerUser(page, testUser);
-      console.log(`✅ 测试用户注册成功\n`);
-    } catch (error) {
-      console.error("❌ 测试用户注册失败:", error);
-      throw error; // 如果注册失败，中断所有测试
-    } finally {
-      // 关闭临时的页面和上下文
-      await page.close();
-      await context.close();
-    }
-  });
 
   /**
    * ====================================================================
    * 🔧 测试生命周期钩子：beforeEach
    * ====================================================================
    *
-   * beforeEach 的作用：
-   * - 确保每个测试开始前状态一致
-   * - 清除上一个测试留下的登录状态
+   * beforeEach 是什么？
+   * - 一个特殊的钩子函数（Hook），在每个测试用例执行之前运行
+   * - 类似于 React 的 useEffect，但是在测试框架中
    *
-   * 为什么还需要 beforeEach？
-   * - 虽然共用一个用户，但每个测试的登录状态可能不同
-   * - 例如：测试登出后，需要清除登录状态
-   * - 清除浏览器存储确保测试独立性
+   * 为什么需要 beforeEach？
+   * - 确保每个测试都从干净的状态开始（测试隔离性）
+   * - 避免测试之间相互影响（测试独立性）
+   * - 如果测试 A 登录了用户，测试 B 不应该受到影响
+   *
+   * 与 beforeAll 的区别：
+   * - beforeAll: 只在所有测试开始前运行一次
+   * - beforeEach: 在每个测试前都运行
+   * - beforeEach 更安全，能保证测试之间完全隔离
+   *
+   * 本钩子做了什么？
+   * 1. 创建一个新的唯一用户（使用时间戳）
+   * 2. 清除浏览器存储（cookies 和 localStorage）
    */
   test.beforeEach(async ({ page }) => {
-    // 清除浏览器存储（localStorage、sessionStorage）
-    // 确保每个测试从"未登录"状态开始
+    // 1. 创建新的唯一测试用户
+    // 每次测试都创建新用户，避免用户名冲突
+    testUser = createTestUser();
+
+    // 2. 清除浏览器存储
+    // 确保没有之前测试留下的登录状态
     await clearBrowserStorage(page);
   });
 
   /**
    * ====================================================================
-   * 🧹 测试生命周期钩子：afterAll（只运行一次）
+   * 🧹 测试生命周期钩子：afterEach
    * ====================================================================
    *
-   * afterAll 是什么？
-   * - 在所有测试结束后只运行一次的钩子函数
-   * - 用于清理测试数据（如删除测试用户）
+   * afterEach 是什么？
+   * - 一个特殊的钩子函数，在每个测试用例执行之后运行
+   * - 无论测试成功还是失败，都会执行
+   *
+   * 为什么需要 afterEach？
+   * - 清理测试产生的数据（删除测试用户）
+   * - 避免测试数据污染真实数据库
+   * - 确保下次运行测试时环境干净
    *
    * 本钩子做了什么？
-   * 1. 使用管理员账号登录获取 token
-   * 2. 调用后端 API 删除所有测试用户
-   * 3. 如果失败，打印警告但不中断
+   * 1. 尝试登录为测试用户（获取 token）
+   * 2. 调用后端 API 删除当前用户
+   * 3. 如果失败，只打印警告不中断测试
    */
-  test.afterAll(async ({ browser }) => {
-    // 创建一个新的浏览器上下文用于清理
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
+  test.afterEach(async ({ page }) => {
+    // 清理数据库中所有测试用户（以 testuser_ 开头的用户）
     try {
-      console.log(`\n🧹 开始清理测试用户...`);
-
       // 步骤 1：使用管理员账号登录获取 token
       const adminToken = await page.evaluate(async () => {
         try {
           const formData = new URLSearchParams();
-          formData.append("username", "admin");
-          formData.append("password", "1234");
+          formData.append("username", "admin"); // 管理员用户名
+          formData.append("password", "1234"); // 管理员密码
 
           const response = await fetch("http://localhost:8000/users/login", {
             method: "POST",
@@ -436,70 +404,88 @@ test.describe("用户认证流程", () => {
           }
 
           console.log(
-            `✅ 已清理 ${deletedCount}/${testUsers.length} 个测试用户\n`,
+            `✓ 已清理 ${deletedCount}/${testUsers.length} 个测试用户`,
           );
-        } else {
-          console.log(`ℹ️  没有需要清理的测试用户\n`);
         }
       } else {
-        console.warn("⚠️  无法获取管理员权限，跳过清理\n");
+        console.warn("⚠️ 无法获取管理员权限，跳过批量清理（请配置管理员账号）");
       }
     } catch (error) {
-      console.warn("⚠️  清理测试用户时出错:", error);
+      console.warn("清理测试用户时出错:", error);
     } finally {
-      // 关闭临时的页面和上下文
-      await page.close();
-      await context.close();
+      await clearBrowserStorage(page);
     }
   });
 
   /**
    * ====================================================================
-   * ✅ 测试用例 1：注册流程（已在 beforeAll 中完成）
+   * ✅ 测试用例 1：注册流程
    * ====================================================================
    *
    * 测试目标：
-   * - 验证用户能够成功注册（此测试已被 beforeAll 覆盖）
+   * - 验证用户能够成功注册新账号
    *
-   * 说明：
-   * - 在新的测试结构中，注册在 beforeAll 中完成
-   * - 这个测试用例被改为验证已注册用户可以登录
-   * - 如果 beforeAll 中的注册失败，整个测试套件会中断
+   * 测试步骤：
+   * 1. 调用 registerUser() 完成注册流程
+   * 2. 验证是否重定向到登录页
    *
-   * 注意：这个测试被注释掉，因为注册已经在 beforeAll 中完成
+   * 为什么这样就够了？
+   * - registerUser() 函数内部已经包含了所有注册步骤和基本验证
+   * - 这里只需要额外验证最终的 URL 是否正确
+   *
+   * expect() 是什么？
+   * - Playwright 的断言（Assertion）方法
+   * - 用于验证测试结果是否符合预期
+   * - 如果断言失败，测试会标记为失败并报错
+   *
+   * toHaveURL() 是什么？
+   * - 检查当前页面的 URL 是否匹配给定的正则表达式
+   * - 如果不匹配，会抛出错误并显示实际 URL
    */
-  // test("注册流程 - 应该成功注册新用户", async ({ page }) => {
-  //   // 已在 beforeAll 中完成注册
-  //   // 这里可以验证用户确实存在于数据库中
-  // });
+  test("注册流程 - 应该成功注册新用户", async ({ page }) => {
+    // 执行注册流程
+    await registerUser(page, testUser);
+
+    // 验证：注册成功后应该跳转到登录页
+    await expect(page).toHaveURL(/\/auth\/login$/);
+  });
 
   /**
    * ====================================================================
-   * ✅ 测试用例 1：登录流程
+   * ✅ 测试用例 2：登录流程
    * ====================================================================
    *
    * 测试目标：
-   * - 验证用户能够使用已注册的凭据成功登录
+   * - 验证用户能够使用正确的凭据登录
    *
    * 测试步骤：
-   * 1. 使用 beforeAll 中注册的用户凭据
-   * 2. 执行登录流程
+   * 1. 先注册用户（因为需要有一个存在的账号）
+   * 2. 再登录用户
    * 3. 验证是否重定向到首页
    * 4. 验证 localStorage 中是否存储了 access_token
    *
-   * 优化点：
-   * - 不需要每次都注册新用户
-   * - 使用已存在的测试用户
-   * - 减少了一次网络请求和等待时间
+   * 为什么要先注册？
+   * - 登录需要一个已存在的账号
+   * - 在真实场景中，用户会先注册，再登录
+   * - 测试应该模拟真实的用户行为
+   *
+   * page.evaluate() 的用法：
+   * - 在浏览器上下文中执行代码
+   * - 可以访问浏览器的 API（如 localStorage）
+   * - 返回值会自动序列化并传回 Node.js 环境
    */
   test("登录流程 - 应该使用有效凭据成功登录", async ({ page }) => {
-    // 步骤 1：执行登录流程（使用 beforeAll 中注册的用户）
+    // 步骤 1：先注册用户（注册后会跳转到登录页）
+    await registerUser(page, testUser);
+
+    // 步骤 2：现在在登录页，直接用刚注册的账号登录
     await loginUser(page, testUser);
 
-    // 步骤 2：验证是否重定向到首页
+    // 步骤 3：验证是否重定向到首页
     await expect(page).toHaveURL(/\/(home)?$/);
 
-    // 步骤 3：验证 localStorage 中是否存储了 access_token
+    // 步骤 4：验证 localStorage 中是否存储了 access_token
+    // evaluate() 在浏览器中执行，获取 token
     const token = await page.evaluate(() => {
       try {
         return localStorage.getItem("access_token");
@@ -515,45 +501,54 @@ test.describe("用户认证流程", () => {
 
   /**
    * ====================================================================
-   * ✅ 测试用例 2：登出流程
+   * ✅ 测试用例 3：登出流程
    * ====================================================================
    *
    * 测试目标：
    * - 验证用户能够成功登出
    *
    * 测试步骤：
-   * 1. 先登录（使用已注册的用户）
+   * 1. 先注册并登录
    * 2. 找到并点击登出按钮
-   * 3. 验证是否成功登出（URL变化或token清除）
+   * 3. 验证是否重定向到登录页
    * 4. 验证 localStorage 中的 access_token 是否已清除
    *
-   * 优化点：
-   * - 不需要注册新用户
-   * - 直接使用已存在的测试用户
-   * - 测试后 beforeEach 会清除登录状态
+   * 难点：如何找到登出按钮？
+   * - 在本项目中，登出按钮在用户头像的下拉菜单中
+   * - 需要先检查按钮是否可见
+   * - 如果不可见，先打开下拉菜单
+   *
+   * isVisible() 是什么？
+   * - Playwright 方法，检查元素是否在页面上可见
+   * - 返回 boolean 值：true（可见）或 false（不可见）
+   * - 不可见的原因：元素不存在、被隐藏（display: none）、在视口外
    */
   test("登出流程 - 应该成功登出用户", async ({ page }) => {
-    // 步骤 1：先登录
+    // 步骤 1：先注册并登录
+    await registerUser(page, testUser);
     await loginUser(page, testUser);
 
     // 步骤 2：等待页面加载完成并确保用户菜单已渲染
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1000); // 额外等待确保 React 组件完全渲染
 
-    // 步骤 3：点击用户菜单触发器
+    // 步骤 3：点击用户菜单触发器（使用 data-testid）
     await page.getByTestId("user-menu-trigger").click();
 
-    // 步骤 4：点击登出按钮
+    // 步骤 4：点击登出按钮（使用 data-testid）
     await page.getByTestId("logout-button").click();
 
-    // 步骤 5：验证是否重定向
+    // 步骤 5：验证是否重定向（可能到首页或登录页）
+    // 登出后应用会自动跳转，可能是首页 / 或登录页 /auth/login
     await page.waitForLoadState("domcontentloaded");
+
+    // 验证 URL 是首页或登录页之一
     const currentUrl = page.url();
     expect(
       currentUrl.endsWith("/") || currentUrl.includes("/auth/login"),
     ).toBeTruthy();
 
-    // 步骤 6：验证 token 是否已清除
+    // 步骤 6：验证 localStorage 中的 token 是否已清除
     const token = await page.evaluate(() => {
       try {
         return localStorage.getItem("access_token");
@@ -562,56 +557,78 @@ test.describe("用户认证流程", () => {
       }
     });
 
+    // 断言：token 应该为空（登出成功会清除 token）
     expect(token).toBeNull();
   });
 
   /**
    * ====================================================================
-   * ✅ 测试用例 3：受保护路由 - 未登录时重定向
+   * ✅ 测试用例 4：受保护路由 - 未登录时重定向
    * ====================================================================
    *
    * 测试目标：
    * - 验证未登录用户访问受保护页面时会被重定向到登录页
    *
+   * 什么是受保护路由？
+   * - 需要登录才能访问的页面
+   * - 通常用于用户仪表盘、个人设置、管理后台等
+   * - 在代码中，这些路由用 <ProtectedRoute> 组件包裹
+   *
+   * 为什么这个测试很重要？
+   * - 防止未授权用户访问敏感页面
+   * - 是应用安全的基础防护
+   * - 确保路由守卫（Route Guard）正常工作
+   *
    * 测试步骤：
-   * 1. 确保用户未登录（beforeEach 已清除存储）
-   * 2. 尝试直接访问受保护页面
+   * 1. 确保用户未登录（清除存储）
+   * 2. 尝试直接访问受保护页面（/dashboard）
    * 3. 验证是否自动重定向到登录页
    *
-   * 优化点：
-   * - beforeEach 自动清除登录状态
-   * - 不需要手动调用 clearBrowserStorage
+   * 本项目中的受保护页面：
+   * - /dashboard（仪表盘）
+   * - /mdx/editor（MDX 编辑器）
+   * - 未来可能还有：/profile、/settings 等
    */
   test("受保护路由 - 未登录时应该重定向到登录页", async ({ page }) => {
-    // beforeEach 已经清除了浏览器存储，确保未登录状态
-    
-    // 尝试直接访问受保护页面
+    // 步骤 1：确保用户未登录
+    // clearBrowserStorage() 会清除所有登录凭证
+    await clearBrowserStorage(page);
+
+    // 步骤 2：尝试直接访问受保护页面
     await page.goto("/dashboard");
 
-    // 验证是否被重定向到登录页
+    // 步骤 3：验证是否被重定向到登录页
+    // waitForURL() 会等待 URL 变化，如果超时则测试失败
     await expect(page).toHaveURL(/\/auth\/login/, { timeout: 5000 });
   });
 
   /**
    * ====================================================================
-   * ✅ 测试用例 4：受保护路由 - 登录后可访问
+   * ✅ 测试用例 5：受保护路由 - 登录后可访问
    * ====================================================================
    *
    * 测试目标：
    * - 验证已登录用户可以正常访问受保护页面
    *
    * 测试步骤：
-   * 1. 登录用户
-   * 2. 访问受保护页面
-   * 3. 验证页面成功加载
+   * 1. 先注册并登录
+   * 2. 访问受保护页面（/dashboard）
+   * 3. 验证页面成功加载（URL 保持不变）
    * 4. 等待页面完全加载
    *
-   * 优化点：
-   * - 不需要注册新用户
-   * - 直接使用已存在的测试用户
+   * 为什么这个测试很重要？
+   * - 确保登录功能正常工作
+   * - 确保用户能够访问他们应该访问的页面
+   * - 验证整个认证流程的完整性
+   *
+   * waitForLoadState() 是什么？
+   * - Playwright 方法，等待页面达到特定的加载状态
+   * - 'networkidle': 等待网络请求全部完成（至少 500ms 无新请求）
+   * - 确保页面真的加载完成了，而不是卡在加载中
    */
   test("受保护路由 - 登录后应该可以访问", async ({ page }) => {
-    // 步骤 1：登录用户
+    // 步骤 1：先注册并登录
+    await registerUser(page, testUser);
     await loginUser(page, testUser);
 
     // 步骤 2：访问受保护页面
@@ -621,7 +638,13 @@ test.describe("用户认证流程", () => {
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 5000 });
 
     // 步骤 4：等待页面加载完成
+    // 'networkidle' 表示等待所有网络请求完成
+    // 这确保页面真的加载成功了
     await page.waitForLoadState("networkidle");
+
+    // 额外验证：检查页面上是否有仪表盘的特征元素
+    // 例如：标题、导航栏、内容区域等
+    // 这里可以根据实际页面内容添加更多验证
   });
 });
 
@@ -647,7 +670,6 @@ test.describe("用户认证流程", () => {
  *
  * 3. 测试最佳实践
  *    - 使用辅助函数减少重复代码
- *    - 使用 beforeAll/afterAll 优化测试性能
  *    - 使用 beforeEach 确保测试隔离
  *    - 使用唯一标识符避免数据冲突（Date.now()）
  *    - 使用 try-catch 处理潜在错误
@@ -655,58 +677,22 @@ test.describe("用户认证流程", () => {
  *    - 编写清晰的测试描述（中文命名）
  *
  * 4. 认证流程的完整测试
- *    - 用户注册：一次注册，多个测试共用
+ *    - 用户注册：填表 → 提交 → 验证重定向
  *    - 用户登录：填表 → 提交 → 验证 token
  *    - 用户登出：点击按钮 → 验证清除状态
  *    - 路由保护：未登录重定向 + 登录后放行
  *
- * 5. Playwright 测试结构优化
- *    - test.beforeAll(): 一次性设置（注册用户）
- *    - test.beforeEach(): 确保测试隔离（清除登录状态）
+ * 5. Playwright 测试结构
+ *    - test.describe(): 创建测试套件（分组）
+ *    - test.beforeEach(): 测试前的准备工作
  *    - test(): 定义具体的测试用例
- *    - test.afterAll(): 一次性清理（删除测试用户）
  *    - expect(): 验证测试结果
  *
- * 6. 性能优化
- *    - 减少重复的注册操作（从 N 次 → 1 次）
- *    - 减少数据库操作和网络请求
- *    - 加快测试执行速度
- *    - 保持测试隔离性和可靠性
- *
- * 7. 两种测试模式对比
- *
- *    【旧模式：每个测试独立用户】
- *    ✅ 优点：
- *       - 测试完全独立，互不影响
- *       - 每个测试都是完整的场景
- *    ❌ 缺点：
- *       - 重复注册/删除用户，浪费时间
- *       - 大量网络请求，测试较慢
- *       - 数据库压力较大
- *
- *    【新模式：共享一个用户】
- *    ✅ 优点：
- *       - 只需注册一次，测试更快
- *       - 减少网络请求和数据库操作
- *       - 更符合真实用户行为
- *       - 节省资源
- *    ⚠️ 注意：
- *       - 需要确保测试之间状态清理
- *       - beforeEach 清除登录状态很重要
- *       - 如果某个测试修改了用户数据，可能影响其他测试
- *
- * 8. 何时使用哪种模式？
- *
- *    使用【独立用户模式】的场景：
- *    - 测试会修改用户数据（如修改密码、更新个人信息）
- *    - 测试涉及用户权限变化
- *    - 需要测试多用户交互
- *
- *    使用【共享用户模式】的场景：
- *    - 只读操作（如查看页面、导航）
- *    - 认证流程测试（登录/登出）
- *    - 路由保护测试
- *    - 需要快速执行的冒烟测试（Smoke Tests）
+ * 6. 调试技巧
+ *    - 使用 page.pause() 暂停测试，手动检查
+ *    - 使用 page.screenshot() 截图保存状态
+ *    - 使用 --debug 参数启动调试模式
+ *    - 查看 Playwright Inspector 工具
  *
  * ========================================================================
  * 🚀 下一步：运行测试
@@ -730,7 +716,7 @@ test.describe("用户认证流程", () => {
  *    $ npx playwright show-report
  *
  * 3. 只运行某个测试：
- *    $ npx playwright test -g "登录流程"
+ *    $ npx playwright test -g "注册流程"
  *
  * 4. 查看测试覆盖率：
  *    $ npx playwright test --reporter=html
@@ -743,7 +729,6 @@ test.describe("用户认证流程", () => {
  * - Playwright 中文文档：https://playwright.bootcss.com/
  * - E2E 测试最佳实践：https://testingjavascript.com/
  * - Playwright 选择器指南：https://playwright.dev/docs/selectors
- * - 测试生命周期钩子：https://playwright.dev/docs/api/class-test#test-before-all
  *
  * ========================================================================
  */
