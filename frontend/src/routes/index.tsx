@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { ProtectedRoute } from "@/components/common";
+// import { ProtectedRoute } from "@/components/common";
 import Layout from "@/Layout";
 
 // 导入各模块路由
@@ -12,7 +12,6 @@ import { mdxRoutes } from "./MDX";
 import Home from "@/pages/HomePage";
 import About from "@/pages/About";
 import TestHighlight from "@/pages/TestHighlight";
-import MDXEditor from "@/pages/mdx/MDXEditor";
 import NotFound from "@/pages/NotFound";
 
 /**
@@ -41,36 +40,11 @@ export default function AppRoutes() {
         <Route path="blog">{blogRoutes}</Route>
 
         {/* 仪表盘模块路由 - 需要登录 */}
-        <Route
-          path="dashboard"
-          element={
-            <ProtectedRoute>
-              <div>{dashboardRoutes}</div>
-            </ProtectedRoute>
-          }
-        />
-        {/* 认证模块路由,兼容模式 */}
-        {authRoutes}
+        <Route path="dashboard">{dashboardRoutes}</Route>
 
         {/* MDX 模块路由 - 需要登录 */}
-        <Route
-          element={
-            <ProtectedRoute>
-              <div>{mdxRoutes}</div>
-            </ProtectedRoute>
-          }
-        />
+        <Route path="mdx">{mdxRoutes}</Route>
       </Route>
-
-      {/* MDX 编辑器 - 全屏布局 - 需要登录 */}
-      <Route
-        path="mdx-editor"
-        element={
-          <ProtectedRoute>
-            <MDXEditor />
-          </ProtectedRoute>
-        }
-      />
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />

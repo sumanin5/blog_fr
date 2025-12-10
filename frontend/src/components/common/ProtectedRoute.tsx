@@ -41,7 +41,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     // 如果没登录，使用 <Navigate /> 组件重定向到登录页
     // replace: true 表示替换当前历史记录，防止用户点击“后退”按钮回到这个受保护页面
     // state: 把当前路径传过去，登录成功后可以跳回来
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/auth/login" replace state={{ from: location }} />;
   }
 
   // 4. 如果已登录，放行！渲染子组件

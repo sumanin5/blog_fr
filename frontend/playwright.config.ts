@@ -15,13 +15,13 @@ export default defineConfig({
   // E2E 测试文件目录
   testDir: "./tests/e2e",
   /* Run tests in files in parallel */
-  fullyParallel: true,
+  fullyParallel: false, // 禁用完全并行，避免认证测试的竞态条件
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* 使用单个 worker 确保测试按顺序执行 */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -51,10 +51,11 @@ export default defineConfig({
       use: { ...devices["Desktop Firefox"] },
     },
 
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
+    // WebKit 在 WSL 环境中缺少依赖库，暂时禁用
+    // {
+    //   name: "webkit",
+    //   use: { ...devices["Desktop Safari"] },
+    // },
 
     /* Test against mobile viewports. */
     // {

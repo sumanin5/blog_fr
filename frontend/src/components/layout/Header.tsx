@@ -228,6 +228,7 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  data-testid="user-menu-trigger"
                   variant="ghost"
                   size="icon"
                   className="rounded-full transition-transform hover:scale-110"
@@ -255,7 +256,11 @@ export function Header() {
                   设置
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-red-500">
+                <DropdownMenuItem
+                  data-testid="logout-button"
+                  onClick={logout}
+                  className="text-red-500"
+                >
                   退出登录
                 </DropdownMenuItem>
               </DropdownMenuContent>
