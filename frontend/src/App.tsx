@@ -1,9 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-// 注意: 默认导出不需要加花括号 {}
-import AuthRoutes from "@/routes/AuthRoutes";
-import AppRoutes from "@/routes/AppRoutes";
+import { AuthProvider } from "@/contexts";
+import AppRoutes from "@/routes";
 
 function App() {
   return (
@@ -15,35 +13,19 @@ function App() {
           <Routes>
             {/*
               -------------------------------------------------------------------
-              1. 认证模块 (Auth Module)
+              主应用路由 (包含认证和业务页面)
               -------------------------------------------------------------------
-              将所有以 /auth 开头的路径委托给 AuthRoutes 组件处理。
-              例如: /auth/login, /auth/register
-            */}
-            <Route path="/auth/*" element={<AuthRoutes />} />
+              所有路由都通过 AppRoutes 统一处理，包括：
+              - /auth/login - 登录页面
+              - /auth/register - 注册页面
+              - / - 首页
+              - /blog - 博客列表
+              - 其他所有业务页面
 
-            {/*
-              兼容性重定向 (可选)
-              如果你的代码里还有 to="/login" 的旧链接，这里可以做一个转发，
-              保证用户访问 /login 时自动跳到新的 /auth/login
-            */}
-            <Route
-              path="/login"
-              element={<Navigate to="/auth/login" replace />}
-            />
-            <Route
-              path="/register"
-              element={<Navigate to="/auth/register" replace />}
-            />
-
-            {/*
-              -------------------------------------------------------------------
-              2. 主应用模块 (App Module)
-              -------------------------------------------------------------------
-              path="/*" 是一个通配符匹配。
-              如果上面的 /auth/* 没有匹配到，React Router 就会尝试匹配这个。
-              这里我们将剩余的所有路径都交给 AppRoutes 处理。
-              (AppRoutes 内部会处理 ProtectedRoute 和 404)
+              AppRoutes 内部会处理：
+              - ProtectedRoute（受保护的页面）
+              - Layout 包装（统一的 Header/Footer/背景）
+              - 根据路由条件显示/隐藏 Header 和 Footer
             */}
             <Route path="/*" element={<AppRoutes />} />
           </Routes>

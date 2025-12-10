@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Check, Copy as CopyIcon } from "lucide-react"; // ← 导入图标
 
 type Props = React.HTMLAttributes<HTMLPreElement>;
 
@@ -21,13 +23,24 @@ export function CodeBlock(props: Props) {
   return (
     <div className="code-wrapper relative my-4">
       <div className="pointer-events-none absolute inset-0 rounded-lg border border-transparent" />
-      <button
-        type="button"
+      <Button
         onClick={handleCopy}
-        className="sticky top-[clamp(12px,24vh,120px)] z-10 float-right mr-2 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white shadow hover:bg-black/75 focus:ring-2 focus:ring-white/70 focus:outline-none"
+        size="sm"
+        variant="outline"
+        className="sticky top-[clamp(12px,24vh,120px)] z-10 float-right mr-2 cursor-pointer gap-1 transition-all duration-200"
       >
-        {copied ? "Copied" : "Copy"}
-      </button>
+        {copied ? (
+          <>
+            <Check className="h-4 w-4" />
+            Copied!
+          </>
+        ) : (
+          <>
+            <CopyIcon className="h-4 w-4" />
+            Copy
+          </>
+        )}
+      </Button>
       <span className="absolute top-2 left-2 z-10 rounded-md bg-black/60 px-2 py-1 text-xs font-semibold text-white shadow">
         {language}
       </span>

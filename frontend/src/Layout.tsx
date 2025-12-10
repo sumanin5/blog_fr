@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { Header, Footer } from "@/components/layout";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeBackground } from "@/components/common/ThemeBackground";
 
 /**
  * 🏗️ 主布局组件
@@ -8,7 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
  * 职责：
  * 1. 提供整体页面结构（Header + Main + Footer）
  * 2. 确保页脚始终在底部（flex 布局）
- * 3. 添加科技感背景渐变
+ * 3. 添加主题背景（通过 ThemeBackground 组件）
  * 4. 集成 Toast 通知系统
  *
  * 结构：
@@ -25,20 +26,15 @@ import { Toaster } from "@/components/ui/sonner";
  */
 export default function Layout() {
   return (
-    <div className="bg-background flex min-h-screen flex-col font-sans antialiased text-foreground transition-colors duration-300">
+    <div className="text-foreground relative flex min-h-screen flex-col font-sans antialiased transition-colors duration-300">
+      {/* 主题背景 */}
+      <ThemeBackground />
+
       {/* 页眉 */}
       <Header />
 
       {/* 主内容区域 */}
       <main className="relative flex flex-1 flex-col">
-        {/*
-          🎨 科技感背景渐变
-          - 从左下到右上的渐变
-          - 使用主题色的 5% 透明度
-          - 不阻挡鼠标事件
-        */}
-        <div className="absolute inset-0 bg-linear-to-tr from-primary/5 via-transparent to-secondary/5 pointer-events-none -z-10" />
-
         {/* 页面内容（由路由决定） */}
         <Outlet />
       </main>

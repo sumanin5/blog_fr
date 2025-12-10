@@ -29,10 +29,6 @@ export default function HomePage() {
           Hero 区域 - 主视觉区
           ============================================ */}
       <section className="relative overflow-hidden pt-20 pb-32 md:pt-32 md:pb-48">
-        {/* 背景渐变效果 - 两个模糊的圆形光晕 */}
-        <div className="bg-primary/10 absolute top-0 left-1/2 -z-10 h-[600px] w-[1000px] -translate-x-1/2 rounded-full blur-[120px]" />
-        <div className="bg-secondary/10 absolute right-0 bottom-0 -z-10 h-[600px] w-[800px] rounded-full blur-[100px]" />
-
         {/* 主内容容器 */}
         <div className="container mx-auto flex max-w-5xl flex-col items-center space-y-8 px-4 text-center md:px-6">
           {/* 状态徽章 */}
@@ -142,11 +138,7 @@ export default function HomePage() {
           CTA 行动召唤区域
           ============================================ */}
       <section className="container mx-auto px-4 py-24 md:px-6">
-        <div className="border-primary/20 from-primary/10 via-background to-secondary/10 relative overflow-hidden rounded-3xl border bg-gradient-to-br px-6 py-16 text-center md:px-16 md:py-24">
-          {/* 装饰性渐变球 */}
-          <div className="bg-primary/20 absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full blur-[80px]" />
-          <div className="bg-secondary/20 absolute bottom-0 left-0 -mb-10 -ml-10 h-64 w-64 rounded-full blur-[80px]" />
-
+        <div className="border-primary/20 bg-card/50 relative overflow-hidden rounded-3xl border px-6 py-16 text-center backdrop-blur-sm md:px-16 md:py-24">
           {/* CTA 内容 */}
           <div className="relative z-10 mx-auto max-w-3xl space-y-6">
             <h2 className="text-3xl font-bold tracking-tight md:text-5xl">

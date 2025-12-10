@@ -60,25 +60,9 @@ export function ThemeProvider({
 
     // 2. 封装「更新页面主题类名」的逻辑（抽成函数，方便复用）
     const updateThemeClass = () => {
-      // 🎨 添加过渡动画
-      if (enableTransitions) {
-        // 临时禁用所有过渡效果（避免初始化时的闪烁）
-        const css = document.createElement("style");
-        css.textContent = `
-          * {
-            transition: background-color 0.3s ease,
-                        color 0.3s ease,
-                        border-color 0.3s ease,
-                        box-shadow 0.3s ease !important;
-          }
-        `;
-        document.head.appendChild(css);
-
-        // 100ms 后移除样式（让过渡生效）
-        setTimeout(() => {
-          document.head.removeChild(css);
-        }, 100);
-      }
+      // 🎨 性能优化：移除全局过渡注入，改用 CSS 控制
+      // 旧方案会导致全页面重排，造成 500ms+ 卡顿
+      // 新方案：只更新类名，让 CSS 中的 transition 自然生效
 
       root.classList.remove("light", "dark");
       if (theme === "system") {

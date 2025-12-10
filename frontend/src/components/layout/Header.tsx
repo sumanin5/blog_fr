@@ -72,8 +72,8 @@ export function Header() {
     );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
-      <div className="container flex h-14 max-w-screen-2xl items-center mx-auto px-4">
+    <header className="border-border/40 bg-background/80 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur transition-colors duration-300">
+      <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* ============================================
             移动端导航 (Mobile Nav)
             ============================================ */}
@@ -92,11 +92,11 @@ export function Header() {
               </SheetDescription>
 
               {/* Logo */}
-              <div className="flex items-center gap-2 mb-8">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                  <PenTool className="h-5 w-5 text-primary" />
+              <div className="mb-8 flex items-center gap-2">
+                <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
+                  <PenTool className="text-primary h-5 w-5" />
                 </div>
-                <span className="font-bold font-mono">MY_BLOG</span>
+                <span className="font-mono font-bold">MY_BLOG</span>
               </div>
 
               {/* 导航链接 */}
@@ -118,15 +118,15 @@ export function Header() {
               </nav>
 
               {/* 移动端主题切换 */}
-              <div className="mt-8 pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-2">主题设置</p>
+              <div className="mt-8 border-t pt-4">
+                <p className="text-muted-foreground mb-2 text-sm">主题设置</p>
                 <div className="flex gap-2">
                   <Button
                     variant={theme === "light" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setTheme("light")}
                   >
-                    <Sun className="h-4 w-4 mr-1" />
+                    <Sun className="mr-1 h-4 w-4" />
                     浅色
                   </Button>
                   <Button
@@ -134,7 +134,7 @@ export function Header() {
                     size="sm"
                     onClick={() => setTheme("dark")}
                   >
-                    <Moon className="h-4 w-4 mr-1" />
+                    <Moon className="mr-1 h-4 w-4" />
                     深色
                   </Button>
                   <Button
@@ -142,7 +142,7 @@ export function Header() {
                     size="sm"
                     onClick={() => setTheme("system")}
                   >
-                    <Monitor className="h-4 w-4 mr-1" />
+                    <Monitor className="mr-1 h-4 w-4" />
                     系统
                   </Button>
                 </div>
@@ -154,33 +154,33 @@ export function Header() {
         {/* ============================================
             桌面端 Logo + 导航
             ============================================ */}
-        <div className="mr-4 hidden md:flex items-center">
+        <div className="mr-4 hidden items-center gap-8 md:flex">
           {/* Logo - 可点击跳转到首页 */}
           <div
-            className="mr-6 flex items-center space-x-2 cursor-pointer"
+            className="flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-80"
             onClick={() => navigate("/")}
           >
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <PenTool className="h-5 w-5 text-primary" />
+            <div className="bg-primary/10 relative flex h-8 w-8 items-center justify-center rounded-lg">
+              <PenTool className="text-primary h-5 w-5" />
             </div>
-            <span className="hidden font-bold sm:inline-block tracking-tight font-mono">
+            <span className="hidden font-mono text-lg font-bold tracking-tight sm:inline-block">
               MY_BLOG
             </span>
           </div>
 
           {/* 导航链接 - 科技风格 */}
-          <nav className="flex items-center space-x-6 text-sm font-medium">
+          <nav className="flex items-center gap-1">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`transition-colors hover:text-primary font-mono ${
+                className={`relative rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
                   isActive(link.path)
-                    ? "text-foreground font-bold"
-                    : "text-foreground/60"
+                    ? "text-foreground bg-primary/10"
+                    : "text-foreground/60 hover:text-foreground hover:bg-muted/50"
                 }`}
               >
-                {link.code}
+                {link.label}
               </Link>
             ))}
           </nav>
@@ -188,25 +188,25 @@ export function Header() {
 
         {/* 移动端 Logo */}
         <div
-          className="flex md:hidden cursor-pointer"
+          className="flex cursor-pointer md:hidden"
           onClick={() => navigate("/")}
         >
-          <PenTool className="h-6 w-6 mr-2 text-primary" />
-          <span className="font-bold font-mono">MY_BLOG</span>
+          <PenTool className="text-primary mr-2 h-6 w-6" />
+          <span className="font-mono font-bold">MY_BLOG</span>
         </div>
 
         {/* ============================================
             右侧功能区
             ============================================ */}
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <div className="flex items-center gap-2">
           {/* 搜索框 (桌面端) */}
-          <div className="hidden sm:block">
+          <div className="hidden sm:flex">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
               <input
                 type="search"
-                placeholder="搜索..."
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 pl-8 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-48 lg:w-64"
+                placeholder="搜索文章..."
+                className="border-input bg-background/50 focus-visible:border-primary focus-visible:ring-ring flex h-9 w-48 rounded-md border px-3 py-1 pl-8 text-sm shadow-sm transition-all focus-visible:ring-1 focus-visible:outline-none lg:w-64"
               />
             </div>
           </div>
@@ -216,15 +216,12 @@ export function Header() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(getNextTheme())}
-            className="hidden md:flex"
+            className="hidden rounded-full md:flex"
             title={`当前: ${theme === "dark" ? "深色" : theme === "light" ? "浅色" : "跟随系统"}`}
           >
             {themeIcon}
             <span className="sr-only">切换主题</span>
           </Button>
-
-          {/* 分隔线 */}
-          <div className="mx-2 h-4 w-px bg-border/50 hidden md:block" />
 
           {/* 用户菜单 */}
           {user ? (
@@ -265,12 +262,12 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <>
-              <Link to="/login">
-                <Button variant="ghost" size="sm">
+              <Link to="/auth/login">
+                <Button variant="ghost" size="sm" className="hidden sm:flex">
                   登录
                 </Button>
               </Link>
-              <Link to="/register">
+              <Link to="/auth/register">
                 <Button size="sm">注册</Button>
               </Link>
             </>

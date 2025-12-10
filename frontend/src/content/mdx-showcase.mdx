@@ -359,6 +359,27 @@ const asyncHandler = (fn: AsyncHandler): AsyncHandler => {
 };
 ```
 
+### Scala 示例
+
+```scala
+sealed trait Tree[+A]
+case object Leaf extends Tree[Nothing]
+case class Branch[A](value: A, left: Tree[A], right: Tree[A]) extends Tree[A]
+
+object TreeOps {
+  // 纯函数式的树遍历
+  def depth[A](t: Tree[A]): Int = t match {
+    case Leaf => 0
+    case Branch(_, l, r) => 1 + (depth(l) max depth(r))
+  }
+
+  def main(args: Array[String]): Unit = {
+    val tree = Branch(1, Branch(2, Leaf, Leaf), Leaf)
+    println(s"Tree Depth: ${depth(tree)}")
+  }
+}
+```
+
 ### JavaScript 示例
 
 ```javascript
@@ -679,17 +700,17 @@ import { Alert } from "@/components/ui/alert";
 
 ### 按钮组件
 
-<div className="my-4 flex flex-wrap gap-2">
-  <Button>默认按钮</Button>
-  <Button variant="secondary">次要按钮</Button>
-  <Button variant="outline">轮廓按钮</Button>
-  <Button variant="ghost">幽灵按钮</Button>
-  <Button variant="destructive">危险按钮</Button>
+<div className="my-6 flex flex-wrap gap-3">
+  <Button className="transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">默认按钮</Button>
+  <Button variant="secondary" className="transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">次要按钮</Button>
+  <Button variant="outline" className="transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">轮廓按钮</Button>
+  <Button variant="ghost" className="transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">幽灵按钮</Button>
+  <Button variant="destructive" className="transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">危险按钮</Button>
 </div>
 
 ### 卡片组件
 
-<Card className="my-4">
+<Card className="my-6 transition-all duration-500 ease-out shadow-sm hover:shadow-lg hover:border-primary/30 hover:-translate-y-1">
   <CardContent className="p-6">
     <h3 className="mb-2 text-xl font-bold">这是一个卡片组件</h3>
     <p className="text-muted-foreground">
@@ -700,7 +721,7 @@ import { Alert } from "@/components/ui/alert";
 
 ### 提示组件
 
-<Alert className="my-4 grid grid-cols-[auto_1fr] items-start gap-3">
+<Alert className="my-6 grid grid-cols-[auto_1fr] items-start gap-3 transition-all duration-500 ease-out shadow-sm hover:shadow-lg hover:border-primary/30 hover:-translate-y-1">
   <span className="text-2xl">💡</span>
   <div className="space-y-1">
     <h4 className="font-semibold leading-6">提示</h4>

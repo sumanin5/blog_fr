@@ -51,6 +51,8 @@ origins = [
     "http://127.0.0.1:5173",
     "http://localhost:5174",  # Vite 开发服务器
     "http://127.0.0.1:5174",  # Vite 开发服务器
+    "http://localhost:4173",  # vite 生产服务器
+    "http://127.0.0.1:4173",  # vite 生产服务器
 ]
 
 app.add_middleware(
