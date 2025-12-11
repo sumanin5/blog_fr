@@ -3,3 +3,4 @@
  */
 
 export { MDXProvider } from "./MDXProvider";
+export { TableOfContents } from "./TableOfContents";

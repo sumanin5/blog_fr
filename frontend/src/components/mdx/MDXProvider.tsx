@@ -1,6 +1,6 @@
 import { MDXProvider as BaseMDXProvider } from "@mdx-js/react";
 import type { ReactNode } from "react";
-import { components } from "./mdx-components-clean";
+import { components } from "./mdx-components";
 
 /**
  * 📦 MDX Provider 组件
