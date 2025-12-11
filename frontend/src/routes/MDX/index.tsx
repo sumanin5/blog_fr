@@ -2,6 +2,7 @@ import { Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/common";
 import MDXShowcase from "@/pages/mdx/MDXShowcase";
 import MDXEditor from "@/pages/mdx/MDXEditor";
+import MDXTestClean from "@/pages/mdx/MDXTestClean";
 
 /**
  * MDX 模块路由
@@ -14,6 +15,7 @@ export const mdxRoutes = (
     <Route index element={<Navigate to="showcase" replace />} />
 
     <Route path="showcase" element={<MDXShowcase />} />
+    <Route path="test-clean" element={<MDXTestClean />} />
     <Route
       path="editor"
       element={

@@ -345,111 +345,112 @@ test.describe("用户认证流程", () => {
    * 2. 调用后端 API 删除所有测试用户
    * 3. 如果失败，打印警告但不中断
    */
-  test.afterAll(async ({ browser }) => {
-    // 创建一个新的浏览器上下文用于清理
-    const context = await browser.newContext();
-    const page = await context.newPage();
+  test.afterAll(async ({ request }) => {
+    console.log(`\n🧹 开始清理测试用户...`);
 
     try {
-      console.log(`\n🧹 开始清理测试用户...`);
-
       // 步骤 1：使用管理员账号登录获取 token
-      const adminToken = await page.evaluate(async () => {
-        try {
-          const formData = new URLSearchParams();
-          formData.append("username", "admin");
-          formData.append("password", "1234");
+      console.log("[清理] 尝试管理员登录...");
+      const loginResponse = await request.post(
+        "http://localhost:8000/users/login",
+        {
+          form: {
+            username: "admin",
+            password: "1234",
+          },
+        },
+      );
 
-          const response = await fetch("http://localhost:8000/users/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: formData.toString(),
-          });
+      if (!loginResponse.ok()) {
+        const errorText = await loginResponse.text();
+        console.error("❌ 无法获取管理员 token，清理失败");
+        console.error(`登录响应状态: ${loginResponse.status()}`);
+        console.error(`错误信息: ${errorText}`);
+        console.error("请确保：");
+        console.error("  1. 后端服务正在运行（http://localhost:8000）");
+        console.error("  2. 管理员账号存在（用户名: admin，密码: 1234）");
+        console.error(
+          "  3. 数据库已初始化（运行 docker-compose up 会自动初始化）\n",
+        );
+        return;
+      }
 
-          if (response.ok) {
-            const data = await response.json();
-            return data.access_token;
-          }
-          return null;
-        } catch {
-          return null;
-        }
-      });
+      const loginData = await loginResponse.json();
+      const adminToken = loginData.access_token;
+      console.log("[清理] 管理员登录成功");
 
-      if (adminToken) {
-        // 步骤 2：获取所有用户列表
-        const users = await page.evaluate(async (token) => {
+      // 步骤 2：获取所有用户列表
+      console.log("[清理] 获取所有用户列表...");
+      const usersResponse = await request.get(
+        "http://localhost:8000/users/?limit=1000",
+        {
+          headers: {
+            Authorization: `Bearer ${adminToken}`,
+          },
+        },
+      );
+
+      if (!usersResponse.ok()) {
+        console.error("[清理] 获取用户列表失败");
+        return;
+      }
+
+      const usersData = await usersResponse.json();
+      const users = usersData.users || [];
+
+      // 步骤 3：过滤并删除所有测试用户
+      const testUsers = users.filter((user: { username: string }) =>
+        user.username.startsWith("testuser_"),
+      );
+
+      if (testUsers.length > 0) {
+        console.log(`🗑️  发现 ${testUsers.length} 个测试用户，开始删除...`);
+        let deletedCount = 0;
+        let failedCount = 0;
+
+        for (const user of testUsers) {
           try {
-            const response = await fetch(
-              "http://localhost:8000/users/?limit=1000",
+            const deleteResponse = await request.delete(
+              `http://localhost:8000/users/${(user as { id: string }).id}`,
               {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                  Authorization: `Bearer ${adminToken}`,
                 },
               },
             );
 
-            if (response.ok) {
-              const data = await response.json();
-              return data.users || [];
+            if (deleteResponse.ok()) {
+              deletedCount++;
+              console.log(
+                `  ✓ 已删除: ${(user as { username: string }).username}`,
+              );
+            } else {
+              failedCount++;
+              console.warn(
+                `  ✗ 删除失败: ${(user as { username: string }).username}`,
+              );
             }
-            return [];
-          } catch {
-            return [];
-          }
-        }, adminToken);
-
-        // 步骤 3：过滤并删除所有测试用户
-        const testUsers = users.filter((user: { username: string }) =>
-          user.username.startsWith("testuser_"),
-        );
-
-        if (testUsers.length > 0) {
-          let deletedCount = 0;
-          for (const user of testUsers) {
-            const success = await page.evaluate(
-              async (params) => {
-                try {
-                  const response = await fetch(
-                    `http://localhost:8000/users/${params.userId}`,
-                    {
-                      method: "DELETE",
-                      headers: {
-                        Authorization: `Bearer ${params.token}`,
-                      },
-                    },
-                  );
-                  return response.ok;
-                } catch {
-                  return false;
-                }
-              },
-              {
-                userId: (user as { id: string }).id,
-                token: adminToken,
-              },
+          } catch (error) {
+            failedCount++;
+            console.warn(
+              `  ✗ 删除用户时出错: ${(user as { username: string }).username}`,
+              error,
             );
-
-            if (success) deletedCount++;
           }
+        }
 
-          console.log(
-            `✅ 已清理 ${deletedCount}/${testUsers.length} 个测试用户\n`,
-          );
+        if (failedCount === 0) {
+          console.log(`✅ 成功清理所有 ${deletedCount} 个测试用户\n`);
         } else {
-          console.log(`ℹ️  没有需要清理的测试用户\n`);
+          console.warn(
+            `⚠️  清理完成：成功 ${deletedCount} 个，失败 ${failedCount} 个\n`,
+          );
         }
       } else {
-        console.warn("⚠️  无法获取管理员权限，跳过清理\n");
+        console.log(`ℹ️  没有需要清理的测试用户\n`);
       }
     } catch (error) {
       console.warn("⚠️  清理测试用户时出错:", error);
-    } finally {
-      // 关闭临时的页面和上下文
-      await page.close();
-      await context.close();
     }
   });
 
@@ -584,7 +585,7 @@ test.describe("用户认证流程", () => {
    */
   test("受保护路由 - 未登录时应该重定向到登录页", async ({ page }) => {
     // beforeEach 已经清除了浏览器存储，确保未登录状态
-    
+
     // 尝试直接访问受保护页面
     await page.goto("/dashboard");
 
