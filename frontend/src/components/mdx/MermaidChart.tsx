@@ -71,8 +71,10 @@ export function MermaidChart({ chart, id }: MermaidChartProps) {
           if (svgEl) {
             svgEl.setAttribute("width", "100%");
             svgEl.setAttribute("height", "auto");
-            svgEl.style.maxWidth = "900px";
-            svgEl.style.minWidth = "320px";
+            svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+            svgEl.style.display = "block";
+            svgEl.style.maxWidth = "100%";
+            svgEl.style.minWidth = "min(90vw, 640px)";
           }
         } catch (error) {
           console.error("Mermaid rendering error:", error);
@@ -97,14 +99,14 @@ export function MermaidChart({ chart, id }: MermaidChartProps) {
         ref={elementRef}
         className="mermaid-chart max-w-full overflow-x-auto"
         style={{
-          minHeight: "120px",
-          minWidth: "320px",
-          maxWidth: "960px",
-          width: "100%",
+          minHeight: "140px",
+          minWidth: "min(92vw, 520px)",
+          maxWidth: "1080px",
+          width: "min(100%, 1080px)",
           backgroundColor: "#f5f5f5",
           border: "1px solid #e5e7eb",
           borderRadius: "12px",
-          padding: "16px",
+          padding: "20px",
           boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
         }}
       />
