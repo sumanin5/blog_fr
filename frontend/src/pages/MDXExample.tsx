@@ -8,11 +8,11 @@ import ExampleContent from "@/content/example.mdx";
  */
 export default function MDXExample() {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto max-w-4xl px-4 py-8">
       {/* MDX Provider 提供自定义组件样式 */}
       <MDXProvider>
         {/* 渲染 MDX 内容 */}
-        <article className="prose prose-neutral dark:prose-invert max-w-none">
+        <article className="prose max-w-none">
           <ExampleContent />
         </article>
       </MDXProvider>

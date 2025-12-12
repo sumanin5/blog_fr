@@ -8,7 +8,7 @@
  * 它通过以下流程工作：
  *
  * 1. 页面挂载时，自动扫描DOM中的所有标题元素（h1-h6）
- * 2. 读取由 rehype-slug 插件自动生成的 ID
+ * 2. 为没有ID的标题自动生成唯一ID
  * 3. 构建标题列表，记录级别和位置
  * 4. 设置展开/折叠状态（只展开H1，其他默认折叠）
  * 5. 监听页面滚动，实时高亮当前可见的标题
@@ -62,11 +62,9 @@ interface HeadingItem {
  * 组件的Props定义
  *
  * @param className - 自定义CSS类，用于覆盖默认样式
- * @param contentSelector - 内容区域的选择器，默认为 "article"
  */
 interface TableOfContentsProps {
   className?: string;
-  contentSelector?: string;
 }
 
 /**
@@ -86,10 +84,7 @@ interface TableOfContentsProps {
  * 3. IntersectionObserver 监听滚动 → 实时更新activeHeading
  * 4. 用户交互 → toggleExpand/handleHeadingClick
  */
-export function TableOfContents({
-  className,
-  contentSelector = "article",
-}: TableOfContentsProps) {
+export function TableOfContents({ className }: TableOfContentsProps) {
   const [headings, setHeadings] = useState<HeadingItem[]>([]);
   const [activeHeading, setActiveHeading] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -99,69 +94,54 @@ export function TableOfContents({
    * 【关键 Effect #1】extractHeadings 和 MutationObserver
    *
    * 【作用】
-   * 自动扫描页面中的所有标题，读取其ID，并建立标题列表。
+   * 自动扫描页面中的所有标题，为其生成ID，并建立标题列表。
    * 同时监听DOM变化，当页面内容更新时自动重新扫描。
    *
    * 【具体过程】
    * 1. 使用 querySelectorAll("h1, h2, h3, h4, h5, h6") 选择所有标题
-   * 2. 遍历每个标题，提取文本内容、级别信息和ID
-   * 3. 仅收集已拥有ID的标题（ID由 rehype-slug 插件在渲染时生成）
+   * 2. 遍历每个标题，提取文本内容和级别信息
+   * 3. 为缺少ID的标题生成唯一ID（基于索引+文本内容）
    * 4. 首次初始化时，只展开H1级别的标题（设置expandedIds）
    * 5. 使用MutationObserver监听DOM结构变化，重新扫描
    *
-   * 【ID来源】
-   * ID 由 rehype-slug 插件在 MDX 编译/渲染阶段自动生成。
-   * 本组件只负责读取，不再修改 DOM 节点的 ID。
+   * 【ID生成策略】
+   * 使用格式：heading-{index}-{清理后的文本}
+   * 例如：heading-0-mdx-完整功能展示
+   * 这样既能确保唯一性，又能保持可读性
    */
   useEffect(() => {
     let isInitialized = false;
 
     const extractHeadings = () => {
-      // 📌 步骤1：获取内容容器
-      const container = document.querySelector(contentSelector);
-
-      // 如果找不到容器（可能还没渲染），直接返回
-      if (!container) return;
-
-      // 📌 步骤2：只选择容器内的标题元素
-      // 优化：在新架构下，我们只读取 DOM，不修改 DOM
-      // ID 应该由 rehype-slug 插件在渲染时自动生成
-      const elements = container.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      // 📌 步骤1：选择所有标题元素
+      const elements = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
       const headingList: HeadingItem[] = [];
 
-      // 📌 步骤3：遍历每个标题元素
-      elements.forEach((element) => {
+      // 📌 步骤2：遍历每个标题元素
+      elements.forEach((element, index) => {
         const htmlElement = element as HTMLElement;
         const text = htmlElement.textContent?.trim() || "";
         const level = parseInt(htmlElement.tagName.charAt(1), 10);
-        const id = htmlElement.id;
 
-        // 📌 步骤4：只收集有 ID 的标题
-        // 既然使用了 rehype-slug，Markdown 内容中的标题一定会有 ID
-        // 没有 ID 的标题可能是页面其他部分的（如侧边栏标题），我们忽略它们
-        if (id) {
-          headingList.push({ id, text, level });
+        // 📌 步骤3：生成或获取ID
+        let id = htmlElement.id;
+        if (!id) {
+          // 生成ID的逻辑：heading-{索引}-{清理文本}
+          id = `heading-${index}-${text
+            .toLowerCase()
+            .replace(/[^\w\u4e00-\u9fff]/g, "") // 保留单词字符和中文
+            .slice(0, 20)}`; // 限制长度
+          htmlElement.id = id; // 将ID写回DOM
         }
+
+        headingList.push({ id, text, level });
       });
 
-      // 📌 步骤5：更新组件状态
-      // 使用函数式更新，并进行简单的比较以避免不必要的重渲染
-      setHeadings((prev) => {
-        // 简单比较长度和第一个/最后一个元素的ID，作为快速检查
-        // 完整比较可能太昂贵，这里假设如果内容变了，通常长度或ID会变
-        if (
-          prev.length === headingList.length &&
-          prev.length > 0 &&
-          prev[0].id === headingList[0].id &&
-          prev[prev.length - 1].id === headingList[headingList.length - 1].id
-        ) {
-          return prev;
-        }
-        return headingList;
-      });
+      // 📌 步骤4：更新组件状态
+      setHeadings(headingList);
 
-      // 📌 步骤6：初始化展开状态（只在第一次执行且找到标题时）
-      if (!isInitialized && headingList.length > 0) {
+      // 📌 步骤5：初始化展开状态（只在第一次执行）
+      if (!isInitialized) {
         const defaultExpanded = new Set<string>();
         // 只展开H1级别的标题，其他默认折叠
         headingList.forEach((heading) => {
@@ -178,25 +158,19 @@ export function TableOfContents({
     extractHeadings();
 
     // 📌 监听DOM变化，重新扫描
-    // 这样当内容动态更新时（例如路由切换或异步加载），目录会自动更新
+    // 这样当内容动态更新时，目录会自动更新
     const observer = new MutationObserver(() => {
-      // 使用 requestAnimationFrame 或 setTimeout 避免在每一帧都执行
-      setTimeout(extractHeadings, 100);
+      setTimeout(extractHeadings, 100); // 延迟100ms避免频繁更新
     });
 
-    // 优先监听内容容器，如果容器不存在（如异步加载），则监听 body
-    const container = document.querySelector(contentSelector);
-    const targetNode = container || document.body;
-
-    observer.observe(targetNode, {
+    observer.observe(document.body, {
       childList: true, // 监听子元素增删
       subtree: true, // 监听整个子树
-      attributes: true, // 监听属性变化（特别是 id 变化）
-      attributeFilter: ["id"], // 只关心 id 属性的变化
+      attributes: false, // 不监听属性变化（避免死循环）
     });
 
     return () => observer.disconnect();
-  }, [contentSelector]);
+  }, []);
 
   /**
    * 【关键 Effect #2】IntersectionObserver - 实时监听滚动位置
@@ -597,117 +571,3 @@ export function TableOfContents({
     </Sheet>
   );
 }
-
-/**
- * ========================================
- * 【总结】TableOfContents 组件工作流程
- * ========================================
- *
- * 【数据流向】
- * DOM 标题 → extractHeadings() → headings 状态 → 目录渲染
- *    ↑
- *    └─ MutationObserver 监听变化
- *
- * 【交互流程】
- *
- * 场景1：用户打开页面
- * 1. useEffect 触发 → extractHeadings() 扫描DOM
- * 2. 提取所有h1-h6标题及其ID
- * 3. setHeadings(headingList) 更新状态
- * 4. 初始化 expandedIds（只展开H1）
- * 5. MutationObserver 开始监听DOM变化
- * 6. IntersectionObserver 开始监听滚动位置
- *
- * 场景2：用户点击展开/折叠按钮
- * 1. 点击按钮 → toggleExpand(id)
- * 2. 更新 expandedIds Set
- * 3. 触发重新渲染
- * 4. shouldShowHeading() 重新计算每个标题的显示状态
- * 5. 受影响的子标题显示或隐藏
- *
- * 场景3：用户点击目录中的标题
- * 1. 点击标题 → handleHeadingClick(id)
- * 2. 获取页面中对应的标题元素
- * 3. scrollIntoView() 平滑滚动
- * 4. 更新URL hash（支持分享和直接链接）
- * 5. 关闭侧边栏（移动端友好）
- *
- * 场景4：用户滚动页面
- * 1. IntersectionObserver 检测元素可见性
- * 2. 标题进入视口时触发回调
- * 3. setActiveHeading(id) 更新当前活跃标题
- * 4. 目录中对应项高亮显示
- *
- * 【关键算法说明】
- *
- * ✅ ID处理策略
- * - 来源：由 rehype-slug 插件自动生成
- * - 优势：遵循标准 MDX 处理流程，无需手动操作 DOM，避免 SSR/CSR 不一致
- *
- * ✅ 展开状态查询算法（shouldShowHeading）
- * - 目的：判断标题是否应该显示
- * - 复杂度：O(n) 在最坏情况下，但实际中O(深度)
- * - 关键：递归检查所有父级，任何父级未展开则隐藏
- * - 例子：要显示H4，需要它的H3、H2、H1都展开
- *
- * ✅ 活跃标题追踪（IntersectionObserver）
- * - 目的：找出用户当前在看的标题
- * - 优势：比滚动监听更高效，不需要计算滚动距离
- * - 配置：threshold和rootMargin调整触发时机
- *
- * 【性能优化】
- *
- * 1. 延迟抖动（Debouncing）
- *    MutationObserver 回调中使用 setTimeout(100ms)
- *    避免DOM频繁变化时多次调用 extractHeadings
- *
- * 2. Set 数据结构
- *    expandedIds 使用 Set 而不是数组
- *    O(1) 的查找时间，避免频繁遍历
- *
- * 3. 有条件的重新渲染
- *    shouldShowHeading 计算只在需要时执行
- *    早期返回优化（H1 直接返回 true）
- *
- * 4. IntersectionObserver
- *    比传统滚动监听更高效
- *    浏览器原生优化
- *
- * 【浏览器API 使用说明】
- *
- * 📍 querySelectorAll
- * - 选择所有匹配选择器的元素
- * - 返回 NodeList（类数组，可用 forEach 遍历）
- *
- * 📍 MutationObserver
- * - 观察 DOM 结构变化
- * - 配置项：childList subtree attributes 等
- * - 用途：动态内容更新时重新扫描标题
- *
- * 📍 IntersectionObserver
- * - 检测元素是否进入视口（可见区域）
- * - threshold：触发比例（0-1）
- * - rootMargin：调整观察区域
- *
- * 📍 scrollIntoView
- * - 将元素滚动到视口内
- * - behavior: "smooth" 提供平滑动画
- * - block: "start" 元素对齐到视口顶部
- *
- * 【无障碍（a11y）支持】
- *
- * ✅ aria-label: 为按钮提供语义描述
- * ✅ aria-describedby: 链接到描述文本
- * ✅ type="button": 明确语义类型
- * ✅ title 属性: 提供标题全文信息
- *
- * 【扩展建议】
- *
- * 💡 可以添加的功能：
- * - 搜索功能：过滤目录项
- * - 快捷键：比如 Ctrl+K 快速打开目录
- * - 复制链接：右键菜单快速复制标题链接
- * - 展开/折叠全部：一键展开或折叠所有
- * - 目录宽度调整：用户可拖动改变侧边栏宽度
- * - 主题适配：暗色/亮色模式自适应（已通过 Tailwind 支持）
- */

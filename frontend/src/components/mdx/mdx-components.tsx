@@ -131,33 +131,51 @@ const hasBlockChild = (children: ReactNode) =>
 export const components: Record<string, FC<MDXComponentProps>> = {
   /* ========== 📑 标题组件系列 ========== */
   // 渐进式标题层级，字体大小和间距递减
-  h1: ({ children }) => (
-    <h1 className="text-foreground mt-10 mb-6 text-4xl font-extrabold tracking-tight lg:text-5xl">
+  h1: ({ children, ...props }) => (
+    <h1
+      className="text-foreground mt-10 mb-6 text-4xl font-extrabold tracking-tight lg:text-5xl"
+      {...props}
+    >
       {children}
     </h1>
   ),
-  h2: ({ children }) => (
-    <h2 className="text-foreground mt-10 mb-4 border-b pb-2 text-3xl font-bold tracking-tight first:mt-0">
+  h2: ({ children, ...props }) => (
+    <h2
+      className="text-foreground mt-10 mb-4 border-b pb-2 text-3xl font-bold tracking-tight first:mt-0"
+      {...props}
+    >
       {children}
     </h2>
   ),
-  h3: ({ children }) => (
-    <h3 className="text-foreground mt-8 mb-3 text-2xl font-semibold tracking-tight">
+  h3: ({ children, ...props }) => (
+    <h3
+      className="text-foreground mt-8 mb-3 text-2xl font-semibold tracking-tight"
+      {...props}
+    >
       {children}
     </h3>
   ),
-  h4: ({ children }) => (
-    <h4 className="text-foreground mt-6 mb-2 text-xl font-semibold tracking-tight">
+  h4: ({ children, ...props }) => (
+    <h4
+      className="text-foreground mt-6 mb-2 text-xl font-semibold tracking-tight"
+      {...props}
+    >
       {children}
     </h4>
   ),
-  h5: ({ children }) => (
-    <h5 className="text-foreground mt-4 mb-2 text-lg font-semibold tracking-tight">
+  h5: ({ children, ...props }) => (
+    <h5
+      className="text-foreground mt-4 mb-2 text-lg font-semibold tracking-tight"
+      {...props}
+    >
       {children}
     </h5>
   ),
-  h6: ({ children }) => (
-    <h6 className="text-foreground mt-4 mb-2 text-base font-semibold tracking-tight">
+  h6: ({ children, ...props }) => (
+    <h6
+      className="text-foreground mt-4 mb-2 text-base font-semibold tracking-tight"
+      {...props}
+    >
       {children}
     </h6>
   ),

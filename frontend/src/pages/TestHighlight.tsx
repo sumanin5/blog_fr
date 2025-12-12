@@ -4,7 +4,7 @@ import TestContent from "@/content/test-highlight.mdx";
 export default function TestHighlight() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <article className="prose prose-neutral dark:prose-invert max-w-none">
+      <article className="prose max-w-none">
         <MDXProvider>
           <TestContent />
         </MDXProvider>

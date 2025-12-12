@@ -214,7 +214,11 @@ export function CodeBlock(props: Props) {
       </span>
 
       {/* 主体代码块：保留所有原始属性，添加上内边距避免遮挡 */}
-      <pre ref={preRef} {...props} className={`${props.className} pt-12`}>
+      <pre
+        ref={preRef}
+        {...props}
+        className={`${props.className} overflow-x-auto rounded-lg pt-12`}
+      >
         {props.children}
       </pre>
     </div>

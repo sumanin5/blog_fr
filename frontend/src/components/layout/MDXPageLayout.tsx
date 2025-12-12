@@ -24,9 +24,9 @@ import React from "react";
 import { MDXProvider, TableOfContents } from "@/components/mdx";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, Calendar, Clock, Share2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { SiGithub } from "react-icons/si";
+import { Calendar, Clock, Share2 } from "lucide-react";
+// import { useNavigate } from "react-router-dom";
+// import { SiGithub } from "react-icons/si";
 
 /**
  * 文章元数据类型定义
@@ -74,12 +74,12 @@ export function MDXPageLayout({
   metadata,
   MDXContent,
   showTOC = true,
-  showHeader = true,
+  // showHeader = true,
   showFooter = true,
   className = "",
   children,
 }: MDXPageLayoutProps) {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   // 合并默认作者信息
   const author = metadata.author
@@ -100,7 +100,7 @@ export function MDXPageLayout({
   };
 
   return (
-    <div className={`bg-background min-h-screen ${className}`}>
+    <div className={`min-h-screen ${className}`}>
       {/* 顶部导航栏 */}
       {/*{showHeader && (
         <div className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-14 z-40 border-b backdrop-blur">
@@ -226,10 +226,12 @@ export function MDXPageLayout({
         </article>
 
         {/* MDX 内容 */}
-        <article className="prose prose-neutral dark:prose-invert mx-auto max-w-none">
+        <article id="mdx-article-content" className="prose mx-auto max-w-none">
           <MDXProvider>
             {/* 目录组件 - 自动集成 */}
-            {showTOC && <TableOfContents />}
+            {showTOC && (
+              <TableOfContents contentSelector="#mdx-article-content" />
+            )}
 
             {/* 主要 MDX 内容 */}
             <MDXContent />
@@ -254,7 +256,7 @@ export function MDXPageLayout({
             </div>
 
             {/* 页脚提示 */}
-            <div className="bg-muted/50 mx-auto mt-12 max-w-4xl rounded-lg border p-6 text-center">
+            {/* <div className="bg-muted/50 mx-auto mt-12 max-w-4xl rounded-lg border p-6 text-center">
               <p className="text-muted-foreground text-sm">
                 💡 这个页面完全由 MDX 生成，结合了 Markdown 和 React
                 组件的强大功能。
@@ -266,7 +268,7 @@ export function MDXPageLayout({
                 </code>
                 组件快速构建 MDX 页面。
               </p>
-            </div>
+            </div> */}
           </>
         )}
       </div>

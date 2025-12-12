@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypePrism from "rehype-prism-plus";
+import rehypeSlug from "rehype-slug";
 
 /**
  * Vite 配置文件 - 使用 PrismJS 进行代码高亮
@@ -33,6 +34,7 @@ export default defineConfig({
       remarkPlugins: [remarkGfm, remarkMath],
       // rehype 插件：处理 HTML 转换
       rehypePlugins: [
+        rehypeSlug, // 自动为标题生成 ID
         rehypeKatex,
         [rehypePrism, { showLineNumbers: true }], // PrismJS 高亮 + 行号
       ],
