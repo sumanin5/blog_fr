@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Mermaid Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+
+<body>
+  <h1>Mermaid 测试</h1>
+
+  <h2>正确的图表</h2>
+  <div class="mermaid">
+    graph TD
+    A[开始] --> B{是否登录?}
+    B -->|是| C[显示主页]
+    B -->|否| D[跳转登录页]
+    D --> E[用户输入账号密码]
+    E --> F{验证成功?}
+    F -->|是| C
+    F -->|否| G[显示错误信息]
+    G --> E
+    C --> H[结束]
+  </div>
+
+  <h2>错误的图表（有多余换行）</h2>
+  <div class="mermaid">
+    graph
+    TD
+
+    A
+    [开始]
+
+    -->
+    B
+    {是否登录?}
+
+
+    B
+    -->
+    |是|
+    C
+    [显示主页]
+
+
+    B
+    -->
+    |否|
+    D
+    [跳转登录页]
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</body>
+
+</html>

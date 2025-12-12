@@ -16,7 +16,7 @@
  * - 条件渲染：根据语言类型选择不同的渲染方式
  */
 import type { ReactNode } from "react";
-import { isValidElement, useEffect, useRef, useState } from "react";
+import { isValidElement, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Copy as CopyIcon } from "lucide-react";
 import { MermaidChart } from "./MermaidChart";
@@ -42,13 +42,13 @@ const extractText = (node: ReactNode): string => {
   // 原始类型：字符串和数字直接返回
   if (typeof node === "string" || typeof node === "number") return String(node);
 
-  // 数组类型：递归处理每个元素，用换行连接
-  if (Array.isArray(node)) return node.map(extractText).join("\n");
+  // 数组类型：递归处理每个元素，直接连接（不添加换行符）
+  if (Array.isArray(node)) return node.map(extractText).join("");
 
   // React 元素：递归处理 children 属性
   if (isValidElement(node)) {
     const nodeProps = node.props as { children?: unknown };
-    return extractText(nodeProps.children);
+    return extractText((nodeProps.children ?? null) as ReactNode);
   }
 
   // 其他情况返回空字符串
@@ -71,36 +71,52 @@ export function CodeBlock(props: Props) {
   /* ========== 🔄 文本提取策略 ========== */
   // 策略 1：从 React 节点结构中提取
   const rawChild = props.children as ReactNode;
-  const directChild = isValidElement(rawChild)
-    ? (rawChild.props as { children?: unknown })?.children // 如果是 React 元素，获取其 children
-    : null;
 
-  // 优先使用直接子元素（如果是字符串），否则使用递归提取
-  const rawText =
-    typeof directChild === "string" ? directChild : extractText(rawChild);
+  // 优先处理直接的字符串内容
+  let rawText = "";
+  if (typeof rawChild === "string") {
+    rawText = rawChild;
+  } else if (isValidElement(rawChild)) {
+    const nodeProps = rawChild.props as { children?: unknown };
+    const directChild = nodeProps.children;
+
+    // 如果直接子元素是字符串，使用它；否则递归提取
+    if (typeof directChild === "string") {
+      rawText = directChild;
+    } else {
+      rawText = extractText(rawChild);
+    }
+  } else {
+    rawText = extractText(rawChild);
+  }
 
   // 清理文本：去除首尾空行，保留中间的换行符
   const codeContent = rawText.replace(/^\n+|\n+$/g, "");
 
   /* ========== 🔍 DOM 备用机制 ========== */
   // 策略 2：使用 DOM 文本作为后备，防止高亮插件导致换行丢失
-  const [chartCode, setChartCode] = useState<string | null>(null);
+  // const [chartCode, setChartCode] = useState<string | null>(null);
 
-  useEffect(() => {
-    // 只在 Mermaid 模式下才执行 DOM 备用逻辑
-    if (!isMermaid) return;
+  // useEffect(() => {
+  //   // 只在 Mermaid 模式下才执行 DOM 备用逻辑
+  //   if (!isMermaid) return;
 
-    // 从 DOM 元素获取实际文本内容
-    const domText = preRef.current?.textContent;
+  //   // 从 DOM 元素获取实际文本内容
+  //   const domText = preRef.current?.textContent;
 
-    // 选择最佳数据源：DOm 文本优先，否则使用 React 提取的文本
-    const next = domText ? domText.trim() : codeContent;
+  //   // 选择最佳数据源：DOm 文本优先，否则使用 React 提取的文本
+  //   const next = domText ? domText.trim() : codeContent;
 
-    // 只在数据变化时才更新状态，避免无必要的重新渲染
-    if (next !== chartCode) {
-      setChartCode(next);
-    }
-  }, [chartCode, codeContent, isMermaid]); // 依赖数组
+  //   // 只在数据变化时才更新状态，避免无必要的重新渲染
+  //   if (next !== chartCode) {
+  //     setChartCode(next);
+  //   }
+  // }, [chartCode, codeContent, isMermaid]); // 依赖数组
+  // 🔍 简化版本 - 直接使用修复后的文本提取结果
+  const chartCode = useMemo(() => {
+    if (!isMermaid) return null;
+    return codeContent || null;
+  }, [isMermaid, codeContent]);
 
   /* ========== 📋 复制功能 ========== */
   const handleCopy = async () => {

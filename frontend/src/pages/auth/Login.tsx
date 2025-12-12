@@ -1,77 +1,115 @@
-import { useState, type FormEvent } from "react";
+import { useActionState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
-// 1. 导入 Shadcn UI 组件
+// 导入 Shadcn UI 组件
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// 表单错误类型
-interface FormErrors {
-  username?: string;
-  password?: string;
-  general?: string;
+
+// 在组件内部定义接口类型
+interface LoginState {
+  success?: boolean;
+  message?: string;
+  errors?: {
+    username?: string[];
+    password?: string[];
+    general?: string[];
+  } | null;
+  redirectTo?: string;  // 登录成功后的跳转
 }
 
-export default function Login() {
-  // 2. 状态管理
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+// 表单数据类型（用于类型安全）
+interface LoginFormData {
+  username: string;
+  password: string;
+}
 
+// 采用 React 19 的新写法
+export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // 3. 表单验证逻辑
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
+  // React 19 登录处理函数
+  async function loginAction(
+    _prevState: LoginState | null,
+    formData: FormData
+  ): Promise<LoginState> {
+    // 从 FormData 中提取数据
+    const loginData: LoginFormData = {
+      username: (formData.get('username') as string)?.trim() || '',
+      password: (formData.get('password') as string) || ''
+    };
+    console.log('🔐 开始登录流程:', { username: loginData.username });
 
-    // 验证用户名
-    if (!username.trim()) {
-      newErrors.username = "请输入账号";
+    // � 客户端验证
+    const errors: { [key: string]: string[] } = {};
+    if (!loginData.username) {
+      errors.username = ['请输入账号'];
+    }
+    if (!loginData.password) {
+      errors.password = ['请输入密码'];
+    } else if (loginData.password.length < 6) {
+      errors.password = ['密码至少6位'];
     }
 
-    // 验证密码
-    if (!password) {
-      newErrors.password = "请输入密码";
-    } else if (password.length < 6) {
-      newErrors.password = "密码至少6位";
+    // 如果有验证错误，直接返回
+    if (Object.keys(errors).length > 0) {
+      return {
+        success: false,
+        message: '请检查输入内容',
+        errors
+      };
     }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // 4. 提交处理
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    // 首先验证表单
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrors({});
 
     try {
-      await login({ username, password });
-      navigate("/"); // 登录成功跳转首页
-    } catch (err) {
-      console.error("Login failed:", err);
-      const message =
-        err instanceof Error ? err.message : "登录失败，请检查用户名或密码";
-      setErrors({ general: message });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      // 🌐 调用登录 API
+      console.log('🚀 调用登录接口...');
+      await login(loginData);
 
+      console.log('✅ 登录成功!');
+
+      // 🎉 登录成功 - 在这里处理跳转
+      return {
+        success: true,
+        message: '登录成功！正在跳转...',
+        redirectTo: '/' // 标记需要跳转
+      };
+
+    } catch (err) {
+      console.error('❌ 登录失败:', err);
+
+      const errorMessage = err instanceof Error
+        ? err.message
+        : '登录失败，请检查用户名或密码';
+
+      return {
+        success: false,
+        message: errorMessage,
+        errors: {
+          general: [errorMessage]
+        }
+      };
+    }
+  }
+
+  const [state, action, isPending] = useActionState(loginAction, null);
+
+  // 🔄 监听登录成功状态，处理跳转
+  useEffect(() => {
+    if (state?.success && state?.redirectTo) {
+      // 延迟跳转，让用户看到成功消息
+      const timer = setTimeout(() => {
+        navigate(state.redirectTo!);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [state?.success, state?.redirectTo, navigate]);
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <motion.div
@@ -93,20 +131,29 @@ export default function Login() {
 
           {/* 表单区域 */}
           <div className="space-y-6">
-            {/* 通用错误提示 */}
-            {errors.general && (
-              <Alert variant="destructive" className="py-2">
+            {/* 成功消息提示 */}
+            {state?.success && (
+              <Alert className="border-green-200 bg-green-50 text-green-800">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.general}</AlertDescription>
+                <AlertDescription>{state.message}</AlertDescription>
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* 通用错误提示 */}
+            {state?.errors?.general && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{state.errors.general[0]}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* 使用原生 HTML form 配合 React 19 的 action */}
+            <form action={action} className="space-y-4">
               {/* 用户名输入 */}
               <div className="space-y-2">
                 <Label
                   htmlFor="username"
-                  className={errors.username ? "text-destructive" : ""}
+                  className={state?.errors?.username ? "text-destructive" : ""}
                 >
                   用户名
                 </Label>
@@ -114,25 +161,19 @@ export default function Login() {
                   <Mail className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                   <Input
                     id="username"
+                    name="username"
                     type="text"
                     placeholder="请输入账号"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      // 清空该字段的错误
-                      if (errors.username) {
-                        setErrors({ ...errors, username: undefined });
-                      }
-                    }}
-                    disabled={isSubmitting}
-                    className={`pl-9 ${errors.username ? "border-destructive" : ""}`}
-                    aria-invalid={!!errors.username}
+                    disabled={isPending}
+                    className={`pl-9 ${state?.errors?.username ? "border-destructive" : ""}`}
+                    aria-invalid={!!state?.errors?.username}
+                    required
                   />
                 </div>
-                {errors.username && (
+                {state?.errors?.username && (
                   <p className="text-destructive flex items-center gap-1 text-xs">
                     <AlertCircle className="h-3 w-3" />
-                    {errors.username}
+                    {state.errors.username[0]}
                   </p>
                 )}
               </div>
@@ -142,7 +183,7 @@ export default function Login() {
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="password"
-                    className={errors.password ? "text-destructive" : ""}
+                    className={state?.errors?.password ? "text-destructive" : ""}
                   >
                     密码
                   </Label>
@@ -157,25 +198,20 @@ export default function Login() {
                   <Lock className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     placeholder="请输入密码"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      // 清空该字段的错误
-                      if (errors.password) {
-                        setErrors({ ...errors, password: undefined });
-                      }
-                    }}
-                    disabled={isSubmitting}
-                    className={`pl-9 ${errors.password ? "border-destructive" : ""}`}
-                    aria-invalid={!!errors.password}
+                    disabled={isPending}
+                    className={`pl-9 ${state?.errors?.password ? "border-destructive" : ""}`}
+                    aria-invalid={!!state?.errors?.password}
+                    required
+                    minLength={6}
                   />
                 </div>
-                {errors.password && (
+                {state?.errors?.password && (
                   <p className="text-destructive flex items-center gap-1 text-xs">
                     <AlertCircle className="h-3 w-3" />
-                    {errors.password}
+                    {state.errors.password[0]}
                   </p>
                 )}
               </div>
@@ -185,9 +221,9 @@ export default function Login() {
                 type="submit"
                 className="w-full"
                 size="lg"
-                disabled={isSubmitting}
+                disabled={isPending}
               >
-                {isSubmitting ? (
+                {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     登录中...
