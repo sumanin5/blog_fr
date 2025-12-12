@@ -32,6 +32,14 @@ export default mergeConfig(
       // 全局变量（使 describe, it, expect 等无需 import）
       globals: true,
 
+      // 测试环境变量
+      env: {
+        // API 基础 URL（用于 API 客户端）
+        VITE_API_URL: "http://localhost:8000",
+        // 测试环境标识
+        NODE_ENV: "test",
+      },
+
       // 覆盖率报告配置
       coverage: {
         provider: "v8",

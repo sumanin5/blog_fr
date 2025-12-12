@@ -322,29 +322,37 @@ test.describe("用户认证流程", () => {
     // 清理数据库中所有测试用户（以 testuser_ 开头的用户）
     try {
       // 步骤 1：使用管理员账号登录获取 token
-      const adminToken = await page.evaluate(async () => {
-        try {
-          const formData = new URLSearchParams();
-          formData.append("username", "admin"); // 管理员用户名
-          formData.append("password", "1234"); // 管理员密码
+      // 从环境变量读取管理员凭据（安全最佳实践）
+      // 在 .env 文件中配置：TEST_ADMIN_USERNAME 和 TEST_ADMIN_PASSWORD
+      const adminUsername = process.env.TEST_ADMIN_USERNAME || "admin";
+      const adminPassword = process.env.TEST_ADMIN_PASSWORD || "1234";
 
-          const response = await fetch("http://localhost:8000/users/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: formData.toString(),
-          });
+      const adminToken = await page.evaluate(
+        async (credentials) => {
+          try {
+            const formData = new URLSearchParams();
+            formData.append("username", credentials.username);
+            formData.append("password", credentials.password);
 
-          if (response.ok) {
-            const data = await response.json();
-            return data.access_token;
+            const response = await fetch("http://localhost:8000/users/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: formData.toString(),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              return data.access_token;
+            }
+            return null;
+          } catch {
+            return null;
           }
-          return null;
-        } catch {
-          return null;
-        }
-      });
+        },
+        { username: adminUsername, password: adminPassword },
+      );
 
       if (adminToken) {
         // 步骤 2：获取所有用户列表

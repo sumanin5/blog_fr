@@ -131,22 +131,6 @@ export default function Login() {
 
           {/* 表单区域 */}
           <div className="space-y-6">
-            {/* 成功消息提示 */}
-            {state?.success && (
-              <Alert className="border-green-200 bg-green-50 text-green-800">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{state.message}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* 通用错误提示 */}
-            {state?.errors?.general && (
-              <Alert variant="destructive" className="py-2">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{state.errors.general[0]}</AlertDescription>
-              </Alert>
-            )}
-
             {/* 使用原生 HTML form 配合 React 19 的 action */}
             <form action={action} className="space-y-4">
               {/* 用户名输入 */}
@@ -187,12 +171,6 @@ export default function Login() {
                   >
                     密码
                   </Label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-primary hover:text-primary/80 text-xs transition-colors"
-                  >
-                    忘记密码?
-                  </Link>
                 </div>
                 <div className="relative">
                   <Lock className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
@@ -216,6 +194,22 @@ export default function Login() {
                 )}
               </div>
 
+              {/* 成功消息提示 - 放在提交按钮上方 */}
+              {state?.success && (
+                <Alert className="border-green-200 bg-green-50 text-green-800">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{state.message}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* 通用错误提示 - 放在提交按钮上方 */}
+              {state?.errors?.general && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{state.errors.general[0]}</AlertDescription>
+                </Alert>
+              )}
+
               {/* 提交按钮 */}
               <Button
                 type="submit"
@@ -236,13 +230,20 @@ export default function Login() {
           </div>
 
           {/* 底部链接 */}
-          <div className="text-muted-foreground mt-6 text-center text-sm">
+          <div className="center text-muted-foreground mt-6 text-center text-sm">
             还没有账号?{" "}
             <Link
               to="/auth/register"
               className="text-primary hover:text-primary/80 font-medium transition-colors"
             >
               去注册
+            </Link>
+            <span className="mx-3"> | </span>
+            <Link
+              to="/forgot-password"
+              className="text-primary hover:text-primary/80 text-sm transition-colors"
+            >
+              忘记密码?
             </Link>
           </div>
         </div>

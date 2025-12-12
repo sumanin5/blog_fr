@@ -350,13 +350,18 @@ test.describe("用户认证流程", () => {
 
     try {
       // 步骤 1：使用管理员账号登录获取 token
+      // 从环境变量读取管理员凭据（安全最佳实践）
+      // 在 .env 文件中配置：TEST_ADMIN_USERNAME 和 TEST_ADMIN_PASSWORD
+      const adminUsername = process.env.TEST_ADMIN_USERNAME || "admin";
+      const adminPassword = process.env.TEST_ADMIN_PASSWORD || "1234";
+
       console.log("[清理] 尝试管理员登录...");
       const loginResponse = await request.post(
         "http://localhost:8000/users/login",
         {
           form: {
-            username: "admin",
-            password: "1234",
+            username: adminUsername,
+            password: adminPassword,
           },
         },
       );

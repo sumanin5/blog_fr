@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+
 import {
   createContext,
   useContext,
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       /* 有token，表示已登录 */
       try {
         /* 获取当前用户信息 */
-        const response = await getCurrentUserInfo();
+        const response = await getCurrentUserInfo({ throwOnError: true });
         setUser(response.data ?? null); // 设置当前用户，注意可能为null
       } catch {
         /* 获取当前用户信息失败，表示token无效 */
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshUser = async () => {
     try {
-      const response = await getCurrentUserInfo();
+      const response = await getCurrentUserInfo({ throwOnError: true });
       setUser(response.data ?? null);
     } catch {
       localStorage.removeItem("access_token");
@@ -71,8 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (data: BodyLogin) => {
     try {
-      /* 登录 */
-      const response = await apiLogin({ body: data });
+      /* 登录 - 明确设置 throwOnError: true 确保网络错误被抛出 */
+      const response = await apiLogin({ body: data, throwOnError: true });
       //   const tokenData = response.data as {
       //     access_token: string;
       //     token_type: string;
@@ -85,12 +85,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await refreshUser();
     } catch (error) {
       console.error("Login failed:", error);
+      throw error;
     }
   };
 
   const register = async (data: UserRegister) => {
     try {
-      await registerUser({ body: data });
+      await registerUser({ body: data, throwOnError: true });
       // 注册成功后不会返回 token，需要用户手动登录
       // 或者自动登录：
       // await login({ username: data.username, password: data.password });
@@ -107,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUser = async (data: UserUpdate) => {
     try {
-      await updateCurrentUserInfo({ body: data });
+      await updateCurrentUserInfo({ body: data, throwOnError: true });
       await refreshUser();
     } catch (error) {
       console.error("Update user info failed:", error);

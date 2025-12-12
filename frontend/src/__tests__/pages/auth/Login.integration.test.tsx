@@ -264,7 +264,6 @@ describe("📱 Login 页面 - 集成测试", () => {
       renderLoginPage();
 
       const usernameInput = screen.getByPlaceholderText(/请输入账号/i);
-      const forgotLink = screen.getByText(/忘记密码/i);
       const passwordInput = screen.getByPlaceholderText(/请输入密码/i);
       const loginBtn = screen.getByRole("button", { name: /立即登录/i });
 
@@ -273,15 +272,11 @@ describe("📱 Login 页面 - 集成测试", () => {
       await user.tab();
       expect(usernameInput).toHaveFocus();
 
-      // 第二次 Tab: 焦点到忘记密码链接
-      await user.tab();
-      expect(forgotLink).toHaveFocus();
-
-      // 第三次 Tab: 焦点到密码输入框
+      // 第二次 Tab: 焦点到密码输入框
       await user.tab();
       expect(passwordInput).toHaveFocus();
 
-      // 第四次 Tab: 焦点到登录按钮
+      // 第三次 Tab: 焦点到登录按钮
       await user.tab();
       expect(loginBtn).toHaveFocus();
     });
