@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// 导入 Zod 验证
+import { validateLogin } from "@/lib/validations/auth";
 
 // 在组件内部定义接口类型
 interface LoginState {
@@ -23,12 +25,6 @@ interface LoginState {
   redirectTo?: string;  // 登录成功后的跳转
 }
 
-// 表单数据类型（用于类型安全）
-interface LoginFormData {
-  username: string;
-  password: string;
-}
-
 // 采用 React 19 的新写法
 export default function Login() {
   const { login } = useAuth();
@@ -40,31 +36,35 @@ export default function Login() {
     formData: FormData
   ): Promise<LoginState> {
     // 从 FormData 中提取数据
-    const loginData: LoginFormData = {
-      username: (formData.get('username') as string)?.trim() || '',
+    const rawData = {
+      username: (formData.get('username') as string) || '',
       password: (formData.get('password') as string) || ''
     };
-    console.log('🔐 开始登录流程:', { username: loginData.username });
+    console.log('🔐 开始登录流程:', { username: rawData.username });
 
-    // � 客户端验证
-    const errors: { [key: string]: string[] } = {};
-    if (!loginData.username) {
-      errors.username = ['请输入账号'];
-    }
-    if (!loginData.password) {
-      errors.password = ['请输入密码'];
-    } else if (loginData.password.length < 6) {
-      errors.password = ['密码至少6位'];
-    }
+    // 🔍 使用 Zod 进行客户端验证
+    const validation = validateLogin(rawData);
 
-    // 如果有验证错误，直接返回
-    if (Object.keys(errors).length > 0) {
+    if (!validation.success) {
+      // 转换 Zod 错误格式为组件期望的格式
+      const errors: { [key: string]: string[] } = {};
+      validation.error.issues.forEach((err) => {
+        const field = err.path[0] as string;
+        if (!errors[field]) {
+          errors[field] = [];
+        }
+        errors[field].push(err.message);
+      });
+
       return {
         success: false,
         message: '请检查输入内容',
         errors
       };
     }
+
+    // 验证通过，获取类型安全的数据
+    const loginData = validation.data;
 
     try {
       // 🌐 调用登录 API
