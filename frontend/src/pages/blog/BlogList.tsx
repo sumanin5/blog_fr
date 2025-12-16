@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { ListCard, type ListCardItem } from "@/shared/components/common/ListCard";
-import { Sparkles, Filter } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
+import { type ListCardItem } from "@/shared/components/common/ListCard";
+import { HeroSection, CategoryFilter } from "@/shared/components/common";
+import { PostGrid } from "@/features/blog/components";
+import { Sparkles, FileText } from "lucide-react";
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
 
 type Category = "All" | "React" | "TypeScript" | "CSS" | "DevOps";
 
@@ -79,85 +79,45 @@ export default function BlogList() {
 
   return (
     <>
-      <section className="relative overflow-hidden px-4 py-20 text-center sm:py-32 lg:px-8">
-        <div className="relative container mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="border-border bg-background/50 mx-auto mb-6 flex max-w-fit items-center justify-center space-x-2 overflow-hidden rounded-full border px-4 py-1.5 shadow-sm backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5 text-yellow-400" />
-              <span className="text-muted-foreground text-sm font-medium">
-                技术分享与实践
-              </span>
-            </div>
+      <HeroSection
+        badge={{
+          icon: Sparkles,
+          text: "技术分享与实践"
+        }}
+        title={
+          <>
+            探索
+            <span className="bg-linear-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              技术世界
+            </span>
+            <br />
+            构建
+            <span className="text-foreground">优秀项目</span>
+          </>
+        }
+        description="深度分享前端开发、架构设计、最佳实践等技术文章。为开发者提供有价值的见解和实践指导。"
+      />
 
-            <h1 className="mb-6 text-4xl font-extrabold tracking-tight sm:text-6xl md:text-7xl">
-              探索
-              <span className="bg-linear-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                技术世界
-              </span>
-              <br />
-              构建
-              <span className="text-foreground">优秀项目</span>
-            </h1>
-
-            <p className="text-muted-foreground mx-auto mb-10 max-w-2xl text-lg leading-relaxed sm:text-xl">
-              深度分享前端开发、架构设计、最佳实践等技术文章。为开发者提供有价值的见解和实践指导。
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Filters & Grid Section */}
       <section className="container mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="border-border bg-muted/30 flex w-fit flex-wrap gap-2 rounded-lg border p-1 backdrop-blur-sm transition-colors">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-200 ${activeCategory === cat
-                    ? "bg-background text-foreground ring-border shadow-sm ring-1"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                  }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+        <CategoryFilter
+          categories={CATEGORIES}
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          itemCount={filteredPosts.length}
+        />
 
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Filter className="h-4 w-4" />
-            <span>共 {filteredPosts.length} 篇文章</span>
-          </div>
-        </div>
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredPosts.map((post, index) => (
-            <ListCard
-              key={post.id}
-              item={post}
-              index={index}
-              onClick={() => navigate(`/blog/${post.id}`)}
-            />
-          ))}
-        </div>
-
-        {/* 空状态提示 */}
-        {filteredPosts.length === 0 && (
-          <div className="text-muted-foreground border-border flex h-64 flex-col items-center justify-center rounded-xl border border-dashed">
-            <p>当前分类暂无文章</p>
-            <Button
-              variant="ghost"
-              className="mt-4"
-              onClick={() => setActiveCategory("All")}
-            >
-              查看所有文章
-            </Button>
-          </div>
-        )}
+        <PostGrid
+          posts={filteredPosts}
+          onPostClick={(post) => navigate(`/blog/${post.id}`)}
+          emptyState={{
+            icon: FileText,
+            message: "当前分类暂无文章",
+            action: {
+              label: "查看所有文章",
+              onClick: () => setActiveCategory("All")
+            }
+          }}
+        />
       </section>
     </>
   );

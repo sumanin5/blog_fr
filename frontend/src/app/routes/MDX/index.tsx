@@ -1,8 +1,8 @@
 import { Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/shared/components/common";
-import MDXShowcase from "@/pages/mdx/MDXShowcase";
-import MDXEditor from "@/pages/mdx/MDXEditor";
-import MDXTestClean from "@/pages/mdx/MDXTestClean";
+import MDXShowcase from "@/features/mdx/pages/MDXShowcase";
+import MDXEditor from "@/features/mdx/pages/MDXEditor";
+import MDXTestClean from "@/features/mdx/pages/MDXTestClean";
 
 /**
  * MDX 模块路由

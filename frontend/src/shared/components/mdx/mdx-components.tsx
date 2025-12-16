@@ -21,7 +21,7 @@ import type { FC, ImgHTMLAttributes, ReactNode } from "react";
 import { ImageIcon } from "lucide-react";
 
 import { CodeBlock } from "./CodeBlock";
-import { SimpleFlowExample, SystemArchExample } from "./FlowExamples";
+import { SimpleFlowExample, SystemArchExample } from "@/features/mdx/components/FlowExamples";
 import { TableOfContents } from "./TableOfContents";
 import {
   Table,
