@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/shared/contexts/ThemeContext";
-import { AuthProvider } from "@/shared/contexts";
+import { AuthProvider } from "@/features/auth";
 import AppRoutes from "@/app/routes";
 
 function App() {
@@ -8,6 +8,7 @@ function App() {
     // 全局状态提供者
     // ThemeProvider 必须在最外层，这样整个应用都能访问主题状态
     <ThemeProvider defaultTheme="system" storageKey="my-blog-theme">
+      {/* 使用新的基于 TanStack Query 的 AuthProvider */}
       <AuthProvider>
         <BrowserRouter>
           <Routes>

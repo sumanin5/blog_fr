@@ -9,11 +9,14 @@ import "@fontsource/inter/600.css"; // Semi-bold
 import "@fontsource/inter/700.css"; // Bold
 
 import "./index.css";
-import "./shared/api/config"; // 初始化 API 客户端配置
+import "@/shared/api/config"; // 初始化 API 客户端配置
 import App from "./App.tsx";
+import { QueryProvider } from "./app/providers/QueryProvider";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <QueryProvider>
+      <App />
+    </QueryProvider>
   </StrictMode>
 );

@@ -19,7 +19,7 @@ import {
   SheetClose,
 } from "@/shared/components/ui/sheet";
 import { useTheme } from "@/shared/contexts/ThemeContext";
-import { useAuth } from "@/shared/contexts";
+import { useAuth } from "@/features/auth";
 
 /**
  * 🎯 导航链接配置

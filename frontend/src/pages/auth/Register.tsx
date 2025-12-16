@@ -1,6 +1,6 @@
 import { useActionState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/shared/contexts/AuthContext";
+import { useAuth } from "@/features/auth";
 import { Loader2, Mail, Lock, User, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 

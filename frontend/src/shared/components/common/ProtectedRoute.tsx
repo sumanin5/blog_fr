@@ -1,4 +1,4 @@
-import { useAuth } from "@/shared/contexts/AuthContext";
+import { useAuth } from "@/features/auth";
 import { Navigate, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { LoadingSpinner } from "./LoadingSpinner";

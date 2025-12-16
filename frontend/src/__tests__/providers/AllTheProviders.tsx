@@ -16,7 +16,7 @@
  */
 
 import { BrowserRouter } from "react-router-dom";
-import { AuthProvider } from "@/shared/contexts";
+import { AuthProvider } from "@/features/auth";
 import { ThemeProvider } from "@/shared/contexts/ThemeContext";
 
 interface AllTheProvidersProps {
