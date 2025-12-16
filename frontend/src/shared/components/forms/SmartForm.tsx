@@ -6,8 +6,8 @@
 import type { UseFormReturn, FieldValues } from "react-hook-form";
 import { FormWrapper } from "./FormWrapper";
 import { UniversalFormField } from "./FormField";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Button } from "@/shared/components/ui/button";
 
 // 字段类型定义
 type FieldType = "text" | "email" | "password" | "textarea";

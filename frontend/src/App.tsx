@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/shared/contexts/ThemeContext";
+import { ThemeProvider } from "@/features/theme";
 import { AuthProvider } from "@/features/auth";
 import AppRoutes from "@/app/routes";
 

@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { QueryProvider } from "./QueryProvider";
 
+// 导出单独的 providers 和 hooks
+export { QueryProvider } from "./QueryProvider";
+
 interface AppProvidersProps {
     children: ReactNode;
 }

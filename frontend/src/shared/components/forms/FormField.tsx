@@ -8,8 +8,8 @@ import {
     FormLabel,
     FormControl,
     FormMessage
-} from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
+} from "@/shared/components/ui/form";
+import { Label } from "@/shared/components/ui/label";
 import type { UseFormReturn, FieldValues, Path } from "react-hook-form";
 
 interface UniversalFormFieldProps<T extends FieldValues = FieldValues> {

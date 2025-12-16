@@ -5,7 +5,7 @@
  * 通过封装层提供统一的 API，内部根据需要选择合适的实现
  */
 import type { ReactNode } from "react";
-import { Form as ShadcnForm } from "@/components/ui/form";
+import { Form as ShadcnForm } from "@/shared/components/ui/form";
 import type { UseFormReturn, FieldValues } from "react-hook-form";
 
 interface FormWrapperProps {

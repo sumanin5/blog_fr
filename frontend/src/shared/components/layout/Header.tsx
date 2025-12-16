@@ -18,7 +18,7 @@ import {
   SheetDescription,
   SheetClose,
 } from "@/shared/components/ui/sheet";
-import { useTheme } from "@/shared/contexts/ThemeContext";
+import { useTheme } from "@/features/theme";
 import { useAuth } from "@/features/auth";
 
 /**
