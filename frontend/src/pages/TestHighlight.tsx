@@ -1,5 +1,5 @@
-import { MDXProvider } from "@/components/mdx";
-import TestContent from "@/content/test-highlight.mdx";
+import { MDXProvider } from "@/shared/components/mdx";
+import TestContent from "@/shared/content/test-highlight.mdx";
 
 export default function TestHighlight() {
   return (

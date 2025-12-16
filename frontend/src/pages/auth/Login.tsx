@@ -1,17 +1,17 @@
 import { useActionState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/shared/contexts/AuthContext";
 import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 // 导入 Shadcn UI 组件
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 
 // 导入 Zod 验证
-import { validateLogin } from "@/lib/validations/auth";
+import { validateLogin } from "@/shared/lib/validations/auth";
 
 // 在组件内部定义接口类型
 interface LoginState {

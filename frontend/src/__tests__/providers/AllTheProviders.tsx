@@ -16,8 +16,8 @@
  */
 
 import { BrowserRouter } from "react-router-dom";
-import { AuthProvider } from "@/contexts";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AuthProvider } from "@/shared/contexts";
+import { ThemeProvider } from "@/shared/contexts/ThemeContext";
 
 interface AllTheProvidersProps {
   children: React.ReactNode;

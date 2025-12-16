@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { AuthProvider } from "@/contexts";
-import AppRoutes from "@/routes";
+import { ThemeProvider } from "@/shared/contexts/ThemeContext";
+import { AuthProvider } from "@/shared/contexts";
+import AppRoutes from "@/app/routes";
 
 function App() {
   return (

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { ListCard, type ListCardItem } from "@/components/common/ListCard";
+import { ListCard, type ListCardItem } from "@/shared/components/common/ListCard";
 import { Sparkles, Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 
@@ -118,11 +118,10 @@ export default function BlogList() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
-                  activeCategory === cat
+                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-200 ${activeCategory === cat
                     ? "bg-background text-foreground ring-border shadow-sm ring-1"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                }`}
+                  }`}
               >
                 {cat}
               </button>

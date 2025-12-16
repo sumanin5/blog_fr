@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
-import { Header, Footer } from "@/components/layout";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeBackground } from "@/components/common/ThemeBackground";
+import { Header, Footer } from "@/shared/components/layout";
+import { Toaster } from "@/shared/components/ui/sonner";
+import { ThemeBackground } from "@/shared/components/common/ThemeBackground";
 
 /**
  * 🏗️ 主布局组件

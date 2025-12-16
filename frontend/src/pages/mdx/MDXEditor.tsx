@@ -7,10 +7,10 @@ import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github-dark.css"; // 代码高亮样式
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert } from "@/components/ui/alert";
-import { components } from "@/components/mdx/mdx-components"; // 直接从 mdx-components 导入
+import { Button } from "@/shared/components/ui/button";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { Alert } from "@/shared/components/ui/alert";
+import { components } from "@/shared/components/mdx/mdx-components"; // 直接从 mdx-components 导入
 import {
   ArrowLeft,
   Copy,
@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// 组件映射已从 @/components/mdx/MDXProvider 导入
+// 组件映射已从 @/shared/components/mdx/MDXProvider 导入
 
 // 默认模板 - 使用 String.raw 避免反斜杠转义问题
 const DEFAULT_MDX = String.raw`# 欢迎使用 MDX 编辑器

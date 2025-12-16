@@ -1,4 +1,4 @@
-import { MDXProvider } from "@/components/mdx";
+import { MDXProvider } from "@/shared/components/mdx";
 import ExampleContent from "@/content/example.mdx";
 
 /**

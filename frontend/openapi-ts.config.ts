@@ -4,9 +4,9 @@ export default defineConfig({
   // OpenAPI 规范文件路径
   input: "./openapi.json",
 
-  // 生成代码的输出目录
+  // 生成代码的输出目录 - 更新到新的结构
   output: {
-    path: "./src/api",
+    path: "./src/shared/api/generated",
     format: "prettier", // 使用 prettier 格式化（如果已安装）
   },
 

@@ -3,8 +3,8 @@
  *
  * 使用通用的 MDXPageLayout 组件来展示测试内容
  */
-import { MDXPageLayout } from "@/components/layout/MDXPageLayout";
-import TestContent from "@/content/test-clean.mdx";
+import { MDXPageLayout } from "@/shared/components/layout/MDXPageLayout";
+import TestContent from "@/shared/content/test-clean.mdx";
 
 // 测试页面元数据配置
 const metadata = {

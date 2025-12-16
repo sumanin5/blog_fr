@@ -58,30 +58,18 @@ npm run api:generate
 echo -e "${GREEN}   ✅ TypeScript 代码生成成功${NC}"
 echo ""
 
-# ============================================================
-# 步骤 3: 恢复 config.ts 配置文件
-# ============================================================
-echo -e "${YELLOW}📝 步骤 3: 恢复 config.ts 配置文件...${NC}"
-
-TEMPLATE_FILE="$PROJECT_ROOT/frontend/templates/api-config.ts"
-TARGET_FILE="$PROJECT_ROOT/frontend/src/api/config.ts"
-
-if [ -f "$TEMPLATE_FILE" ]; then
-    cp "$TEMPLATE_FILE" "$TARGET_FILE"
-    echo -e "${GREEN}   ✅ config.ts 已恢复${NC}"
-else
-    echo -e "${RED}   ❌ 模板文件不存在: $TEMPLATE_FILE${NC}"
-    echo -e "${RED}   请手动创建 config.ts 文件${NC}"
-    exit 1
-fi
-
 echo ""
 echo -e "${BLUE}============================================================${NC}"
 echo -e "${GREEN}🎉 API 代码生成完成！${NC}"
 echo -e "${BLUE}============================================================${NC}"
 echo ""
-echo -e "生成的文件位于: ${BLUE}frontend/src/api/${NC}"
+echo -e "生成的文件位于: ${BLUE}frontend/src/shared/api/generated/${NC}"
 echo -e "  - sdk.gen.ts     (API 函数)"
 echo -e "  - types.gen.ts   (TypeScript 类型)"
-echo -e "  - config.ts      (客户端配置)"
+echo -e "  - client.gen.ts  (HTTP 客户端)"
+echo -e "  - index.ts       (生成文件导出)"
+echo ""
+echo -e "手动维护的文件: ${BLUE}frontend/src/shared/api/${NC}"
+echo -e "  - config.ts      (客户端配置，不会被覆盖)"
+echo -e "  - index.ts       (统一导出)"
 echo ""

@@ -3,8 +3,8 @@
  *
  * 使用通用的 MDXPageLayout 组件来展示 MDX 内容
  */
-import { MDXPageLayout } from "@/components/layout/MDXPageLayout";
-import ShowcaseContent from "@/content/mdx-showcase.mdx";
+import { MDXPageLayout } from "@/shared/components/layout/MDXPageLayout";
+import ShowcaseContent from "@/shared/content/mdx-showcase.mdx";
 
 // 页面元数据配置
 const metadata = {
