@@ -33,7 +33,7 @@
 import React, { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, Menu } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui-extended";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import {
   Sheet,
@@ -420,7 +420,7 @@ export function TableOfContents({
           size="sm"
           className={cn(
             "bg-background/95 fixed top-20 left-4 z-50 shadow-md backdrop-blur",
-            "transition-all duration-200 hover:shadow-lg",
+            "transition-shadow duration-200 hover:shadow-lg",
             "flex items-center gap-2",
             className,
           )}

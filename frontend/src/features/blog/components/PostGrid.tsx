@@ -1,6 +1,6 @@
 import { ListCard, type ListCardItem } from "@/shared/components/common/ListCard";
 import { Card, CardContent } from "@/shared/components/ui/card";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui-extended";
 import { FileText } from "lucide-react";
 
 interface PostGridProps {

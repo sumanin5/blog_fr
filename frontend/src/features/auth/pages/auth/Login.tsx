@@ -5,7 +5,7 @@ import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 // 导入 Shadcn UI 组件
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui-extended";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";

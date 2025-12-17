@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Home, Search } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui-extended";
 
 /**
  * 🎨 404 Not Found 页面
@@ -148,9 +148,9 @@ export default function NotFound() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className="group border-border/50 bg-background/50 hover:border-primary/50 hover:bg-background/80 relative overflow-hidden rounded-lg border p-3 transition-all"
+                  className="group border-border/50 bg-background/50 hover:border-primary/50 hover:bg-background/80 relative overflow-hidden rounded-lg border p-3 transition-[border-color,background-color] duration-200"
                 >
-                  <div className="from-primary/0 via-primary/10 to-primary/0 absolute inset-0 bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100" />
+                  <div className="from-primary/0 via-primary/10 to-primary/0 absolute inset-0 bg-linear-to-r opacity-0 transition-opacity group-hover:opacity-100" />
                   <div className="relative text-center">
                     <div className="text-lg">{item.icon}</div>
                     <div className="text-foreground/80 text-xs font-medium">

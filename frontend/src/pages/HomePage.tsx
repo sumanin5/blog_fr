@@ -1,4 +1,4 @@
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui-extended";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import {
   ArrowRight,
@@ -38,7 +38,7 @@ export default function HomePage() {
           </div>
 
           {/* 主标题 */}
-          <h1 className="from-foreground to-foreground/60 animate-in fade-in slide-in-from-bottom-4 bg-gradient-to-b bg-clip-text text-4xl leading-[1.1] font-bold tracking-tighter text-transparent duration-700 md:text-6xl lg:text-7xl">
+          <h1 className="from-foreground to-foreground/60 animate-in fade-in slide-in-from-bottom-4 bg-linear-to-b bg-clip-text text-4xl leading-[1.1] font-bold tracking-tighter text-transparent duration-700 md:text-6xl lg:text-7xl">
             为下一代开发者
             <br className="hidden sm:inline" />
             <span className="text-primary">打造的知识平台</span>
@@ -211,7 +211,7 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <Card className="group border-border/50 bg-background/50 hover:bg-muted/50 hover:border-primary/50 relative overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
+    <Card className="group border-border/50 bg-background/50 hover:bg-muted/50 hover:border-primary/50 relative overflow-hidden transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-lg">
       <CardContent className="p-8">
         {/* 图标容器 */}
         <div className="bg-primary/10 text-primary group-hover:bg-primary/20 mb-4 inline-flex items-center justify-center rounded-lg p-3 transition-colors">

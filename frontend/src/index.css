@@ -145,6 +145,8 @@
   color-scheme: dark;
 }
 
+/* 🎨 主题切换 - 无过渡动画，立即生效 */
+
 @layer base {
   * {
     @apply border-border;
@@ -152,8 +154,8 @@
 
   body {
     position: relative;
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: var(--background);
+    color: var(--foreground);
     font-family:
       "Inter",
       -apple-system,

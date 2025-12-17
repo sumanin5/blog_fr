@@ -22,7 +22,7 @@
  */
 import React from "react";
 import { MDXProvider, TableOfContents } from "@/shared/components/mdx";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui-extended";
 import { Badge } from "@/shared/components/ui/badge";
 import { Calendar, Clock, Share2 } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
@@ -111,7 +111,7 @@ export function MDXPageLayout({
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate(-1)}
-                className="gap-2 pl-0 transition-all hover:pl-2"
+                className="gap-2 pl-0 transition-[padding] duration-200 hover:pl-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 返回

@@ -7,7 +7,7 @@ import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github-dark.css"; // 代码高亮样式
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui-extended";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Alert } from "@/shared/components/ui/alert";
 import { components } from "@/shared/components/mdx/mdx-components"; // 直接从 mdx-components 导入

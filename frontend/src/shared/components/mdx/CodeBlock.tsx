@@ -17,7 +17,7 @@
  */
 import type { ReactNode } from "react";
 import { isValidElement, useMemo, useRef, useState } from "react";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui-extended";
 import { Check, Copy as CopyIcon } from "lucide-react";
 import { MermaidChart } from "./MermaidChart";
 
@@ -166,7 +166,7 @@ export function CodeBlock(props: Props) {
               onClick={handleCopy}
               size="sm"
               variant="outline"
-              className="absolute top-2 right-2 z-10 gap-1 transition-all duration-200"
+              className="absolute top-2 right-2 z-10 gap-1 transition-opacity duration-200"
             >
               {/* 动态图标：根据复制状态切换 */}
               {copied ? (
@@ -208,7 +208,7 @@ export function CodeBlock(props: Props) {
         onClick={handleCopy}
         size="sm"
         variant="outline"
-        className="sticky top-[clamp(12px,24vh,120px)] z-10 float-right mr-2 cursor-pointer gap-1 transition-all duration-200"
+        className="sticky top-[clamp(12px,24vh,120px)] z-10 float-right mr-2 cursor-pointer gap-1 transition-opacity duration-200"
       >
         {/* 动态按钮内容 */}
         {copied ? (

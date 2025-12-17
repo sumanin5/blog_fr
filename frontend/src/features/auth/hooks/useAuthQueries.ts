@@ -1,24 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/shared/lib/query-keys";
+import { authQueryKeys } from "../lib/query-keys";
 import {
   loginUser,
   registerNewUser,
   fetchCurrentUser,
   updateUserProfile,
 } from "../api/auth";
-import type {
-  UserResponse,
-  UserUpdate,
-  BodyLogin,
-  UserRegister,
-} from "@/shared/api";
+import type { BodyLogin } from "@/shared/api";
 
 /**
  * 获取当前用户信息的 Query Hook
  */
 export const useCurrentUser = () => {
   return useQuery({
-    queryKey: queryKeys.user.current(),
+    queryKey: authQueryKeys.currentUser(),
     queryFn: fetchCurrentUser,
     // 只有存在 token 时才启用查询
     enabled: !!localStorage.getItem("access_token"),
@@ -43,7 +38,7 @@ export const useLogin = () => {
     },
     onSuccess: () => {
       // 登录成功后，重新获取用户信息
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.current() });
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser() });
     },
     onError: (error) => {
       console.error("Login failed:", error);
@@ -75,7 +70,7 @@ export const useUpdateUser = () => {
     mutationFn: updateUserProfile,
     onSuccess: () => {
       // 更新成功后，重新获取用户信息
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.current() });
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser() });
     },
     onError: (error) => {
       console.error("Update user info failed:", error);
@@ -94,9 +89,9 @@ export const useLogout = () => {
     localStorage.removeItem("access_token");
 
     // 清除所有用户相关的查询缓存
-    queryClient.removeQueries({ queryKey: queryKeys.user.all });
+    queryClient.removeQueries({ queryKey: authQueryKeys.all });
 
     // 可选：重置到未认证状态
-    queryClient.setQueryData(queryKeys.user.current(), null);
+    queryClient.setQueryData(authQueryKeys.currentUser(), null);
   };
 };

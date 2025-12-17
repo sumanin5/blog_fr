@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { type Theme, ThemeProviderContext } from "../types/theme";
+
+// 默认的 storage key，与 index.html 中的内联脚本保持一致
+const DEFAULT_STORAGE_KEY = "my-blog-theme";
 
 // 组件属性类型定义
 type ThemeProviderProps = {
     children: React.ReactNode;
     defaultTheme?: Theme;
-    storageKey?: string; // 也就是 localStorage 的 key，默认叫 "vite-ui-theme"
-    enableTransitions?: boolean; // 是否启用主题切换动画，默认 true
+    storageKey?: string; // localStorage 的 key，默认 "my-blog-theme"
     onThemeChange?: (theme: Theme) => void; // 主题切换时的回调函数
 };
 
@@ -24,8 +26,7 @@ type ThemeProviderProps = {
 export function ThemeProvider({
     children,
     defaultTheme = "system",
-    storageKey = "vite-ui-theme",
-    enableTransitions = true,
+    storageKey = DEFAULT_STORAGE_KEY,
     onThemeChange,
     ...props
 }: ThemeProviderProps) {
@@ -35,38 +36,41 @@ export function ThemeProvider({
         () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
     );
 
-    useEffect(() => {
+    // 使用 useLayoutEffect 在浏览器绑制前同步更新 DOM，减少闪烁
+    useLayoutEffect(() => {
         const root = window.document.documentElement;
-        // 1. 创建系统主题的监听对象
         const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-        // 2. 封装「更新页面主题类名」的逻辑（抽成函数，方便复用）
-        const updateThemeClass = () => {
-            // 🎨 性能优化：移除全局过渡注入，改用 CSS 控制
-            // 旧方案会导致全页面重排，造成 500ms+ 卡顿
-            // 新方案：只更新类名，让 CSS 中的 transition 自然生效
-
-            root.classList.remove("light", "dark");
+        // 计算实际应该显示的主题
+        const getResolvedTheme = () => {
             if (theme === "system") {
-                // 检测当前系统主题（实时）
-                const systemTheme = mediaQuery.matches ? "dark" : "light";
-                root.classList.add(systemTheme);
-            } else {
-                root.classList.add(theme);
+                return mediaQuery.matches ? "dark" : "light";
+            }
+            return theme;
+        };
+
+        // 更新页面主题类名（只在需要时更新，避免不必要的 DOM 操作）
+        const updateThemeClass = () => {
+            const resolvedTheme = getResolvedTheme();
+            const currentTheme = root.classList.contains("dark") ? "dark" : "light";
+
+            // 只有当主题真正改变时才更新 DOM
+            if (currentTheme !== resolvedTheme) {
+                root.classList.remove("light", "dark");
+                root.classList.add(resolvedTheme);
             }
         };
 
-        // 3. 首次执行：初始化页面类名
+        // 首次执行
         updateThemeClass();
 
-        // 4. 添加监听：系统主题变化时，重新执行updateThemeClass
+        // 监听系统主题变化
         mediaQuery.addEventListener("change", updateThemeClass);
 
-        // 5. 清理监听：组件卸载时移除（避免内存泄漏）
         return () => {
             mediaQuery.removeEventListener("change", updateThemeClass);
         };
-    }, [theme, enableTransitions]); // 依赖theme和enableTransitions，变化时重新执行
+    }, [theme]);
 
     // 4. 封装 value 对象
     const value = {
