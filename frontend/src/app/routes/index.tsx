@@ -12,6 +12,7 @@ import { mdxRoutes } from "./MDX";
 import Home from "@/pages/HomePage";
 import About from "@/pages/About";
 import TestHighlight from "@/pages/TestHighlight";
+import CardTest from "@/pages/CardTest";
 import NotFound from "@/pages/NotFound";
 
 /**
@@ -32,6 +33,7 @@ export default function AppRoutes() {
         <Route path="home" element={<Home />} />
         <Route path="about" element={<About />} />
         <Route path="test-highlight" element={<TestHighlight />} />
+        <Route path="card-test" element={<CardTest />} />
 
         {/* 认证模块路由 */}
         <Route path="auth">{authRoutes}</Route>

@@ -1,17 +1,7 @@
-import { useContext } from "react";
-import { ThemeProviderContext } from "../types/theme";
-
 /**
- * 🪝 自定义 Hook: useTheme
+ * 🪝 主题 Hook (使用 next-themes)
  *
- * 让子组件可以方便地使用： const { theme, setTheme } = useTheme()
+ * 直接导出 next-themes 的 useTheme hook
+ * API 与原来的实现完全兼容
  */
-export const useTheme = () => {
-  const context = useContext(ThemeProviderContext);
-
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-
-  return context;
-};
+export { useTheme } from "next-themes";

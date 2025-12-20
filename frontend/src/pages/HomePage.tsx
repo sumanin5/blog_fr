@@ -50,7 +50,7 @@ export default function HomePage() {
           </p>
 
           {/* CTA 按钮组 */}
-          <div className="animate-in fade-in slide-in-from-bottom-8 flex w-full flex-col justify-center gap-4 pt-4 delay-300 duration-700 sm:flex-row">
+          <div className="animate-in fade-in slide-in-from-bottom-8 flex w-full flex-col justify-center gap-4 pt-4 sm:flex-row">
             <Button
               size="lg"
               className="group h-12 px-8 text-base"

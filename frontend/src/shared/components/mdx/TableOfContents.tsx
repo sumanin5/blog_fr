@@ -30,7 +30,7 @@
  * - cn: 条件样式合并工具函数
  */
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, Menu } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui-extended";
@@ -528,7 +528,7 @@ export function TableOfContents({
                       "group hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                       // 当前活跃标题的样式：强调背景色和加粗文字
                       isActive &&
-                      "bg-accent text-accent-foreground font-medium",
+                        "bg-accent text-accent-foreground font-medium",
                     )}
                     style={{ paddingLeft: `${paddingLeft}px` }} // 动态缩进
                   >

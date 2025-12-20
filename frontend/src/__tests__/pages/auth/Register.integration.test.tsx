@@ -7,10 +7,10 @@
  * 运行方式：npm run test
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import Register from "@/pages/auth/Register";
+import { describe, it, expect, beforeEach } from "vitest";
+import Register from "@/features/auth/pages/auth/Register";
 import { renderWithProviders } from "@/__tests__/test-utils";
 
 /**
@@ -310,7 +310,6 @@ describe("📱 Register 页面 - 集成测试", () => {
   // ========================================
   describe("✅ 页面导航", () => {
     it("点击'去登录'应该导航到登录页", async () => {
-      const user = userEvent.setup();
       renderRegisterPage();
 
       const loginLink = screen.getByText(/去登录/i);
@@ -323,8 +322,6 @@ describe("📱 Register 页面 - 集成测试", () => {
   // ========================================
   describe("✅ 错误处理", () => {
     it("API 返回错误时应该显示错误提示", async () => {
-      const user = userEvent.setup();
-
       // Mock API 响应为错误（这里需要 mock 你的认证函数）
       // vi.mock("@/contexts/AuthContext", () => ({
       //   useAuth: () => ({

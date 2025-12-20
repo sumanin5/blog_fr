@@ -1,0 +1,39 @@
+/* 主题切换过渡动画 */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *:before,
+.theme-transitioning *:after {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    fill 0.3s ease,
+    stroke 0.3s ease,
+    opacity 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease !important;
+}
+
+/* 防止某些元素的过渡效果 */
+.theme-transitioning .no-theme-transition,
+.theme-transitioning .no-theme-transition * {
+  transition: none !important;
+}
+
+/* 主题切换时的特殊效果 */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-transitioning {
+    /* 可以添加整体的过渡效果，比如轻微的缩放 */
+    transform: scale(0.999);
+  }
+}
+
+/* 尊重用户的动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .theme-transitioning,
+  .theme-transitioning *,
+  .theme-transitioning *:before,
+  .theme-transitioning *:after {
+    transition: none !important;
+  }
+}

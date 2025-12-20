@@ -1,8 +1,9 @@
-// 导出类型
-export type { Theme, ThemeProviderState } from "./types/theme";
-
 // 导出 Provider
 export { ThemeProvider } from "./providers/ThemeProvider";
 
-// 导出 Hook
+// 导出 Hooks
 export { useTheme } from "./hooks/useTheme";
+export { useEnhancedTheme } from "./hooks/useEnhancedTheme";
+
+// 导出组件
+export { AdvancedThemeToggle } from "./components/AdvancedThemeToggle";

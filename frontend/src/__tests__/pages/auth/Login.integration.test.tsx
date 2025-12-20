@@ -7,10 +7,10 @@
  * 运行方式：npm run test
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import Login from "@/pages/auth/Login";
+import { describe, it, expect, beforeEach } from "vitest";
+import Login from "@/features/auth/pages/auth/Login";
 import { renderWithProviders } from "@/__tests__/test-utils";
 
 /**
@@ -202,7 +202,6 @@ describe("📱 Login 页面 - 集成测试", () => {
   // ========================================
   describe("✅ 页面导航", () => {
     it("点击'创建新账户'应该导航到注册页", async () => {
-      const user = userEvent.setup();
       renderLoginPage();
 
       const registerLink = screen.getByText(/去注册/i);
@@ -210,7 +209,6 @@ describe("📱 Login 页面 - 集成测试", () => {
     });
 
     it("点击'忘记密码'应该导航到重置密码页", async () => {
-      const user = userEvent.setup();
       renderLoginPage();
 
       const forgotLink = screen.getByText(/忘记密码/i);
@@ -223,8 +221,6 @@ describe("📱 Login 页面 - 集成测试", () => {
   // ========================================
   describe("✅ 错误处理", () => {
     it("API 返回 401 时应该显示错误提示", async () => {
-      const user = userEvent.setup();
-
       // Mock API 响应为 401（这里需要 mock 你的认证函数）
       // vi.mock("@/contexts/AuthContext", () => ({
       //   useAuth: () => ({
@@ -238,7 +234,6 @@ describe("📱 Login 页面 - 集成测试", () => {
     });
 
     it("网络错误时应该显示重试选项", async () => {
-      const user = userEvent.setup();
       renderLoginPage();
 
       // Mock 网络错误
