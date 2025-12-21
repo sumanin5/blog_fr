@@ -1,8 +1,8 @@
 # 项目结构说明
 
-## 新的 Feature-First 架构
+## 新的 Feature-First 架构（扁平化版本）
 
-本项目采用现代的 Feature-First 架构，将相关功能组织在一起，提高代码的可维护性和可扩展性。
+本项目采用现代的 Feature-First 架构，但避免过度的目录嵌套，将相关功能组织在一起，提高代码的可维护性和可扩展性。
 
 ```
 src/
@@ -10,66 +10,73 @@ src/
 │   ├── providers/         # 全局 Provider 组件
 │   │   ├── QueryProvider.tsx
 │   │   └── index.tsx
-│   ├── router/           # 路由配置
-│   └── store/            # 全局状态管理
+│   ├── routes/            # 路由配置
+│   │   ├── Auth/
+│   │   ├── Blog/
+│   │   ├── Dashboard/
+│   │   ├── MDX/
+│   │   └── index.tsx
+│   └── store/             # 全局状态管理（如需要）
 ├── shared/                # 跨功能共享资源
-│   ├── api/              # API 客户端配置
-│   │   ├── generated/    # hey-api 自动生成的文件
+│   ├── api/               # API 客户端配置
+│   │   ├── generated/     # hey-api 自动生成的文件
 │   │   │   ├── client.gen.ts
 │   │   │   ├── sdk.gen.ts
 │   │   │   ├── types.gen.ts
 │   │   │   └── index.ts
-│   │   ├── config.ts     # API 客户端配置（手动维护）
-│   │   └── index.ts      # 统一导出
-│   ├── components/       # 通用 UI 组件
-│   │   ├── ui/          # shadcn/ui 组件
-│   │   ├── common/      # 通用业务组件
-│   │   ├── forms/       # 表单组件
-│   │   └── layout/      # 布局组件
-│   ├── hooks/            # 通用 hooks
-│   ├── lib/              # 工具函数、配置
-│   │   ├── utils.ts     # 通用工具函数
-│   │   ├── query-client.ts  # TanStack Query 配置
-│   │   ├── query-keys.ts    # 查询键管理
-│   │   └── validations/ # 表单验证规则
-│   ├── types/            # 全局类型定义
-│   └── constants/        # 常量定义
-├── features/              # 业务功能模块
-│   ├── auth/             # 认证功能
-│   │   ├── api/          # 认证相关 API 调用
-│   │   ├── components/   # 认证相关组件
-│   │   ├── hooks/        # 认证相关 hooks
-│   │   ├── pages/        # 认证页面
-│   │   ├── store/        # 认证状态管理
-│   │   ├── types/        # 认证类型定义
-│   │   └── index.ts      # 功能导出
-│   ├── blog/             # 博客功能
-│   │   ├── api/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── pages/
-│   │   ├── store/
-│   │   ├── types/
+│   │   ├── config.ts      # API 客户端配置（手动维护）
+│   │   └── index.ts       # 统一导出
+│   ├── components/        # 通用 UI 组件
+│   │   ├── ui/           # shadcn/ui 组件
+│   │   ├── common/       # 通用业务组件
+│   │   ├── forms/        # 表单组件
+│   │   ├── layout/       # 布局组件
+│   │   └── mdx/          # MDX 渲染组件
+│   ├── hooks/             # 通用 hooks
+│   ├── lib/               # 工具函数、配置
+│   │   ├── utils.ts      # 通用工具函数
+│   │   ├── query-client.ts   # TanStack Query 配置
+│   │   ├── query-key-factory.ts  # 查询键管理
+│   │   └── validations/  # 表单验证规则
+│   ├── types/             # 全局类型定义
+│   └── constants/         # 常量定义
+├── features/              # 业务功能模块（扁平化）
+│   ├── auth/              # 认证功能
+│   │   ├── AuthContext.tsx    # 认证上下文（组件）
+│   │   ├── useAuth.ts         # 认证 Hook
+│   │   ├── useAuthQueries.ts  # Query/Mutation Hooks
+│   │   ├── auth-api.ts        # API 调用
+│   │   ├── query-keys.ts      # 查询键定义
+│   │   └── index.ts           # 统一导出
+│   ├── blog/              # 博客功能
+│   │   ├── components/    # 博客专用组件
+│   │   ├── lib/           # 博客相关工具
 │   │   └── index.ts
-│   ├── dashboard/        # 仪表板功能
-│   │   ├── api/
+│   ├── mdx/               # MDX 功能
 │   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── pages/
-│   │   ├── store/
-│   │   ├── types/
+│   │   ├── lib/
 │   │   └── index.ts
-│   └── mdx/              # MDX 功能
+│   └── theme/             # 主题功能
 │       ├── components/
 │       ├── hooks/
-│       ├── pages/
-│       ├── types/
+│       ├── providers/
 │       └── index.ts
-└── pages/                 # 路由页面入口
+└── pages/                 # 路由页面入口（唯一的页面目录）
+    ├── auth/
+    │   ├── Login.tsx
+    │   └── Register.tsx
+    ├── blog/
+    │   ├── BlogList.tsx
+    │   └── BlogDetail.tsx
+    ├── dashboard/
+    │   └── Dashboard.tsx
+    ├── sandbox/           # 测试/演示页面
+    │   ├── CardTest.tsx
+    │   ├── MDXExample.tsx
+    │   └── TestHighlight.tsx
     ├── About.tsx
     ├── HomePage.tsx
-    ├── NotFound.tsx
-    └── ...
+    └── NotFound.tsx
 ```
 
 ## 架构优势
@@ -86,11 +93,19 @@ src/
 - 删除功能时，直接删除对应的 feature 目录
 - 代码组织清晰，便于团队协作
 
-### 3. 更好的开发体验
+### 3. 扁平化结构的优势
+
+- **避免目录套娃**：小功能不需要强行创建多层文件夹
+- **快速定位**：文件位置一目了然，减少跳转次数
+- **灵活性**：当功能变复杂时再创建子目录，而不是一开始就创建
+- **清晰的页面归属**：所有页面统一在 `src/pages` 下，路由配置更直观
+
+### 4. 更好的开发体验
 
 - TypeScript 类型推导更准确
 - IDE 智能提示更精确
 - 代码导航更便捷
+- 测试文件集中在 `sandbox` 目录，不干扰主代码
 
 ## 工具配置
 

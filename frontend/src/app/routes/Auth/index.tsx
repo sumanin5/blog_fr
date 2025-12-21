@@ -1,6 +1,6 @@
 import { Route } from "react-router-dom";
-import Login from "@/features/auth/pages/auth/Login";
-import Register from "@/features/auth/pages/auth/Register";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
 
 /**
  * 认证模块路由

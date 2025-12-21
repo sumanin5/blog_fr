@@ -10,7 +10,7 @@
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, beforeEach } from "vitest";
-import Login from "@/features/auth/pages/auth/Login";
+import Login from "@/pages/auth/Login";
 import { renderWithProviders } from "@/__tests__/test-utils";
 
 /**

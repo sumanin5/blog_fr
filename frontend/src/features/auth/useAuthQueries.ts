@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { authQueryKeys } from "../lib/query-keys";
+import { authQueryKeys } from "./query-keys";
 import {
   loginUser,
   registerNewUser,
   fetchCurrentUser,
   updateUserProfile,
-} from "../api/auth";
+} from "./auth-api";
 import type { BodyLogin } from "@/shared/api";
 
 /**
