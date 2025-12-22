@@ -249,11 +249,14 @@ pre[class*="language-"] > code {
 }
 
 /* 3. 表格响应式容器 */
-/* Prose 默认通常会处理，但为了保险起见，我们可以强制表格外层也有滚动 */
+/* 移除 display: block，让表格保持正常的 table 显示 */
 .prose table {
-  display: block;
   width: 100%;
-  overflow-x: auto;
   max-width: 100%;
+}
+
+/* 表格容器负责处理溢出滚动 */
+.prose .table-container {
+  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }

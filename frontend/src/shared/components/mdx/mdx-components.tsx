@@ -266,13 +266,11 @@ export const components: Record<string, FC<MDXComponentProps>> = {
   hr: () => <hr className="border-border my-8" />,
 
   /* ========== 📊 表格组件系列 ========== */
-  // 表格
+  // 表格 - 移除多余的外层容器，直接使用Table组件
   table: ({ children }) => (
-    <div className="border-border bg-card relative my-8 overflow-hidden rounded-xl border shadow-sm">
-      <div className="overflow-x-auto">
-        <Table className="w-full">{children}</Table>
-      </div>
-    </div>
+    <Table className="border-border bg-card my-8 w-full border-collapse overflow-hidden rounded-xl border shadow-sm">
+      {children}
+    </Table>
   ),
   thead: ({ children }) => (
     <TableHeader className="bg-muted/50">{children}</TableHeader>
@@ -284,12 +282,12 @@ export const components: Record<string, FC<MDXComponentProps>> = {
     </TableRow>
   ),
   th: ({ children }) => (
-    <TableHead className="text-primary h-12 px-4 text-left align-middle font-bold">
+    <TableHead className="text-primary border-border/50 h-12 border-r px-4 text-left align-middle font-bold last:border-r-0">
       {children}
     </TableHead>
   ),
   td: ({ children }) => (
-    <TableCell className="text-foreground/90 p-4 align-middle">
+    <TableCell className="text-foreground/90 border-border/50 border-r p-4 align-middle last:border-r-0">
       {children}
     </TableCell>
   ),

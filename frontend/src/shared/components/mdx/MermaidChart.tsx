@@ -127,11 +127,14 @@ export function MermaidChart({ chart }: MermaidChartProps) {
          transition-none: 防止全局 CSS 动画影响 SVG 渲染计算
       */}
       <div
-        className={`not-prose w-full overflow-x-auto text-center ${isLoading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
-        dangerouslySetInnerHTML={{ __html: svgContent }}
+        className={`not-prose w-full overflow-x-auto ${isLoading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
         style={{
           lineHeight: 0, // 消除行高带来的多余间距
+          display: "flex",
+          justifyContent: "center",
+          minWidth: "fit-content", // 关键：确保容器至少和内容一样宽
         }}
+        dangerouslySetInnerHTML={{ __html: svgContent }}
       />
       {/* 嵌入式样式：强制覆盖全局 transition，防止 Mermaid 计算错乱 */}
       <style>{`
