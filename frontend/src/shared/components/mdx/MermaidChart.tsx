@@ -33,7 +33,7 @@ export function MermaidChart({ chart, id }: MermaidChartProps) {
   const multiplier = sizeMultiplierMap[firstToken] ?? 1; // 未列出的类型用 1x
 
   // 基准尺寸（未乘倍率）
-  const baseContainerMin = 420;
+  // const baseContainerMin = 420;
   const baseContainerMax = 900;
   const baseSvgMin = 380;
   const baseSvgMax = 880;
@@ -46,7 +46,7 @@ export function MermaidChart({ chart, id }: MermaidChartProps) {
   };
 
   // 计算容器与 SVG 的最终宽度范围
-  const containerMinWidth = applyMultiplier(baseContainerMin);
+  // const containerMinWidth = applyMultiplier(baseContainerMin);
   const containerMaxWidth = applyMultiplier(baseContainerMax);
   const svgMinWidth = applyMultiplier(baseSvgMin);
   const svgMaxWidth = applyMultiplier(baseSvgMax);
@@ -142,7 +142,8 @@ export function MermaidChart({ chart, id }: MermaidChartProps) {
         className="mermaid-chart max-w-full overflow-x-auto"
         style={{
           minHeight: "160px",
-          minWidth: `${containerMinWidth}px`,
+          // 移除硬性 minWidth 限制，防止移动端撑开页面
+          // minWidth: `${containerMinWidth}px`,
           maxWidth: `${containerMaxWidth}px`,
           width: "100%",
           marginLeft: "auto",

@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MdxIndexRouteImport } from './routes/mdx/index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as MdxShowcaseRouteImport } from './routes/mdx/showcase'
+import { Route as MdxMdxtestRouteImport } from './routes/mdx/mdxtest'
 import { Route as BlogIdRouteImport } from './routes/blog.$id'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
@@ -49,6 +50,11 @@ const MdxShowcaseRoute = MdxShowcaseRouteImport.update({
   path: '/mdx/showcase',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MdxMdxtestRoute = MdxMdxtestRouteImport.update({
+  id: '/mdx/mdxtest',
+  path: '/mdx/mdxtest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIdRoute = BlogIdRouteImport.update({
   id: '/blog/$id',
   path: '/blog/$id',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/blog/$id': typeof BlogIdRoute
+  '/mdx/mdxtest': typeof MdxMdxtestRoute
   '/mdx/showcase': typeof MdxShowcaseRoute
   '/blog': typeof BlogIndexRoute
   '/mdx': typeof MdxIndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/blog/$id': typeof BlogIdRoute
+  '/mdx/mdxtest': typeof MdxMdxtestRoute
   '/mdx/showcase': typeof MdxShowcaseRoute
   '/blog': typeof BlogIndexRoute
   '/mdx': typeof MdxIndexRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/blog/$id': typeof BlogIdRoute
+  '/mdx/mdxtest': typeof MdxMdxtestRoute
   '/mdx/showcase': typeof MdxShowcaseRoute
   '/blog/': typeof BlogIndexRoute
   '/mdx/': typeof MdxIndexRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/blog/$id'
+    | '/mdx/mdxtest'
     | '/mdx/showcase'
     | '/blog'
     | '/mdx'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/blog/$id'
+    | '/mdx/mdxtest'
     | '/mdx/showcase'
     | '/blog'
     | '/mdx'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/blog/$id'
+    | '/mdx/mdxtest'
     | '/mdx/showcase'
     | '/blog/'
     | '/mdx/'
@@ -142,6 +154,7 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   BlogIdRoute: typeof BlogIdRoute
+  MdxMdxtestRoute: typeof MdxMdxtestRoute
   MdxShowcaseRoute: typeof MdxShowcaseRoute
   BlogIndexRoute: typeof BlogIndexRoute
   MdxIndexRoute: typeof MdxIndexRoute
@@ -191,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MdxShowcaseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mdx/mdxtest': {
+      id: '/mdx/mdxtest'
+      path: '/mdx/mdxtest'
+      fullPath: '/mdx/mdxtest'
+      preLoaderRoute: typeof MdxMdxtestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/$id': {
       id: '/blog/$id'
       path: '/blog/$id'
@@ -222,6 +242,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   BlogIdRoute: BlogIdRoute,
+  MdxMdxtestRoute: MdxMdxtestRoute,
   MdxShowcaseRoute: MdxShowcaseRoute,
   BlogIndexRoute: BlogIndexRoute,
   MdxIndexRoute: MdxIndexRoute,

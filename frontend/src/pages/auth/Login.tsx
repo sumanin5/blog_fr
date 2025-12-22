@@ -1,5 +1,5 @@
 import { useActionState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/features/auth";
 import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
@@ -22,7 +22,7 @@ interface LoginState {
     password?: string[];
     general?: string[];
   } | null;
-  redirectTo?: string;  // 登录成功后的跳转
+  redirectTo?: string; // 登录成功后的跳转
 }
 
 // 采用 React 19 的新写法
@@ -33,14 +33,14 @@ export default function Login() {
   // React 19 登录处理函数
   async function loginAction(
     _prevState: LoginState | null,
-    formData: FormData
+    formData: FormData,
   ): Promise<LoginState> {
     // 从 FormData 中提取数据
     const rawData = {
-      username: (formData.get('username') as string) || '',
-      password: (formData.get('password') as string) || ''
+      username: (formData.get("username") as string) || "",
+      password: (formData.get("password") as string) || "",
     };
-    console.log('🔐 开始登录流程:', { username: rawData.username });
+    console.log("🔐 开始登录流程:", { username: rawData.username });
 
     // 🔍 使用 Zod 进行客户端验证
     const validation = validateLogin(rawData);
@@ -58,8 +58,8 @@ export default function Login() {
 
       return {
         success: false,
-        message: '请检查输入内容',
-        errors
+        message: "请检查输入内容",
+        errors,
       };
     }
 
@@ -68,31 +68,29 @@ export default function Login() {
 
     try {
       // 🌐 调用登录 API
-      console.log('🚀 调用登录接口...');
+      console.log("🚀 调用登录接口...");
       await login(loginData);
 
-      console.log('✅ 登录成功!');
+      console.log("✅ 登录成功!");
 
       // 🎉 登录成功 - 在这里处理跳转
       return {
         success: true,
-        message: '登录成功！正在跳转...',
-        redirectTo: '/' // 标记需要跳转
+        message: "登录成功！正在跳转...",
+        redirectTo: "/", // 标记需要跳转
       };
-
     } catch (err) {
-      console.error('❌ 登录失败:', err);
+      console.error("❌ 登录失败:", err);
 
-      const errorMessage = err instanceof Error
-        ? err.message
-        : '登录失败，请检查用户名或密码';
+      const errorMessage =
+        err instanceof Error ? err.message : "登录失败，请检查用户名或密码";
 
       return {
         success: false,
         message: errorMessage,
         errors: {
-          general: [errorMessage]
-        }
+          general: [errorMessage],
+        },
       };
     }
   }
@@ -104,12 +102,14 @@ export default function Login() {
     if (state?.success && state?.redirectTo) {
       // 延迟跳转，让用户看到成功消息
       const timer = setTimeout(() => {
-        navigate(state.redirectTo!);
+        // 使用 TanStack Router 的类型安全跳转
+        navigate({ to: state.redirectTo as "/" });
       }, 1000);
 
       return () => clearTimeout(timer);
     }
   }, [state?.success, state?.redirectTo, navigate]);
+
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <motion.div
@@ -167,7 +167,9 @@ export default function Login() {
                 <div className="flex items-center justify-between">
                   <Label
                     htmlFor="password"
-                    className={state?.errors?.password ? "text-destructive" : ""}
+                    className={
+                      state?.errors?.password ? "text-destructive" : ""
+                    }
                   >
                     密码
                   </Label>
@@ -240,7 +242,7 @@ export default function Login() {
             </Link>
             <span className="mx-3"> | </span>
             <Link
-              to="/forgot-password"
+              to="/"
               className="text-primary hover:text-primary/80 text-sm transition-colors"
             >
               忘记密码?

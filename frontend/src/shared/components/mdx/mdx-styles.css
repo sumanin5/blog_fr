@@ -227,3 +227,33 @@ pre[class*="language-"] > code {
 .dark .prose em {
   color: var(--foreground) !important;
 }
+
+/* =========================================
+   📱 移动端响应式修复 (Fix Overflow Issues)
+   ========================================= */
+
+/* 1. 强制图片不超过容器宽度 */
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 2. 也是导致移动端布局被撑开的元凶：Katex 公式 */
+/* 为 Katex 容器添加水平滚动 */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 3. 表格响应式容器 */
+/* Prose 默认通常会处理，但为了保险起见，我们可以强制表格外层也有滚动 */
+.prose table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}

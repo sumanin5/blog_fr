@@ -1,5 +1,5 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Menu, Sun, Moon, Monitor, PenTool, Search } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Sun, Moon, Monitor, PenTool, Search } from "lucide-react";
 import { Button } from "@/shared/components/ui-extended";
 import { Input } from "@/shared/components/ui/input";
 import {
@@ -15,33 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-  SheetDescription,
-  SheetClose,
-} from "@/shared/components/ui/sheet";
-import {
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem,
-  NavigationMenuLink,
-} from "@/shared/components/ui/navigation-menu";
+import { MobileNav, DesktopNav } from "./NavMenu";
 import { useTheme } from "@/features/theme";
 import { useAuth } from "@/features/auth";
-
-/**
- * 🎯 导航链接配置
- * 集中管理所有导航链接，方便维护
- */
-const NAV_LINKS = [
-  { path: "/", label: "主页", code: "/HOME" },
-  { path: "/blog", label: "博客", code: "/BLOG" },
-  { path: "/dashboard", label: "仪表盘", code: "/DASHBOARD" },
-  { path: "/about", label: "关于", code: "/ABOUT" },
-];
 
 /**
  * 🏠 页眉组件
@@ -56,14 +32,7 @@ const NAV_LINKS = [
 export function Header() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
-  const { location } = useRouterState();
   const navigate = useNavigate();
-
-  // 判断当前路径是否激活
-  const isActive = (path: string) => {
-    if (path === "/") return location.pathname === "/";
-    return location.pathname.startsWith(path);
-  };
 
   // 获取下一个主题（循环切换：dark -> light -> system -> dark）
   const getNextTheme = () => {
@@ -89,96 +58,15 @@ export function Header() {
             移动端导航 (Mobile Nav)
             ============================================ */}
         <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">切换导航菜单</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[280px]">
-              <SheetTitle className="sr-only">导航菜单</SheetTitle>
-              <SheetDescription className="sr-only">
-                网站主要导航链接
-              </SheetDescription>
-
-              {/* Logo */}
-              <div className="mb-8 flex items-center gap-2">
-                <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                  <PenTool className="text-primary h-5 w-5" />
-                </div>
-                <span className="font-mono font-bold">MY_BLOG</span>
-              </div>
-
-              {/* 导航链接 */}
-              <nav className="grid gap-4">
-                {NAV_LINKS.map((link) => (
-                  <SheetClose asChild key={link.path}>
-                    <Link
-                      to={link.path as any}
-                      className={`flex items-center gap-2 text-lg transition-transform duration-200 hover:translate-x-2 ${
-                        isActive(link.path)
-                          ? "text-foreground font-bold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  </SheetClose>
-                ))}
-              </nav>
-
-              {/* 移动端主题切换 */}
-              <div className="mt-8 border-t pt-4">
-                <p className="text-muted-foreground mb-3 text-sm font-medium">
-                  主题设置
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant={theme === "light" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setTheme("light")}
-                    className="h-auto flex-col gap-1 py-2"
-                    noTransition
-                  >
-                    <Sun className="h-4 w-4" />
-                    <span className="text-xs">浅色</span>
-                  </Button>
-                  <Button
-                    variant={theme === "dark" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setTheme("dark")}
-                    className="h-auto flex-col gap-1 py-2"
-                    noTransition
-                  >
-                    <Moon className="h-4 w-4" />
-                    <span className="text-xs">深色</span>
-                  </Button>
-                  <Button
-                    variant={theme === "system" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setTheme("system")}
-                    className="h-auto flex-col gap-1 py-2"
-                    noTransition
-                  >
-                    <Monitor className="h-4 w-4" />
-                    <span className="text-xs">系统</span>
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <MobileNav />
         </div>
 
         {/* ============================================
             桌面端 Logo + 导航
             ============================================ */}
         <div className="mr-4 hidden items-center gap-8 md:flex">
-          {/* Logo - 可点击跳转到首页 */}
-          <div
-            className="flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-80"
-            onClick={() => navigate({ to: "/" })}
-          >
+          {/* Logo - 纯文本展示 */}
+          <div className="flex items-center gap-2">
             <div className="bg-primary/10 relative flex h-8 w-8 items-center justify-center rounded-lg">
               <PenTool className="text-primary h-5 w-5" />
             </div>
@@ -187,30 +75,12 @@ export function Header() {
             </span>
           </div>
 
-          {/* 导航链接 - 使用 shadcn NavigationMenu */}
-          <NavigationMenu>
-            <NavigationMenuList>
-              {NAV_LINKS.map((link) => (
-                <NavigationMenuItem key={link.path}>
-                  <NavigationMenuLink asChild active={isActive(link.path)}>
-                    <Link
-                      to={link.path as any}
-                      className="px-3 py-1.5 text-sm font-medium"
-                    >
-                      {link.label}
-                    </Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
+          {/* 导航链接库 */}
+          <DesktopNav />
         </div>
 
         {/* 移动端 Logo */}
-        <div
-          className="flex cursor-pointer md:hidden"
-          onClick={() => navigate({ to: "/" })}
-        >
+        <div className="flex md:hidden">
           <PenTool className="text-primary mr-2 h-6 w-6" />
           <span className="font-mono font-bold">MY_BLOG</span>
         </div>
@@ -231,12 +101,12 @@ export function Header() {
             </div>
           </div>
 
-          {/* 主题切换按钮 (桌面端) */}
+          {/* 主题切换按钮 */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setTheme(getNextTheme())}
-            className="hidden rounded-full md:flex"
+            className="rounded-full"
             title={`当前: ${theme === "dark" ? "深色" : theme === "light" ? "浅色" : "跟随系统"}`}
             noTransition
           >
@@ -271,12 +141,12 @@ export function Header() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => navigate({ to: "/profile" as any })}
+                  onClick={() => navigate({ to: "/dashboard" })}
                 >
                   个人资料
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => navigate({ to: "/settings" as any })}
+                  onClick={() => navigate({ to: "/dashboard" })}
                 >
                   设置
                 </DropdownMenuItem>
@@ -298,7 +168,9 @@ export function Header() {
                 </Button>
               </Link>
               <Link to="/auth/register">
-                <Button size="sm">注册</Button>
+                <Button size="sm" className="hidden sm:flex">
+                  注册
+                </Button>
               </Link>
             </>
           )}
