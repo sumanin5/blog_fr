@@ -46,14 +46,14 @@ pre[class*="language-"] > code {
  * 亮色模式代码块 - 浅灰背景
  */
 :root:not(.dark) pre[class*="language-"] {
-  background-color: var(--code-background) !important;
+  background-color: var(--card) !important;
   border-color: #d0d7de;
   color: #24292f !important;
 }
 
 /* 暗色模式代码块 - 深色背景 */
 :root.dark pre[class*="language-"] {
-  background-color: var(--code-background) !important;
+  background-color: var(--card) !important;
   border-color: #27272a;
   color: #c9d1d9 !important;
 }

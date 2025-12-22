@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, Home, Search } from "lucide-react";
 import { Button } from "@/shared/components/ui-extended";
@@ -13,8 +13,6 @@ import { Button } from "@/shared/components/ui-extended";
  * - 响应式布局
  */
 export default function NotFound() {
-  const navigate = useNavigate();
-
   // 404 文字的容器动画
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -165,7 +163,7 @@ export default function NotFound() {
           {/* 操作按钮组 */}
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
-              onClick={() => navigate(-1)}
+              onClick={() => window.history.back()}
               variant="outline"
               className="flex-1 gap-2"
               size="lg"

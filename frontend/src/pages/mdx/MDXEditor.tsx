@@ -19,7 +19,6 @@ import {
   Code,
   AlertCircle,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 // 组件映射已从 @/shared/components/mdx/MDXProvider 导入
 
@@ -87,7 +86,6 @@ $$
 `;
 
 export default function MDXEditor() {
-  const navigate = useNavigate();
   const [mdxCode, setMdxCode] = useState(DEFAULT_MDX);
   const [compiledMDX, setCompiledMDX] = useState<{
     default: React.ComponentType;
@@ -194,7 +192,7 @@ export default function MDXEditor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(-1)}
+              onClick={() => window.history.back()}
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet } from "@tanstack/react-router";
 import { Header, Footer } from "@/shared/components/layout";
 import { Toaster } from "@/shared/components/ui/sonner";
 import { ThemeBackground } from "@/shared/components/common/ThemeBackground";

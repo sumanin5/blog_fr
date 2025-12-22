@@ -15,13 +15,14 @@
  * ```
  */
 
-import { BrowserRouter } from "react-router-dom";
+import {
+  createMemoryHistory,
+  RouterProvider,
+  createRouter,
+} from "@tanstack/react-router";
 import { AuthProvider } from "@/features/auth";
 import { ThemeProvider } from "@/features/theme";
-
-interface AllTheProvidersProps {
-  children: React.ReactNode;
-}
+import { routeTree } from "@/routeTree.gen";
 
 /**
  * 提供所有全局上下文的包装组件
@@ -31,18 +32,28 @@ interface AllTheProvidersProps {
  *
  * @example
  * ```tsx
- * render(
- *   <AllTheProviders>
- *     <MyComponent />
- *   </AllTheProviders>
- * );
+ * render(<AllTheProviders />);
  * ```
  */
-export function AllTheProviders({ children }: AllTheProvidersProps) {
+export function AllTheProviders() {
+  // 为测试创建内存路由
+  const memoryHistory = createMemoryHistory({
+    initialEntries: ["/"],
+  });
+
+  const router = createRouter({
+    routeTree,
+    history: memoryHistory,
+    context: {
+      auth: undefined!,
+      queryClient: undefined!,
+    },
+  });
+
   return (
     <ThemeProvider defaultTheme="system" storageKey="my-blog-theme">
       <AuthProvider>
-        <BrowserRouter>{children}</BrowserRouter>
+        <RouterProvider router={router} />
       </AuthProvider>
     </ThemeProvider>
   );
