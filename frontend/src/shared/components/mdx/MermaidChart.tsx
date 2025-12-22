@@ -1,155 +1,148 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import mermaid from "mermaid";
+import { useTheme } from "@/features/theme";
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface MermaidChartProps {
   chart: string;
-  id?: string;
 }
 
-let globalCounter = 0;
+/**
+ * 🧜‍♀️ Mermaid 流程图渲染组件 (V2 重构版)
+ *
+ * 核心改进：
+ * 1. 移除所有手动尺寸计算，完全依赖 CSS 布局。
+ * 2. 增加 Loading 状态，避免渲染时的闪烁。
+ * 3. 增强错误处理，语法错误时显示友好提示。
+ * 4. 自动响应主题变化 (Dark/Light)。
+ */
+export function MermaidChart({ chart }: MermaidChartProps) {
+  const { theme } = useTheme();
+  const [svgContent, setSvgContent] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-export function MermaidChart({ chart, id }: MermaidChartProps) {
-  const elementRef = useRef<HTMLDivElement>(null);
-  // 保证每个 Mermaid 图有唯一 ID；用户传入 id 则复用
-  const [chartId] = useState(() => id || `mermaid-chart-${++globalCounter}`);
-
-  // --- 尺寸策略 (已废弃，改用纯 CSS 自适应) ---
-  // 之前的逻辑试图手动计算 SVG 尺寸，导致图表无法正确缩放。
-  // 现在我们完全利用 Mermaid 的 useMaxWidth: true 和 CSS max-width: 100% 来处理。
-  // --- 尺寸策略 (已废弃，改用纯 CSS 自适应) ---
-  // 之前的逻辑试图手动计算 SVG 尺寸，导致图表无法正确缩放。
-  // 现在我们完全利用 Mermaid 的 useMaxWidth: true 和 CSS max-width: 100% 来处理。
+  // 生成唯一 ID (避免 React.useId 的冒号问题)
+  const chartId = useMemo(
+    () => `mermaid-${Math.random().toString(36).slice(2, 9)}`,
+    [],
+  );
 
   useEffect(() => {
-    // 每次渲染时都重新初始化 Mermaid，确保配置正确应用
-    // 检测当前是否为暗色模式
-    const isDarkMode = document.documentElement.classList.contains("dark");
+    // 1. 确保 mermaid 初始化
+    // 我们在 useEffect 内部根据 theme 动态 re-init，确保颜色正确
+    const currentTheme =
+      theme === "dark" ||
+      (theme === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches)
+        ? "dark"
+        : "default";
 
-    // Mermaid 全局配置：主题色、曲线、序列图/甘特图的默认布局
     mermaid.initialize({
       startOnLoad: false,
-      theme: isDarkMode ? "dark" : "default",
-      themeVariables: isDarkMode
-        ? {
-            // 暗色模式主题变量
-            primaryColor: "#3b82f6",
-            primaryTextColor: "#e5e7eb",
-            primaryBorderColor: "#4b5563",
-            lineColor: "#9ca3af",
-            secondaryColor: "#374151",
-            tertiaryColor: "#1f2937",
-            background: "#1f2937",
-            mainBkg: "#374151",
-            nodeBorder: "#4b5563",
-            clusterBkg: "#374151",
-            titleColor: "#f3f4f6",
-            edgeLabelBackground: "#374151",
-          }
-        : {
-            // 亮色模式主题变量
-            primaryColor: "#3b82f6",
-            primaryTextColor: "#1f2937",
-            primaryBorderColor: "#e5e7eb",
-            lineColor: "#6b7280",
-            secondaryColor: "#f3f4f6",
-            tertiaryColor: "#ffffff",
-          },
-      flowchart: {
-        useMaxWidth: true,
-        htmlLabels: true,
-        curve: "basis",
-        nodeSpacing: 50,
-        rankSpacing: 50,
-        padding: 15,
-      },
-      fontFamily: "ui-sans-serif, system-ui, sans-serif",
-      sequence: {
-        diagramMarginX: 50,
-        diagramMarginY: 10,
-        actorMargin: 50,
-        width: 150,
-        height: 65,
-        boxMargin: 10,
-        boxTextMargin: 5,
-        noteMargin: 10,
-        messageMargin: 35,
-        mirrorActors: true,
-        bottomMarginAdj: 1,
-        useMaxWidth: true,
-      },
-      gantt: {
-        titleTopMargin: 25,
-        barHeight: 20,
-        fontSize: 14,
-        gridLineStartPadding: 35,
-        leftPadding: 75,
-        topPadding: 50,
-      },
+      theme: currentTheme,
+      // 关键配置：允许图表尽量宽，不要被默认值限制
+      flowchart: { useMaxWidth: true, htmlLabels: true },
+      sequence: { useMaxWidth: true },
+      gantt: { useMaxWidth: true },
+      journey: { useMaxWidth: true },
+      // 安全配置
+      securityLevel: "loose",
     });
 
-    const renderChart = async () => {
-      if (elementRef.current) {
-        try {
-          // 清空之前的内容
-          elementRef.current.innerHTML = "";
+    // 2. 渲染函数
+    const renderDiagram = async () => {
+      setIsLoading(true);
+      setError(null);
 
-          // 渲染图表
-          // 渲染为 SVG，并插入容器
-          const { svg } = await mermaid.render(chartId, chart);
-          elementRef.current.innerHTML = svg;
-
-          // 获取 SVG 元素
-          const svgEl = elementRef.current.querySelector("svg");
-          if (svgEl) {
-            // 移除可能存在的硬编码宽高属性，完全交给 CSS 控制
-            svgEl.removeAttribute("width");
-            svgEl.removeAttribute("height");
-
-            // 设置样式以确保自适应
-            svgEl.style.maxWidth = "100%";
-            svgEl.style.height = "auto";
-
-            // 确保 SVG 能够根据容器调整大小，保持比例
-            // 如果 mermaid 生成的 svg 没有 preserveAspectRatio，我们可能会加上
-            // 但通常 mermaid 生成的已经足够好
-          }
-        } catch (error) {
-          console.error("Mermaid rendering error:", error);
-          console.log("Chart content:", JSON.stringify(chart));
-          elementRef.current.innerHTML = `
-            <div class="p-4 border border-red-200 bg-red-50 rounded-lg">
-              <p class="text-red-600 font-medium">图表渲染错误</p>
-              <p class="text-sm text-gray-600 mt-1">图表内容: "${chart}"</p>
-              <pre class="text-sm text-red-500 mt-2 overflow-x-auto">${error}</pre>
-            </div>
-          `;
+      try {
+        // 预检查：空内容不渲染
+        if (!chart.trim()) {
+          setIsLoading(false);
+          return;
         }
+
+        // 核心渲染 API
+        // mermaid.render 会返回一个 { svg: string } 对象
+        // 注意：这里我们传入一个虚拟的 DOM id，mermaid 会在后台创建并计算，然后返回 svg 字符串
+        const { svg } = await mermaid.render(chartId, chart);
+        setSvgContent(svg);
+      } catch (err) {
+        console.error("Mermaid Render Error:", err);
+        // Mermaid 报错时通常会抛出具体信息
+        setError(err instanceof Error ? err.message : "流程图语法包含错误");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    renderChart();
-  }, [chart, chartId]);
+    // 稍微 debounce 一下，避免 theme 快速切换导致竞态
+    const timer = setTimeout(() => {
+      renderDiagram();
+    }, 100);
 
+    return () => clearTimeout(timer);
+  }, [chart, theme, chartId]);
+
+  // --- 渲染状态分支 ---
+
+  // 1. 错误状态
+  if (error) {
+    return (
+      <div className="border-destructive/20 bg-destructive/5 text-destructive my-4 rounded-lg border p-4 text-sm">
+        <div className="flex items-center gap-2 font-semibold">
+          <AlertCircle className="h-4 w-4" />
+          <span>无法渲染流程图</span>
+        </div>
+        <pre className="mt-2 overflow-x-auto font-mono text-xs whitespace-pre-wrap opacity-80">
+          {error}
+        </pre>
+        <div className="text-muted-foreground mt-2 text-xs">
+          源代码：
+          <code className="bg-muted ml-1 rounded px-1 py-0.5">{chart}</code>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. 加载/正常状态
   return (
-    <div className="my-6 flex justify-center">
+    <div className="group bg-card/50 hover:bg-card/80 relative my-6 flex w-full flex-col items-center justify-center overflow-hidden rounded-xl border p-6 transition-colors">
+      {/* Loading 指示器 */}
+      {isLoading && (
+        <div className="bg-card/50 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
+          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+        </div>
+      )}
+
+      {/* SVG 容器 */}
+      {/*
+         w-full + max-w-full: 确保不超过父容器
+         & svg { ... }: 样式穿透，强制 SVG 自适应
+      */}
+      {/* SVG 容器 */}
+      {/*
+         w-full + max-w-full: 确保不超过父容器
+         not-prose: 防止 Tailwind Typography 插件的默认样式干扰
+         transition-none: 防止全局 CSS 动画影响 SVG 渲染计算
+      */}
       <div
-        ref={elementRef}
-        className="mermaid-chart bg-card max-w-full overflow-x-auto"
+        className={`not-prose w-full overflow-x-auto text-center ${isLoading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
+        dangerouslySetInnerHTML={{ __html: svgContent }}
         style={{
-          // minHeight: "160px", 移除最小高度，避免对小图造成不必要的留白
-          width: "100%",
-          marginLeft: "auto",
-          marginRight: "auto",
-          backgroundColor: "transparent",
-          // border: "1px solid #e5e7eb", // 移除边框，通常 Mermaid 自身不需要边框
-          // borderRadius: "12px",
-          // padding: "18px",
-          // boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
-          display: "flex",
-          justifyContent: "center", // 让图表居中
-          alignItems: "center",
+          lineHeight: 0, // 消除行高带来的多余间距
         }}
       />
+      {/* 嵌入式样式：强制覆盖全局 transition，防止 Mermaid 计算错乱 */}
+      <style>{`
+        #${chartId} * {
+          transition: none !important;
+        }
+        #${chartId} svg {
+          max-width: 100% !important;
+          height: auto !important;
+        }
+      `}</style>
     </div>
   );
 }
