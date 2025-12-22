@@ -163,8 +163,10 @@
   /* 禁用颜色过渡，保留其他动画 */
   * {
     transition-property:
-      transform, opacity, box-shadow, filter, backdrop-filter, border-radius,
-      width, height, margin, padding !important;
+      translate, scale, transform, opacity, box-shadow, filter, backdrop-filter,
+      border-radius, width, height, margin, padding !important;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* 自定义滚动条样式 */

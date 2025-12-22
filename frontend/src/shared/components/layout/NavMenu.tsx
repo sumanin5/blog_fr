@@ -107,7 +107,7 @@ export function MobileNav() {
     {},
   );
   const { location } = useRouterState();
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
   // 简单的状态切换函数
@@ -246,7 +246,17 @@ export function MobileNav() {
 
         {/* 底部用户区域 */}
         <div className="border-t p-4">
-          {user ? (
+          {isLoading ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 px-2">
+                <div className="bg-muted/50 h-10 w-10 animate-pulse rounded-full" />
+                <div className="flex flex-col gap-2">
+                  <div className="bg-muted/50 h-4 w-24 animate-pulse rounded" />
+                  <div className="bg-muted/50 h-3 w-32 animate-pulse rounded" />
+                </div>
+              </div>
+            </div>
+          ) : user ? (
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3 px-2">
                 <Avatar className="h-10 w-10">

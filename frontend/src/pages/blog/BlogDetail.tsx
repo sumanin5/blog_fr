@@ -56,7 +56,7 @@ export default function BlogDetail() {
               <Badge
                 key={tag}
                 variant="secondary"
-                className="bg-primary/10 text-primary border-none text-xs"
+                className="bg-primary/10 text-primary border-none text-xs transition-transform hover:scale-110"
               >
                 {tag}
               </Badge>

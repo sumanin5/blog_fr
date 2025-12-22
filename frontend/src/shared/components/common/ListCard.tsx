@@ -44,7 +44,7 @@ export const ListCard: React.FC<ListCardProps> = ({ item, index, onClick }) => {
     >
       <Card
         onClick={onClick}
-        className="group cursor-pointer gap-0 overflow-hidden p-0 transition-[border-color,box-shadow] duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"
+        className="group hover:border-primary/50 hover:shadow-primary/5 cursor-pointer gap-0 overflow-hidden p-0 transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-lg"
       >
         {/* 图片容器 */}
         <div className="bg-muted relative aspect-video w-full overflow-hidden">
@@ -84,7 +84,7 @@ export const ListCard: React.FC<ListCardProps> = ({ item, index, onClick }) => {
           </div>
 
           {/* 标题 */}
-          <h3 className="mb-2 text-xl leading-tight font-bold tracking-tight transition-[color] duration-200 group-hover:text-primary">
+          <h3 className="group-hover:text-primary mb-2 text-xl leading-tight font-bold tracking-tight transition-[color] duration-200">
             {item.title}
           </h3>
 
@@ -95,7 +95,7 @@ export const ListCard: React.FC<ListCardProps> = ({ item, index, onClick }) => {
         </CardContent>
 
         {/* 页脚元数据 */}
-        <CardFooter className="border-t border-border/50 px-5 py-4">
+        <CardFooter className="border-border/50 border-t px-5 py-4">
           <div className="text-muted-foreground flex w-full items-center justify-between text-xs">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
@@ -103,7 +103,9 @@ export const ListCard: React.FC<ListCardProps> = ({ item, index, onClick }) => {
                 <span>{item.date}</span>
               </div>
               {item.author?.name && (
-                <span className="text-muted-foreground">{item.author.name}</span>
+                <span className="text-muted-foreground">
+                  {item.author.name}
+                </span>
               )}
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" />

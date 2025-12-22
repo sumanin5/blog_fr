@@ -549,7 +549,7 @@ export function TableOfContents({
                     {hasChildHeadings && (
                       <button
                         type="button"
-                        className="hover:bg-accent flex h-4 w-4 flex-shrink-0 items-center justify-center rounded p-0 opacity-60 transition-opacity hover:opacity-100"
+                        className="hover:bg-accent flex h-4 w-4 shrink-0 items-center justify-center rounded p-0 opacity-60 transition-opacity hover:opacity-100"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();

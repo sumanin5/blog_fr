@@ -31,7 +31,7 @@ import { useAuth } from "@/features/auth";
  */
 export function Header() {
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
   // 获取下一个主题（循环切换：dark -> light -> system -> dark）
@@ -115,7 +115,9 @@ export function Header() {
           </Button>
 
           {/* 用户菜单 */}
-          {user ? (
+          {isLoading ? (
+            <div className="bg-muted/50 h-8 w-8 animate-pulse rounded-full" />
+          ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
