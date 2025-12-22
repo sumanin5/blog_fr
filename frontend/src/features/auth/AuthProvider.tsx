@@ -1,5 +1,4 @@
-import { createContext, type ReactNode } from "react";
-
+import { createContext, useContext, type ReactNode } from "react";
 import type {
   UserResponse,
   UserRegister,
@@ -12,8 +11,11 @@ import {
   useRegister,
   useUpdateUser,
   useLogout,
-} from "./useAuthQueries";
+} from "./auth";
 
+// ============================================
+// Context 类型定义
+// ============================================
 interface AuthContextType {
   user: UserResponse | null; // 当前登录用户
   isLoading: boolean; // 是否正在加载
@@ -27,6 +29,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// ============================================
+// Provider 组件
+// ============================================
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 使用 TanStack Query hooks
   const { data: user, isLoading, refetch } = useCurrentUser();
@@ -69,5 +74,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// 导出 Context 供 useAuth hook 使用
-export { AuthContext };
+// ============================================
+// useAuth Hook
+// ============================================
+/**
+ * 使用认证上下文的 Hook
+ * 必须在 AuthProvider 内部使用
+ */
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

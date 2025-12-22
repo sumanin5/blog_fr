@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { Github, Twitter, Mail } from "lucide-react";
 
 /**
@@ -30,8 +30,8 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border/40 bg-background/80 backdrop-blur-sm">
-      <div className="container mx-auto px-4 max-w-screen-2xl">
+    <footer className="border-border/40 bg-background/80 border-t backdrop-blur-sm">
+      <div className="container mx-auto max-w-screen-2xl px-4">
         {/* ============================================
             主要内容区域
             ============================================ */}
@@ -39,21 +39,21 @@ export function Footer() {
           {/* 左侧：系统状态（科技风格） */}
           <div className="flex flex-col items-center gap-2 md:flex-row md:gap-4">
             {/* 状态指示器 */}
-            <p className="text-sm text-muted-foreground font-mono">
+            <p className="text-muted-foreground font-mono text-sm">
               SYSTEM_STATUS:{" "}
-              <span className="text-green-500 inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="inline-flex items-center gap-1 text-green-500">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
                 ONLINE
               </span>
             </p>
 
             {/* 分隔符 */}
-            <span className="hidden md:inline text-muted-foreground/50">
+            <span className="text-muted-foreground/50 hidden md:inline">
               //
             </span>
 
             {/* 技术栈标识 */}
-            <p className="text-sm text-muted-foreground font-mono">
+            <p className="text-muted-foreground font-mono text-sm">
               POWERED_BY:{" "}
               <span className="text-primary/80">REACT + VITE + TAILWIND</span>
             </p>
@@ -62,12 +62,12 @@ export function Footer() {
           {/* 右侧：链接组 */}
           <div className="flex items-center gap-4">
             {/* 页面链接 */}
-            <nav className="flex items-center gap-4 text-sm text-muted-foreground">
+            <nav className="text-muted-foreground flex items-center gap-4 text-sm">
               {FOOTER_LINKS.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className="hover:underline hover:text-primary transition-colors"
+                  className="hover:text-primary transition-colors hover:underline"
                 >
                   {link.label}
                 </Link>
@@ -75,7 +75,7 @@ export function Footer() {
             </nav>
 
             {/* 分隔线 */}
-            <div className="h-4 w-px bg-border/50" />
+            <div className="bg-border/50 h-4 w-px" />
 
             {/* 社交媒体图标 */}
             <div className="flex items-center gap-2">
@@ -85,7 +85,7 @@ export function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors p-1"
+                  className="text-muted-foreground hover:text-primary p-1 transition-colors"
                   title={social.label}
                 >
                   <social.icon className="h-4 w-4" />
@@ -99,7 +99,7 @@ export function Footer() {
         {/* ============================================
             版权信息（可选，更完整的页脚）
             ============================================ */}
-        <div className="border-t border-border/20 py-4 text-center text-xs text-muted-foreground">
+        <div className="border-border/20 text-muted-foreground border-t py-4 text-center text-xs">
           <p>
             © {currentYear} My Blog. All rights reserved.
             <span className="mx-2">|</span>

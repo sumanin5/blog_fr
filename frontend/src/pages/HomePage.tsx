@@ -9,7 +9,7 @@ import {
   Cpu,
   Code,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 
 /**
  * 🏠 首页组件
@@ -54,7 +54,7 @@ export default function HomePage() {
             <Button
               size="lg"
               className="group h-12 px-8 text-base"
-              onClick={() => navigate("/blog")}
+              onClick={() => navigate({ to: "/blog" })}
             >
               开始阅读
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -63,7 +63,7 @@ export default function HomePage() {
               size="lg"
               variant="outline"
               className="h-12 px-8 text-base"
-              onClick={() => navigate("/register")}
+              onClick={() => navigate({ to: "/auth/register" })}
             >
               加入社区
             </Button>
@@ -151,7 +151,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 className="h-12 px-8"
-                onClick={() => navigate("/register")}
+                onClick={() => navigate({ to: "/auth/register" })}
               >
                 创建账号
               </Button>
@@ -159,7 +159,7 @@ export default function HomePage() {
                 size="lg"
                 variant="outline"
                 className="h-12 px-8"
-                onClick={() => navigate("/blog")}
+                onClick={() => navigate({ to: "/blog" })}
               >
                 浏览文章
               </Button>
@@ -167,7 +167,7 @@ export default function HomePage() {
                 size="lg"
                 variant="outline"
                 className="h-12 px-8"
-                onClick={() => navigate("/mdx-showcase")}
+                onClick={() => navigate({ to: "/mdx/showcase" })}
               >
                 MDX 展示
               </Button>

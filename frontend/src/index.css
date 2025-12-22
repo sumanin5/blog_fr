@@ -65,6 +65,7 @@
 }
 
 :root {
+  color-scheme: light dark;
   --code-background: #f6f8fa;
   --code-foreground: #24292f;
   --background: oklch(0.98 0.003 264.4);
@@ -138,14 +139,8 @@
 
   --code-background: #09090b;
   --code-foreground: #c9d1d9;
-}
-
-/* 深色模式配置 */
-.dark {
   color-scheme: dark;
 }
-
-/* 🎨 主题切换 - 无过渡动画，立即生效 */
 
 @layer base {
   * {
@@ -153,9 +148,7 @@
   }
 
   body {
-    position: relative;
-    background-color: var(--background);
-    color: var(--foreground);
+    @apply bg-background text-foreground;
     font-family:
       "Inter",
       -apple-system,
@@ -166,7 +159,14 @@
     font-variant-ligatures: none;
   }
 
-  /* 🎨 自定义滚动条样式（科技感） */
+  /* 禁用颜色过渡，保留其他动画 */
+  * {
+    transition-property:
+      transform, opacity, box-shadow, filter, backdrop-filter, border-radius,
+      width, height, margin, padding !important;
+  }
+
+  /* 自定义滚动条样式 */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -179,7 +179,6 @@
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.3);
     border-radius: 4px;
-    transition: background 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {

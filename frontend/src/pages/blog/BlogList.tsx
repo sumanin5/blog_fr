@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { type ListCardItem } from "@/shared/components/common/ListCard";
 import { HeroSection, CategoryFilter } from "@/shared/components/common";
 import { PostGrid } from "@/features/blog/components";
@@ -82,7 +82,7 @@ export default function BlogList() {
       <HeroSection
         badge={{
           icon: Sparkles,
-          text: "技术分享与实践"
+          text: "技术分享与实践",
         }}
         title={
           <>
@@ -108,14 +108,16 @@ export default function BlogList() {
 
         <PostGrid
           posts={filteredPosts}
-          onPostClick={(post) => navigate(`/blog/${post.id}`)}
+          onPostClick={(post) =>
+            navigate({ to: "/blog/$id", params: { id: post.id.toString() } })
+          }
           emptyState={{
             icon: FileText,
             message: "当前分类暂无文章",
             action: {
               label: "查看所有文章",
-              onClick: () => setActiveCategory("All")
-            }
+              onClick: () => setActiveCategory("All"),
+            },
           }}
         />
       </section>

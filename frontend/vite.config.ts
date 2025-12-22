@@ -2,6 +2,7 @@ import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import mdx from "@mdx-js/rollup";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -22,11 +23,10 @@ import rehypeSlug from "rehype-slug";
  * - remarkMath: 数学公式语法支持（$...$ 和 $$...$$）
  * - rehypeKatex: 将数学公式渲染为 KaTeX
  * - rehypePrism: 代码语法高亮（PrismJS）
- *
- * 注意：resolve.alias 的 @ 别名已在这里配置，以便 shadcn-cli 能正确识别组件安装路径
  */
 export default defineConfig({
   plugins: [
+    tanstackRouter(),
     // MDX 插件必须在 React 插件之前
     mdx({
       providerImportSource: "@mdx-js/react",

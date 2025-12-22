@@ -1,44 +1,32 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Blog</title>
-    <style>
-      /* 关键 CSS：防止深色模式下的白屏闪烁 (FOUC) */
-      :root {
-        background-color: oklch(0.98 0.003 264.4);
-      }
-      :root.dark {
-        background-color: oklch(0.145 0 0);
-      }
-    </style>
-    <script>
-      (function () {
-        try {
-          var storageKey = "my-blog-theme";
-          var defaultTheme = "system";
-          var theme = localStorage.getItem(storageKey) || defaultTheme;
-          var root = document.documentElement;
 
-          root.classList.remove("light", "dark");
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Blog</title>
+  <script>
+    // 防止主题闪烁 - 在页面加载前设置主题
+    (function () {
+      try {
+        const theme = localStorage.getItem('my-blog-theme') || 'system';
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const resolvedTheme = theme === 'system' ? systemTheme : theme;
 
-          if (theme === "system") {
-            var systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-              .matches
-              ? "dark"
-              : "light";
-            root.classList.add(systemTheme);
-          } else {
-            root.classList.add(theme);
-          }
-        } catch (e) {}
-      })();
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+        if (resolvedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {
+        // 忽略错误，使用默认主题
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

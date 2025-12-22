@@ -1,9 +1,4 @@
-// 导出 Provider
+// 🎨 主题系统 - 简化版本
 export { ThemeProvider } from "./providers/ThemeProvider";
-
-// 导出 Hooks
 export { useTheme } from "./hooks/useTheme";
-export { useEnhancedTheme } from "./hooks/useEnhancedTheme";
-
-// 导出组件
-export { AdvancedThemeToggle } from "./components/AdvancedThemeToggle";
+export { ThemeToggle } from "./components/ThemeToggle";

@@ -21,10 +21,10 @@ import type { FC, ImgHTMLAttributes, ReactNode } from "react";
 import { ImageIcon } from "lucide-react";
 
 import { CodeBlock } from "./CodeBlock";
-import {
-  SimpleFlowExample,
-  SystemArchExample,
-} from "@/features/mdx/components/FlowExamples";
+// import {
+//   SimpleFlowExample,
+//   SystemArchExample,
+// } from "@/features/mdx/components/FlowExamples";
 import { TableOfContents } from "./TableOfContents";
 import {
   Table,
@@ -298,12 +298,7 @@ export const components: Record<string, FC<MDXComponentProps>> = {
   // 图片：使用 figure/figcaption，保持与 block 布局一致
   img: Img,
 
-  /* ========== 🔄 自定义 React Flow 组件 ========== */
-  // React Flow 组件
-  SimpleFlowExample,
-  SystemArchExample,
-
-  /* ========== 📋 智能目录组件 ========== */
+  /* ==========  智能目录组件 ========== */
   // 自动目录生成组件 - 扫描页面标题并生成目录按钮
   // 使用方法：在MDX中直接写 <TableOfContents />
   TableOfContents: (props: MDXComponentProps) => (

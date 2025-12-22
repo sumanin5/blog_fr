@@ -1,12 +1,90 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { authQueryKeys } from "./query-keys";
 import {
-  loginUser,
-  registerNewUser,
-  fetchCurrentUser,
-  updateUserProfile,
-} from "./auth-api";
-import type { BodyLogin } from "@/shared/api";
+  login as apiLogin,
+  registerUser,
+  getCurrentUserInfo,
+  updateCurrentUserInfo,
+} from "@/shared/api";
+import type {
+  UserResponse,
+  UserRegister,
+  UserUpdate,
+  BodyLogin,
+} from "@/shared/api";
+
+import { createQueryKeyFactory } from "@/shared/lib/query-key-factory";
+
+// ============================================
+// 查询键管理
+// ============================================
+const factoryKeys = createQueryKeyFactory("auth");
+
+export const authQueryKeys = {
+  ...factoryKeys,
+  currentUser: () => [...factoryKeys.all, "current-user"] as const,
+};
+
+// ============================================
+// API 调用层
+// ============================================
+
+/**
+ * 用户登录
+ */
+export const loginUser = async (
+  credentials: BodyLogin,
+): Promise<{ access_token: string }> => {
+  const response = await apiLogin({ body: credentials, throwOnError: true });
+
+  if (!response.data?.access_token) {
+    throw new Error("登录失败：未收到访问令牌");
+  }
+
+  return {
+    access_token: response.data.access_token,
+  };
+};
+
+/**
+ * 用户注册
+ */
+export const registerNewUser = async (
+  userData: UserRegister,
+): Promise<void> => {
+  await registerUser({ body: userData, throwOnError: true });
+};
+
+/**
+ * 获取当前用户信息
+ */
+export const fetchCurrentUser = async (): Promise<UserResponse | null> => {
+  const token = localStorage.getItem("access_token");
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const response = await getCurrentUserInfo({ throwOnError: true });
+    return response.data ?? null;
+  } catch (error) {
+    // Token 无效，清除本地存储
+    localStorage.removeItem("access_token");
+    throw error;
+  }
+};
+
+/**
+ * 更新当前用户信息
+ */
+export const updateUserProfile = async (
+  userData: UserUpdate,
+): Promise<void> => {
+  await updateCurrentUserInfo({ body: userData, throwOnError: true });
+};
+
+// ============================================
+// TanStack Query Hooks
+// ============================================
 
 /**
  * 获取当前用户信息的 Query Hook

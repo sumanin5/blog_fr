@@ -1,17 +1,39 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/features/theme";
-import { AuthProvider } from "@/features/auth";
-import AppRoutes from "@/app/routes";
+import { AuthProvider, useAuth } from "@/features/auth";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+
+import { routeTree } from "./routeTree.gen";
+
+const router = createRouter({
+  routeTree,
+  context: {
+    auth: undefined!,
+    queryClient: undefined!,
+  },
+  defaultPreload: "intent",
+  defaultPreloadStaleTime: 0,
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+function InnerApp() {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+
+  // 将 auth 状态注入路由上下文，这样你就能在 beforeLoad 里用了
+  return <RouterProvider router={router} context={{ auth, queryClient }} />;
+}
 
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="my-blog-theme">
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/*" element={<AppRoutes />} />
-          </Routes>
-        </BrowserRouter>
+        <InnerApp />
       </AuthProvider>
     </ThemeProvider>
   );

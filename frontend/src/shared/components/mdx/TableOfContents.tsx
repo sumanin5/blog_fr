@@ -428,7 +428,7 @@ export function TableOfContents({
           <Menu className="h-4 w-4" />
           <span className="hidden sm:inline">目录</span>
           {/* 显示总标题数 */}
-          <span className="bg-primary/10 text-primary ml-1 rounded px-1.5 py-0.5 text-xs">
+          <span className="bg-primary/10 text-muted-foreground ml-1 rounded px-1.5 py-0.5 text-xs">
             {headings.length}
           </span>
         </Button>
