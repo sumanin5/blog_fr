@@ -15,7 +15,7 @@ from sqlmodel import create_engine
 # ========================================
 async_engine = create_async_engine(
     str(settings.async_postgres_url),
-    echo=True,  # 开发环境显示 SQL，生产环境设为 False
+    echo=settings.database_echo,  # 开发环境显示 SQL，生产环境设为 False
     future=True,
 )
 

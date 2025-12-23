@@ -143,12 +143,12 @@ export const getCurrentUserInfo = <ThrowOnError extends boolean = false>(
 /**
  * 更新当前用户信息
  *
- * 更新当前登录用户的信息
+ * 部分更新当前登录用户的信息
  */
 export const updateCurrentUserInfo = <ThrowOnError extends boolean = false>(
   options: Options<UpdateCurrentUserInfoData, ThrowOnError>,
 ) =>
-  (options.client ?? client).put<
+  (options.client ?? client).patch<
     UpdateCurrentUserInfoResponses,
     UpdateCurrentUserInfoErrors,
     ThrowOnError
@@ -219,12 +219,12 @@ export const getUserById = <ThrowOnError extends boolean = false>(
 /**
  * 更新指定用户信息
  *
- * 更新指定用户的信息（仅管理员）
+ * 部分更新指定用户的信息（仅管理员）
  */
 export const updateUserById = <ThrowOnError extends boolean = false>(
   options: Options<UpdateUserByIdData, ThrowOnError>,
 ) =>
-  (options.client ?? client).put<
+  (options.client ?? client).patch<
     UpdateUserByIdResponses,
     UpdateUserByIdErrors,
     ThrowOnError

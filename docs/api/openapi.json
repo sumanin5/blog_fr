@@ -132,12 +132,30 @@
           }
         ]
       },
-      "put": {
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "summary": "删除当前用户",
+        "description": "删除当前登录用户的账号",
+        "operationId": "deleteCurrentUserAccount",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "patch": {
         "tags": [
           "users"
         ],
         "summary": "更新当前用户信息",
-        "description": "更新当前登录用户的信息",
+        "description": "部分更新当前登录用户的信息",
         "operationId": "updateCurrentUserInfo",
         "requestBody": {
           "content": {
@@ -169,24 +187,6 @@
                 }
               }
             }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "users"
-        ],
-        "summary": "删除当前用户",
-        "description": "删除当前登录用户的账号",
-        "operationId": "deleteCurrentUserAccount",
-        "responses": {
-          "204": {
-            "description": "Successful Response"
           }
         },
         "security": [
@@ -319,12 +319,12 @@
           }
         }
       },
-      "put": {
+      "patch": {
         "tags": [
           "users"
         ],
         "summary": "更新指定用户信息",
-        "description": "更新指定用户的信息（仅管理员）",
+        "description": "部分更新指定用户的信息（仅管理员）",
         "operationId": "updateUserById",
         "security": [
           {

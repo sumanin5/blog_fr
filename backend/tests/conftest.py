@@ -1,16 +1,16 @@
 import os
 import sys
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 
 import pytest
-from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
 
 # 将项目根目录（backend 目录）添加到 Python 的模块搜索路径中
 # 这样 pytest 就能找到 'app' 模块了
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-os.environ["ENVIRONMENT"] = "test"  # 设置环境变量为测试环境，以便导入的是.env.test 文件，实现环境隔离
+os.environ["ENVIRONMENT"] = (
+    "test"  # 设置环境变量为测试环境，以便导入的是.env.test 文件，实现环境隔离
+)
 
 """
 代码解释：
@@ -24,8 +24,7 @@ os.environ["ENVIRONMENT"] = "test"  # 设置环境变量为测试环境，以便
 
 
 from app.core.base import Base
-from app.core.db import async_engine, get_async_session
-from app.main import app
+from app.core.db import async_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 # ============================================================
@@ -93,7 +92,7 @@ async def session(db_engine) -> AsyncGenerator[AsyncSession, None]:
             # 这样应用代码的 commit() 只会提交到 savepoint
             # 🔥 关键修改：告诉 Session，当你调用 commit 时，
             # 不要真的 commit 事务，而是创建一个 savepoint。
-            join_transaction_mode="create_savepoint"
+            join_transaction_mode="create_savepoint",
         )
 
         async with async_session_maker() as session:
@@ -111,4 +110,3 @@ async def session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 # ============================================================
 
 # 这里的 async_client 已经被移动到 tests/api/conftest.py
-

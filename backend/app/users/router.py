@@ -1,31 +1,27 @@
 """
-用户路由（API Endpoints）- 异步版本
+用户路由（API Endpoints）- 重构版本
 
-定义所有用户相关的 API 接口
+定义所有用户相关的 API 接口，专注于HTTP层面的处理
 """
 
 import uuid
-from datetime import timedelta
 from typing import Annotated
 
-from app.core.config import settings
 from app.core.db import get_async_session
-from app.core.security import create_access_token
-from app.users import crud
 from app.users.dependencies import (
     get_current_active_user,
     get_current_superuser,
 )
-from app.users.model import User, UserRole
+from app.users.model import User
 from app.users.schema import (
     TokenResponse,
-    UserCreate,
     UserListResponse,
     UserRegister,
     UserResponse,
     UserUpdate,
 )
-from fastapi import APIRouter, Depends, HTTPException, status
+from app.users.service import user_service
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -58,27 +54,7 @@ async def register_user(
     - **password**: 密码（至少 6 个字符）
     - **full_name**: 全名（可选）
     """
-    # 检查用户名是否已存在
-    if await crud.get_user_by_username(session, user_in.username):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered",
-        )
-
-    # 检查邮箱是否已存在
-    if await crud.get_user_by_email(session, user_in.email):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
-        )
-
-    # 将 UserRegister 转换为 UserCreate，并强制指定角色为 USER
-    # 这样可以复用 crud.create_user 逻辑，同时确保安全性
-    user_create_data = user_in.model_dump()
-    user_create = UserCreate(**user_create_data, role=UserRole.USER)
-
-    # 创建用户
-    user = await crud.create_user(session, user_create)
-    return user
+    return await user_service.register_user(session, user_in)
 
 
 @router.post(
@@ -100,22 +76,9 @@ async def login(
     Returns:
         JWT token
     """
-    user = await crud.authenticate_user(session, form_data.username, form_data.password)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # 生成真正的 JWT token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        subject=user.id, expires_delta=access_token_expires
+    return await user_service.authenticate_and_create_token(
+        session, form_data.username, form_data.password
     )
-
-    return {"access_token": access_token, "token_type": "bearer"}
 
 
 # ========================================
@@ -136,20 +99,21 @@ async def get_current_user_info(
     return current_user
 
 
-@router.put(
+@router.patch(
     "/me",
     response_model=UserResponse,
     summary="更新当前用户信息",
-    description="更新当前登录用户的信息",
+    description="部分更新当前登录用户的信息",
 )
 async def update_current_user_info(
     user_in: UserUpdate,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """更新当前用户信息"""
-    user = await crud.update_user(session, current_user.id, user_in)
-    return user
+    """部分更新当前用户信息"""
+    return await user_service.update_user_profile(
+        session, current_user.id, user_in, current_user
+    )
 
 
 @router.delete(
@@ -163,7 +127,7 @@ async def delete_current_user_account(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """删除当前用户账号"""
-    await crud.delete_user(session, current_user.id)
+    await user_service.delete_user_account(session, current_user.id, current_user)
     return None
 
 
@@ -180,7 +144,7 @@ async def delete_current_user_account(
 )
 async def get_users_list(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    _: Annotated[User, Depends(get_current_superuser)],  # 需要超级用户权限
+    current_user: Annotated[User, Depends(get_current_superuser)],
     skip: int = 0,
     limit: int = 100,
     is_active: bool | None = None,
@@ -192,10 +156,10 @@ async def get_users_list(
     - **limit**: 返回的最大记录数
     - **is_active**: 是否只返回激活的用户
     """
-    users = await crud.get_users(session, skip=skip, limit=limit, is_active=is_active)
-    total = len(users)  # 简化处理，实际应该查询总数
-
-    return UserListResponse(total=total, users=users)
+    users = await user_service.get_users_list(
+        session, skip=skip, limit=limit, is_active=is_active, current_user=current_user
+    )
+    return UserListResponse(total=len(users), users=users)
 
 
 @router.get(
@@ -207,36 +171,28 @@ async def get_users_list(
 async def get_user_by_id(
     user_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    _: Annotated[User, Depends(get_current_superuser)],
+    current_user: Annotated[User, Depends(get_current_superuser)],
 ):
     """获取指定用户信息（仅管理员）"""
-    user = await crud.get_user_by_id(session, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
-    return user
+    return await user_service.get_user_by_id(session, user_id)
 
 
-@router.put(
+@router.patch(
     "/{user_id}",
     response_model=UserResponse,
     summary="更新指定用户信息",
-    description="更新指定用户的信息（仅管理员）",
+    description="部分更新指定用户的信息（仅管理员）",
 )
 async def update_user_by_id(
     user_id: uuid.UUID,
     user_in: UserUpdate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    _: Annotated[User, Depends(get_current_superuser)],
+    current_user: Annotated[User, Depends(get_current_superuser)],
 ):
-    """更新指定用户信息（仅管理员）"""
-    user = await crud.update_user(session, user_id, user_in)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
-    return user
+    """部分更新指定用户信息（仅管理员）"""
+    return await user_service.update_user_profile(
+        session, user_id, user_in, current_user
+    )
 
 
 @router.delete(
@@ -248,12 +204,8 @@ async def update_user_by_id(
 async def delete_user_by_id(
     user_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    _: Annotated[User, Depends(get_current_superuser)],
+    current_user: Annotated[User, Depends(get_current_superuser)],
 ):
     """删除指定用户（仅管理员）"""
-    success = await crud.delete_user(session, user_id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+    await user_service.delete_user_account(session, user_id, current_user)
     return None

@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     # 数据库 URL（必须提供）
     # 格式：postgresql://user:password@host:port/database
     database_url: str = Field(..., description="完整的数据库连接 URL")
+    database_echo: bool = Field(default=False, description="是否显示SQL日志")
 
     # 以下字段仅用于 docker-compose 初始化数据库（可选）
     postgres_user: str = ""
