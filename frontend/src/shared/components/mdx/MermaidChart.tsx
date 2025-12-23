@@ -28,6 +28,11 @@ export function MermaidChart({ chart }: MermaidChartProps) {
     [],
   );
 
+  // 检测是否为甘特图
+  const isGanttChart = useMemo(() => {
+    return chart.trim().toLowerCase().startsWith("gantt");
+  }, [chart]);
+
   useEffect(() => {
     // 1. 确保 mermaid 初始化
     // 我们在 useEffect 内部根据 theme 动态 re-init，确保颜色正确
@@ -44,7 +49,15 @@ export function MermaidChart({ chart }: MermaidChartProps) {
       // 关键配置：允许图表尽量宽，不要被默认值限制
       flowchart: { useMaxWidth: true, htmlLabels: true },
       sequence: { useMaxWidth: true },
-      gantt: { useMaxWidth: true },
+      gantt: {
+        useMaxWidth: false, // 改为false，让甘特图使用自然宽度
+        leftPadding: 75,
+        gridLineStartPadding: 35,
+        fontSize: 18,
+        sectionFontSize: 16, // 减小章节字体
+        numberSectionStyles: 4,
+        rightPadding: 75,
+      },
       journey: { useMaxWidth: true },
       // 安全配置
       securityLevel: "loose",
@@ -115,35 +128,49 @@ export function MermaidChart({ chart }: MermaidChartProps) {
         </div>
       )}
 
-      {/* SVG 容器 */}
-      {/*
-         w-full + max-w-full: 确保不超过父容器
-         & svg { ... }: 样式穿透，强制 SVG 自适应
-      */}
-      {/* SVG 容器 */}
-      {/*
-         w-full + max-w-full: 确保不超过父容器
-         not-prose: 防止 Tailwind Typography 插件的默认样式干扰
-         transition-none: 防止全局 CSS 动画影响 SVG 渲染计算
-      */}
-      <div
-        className={`not-prose w-full overflow-x-auto ${isLoading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
-        style={{
-          lineHeight: 0, // 消除行高带来的多余间距
-          display: "flex",
-          justifyContent: "center",
-          minWidth: "fit-content", // 关键：确保容器至少和内容一样宽
-        }}
-        dangerouslySetInnerHTML={{ __html: svgContent }}
-      />
+      {/* SVG 容器 - 根据图表类型使用不同布局 */}
+      {isGanttChart ? (
+        // 甘特图：优先支持滚动，左对齐显示
+        <div
+          className={`not-prose w-full overflow-x-auto ${isLoading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
+          style={{
+            lineHeight: 0,
+          }}
+          dangerouslySetInnerHTML={{ __html: svgContent }}
+        />
+      ) : (
+        // 其他图表：居中显示
+        <div
+          className={`not-prose w-full overflow-x-auto ${isLoading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
+          style={{
+            lineHeight: 0,
+            display: "flex",
+            justifyContent: "center",
+            minWidth: "fit-content",
+          }}
+          dangerouslySetInnerHTML={{ __html: svgContent }}
+        />
+      )}
       {/* 嵌入式样式：强制覆盖全局 transition，防止 Mermaid 计算错乱 */}
       <style>{`
         #${chartId} * {
           transition: none !important;
         }
         #${chartId} svg {
-          max-width: 100% !important;
+          max-width: none !important;
           height: auto !important;
+        }
+        /* 甘特图优化 - 让它能够水平滚动 */
+        #${chartId} .gantt .grid .tick text {
+          font-size: 9px !important;
+        }
+        #${chartId} .gantt .sectionTitle {
+          font-size: 16px !important;
+        }
+        /* 任务文字优化 */
+        #${chartId} .gantt .taskText {
+          font-size: 9px !important;
+          font-weight: 500 !important;
         }
       `}</style>
     </div>

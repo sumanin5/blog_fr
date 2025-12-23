@@ -52,6 +52,25 @@ flowchart LR
     D --> E[返回结果]
 ```
 
+### 甘特图测试
+
+```mermaid
+gantt
+    title 项目开发计划
+    dateFormat  YYYY-MM-DD
+    section 需求分析
+    需求收集          :a1, 2024-01-01, 30d
+    需求分析          :after a1, 20d
+    需求评审          :2024-02-01, 5d
+    section 设计阶段
+    UI设计           :2024-02-05, 15d
+    数据库设计        :2024-02-10, 10d
+    API设计          :2024-02-15, 8d
+    section 开发阶段
+    前端开发          :2024-02-20, 25d
+    后端开发          :2024-02-25, 30d
+```
+
 ### 状态图
 
 ```mermaid
