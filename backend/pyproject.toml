@@ -43,6 +43,8 @@ markers = [
     "middleware: mark test as a middleware test",
     "users: mark test as a users module test",
     "permissions: mark test as a permissions related test",
+    "media: mark test as a media module test",
+
 ]
 
 [dependency-groups]

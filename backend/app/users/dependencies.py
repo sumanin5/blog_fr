@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ========================================
 # OAuth2 密码模式（用于获取 token）
 # ========================================
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
 
 
 # ========================================
