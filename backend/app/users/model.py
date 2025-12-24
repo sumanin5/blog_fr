@@ -4,11 +4,16 @@
 定义数据库表结构
 """
 
-from typing import Optional
 from datetime import datetime
-from app.core.base import Base
-from sqlmodel import Field
 from enum import Enum
+from typing import TYPE_CHECKING, Optional
+
+from app.core.base import Base
+from sqlmodel import Field, Relationship
+
+if TYPE_CHECKING:
+    from app.media.model import MediaFile
+
 
 # 定义用户角色枚举
 # 继承 str 使其可以直接序列化为 JSON 字符串
@@ -47,6 +52,9 @@ class User(Base, table=True):
     bio: str = Field(default="", description="用户简介")
     avatar: str = Field(default="", description="用户头像")
     last_login: Optional[datetime] = Field(default=None, description="最后登录时间")
+
+    # 关系字段
+    media_files: list["MediaFile"] = Relationship(back_populates="uploader")
 
     @property
     def is_admin(self) -> bool:

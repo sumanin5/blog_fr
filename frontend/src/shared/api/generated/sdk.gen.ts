@@ -78,7 +78,7 @@ export const registerUser = <ThrowOnError extends boolean = false>(
     RegisterUserErrors,
     ThrowOnError
   >({
-    url: "/users/register",
+    url: "/api/v1/users/register",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -96,7 +96,7 @@ export const login = <ThrowOnError extends boolean = false>(
 ) =>
   (options.client ?? client).post<LoginResponses, LoginErrors, ThrowOnError>({
     ...urlSearchParamsBodySerializer,
-    url: "/users/login",
+    url: "/api/v1/users/login",
     ...options,
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -118,7 +118,7 @@ export const deleteCurrentUserAccount = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/users/me",
+    url: "/api/v1/users/me",
     ...options,
   });
 
@@ -136,7 +136,7 @@ export const getCurrentUserInfo = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/users/me",
+    url: "/api/v1/users/me",
     ...options,
   });
 
@@ -154,7 +154,7 @@ export const updateCurrentUserInfo = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/users/me",
+    url: "/api/v1/users/me",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -176,7 +176,7 @@ export const getUsersList = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/users/",
+    url: "/api/v1/users/",
     ...options,
   });
 
@@ -194,7 +194,7 @@ export const deleteUserById = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/users/{user_id}",
+    url: "/api/v1/users/{user_id}",
     ...options,
   });
 
@@ -212,7 +212,7 @@ export const getUserById = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/users/{user_id}",
+    url: "/api/v1/users/{user_id}",
     ...options,
   });
 
@@ -230,7 +230,7 @@ export const updateUserById = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/users/{user_id}",
+    url: "/api/v1/users/{user_id}",
     ...options,
     headers: {
       "Content-Type": "application/json",

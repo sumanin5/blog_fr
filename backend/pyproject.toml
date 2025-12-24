@@ -5,12 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "aiofiles>=24.1.0",
     "alembic>=1.17.2",
     "asyncpg>=0.31.0",
     "bcrypt>=5.0.0",
     "fastapi[standard]>=0.122.0",
     "httpx>=0.28.1",
     "orjson>=3.11.4",
+    "pillow>=11.0.0",
     "psycopg2-binary>=2.9.11",
     "psycopg[binary]>=3.3.0",
     "pydantic-settings>=2.12.0",

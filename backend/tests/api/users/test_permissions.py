@@ -10,7 +10,7 @@
 import pytest
 from app.users.model import User
 from httpx import AsyncClient
-from tests.api.conftest import TestData, assert_error_response
+from tests.api.conftest import APIConfig, TestData, assert_error_response
 from tests.api.users.conftest import assert_user_list_response, assert_user_response
 
 # ============================================================
@@ -27,24 +27,29 @@ async def test_normal_user_permissions(
     test_data: TestData,
     normal_user: User,
     normal_user_token_headers: dict,
+    api_urls: APIConfig,
 ):
     """测试普通用户权限范围"""
     # ✅ 可以获取自己的信息
-    response = await async_client.get("/users/me", headers=normal_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/me"), headers=normal_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
     assert_user_response(data, normal_user)
 
     # ✅ 可以更新自己的资料
     response = await async_client.patch(
-        "/users/me",
+        api_urls.user_url("/me"),
         json={"full_name": "Updated Name"},
         headers=normal_user_token_headers,
     )
     assert response.status_code == test_data.StatusCodes.OK
 
     # ❌ 不能获取用户列表
-    response = await async_client.get("/users/", headers=normal_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/"), headers=normal_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
     data = response.json()
     assert_error_response(data, test_data.ErrorCodes.INSUFFICIENT_PERMISSIONS)
@@ -59,16 +64,21 @@ async def test_admin_user_permissions(
     test_data: TestData,
     admin_user: User,
     admin_user_token_headers: dict,
+    api_urls: APIConfig,
 ):
     """测试管理员用户权限范围"""
     # ✅ 可以获取自己的信息
-    response = await async_client.get("/users/me", headers=admin_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/me"), headers=admin_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
     assert_user_response(data, admin_user)
 
     # ❌ 管理员也不能获取用户列表（只有超级管理员可以）
-    response = await async_client.get("/users/", headers=admin_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/"), headers=admin_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
     data = response.json()
     assert_error_response(data, test_data.ErrorCodes.INSUFFICIENT_PERMISSIONS)
@@ -83,19 +93,22 @@ async def test_superadmin_user_permissions(
     test_data: TestData,
     superadmin_user: User,
     superadmin_user_token_headers: dict,
+    api_urls: APIConfig,
     multiple_users,
 ):
     """测试超级管理员用户权限范围"""
     # ✅ 可以获取自己的信息
     response = await async_client.get(
-        "/users/me", headers=superadmin_user_token_headers
+        api_urls.user_url("/me"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
     assert_user_response(data, superadmin_user)
 
     # ✅ 可以获取用户列表
-    response = await async_client.get("/users/", headers=superadmin_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/"), headers=superadmin_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
     assert_user_list_response(data)
@@ -106,13 +119,13 @@ async def test_superadmin_user_permissions(
     # ✅ 可以获取其他用户信息
     target_user = multiple_users[0]
     response = await async_client.get(
-        f"/users/{target_user.id}", headers=superadmin_user_token_headers
+        api_urls.user_url(f"/{target_user.id}"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.OK
 
     # ✅ 可以更新其他用户信息
     response = await async_client.patch(
-        f"/users/{target_user.id}",
+        api_urls.user_url(f"/{target_user.id}"),
         json={"full_name": "Updated by Admin"},
         headers=superadmin_user_token_headers,
     )
@@ -120,7 +133,7 @@ async def test_superadmin_user_permissions(
 
     # ✅ 可以删除其他用户
     response = await async_client.delete(
-        f"/users/{target_user.id}", headers=superadmin_user_token_headers
+        api_urls.user_url(f"/{target_user.id}"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.NO_CONTENT
 
@@ -140,18 +153,25 @@ async def test_user_list_access_permissions(
     normal_user_token_headers: dict,
     admin_user_token_headers: dict,
     superadmin_user_token_headers: dict,
+    api_urls: APIConfig,
 ):
     """测试用户列表访问权限"""
     # 普通用户不能访问
-    response = await async_client.get("/users/", headers=normal_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/"), headers=normal_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
     # 管理员也不能访问（根据当前权限设计）
-    response = await async_client.get("/users/", headers=admin_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/"), headers=admin_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
     # 只有超级管理员可以访问
-    response = await async_client.get("/users/", headers=superadmin_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/"), headers=superadmin_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.OK
 
 
@@ -164,11 +184,12 @@ async def test_user_list_pagination(
     test_data: TestData,
     superadmin_user_token_headers: dict,
     multiple_users,
+    api_urls: APIConfig,
 ):
     """测试用户列表分页功能"""
     # 测试分页参数
     response = await async_client.get(
-        "/users/?skip=0&limit=3", headers=superadmin_user_token_headers
+        api_urls.user_url("/?skip=0&limit=3"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
@@ -177,7 +198,7 @@ async def test_user_list_pagination(
 
     # 测试第二页
     response = await async_client.get(
-        "/users/?skip=3&limit=3", headers=superadmin_user_token_headers
+        api_urls.user_url("/?skip=3&limit=3"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
@@ -195,11 +216,12 @@ async def test_user_list_filtering(
     test_data: TestData,
     superadmin_user_token_headers: dict,
     multiple_users,
+    api_urls: APIConfig,
 ):
     """测试用户列表过滤功能"""
     # 测试只获取激活用户
     response = await async_client.get(
-        "/users/?is_active=true", headers=superadmin_user_token_headers
+        api_urls.user_url("/?is_active=true"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
@@ -211,7 +233,7 @@ async def test_user_list_filtering(
 
     # 测试只获取非激活用户
     response = await async_client.get(
-        "/users/?is_active=false", headers=superadmin_user_token_headers
+        api_urls.user_url("/?is_active=false"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
@@ -237,22 +259,23 @@ async def test_cross_user_access_restrictions(
     admin_user: User,
     superadmin_user: User,
     normal_user_token_headers: dict,
+    api_urls: APIConfig,
 ):
     """测试跨用户访问限制"""
     # 普通用户不能获取其他用户信息
     response = await async_client.get(
-        f"/users/{admin_user.id}", headers=normal_user_token_headers
+        api_urls.user_url(f"/{admin_user.id}"), headers=normal_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
     response = await async_client.get(
-        f"/users/{superadmin_user.id}", headers=normal_user_token_headers
+        api_urls.user_url(f"/{superadmin_user.id}"), headers=normal_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
     # 普通用户不能更新其他用户信息
     response = await async_client.patch(
-        f"/users/{admin_user.id}",
+        api_urls.user_url(f"/{admin_user.id}"),
         json={"full_name": "Unauthorized Update"},
         headers=normal_user_token_headers,
     )
@@ -260,7 +283,7 @@ async def test_cross_user_access_restrictions(
 
     # 普通用户不能删除其他用户
     response = await async_client.delete(
-        f"/users/{admin_user.id}", headers=normal_user_token_headers
+        api_urls.user_url(f"/{admin_user.id}"), headers=normal_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
@@ -275,22 +298,23 @@ async def test_admin_cross_user_restrictions(
     normal_user: User,
     superadmin_user: User,
     admin_user_token_headers: dict,
+    api_urls: APIConfig,
 ):
     """测试管理员跨用户访问限制"""
     # 管理员也不能获取其他用户信息（根据当前权限设计）
     response = await async_client.get(
-        f"/users/{normal_user.id}", headers=admin_user_token_headers
+        api_urls.user_url(f"/{normal_user.id}"), headers=admin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
     response = await async_client.get(
-        f"/users/{superadmin_user.id}", headers=admin_user_token_headers
+        api_urls.user_url(f"/{superadmin_user.id}"), headers=admin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
     # 管理员不能更新其他用户信息
     response = await async_client.patch(
-        f"/users/{normal_user.id}",
+        api_urls.user_url(f"/{normal_user.id}"),
         json={"full_name": "Admin Update"},
         headers=admin_user_token_headers,
     )
@@ -298,7 +322,7 @@ async def test_admin_cross_user_restrictions(
 
     # 管理员不能删除其他用户
     response = await async_client.delete(
-        f"/users/{normal_user.id}", headers=admin_user_token_headers
+        api_urls.user_url(f"/{normal_user.id}"), headers=admin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
@@ -308,13 +332,16 @@ async def test_admin_cross_user_restrictions(
 @pytest.mark.permissions
 @pytest.mark.asyncio
 async def test_permission_boundary_edge_cases(
-    async_client: AsyncClient, test_data: TestData, superadmin_user_token_headers: dict
+    async_client: AsyncClient,
+    test_data: TestData,
+    superadmin_user_token_headers: dict,
+    api_urls: APIConfig,
 ):
     """测试权限边界的边缘情况"""
     # 测试访问不存在的用户
     fake_uuid = "019b0000-0000-7000-8000-000000000000"
     response = await async_client.get(
-        f"/users/{fake_uuid}", headers=superadmin_user_token_headers
+        api_urls.user_url(f"/{fake_uuid}"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.NOT_FOUND
     data = response.json()
@@ -322,7 +349,7 @@ async def test_permission_boundary_edge_cases(
 
     # 测试更新不存在的用户
     response = await async_client.patch(
-        f"/users/{fake_uuid}",
+        api_urls.user_url(f"/{fake_uuid}"),
         json={"full_name": "Update Nonexistent"},
         headers=superadmin_user_token_headers,
     )
@@ -332,7 +359,7 @@ async def test_permission_boundary_edge_cases(
 
     # 测试删除不存在的用户
     response = await async_client.delete(
-        f"/users/{fake_uuid}", headers=superadmin_user_token_headers
+        api_urls.user_url(f"/{fake_uuid}"), headers=superadmin_user_token_headers
     )
     assert response.status_code == test_data.StatusCodes.NOT_FOUND
     data = response.json()
@@ -352,11 +379,14 @@ async def test_mixed_role_interactions(
     async_client: AsyncClient,
     test_data: TestData,
     superadmin_user_token_headers: dict,
+    api_urls: APIConfig,
     mixed_role_users,
 ):
     """测试混合角色用户交互"""
     # 获取用户列表，验证包含不同角色
-    response = await async_client.get("/users/", headers=superadmin_user_token_headers)
+    response = await async_client.get(
+        api_urls.user_url("/"), headers=superadmin_user_token_headers
+    )
     assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
 
@@ -376,13 +406,13 @@ async def test_mixed_role_interactions(
 
             # 可以获取用户信息
             response = await async_client.get(
-                f"/users/{user_id}", headers=superadmin_user_token_headers
+                api_urls.user_url(f"/{user_id}"), headers=superadmin_user_token_headers
             )
             assert response.status_code == test_data.StatusCodes.OK
 
             # 可以更新用户信息
             response = await async_client.patch(
-                f"/users/{user_id}",
+                api_urls.user_url(f"/{user_id}"),
                 json={"full_name": f"Updated {user_data['role']} User"},
                 headers=superadmin_user_token_headers,
             )

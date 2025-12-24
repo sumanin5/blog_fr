@@ -9,7 +9,12 @@
 
 import pytest
 from httpx import AsyncClient
-from tests.api.conftest import TestData, assert_error_response, assert_token_response
+from tests.api.conftest import (
+    APIConfig,
+    TestData,
+    assert_error_response,
+    assert_token_response,
+)
 from tests.api.users.conftest import UserTestData, assert_user_response
 
 # ============================================================
@@ -21,11 +26,14 @@ from tests.api.users.conftest import UserTestData, assert_user_response
 @pytest.mark.users
 @pytest.mark.asyncio
 async def test_register_user_success(
-    async_client: AsyncClient, test_data: TestData, user_test_data: UserTestData
+    async_client: AsyncClient,
+    test_data: TestData,
+    user_test_data: UserTestData,
+    api_urls: APIConfig,
 ):
     """测试用户注册成功"""
     response = await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json=user_test_data.VALID_REGISTER_DATA,
     )
     assert response.status_code == test_data.StatusCodes.CREATED
@@ -44,12 +52,12 @@ async def test_register_user_success(
 @pytest.mark.users
 @pytest.mark.asyncio
 async def test_register_user_duplicate_username(
-    async_client: AsyncClient, test_data: TestData
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
 ):
     """测试注册重复用户名"""
     # 先注册一个用户
     await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json={
             "username": "duplicateuser",
             "email": "first@example.com",
@@ -59,7 +67,7 @@ async def test_register_user_duplicate_username(
 
     # 尝试注册相同用户名的用户
     response = await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json={
             "username": "duplicateuser",
             "email": "second@example.com",
@@ -78,12 +86,12 @@ async def test_register_user_duplicate_username(
 @pytest.mark.users
 @pytest.mark.asyncio
 async def test_register_user_duplicate_email(
-    async_client: AsyncClient, test_data: TestData
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
 ):
     """测试注册重复邮箱"""
     # 先注册一个用户
     await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json={
             "username": "user1",
             "email": "duplicate@example.com",
@@ -93,7 +101,7 @@ async def test_register_user_duplicate_email(
 
     # 尝试注册相同邮箱的用户
     response = await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json={
             "username": "user2",
             "email": "duplicate@example.com",
@@ -112,12 +120,12 @@ async def test_register_user_duplicate_email(
 @pytest.mark.users
 @pytest.mark.asyncio
 async def test_register_user_validation_errors(
-    async_client: AsyncClient, test_data: TestData
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
 ):
     """测试注册数据验证错误"""
     # 测试用户名太短
     response = await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json=test_data.INVALID_REGISTER_DATA["short_username"],
     )
     assert response.status_code == test_data.StatusCodes.UNPROCESSABLE_ENTITY
@@ -140,26 +148,26 @@ async def test_register_user_validation_errors(
 @pytest.mark.users
 @pytest.mark.asyncio
 async def test_register_user_missing_required_fields(
-    async_client: AsyncClient, test_data: TestData
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
 ):
     """测试注册缺少必需字段"""
     # 测试缺少用户名
     response = await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json=test_data.INVALID_REGISTER_DATA["missing_username"],
     )
     assert response.status_code == test_data.StatusCodes.UNPROCESSABLE_ENTITY
 
     # 测试缺少邮箱
     response = await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json=test_data.INVALID_REGISTER_DATA["missing_email"],
     )
     assert response.status_code == test_data.StatusCodes.UNPROCESSABLE_ENTITY
 
     # 测试缺少密码
     response = await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json=test_data.INVALID_REGISTER_DATA["missing_password"],
     )
     assert response.status_code == test_data.StatusCodes.UNPROCESSABLE_ENTITY
@@ -173,11 +181,13 @@ async def test_register_user_missing_required_fields(
 @pytest.mark.integration
 @pytest.mark.users
 @pytest.mark.asyncio
-async def test_login_success(async_client: AsyncClient, test_data: TestData):
+async def test_login_success(
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
+):
     """测试用户登录成功"""
     # 先注册
     await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json={
             "username": "loginuser",
             "email": "login@example.com",
@@ -187,7 +197,7 @@ async def test_login_success(async_client: AsyncClient, test_data: TestData):
 
     # 登录
     response = await async_client.post(
-        "/users/login",
+        api_urls.user_url("/login"),
         data={
             "username": "loginuser",
             "password": "password123",
@@ -204,11 +214,13 @@ async def test_login_success(async_client: AsyncClient, test_data: TestData):
 @pytest.mark.integration
 @pytest.mark.users
 @pytest.mark.asyncio
-async def test_login_with_email(async_client: AsyncClient, test_data: TestData):
+async def test_login_with_email(
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
+):
     """测试使用邮箱登录"""
     # 先注册
     await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json={
             "username": "emailuser",
             "email": "email@example.com",
@@ -218,7 +230,7 @@ async def test_login_with_email(async_client: AsyncClient, test_data: TestData):
 
     # 使用邮箱登录
     response = await async_client.post(
-        "/users/login",
+        api_urls.user_url("/login"),
         data={
             "username": "email@example.com",  # 使用邮箱作为用户名
             "password": "password123",
@@ -234,11 +246,13 @@ async def test_login_with_email(async_client: AsyncClient, test_data: TestData):
 @pytest.mark.integration
 @pytest.mark.users
 @pytest.mark.asyncio
-async def test_login_wrong_password(async_client: AsyncClient, test_data: TestData):
+async def test_login_wrong_password(
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
+):
     """测试错误密码登录"""
     # 先注册
     await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json={
             "username": "wrongpassuser",
             "email": "wrongpass@example.com",
@@ -248,7 +262,7 @@ async def test_login_wrong_password(async_client: AsyncClient, test_data: TestDa
 
     # 尝试用错误密码登录
     response = await async_client.post(
-        "/users/login",
+        api_urls.user_url("/login"),
         data={
             "username": "wrongpassuser",
             "password": "wrongpassword",
@@ -265,10 +279,12 @@ async def test_login_wrong_password(async_client: AsyncClient, test_data: TestDa
 @pytest.mark.integration
 @pytest.mark.users
 @pytest.mark.asyncio
-async def test_login_nonexistent_user(async_client: AsyncClient, test_data: TestData):
+async def test_login_nonexistent_user(
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
+):
     """测试不存在的用户登录"""
     response = await async_client.post(
-        "/users/login",
+        api_urls.user_url("/login"),
         data=test_data.INVALID_LOGIN_DATA["nonexistent_user"],
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -283,11 +299,11 @@ async def test_login_nonexistent_user(async_client: AsyncClient, test_data: Test
 @pytest.mark.users
 @pytest.mark.asyncio
 async def test_login_inactive_user(
-    async_client: AsyncClient, test_data: TestData, inactive_user
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig, inactive_user
 ):
     """测试非激活用户登录"""
     response = await async_client.post(
-        "/users/login",
+        api_urls.user_url("/login"),
         data={
             "username": "inactive_user",
             "password": "password",
@@ -304,11 +320,13 @@ async def test_login_inactive_user(
 @pytest.mark.integration
 @pytest.mark.users
 @pytest.mark.asyncio
-async def test_login_empty_credentials(async_client: AsyncClient, test_data: TestData):
+async def test_login_empty_credentials(
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
+):
     """测试空凭据登录"""
     # 测试空用户名 - 被当作无效凭据处理
     response = await async_client.post(
-        "/users/login",
+        api_urls.user_url("/login"),
         data=test_data.INVALID_LOGIN_DATA["empty_username"],
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -318,7 +336,7 @@ async def test_login_empty_credentials(async_client: AsyncClient, test_data: Tes
 
     # 测试空密码 - 也被当作无效凭据处理
     response = await async_client.post(
-        "/users/login",
+        api_urls.user_url("/login"),
         data=test_data.INVALID_LOGIN_DATA["empty_password"],
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -335,11 +353,13 @@ async def test_login_empty_credentials(async_client: AsyncClient, test_data: Tes
 @pytest.mark.integration
 @pytest.mark.users
 @pytest.mark.asyncio
-async def test_token_format_validation(async_client: AsyncClient, test_data: TestData):
+async def test_token_format_validation(
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
+):
     """测试Token格式验证"""
     # 先注册并登录获取有效token
     await async_client.post(
-        "/users/register",
+        api_urls.user_url("/register"),
         json={
             "username": "tokenuser",
             "email": "token@example.com",
@@ -348,7 +368,7 @@ async def test_token_format_validation(async_client: AsyncClient, test_data: Tes
     )
 
     login_response = await async_client.post(
-        "/users/login",
+        api_urls.user_url("/login"),
         data={
             "username": "tokenuser",
             "password": "password123",
@@ -361,7 +381,7 @@ async def test_token_format_validation(async_client: AsyncClient, test_data: Tes
 
     # 验证token可以用于访问受保护的端点
     response = await async_client.get(
-        "/users/me",
+        api_urls.user_url("/me"),
         headers={"Authorization": f"Bearer {token_data['access_token']}"},
     )
     assert response.status_code == test_data.StatusCodes.OK
@@ -374,20 +394,22 @@ async def test_token_format_validation(async_client: AsyncClient, test_data: Tes
 @pytest.mark.integration
 @pytest.mark.users
 @pytest.mark.asyncio
-async def test_invalid_token_access(async_client: AsyncClient, test_data: TestData):
+async def test_invalid_token_access(
+    async_client: AsyncClient, test_data: TestData, api_urls: APIConfig
+):
     """测试无效token访问"""
     # 测试无token
-    response = await async_client.get("/users/me")
+    response = await async_client.get(api_urls.user_url("/me"))
     assert response.status_code == test_data.StatusCodes.UNAUTHORIZED
 
     # 测试无效token
     response = await async_client.get(
-        "/users/me", headers={"Authorization": "Bearer invalid_token"}
+        api_urls.user_url("/me"), headers={"Authorization": "Bearer invalid_token"}
     )
     assert response.status_code == test_data.StatusCodes.UNAUTHORIZED
 
     # 测试错误的Authorization格式
     response = await async_client.get(
-        "/users/me", headers={"Authorization": "invalid_format"}
+        api_urls.user_url("/me"), headers={"Authorization": "invalid_format"}
     )
     assert response.status_code == test_data.StatusCodes.UNAUTHORIZED

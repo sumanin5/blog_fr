@@ -31,6 +31,12 @@ class Settings(BaseSettings):
         default=60 * 24 * 7, description="访问令牌过期时间（分钟）"
     )  # 7 天
 
+    # ==========================================
+    # API 配置
+    # ==========================================
+    API_VERSION: str = Field(default="v1", description="API 版本")
+    API_PREFIX: str = Field(default="/api/v1", description="API 路径前缀")
+
     # 数据库 URL（必须提供）
     # 格式：postgresql://user:password@host:port/database
     database_url: str = Field(..., description="完整的数据库连接 URL")
@@ -53,6 +59,12 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_EMAIL: str = Field(
         default="admin@example.com", description="默认超级管理员邮箱"
     )
+
+    # ==========================================
+    # 媒体文件配置
+    # ==========================================
+    MEDIA_ROOT: str = Field(default="media", description="媒体文件存储根目录")
+    MEDIA_URL: str = Field(default="/media/", description="媒体文件访问URL前缀")
 
     model_config = SettingsConfigDict(
         env_file="../.env.test" if os.getenv("ENVIRONMENT") == "test" else "../.env",

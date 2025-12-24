@@ -22,7 +22,7 @@
         }
       }
     },
-    "/users/register": {
+    "/api/v1/users/register": {
       "post": {
         "tags": [
           "users"
@@ -64,7 +64,7 @@
         }
       }
     },
-    "/users/login": {
+    "/api/v1/users/login": {
       "post": {
         "tags": [
           "users"
@@ -106,7 +106,7 @@
         }
       }
     },
-    "/users/me": {
+    "/api/v1/users/me": {
       "get": {
         "tags": [
           "users"
@@ -196,7 +196,7 @@
         ]
       }
     },
-    "/users/": {
+    "/api/v1/users/": {
       "get": {
         "tags": [
           "users"
@@ -271,7 +271,7 @@
         }
       }
     },
-    "/users/{user_id}": {
+    "/api/v1/users/{user_id}": {
       "get": {
         "tags": [
           "users"

@@ -103,10 +103,3 @@ async def session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 
         # 回滚外层事务，撤销所有更改（包括 savepoint 的提交）
         await conn.rollback()
-
-
-# ============================================================
-# API 客户端 Fixtures
-# ============================================================
-
-# 这里的 async_client 已经被移动到 tests/api/conftest.py

@@ -1,27 +1,28 @@
 import asyncio
-from logging.config import fileConfig
-
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
-
-from alembic import context
+import os
 
 # ------------------ V V V 添加以下代码 V V V ------------------
 import sys
-import os
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # 将项目根目录（backend）添加到 Python 路径
 # os.path.dirname(__file__) -> /home/tomy/blog_fr/backend/alembic
 # os.path.dirname(...) -> /home/tomy/blog_fr/backend
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+from app.core.base import Base  # 导入你的 Base 模型
 from app.core.config import settings  # 导入 Pydantic settings
-from app.core.base import Base   # 导入你的 Base 模型
+from app.media.model import MediaFile  # noqa: F401
 
 # --- 导入你所有的模型 ---
 # 每当你创建一个新的模型文件，都需要在这里添加导入，否则 Alembic 无法自动发现它
-from app.users.model import User
+from app.users.model import User  # noqa: F401
+
 # from app.posts.model import Post # 示例：以后有新模型就加在这里
 #
 
@@ -118,6 +119,7 @@ async def run_migrations_online() -> None:
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

@@ -1,7 +1,9 @@
 import logging
 
+from app.core.config import settings
 from app.core.customID import custom_generate_unique_id
 from app.initial_data import init_db
+from app.media.router import router as media_router
 from app.middleware import setup_middleware
 from app.users.router import router as users_router
 from fastapi import FastAPI
@@ -42,6 +44,11 @@ app.add_middleware(
 # 设置所有的自定义中间件
 setup_middleware(app)
 
+# ============================================================
+# 静态文件服务：提供媒体文件访问
+# ============================================================
+# 注意：不直接挂载静态文件目录，而是通过带权限检查的路由提供文件访问
+
 
 # ============================================================
 # 启动事件：初始化数据库数据
@@ -65,6 +72,7 @@ async def read_root():
 
 
 # ============================================================
-# 包含用户路由
+# 包含路由
 # ============================================================
-app.include_router(users_router, prefix="/users", tags=["users"])
+app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["users"])
+app.include_router(media_router, prefix=f"{settings.API_PREFIX}/media", tags=["media"])

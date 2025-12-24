@@ -7,6 +7,7 @@
 import logging as stdlib_logging
 
 from app.middleware.error_handler import ErrorHandlerMiddleware
+from app.middleware.file_upload import setup_file_upload_middleware
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.request_id import RequestIDMiddleware
 from fastapi import FastAPI
@@ -29,17 +30,22 @@ def setup_middleware(app: FastAPI) -> None:
     执行顺序：
     1. RequestIDMiddleware（最先执行，为请求生成ID）
     2. LoggingMiddleware（记录请求信息）
-    3. 其他中间件...
+    3. FileSizeLimitMiddleware（文件大小检查）
+    4. ErrorHandlerMiddleware（错误处理）
     """
 
     # 1. 错误处理中间件
     app.add_middleware(ErrorHandlerMiddleware)
 
-    # 2. 日志中间件
+    # 2. 文件上传大小限制中间件
+    setup_file_upload_middleware(app, max_size=50 * 1024 * 1024)  # 50MB
+
+    # 3. 日志中间件
     app.add_middleware(LoggingMiddleware)
 
-    # 3. 请求ID中间件
+    # 4. 请求ID中间件
     app.add_middleware(RequestIDMiddleware)
+
     stdlib_logging.getLogger("middleware").info(
         "All middleware configured successfully"
     )

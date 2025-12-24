@@ -295,7 +295,7 @@ export type RegisterUserData = {
   body: UserRegister;
   path?: never;
   query?: never;
-  url: "/users/register";
+  url: "/api/v1/users/register";
 };
 
 export type RegisterUserErrors = {
@@ -321,7 +321,7 @@ export type LoginData = {
   body: BodyLogin;
   path?: never;
   query?: never;
-  url: "/users/login";
+  url: "/api/v1/users/login";
 };
 
 export type LoginErrors = {
@@ -346,7 +346,7 @@ export type DeleteCurrentUserAccountData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/users/me";
+  url: "/api/v1/users/me";
 };
 
 export type DeleteCurrentUserAccountResponses = {
@@ -363,7 +363,7 @@ export type GetCurrentUserInfoData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/users/me";
+  url: "/api/v1/users/me";
 };
 
 export type GetCurrentUserInfoResponses = {
@@ -380,7 +380,7 @@ export type UpdateCurrentUserInfoData = {
   body: UserUpdate;
   path?: never;
   query?: never;
-  url: "/users/me";
+  url: "/api/v1/users/me";
 };
 
 export type UpdateCurrentUserInfoErrors = {
@@ -420,7 +420,7 @@ export type GetUsersListData = {
      */
     is_active?: boolean | null;
   };
-  url: "/users/";
+  url: "/api/v1/users/";
 };
 
 export type GetUsersListErrors = {
@@ -451,7 +451,7 @@ export type DeleteUserByIdData = {
     user_id: string;
   };
   query?: never;
-  url: "/users/{user_id}";
+  url: "/api/v1/users/{user_id}";
 };
 
 export type DeleteUserByIdErrors = {
@@ -483,7 +483,7 @@ export type GetUserByIdData = {
     user_id: string;
   };
   query?: never;
-  url: "/users/{user_id}";
+  url: "/api/v1/users/{user_id}";
 };
 
 export type GetUserByIdErrors = {
@@ -514,7 +514,7 @@ export type UpdateUserByIdData = {
     user_id: string;
   };
   query?: never;
-  url: "/users/{user_id}";
+  url: "/api/v1/users/{user_id}";
 };
 
 export type UpdateUserByIdErrors = {

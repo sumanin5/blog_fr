@@ -1,3 +1,4 @@
+import os
 from typing import AsyncGenerator, List
 
 import pytest
@@ -7,6 +8,34 @@ from app.main import app
 from app.users.model import User, UserRole
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# ============================================================
+# API URL 配置
+# ============================================================
+
+
+class APIConfig:
+    """API 配置 - 统一管理所有 API 路径"""
+
+    # 从环境变量读取 API 前缀
+    API_PREFIX = os.getenv("API_PREFIX", "/api/v1")
+
+    # 用户相关路由
+    USERS_BASE = f"{API_PREFIX}/users"
+
+    # 媒体相关路由
+    MEDIA_BASE = f"{API_PREFIX}/media"
+
+    @classmethod
+    def user_url(cls, path: str = "") -> str:
+        """生成用户相关的 URL"""
+        return f"{cls.USERS_BASE}{path}"
+
+    @classmethod
+    def media_url(cls, path: str = "") -> str:
+        """生成媒体相关的 URL"""
+        return f"{cls.MEDIA_BASE}{path}"
+
 
 # ============================================================
 # API 客户端 Fixtures
@@ -34,7 +63,7 @@ async def normal_user_token_headers(
 ) -> dict:
     """获取普通用户的Token Headers"""
     response = await async_client.post(
-        "/users/login",
+        APIConfig.user_url("/login"),
         data={"username": "normal_user", "password": "password"},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -46,7 +75,7 @@ async def normal_user_token_headers(
 async def admin_user_token_headers(async_client: AsyncClient, admin_user: User) -> dict:
     """获取管理员用户的Token Headers"""
     response = await async_client.post(
-        "/users/login",
+        APIConfig.user_url("/login"),
         data={"username": "admin_user", "password": "password"},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -60,7 +89,7 @@ async def superadmin_user_token_headers(
 ) -> dict:
     """获取超级管理员用户的Token Headers"""
     response = await async_client.post(
-        "/users/login",
+        APIConfig.user_url("/login"),
         data={"username": "superadmin_user", "password": "password"},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -243,3 +272,9 @@ class TestData:
 def test_data():
     """通用测试数据常量"""
     return TestData()
+
+
+@pytest.fixture
+def api_urls():
+    """提供 API URL 配置的 fixture"""
+    return APIConfig
