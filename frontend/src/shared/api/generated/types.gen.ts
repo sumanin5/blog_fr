@@ -5,6 +5,40 @@ export type ClientOptions = {
 };
 
 /**
+ * BatchDeleteRequest
+ *
+ * 批量删除请求模型
+ */
+export type BatchDeleteRequest = {
+  /**
+   * File Ids
+   *
+   * 要删除的文件ID列表
+   */
+  file_ids: Array<string>;
+};
+
+/**
+ * BatchDeleteResponse
+ *
+ * 批量删除响应模型
+ */
+export type BatchDeleteResponse = {
+  /**
+   * Message
+   *
+   * 删除结果消息
+   */
+  message: string;
+  /**
+   * Deleted Count
+   *
+   * 成功删除的文件数量
+   */
+  deleted_count: number;
+};
+
+/**
  * Body_login
  */
 export type BodyLogin = {
@@ -35,6 +69,52 @@ export type BodyLogin = {
 };
 
 /**
+ * Body_uploadFile
+ */
+export type BodyUploadFile = {
+  /**
+   * File
+   *
+   * 要上传的文件
+   */
+  file: Blob | File;
+  /**
+   * 文件用途
+   */
+  usage?: FileUsage;
+  /**
+   * Is Public
+   *
+   * 是否公开
+   */
+  is_public?: boolean;
+  /**
+   * Description
+   *
+   * 文件描述
+   */
+  description?: string;
+  /**
+   * Alt Text
+   *
+   * 替代文本
+   */
+  alt_text?: string;
+};
+
+/**
+ * FileUsage
+ */
+export type FileUsage =
+  | "general"
+  | "avatar"
+  | "cover"
+  | "icon"
+  | "favicon"
+  | "document"
+  | "attachment";
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -42,6 +122,277 @@ export type HttpValidationError = {
    * Detail
    */
   detail?: Array<ValidationError>;
+};
+
+/**
+ * MediaFileListResponse
+ *
+ * 媒体文件列表响应模型
+ */
+export type MediaFileListResponse = {
+  /**
+   * Total
+   *
+   * 总数
+   */
+  total: number;
+  /**
+   * Files
+   *
+   * 文件列表
+   */
+  files: Array<MediaFileResponse>;
+};
+
+/**
+ * MediaFileResponse
+ *
+ * 媒体文件响应模型
+ */
+export type MediaFileResponse = {
+  /**
+   * Original Filename
+   *
+   * 原始文件名
+   */
+  original_filename: string;
+  /**
+   * 文件用途
+   */
+  usage?: FileUsage;
+  /**
+   * Description
+   *
+   * 文件描述
+   */
+  description?: string;
+  /**
+   * Alt Text
+   *
+   * 替代文本（图片用）
+   */
+  alt_text?: string;
+  /**
+   * Tags
+   *
+   * 标签列表
+   */
+  tags?: Array<string>;
+  /**
+   * Id
+   *
+   * 文件ID
+   */
+  id: string;
+  /**
+   * File Path
+   *
+   * 文件存储路径
+   */
+  file_path: string;
+  /**
+   * File Size
+   *
+   * 文件大小（字节）
+   */
+  file_size: number;
+  /**
+   * Mime Type
+   *
+   * MIME类型
+   */
+  mime_type: string;
+  /**
+   * 媒体类型
+   */
+  media_type: MediaType;
+  /**
+   * Width
+   *
+   * 宽度（像素）
+   */
+  width?: number | null;
+  /**
+   * Height
+   *
+   * 高度（像素）
+   */
+  height?: number | null;
+  /**
+   * Duration
+   *
+   * 时长（秒，视频用）
+   */
+  duration?: number | null;
+  /**
+   * Is Processing
+   *
+   * 是否正在处理中
+   */
+  is_processing?: boolean;
+  /**
+   * View Count
+   *
+   * 查看次数
+   */
+  view_count?: number;
+  /**
+   * Download Count
+   *
+   * 下载次数
+   */
+  download_count?: number;
+  /**
+   * Uploader Id
+   *
+   * 上传者ID
+   */
+  uploader_id: string;
+  /**
+   * Created At
+   *
+   * 创建时间
+   */
+  created_at: string;
+  /**
+   * Updated At
+   *
+   * 更新时间
+   */
+  updated_at: string;
+  /**
+   * File Url
+   *
+   * 文件访问URL
+   */
+  file_url: string;
+  /**
+   * 缩略图URL
+   */
+  thumbnails?: ThumbnailInfo | null;
+};
+
+/**
+ * MediaFileUpdate
+ *
+ * 更新媒体文件的请求模型（所有字段可选）
+ */
+export type MediaFileUpdate = {
+  /**
+   * 文件用途
+   */
+  usage?: FileUsage | null;
+  /**
+   * Description
+   *
+   * 文件描述
+   */
+  description?: string | null;
+  /**
+   * Alt Text
+   *
+   * 替代文本
+   */
+  alt_text?: string | null;
+  /**
+   * Tags
+   *
+   * 标签列表
+   */
+  tags?: Array<string> | null;
+  /**
+   * Is Public
+   *
+   * 是否公开
+   */
+  is_public?: boolean | null;
+};
+
+/**
+ * MediaFileUploadResponse
+ *
+ * 文件上传响应模型
+ */
+export type MediaFileUploadResponse = {
+  /**
+   * Message
+   *
+   * 上传结果消息
+   */
+  message: string;
+  /**
+   * 上传的文件信息
+   */
+  file: MediaFileResponse;
+};
+
+/**
+ * MediaType
+ */
+export type MediaType = "image" | "video" | "document" | "other";
+
+/**
+ * ThumbnailInfo
+ *
+ * 缩略图信息
+ */
+export type ThumbnailInfo = {
+  /**
+   * Small
+   *
+   * 小尺寸缩略图URL
+   */
+  small?: string | null;
+  /**
+   * Medium
+   *
+   * 中等尺寸缩略图URL
+   */
+  medium?: string | null;
+  /**
+   * Large
+   *
+   * 大尺寸缩略图URL
+   */
+  large?: string | null;
+  /**
+   * Xlarge
+   *
+   * 超大尺寸缩略图URL
+   */
+  xlarge?: string | null;
+};
+
+/**
+ * ThumbnailRegenerateResponse
+ *
+ * 缩略图重新生成响应模型
+ */
+export type ThumbnailRegenerateResponse = {
+  /**
+   * Message
+   *
+   * 处理结果消息
+   */
+  message: string;
+  /**
+   * 新生成的缩略图URL
+   */
+  thumbnails: ThumbnailInfo;
+};
+
+/**
+ * TogglePublicityRequest
+ *
+ * 切换公开状态请求
+ */
+export type TogglePublicityRequest = {
+  /**
+   * Is Public
+   *
+   * 是否公开
+   */
+  is_public: boolean;
 };
 
 /**
@@ -536,3 +887,526 @@ export type UpdateUserByIdResponses = {
 
 export type UpdateUserByIdResponse =
   UpdateUserByIdResponses[keyof UpdateUserByIdResponses];
+
+export type GetPublicFilesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Media Type
+     */
+    media_type?: MediaType | null;
+    /**
+     * Usage
+     */
+    usage?: FileUsage | null;
+    /**
+     * Page
+     */
+    page?: number;
+    /**
+     * Page Size
+     */
+    page_size?: number;
+  };
+  url: "/api/v1/media/public";
+};
+
+export type GetPublicFilesErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetPublicFilesError =
+  GetPublicFilesErrors[keyof GetPublicFilesErrors];
+
+export type GetPublicFilesResponses = {
+  /**
+   * Response Getpublicfiles
+   *
+   * Successful Response
+   */
+  200: Array<MediaFileResponse>;
+};
+
+export type GetPublicFilesResponse =
+  GetPublicFilesResponses[keyof GetPublicFilesResponses];
+
+export type ToggleFilePublicityData = {
+  body: TogglePublicityRequest;
+  path: {
+    /**
+     * File Id
+     */
+    file_id: string;
+  };
+  query?: never;
+  url: "/api/v1/media/{file_id}/publicity";
+};
+
+export type ToggleFilePublicityErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToggleFilePublicityError =
+  ToggleFilePublicityErrors[keyof ToggleFilePublicityErrors];
+
+export type ToggleFilePublicityResponses = {
+  /**
+   * Successful Response
+   */
+  200: MediaFileResponse;
+};
+
+export type ToggleFilePublicityResponse =
+  ToggleFilePublicityResponses[keyof ToggleFilePublicityResponses];
+
+export type UploadFileData = {
+  body: BodyUploadFile;
+  path?: never;
+  query?: never;
+  url: "/api/v1/media/upload";
+};
+
+export type UploadFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UploadFileError = UploadFileErrors[keyof UploadFileErrors];
+
+export type UploadFileResponses = {
+  /**
+   * Successful Response
+   */
+  201: MediaFileUploadResponse;
+};
+
+export type UploadFileResponse = UploadFileResponses[keyof UploadFileResponses];
+
+export type GetUserFilesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Media Type
+     *
+     * 媒体类型过滤
+     */
+    media_type?: MediaType | null;
+    /**
+     * Usage
+     *
+     * 用途过滤
+     */
+    usage?: FileUsage | null;
+    /**
+     * Limit
+     *
+     * 限制数量
+     */
+    limit?: number;
+    /**
+     * Offset
+     *
+     * 偏移量
+     */
+    offset?: number;
+  };
+  url: "/api/v1/media/";
+};
+
+export type GetUserFilesErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetUserFilesError = GetUserFilesErrors[keyof GetUserFilesErrors];
+
+export type GetUserFilesResponses = {
+  /**
+   * Successful Response
+   */
+  200: MediaFileListResponse;
+};
+
+export type GetUserFilesResponse =
+  GetUserFilesResponses[keyof GetUserFilesResponses];
+
+export type DeleteFileData = {
+  body?: never;
+  path: {
+    /**
+     * File Id
+     *
+     * 媒体文件ID
+     */
+    file_id: string;
+  };
+  query?: never;
+  url: "/api/v1/media/{file_id}";
+};
+
+export type DeleteFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteFileError = DeleteFileErrors[keyof DeleteFileErrors];
+
+export type DeleteFileResponses = {
+  /**
+   * Successful Response
+   */
+  204: void;
+};
+
+export type DeleteFileResponse = DeleteFileResponses[keyof DeleteFileResponses];
+
+export type GetFileDetailData = {
+  body?: never;
+  path: {
+    /**
+     * File Id
+     *
+     * 媒体文件ID
+     */
+    file_id: string;
+  };
+  query?: never;
+  url: "/api/v1/media/{file_id}";
+};
+
+export type GetFileDetailErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetFileDetailError = GetFileDetailErrors[keyof GetFileDetailErrors];
+
+export type GetFileDetailResponses = {
+  /**
+   * Successful Response
+   */
+  200: MediaFileResponse;
+};
+
+export type GetFileDetailResponse =
+  GetFileDetailResponses[keyof GetFileDetailResponses];
+
+export type UpdateFileData = {
+  body: MediaFileUpdate;
+  path: {
+    /**
+     * File Id
+     *
+     * 媒体文件ID
+     */
+    file_id: string;
+  };
+  query?: never;
+  url: "/api/v1/media/{file_id}";
+};
+
+export type UpdateFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateFileError = UpdateFileErrors[keyof UpdateFileErrors];
+
+export type UpdateFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: MediaFileResponse;
+};
+
+export type UpdateFileResponse = UpdateFileResponses[keyof UpdateFileResponses];
+
+export type SearchFilesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Q
+     *
+     * 搜索关键词
+     */
+    q?: string | null;
+    /**
+     * Media Type
+     *
+     * 媒体类型过滤
+     */
+    media_type?: MediaType | null;
+    /**
+     * Limit
+     *
+     * 限制数量
+     */
+    limit?: number;
+    /**
+     * Offset
+     *
+     * 偏移量
+     */
+    offset?: number;
+  };
+  url: "/api/v1/media/search";
+};
+
+export type SearchFilesErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type SearchFilesError = SearchFilesErrors[keyof SearchFilesErrors];
+
+export type SearchFilesResponses = {
+  /**
+   * Successful Response
+   */
+  200: MediaFileListResponse;
+};
+
+export type SearchFilesResponse =
+  SearchFilesResponses[keyof SearchFilesResponses];
+
+export type BatchDeleteFilesData = {
+  body: BatchDeleteRequest;
+  path?: never;
+  query?: never;
+  url: "/api/v1/media/batch-delete";
+};
+
+export type BatchDeleteFilesErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type BatchDeleteFilesError =
+  BatchDeleteFilesErrors[keyof BatchDeleteFilesErrors];
+
+export type BatchDeleteFilesResponses = {
+  /**
+   * Successful Response
+   */
+  200: BatchDeleteResponse;
+};
+
+export type BatchDeleteFilesResponse =
+  BatchDeleteFilesResponses[keyof BatchDeleteFilesResponses];
+
+export type RegenerateThumbnailsData = {
+  body?: never;
+  path: {
+    /**
+     * File Id
+     *
+     * 媒体文件ID
+     */
+    file_id: string;
+  };
+  query?: never;
+  url: "/api/v1/media/{file_id}/regenerate-thumbnails";
+};
+
+export type RegenerateThumbnailsErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type RegenerateThumbnailsError =
+  RegenerateThumbnailsErrors[keyof RegenerateThumbnailsErrors];
+
+export type RegenerateThumbnailsResponses = {
+  /**
+   * Successful Response
+   */
+  200: ThumbnailRegenerateResponse;
+};
+
+export type RegenerateThumbnailsResponse =
+  RegenerateThumbnailsResponses[keyof RegenerateThumbnailsResponses];
+
+export type ViewFileData = {
+  body?: never;
+  path: {
+    /**
+     * File Id
+     *
+     * 媒体文件ID
+     */
+    file_id: string;
+  };
+  query?: never;
+  url: "/api/v1/media/{file_id}/view";
+};
+
+export type ViewFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ViewFileError = ViewFileErrors[keyof ViewFileErrors];
+
+export type ViewFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type ViewThumbnailData = {
+  body?: never;
+  path: {
+    /**
+     * Size
+     */
+    size: string;
+    /**
+     * File Id
+     *
+     * 媒体文件ID
+     */
+    file_id: string;
+  };
+  query?: never;
+  url: "/api/v1/media/{file_id}/thumbnail/{size}";
+};
+
+export type ViewThumbnailErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ViewThumbnailError = ViewThumbnailErrors[keyof ViewThumbnailErrors];
+
+export type ViewThumbnailResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type DownloadFileData = {
+  body?: never;
+  path: {
+    /**
+     * File Id
+     *
+     * 媒体文件ID
+     */
+    file_id: string;
+  };
+  query?: never;
+  url: "/api/v1/media/{file_id}/download";
+};
+
+export type DownloadFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DownloadFileError = DownloadFileErrors[keyof DownloadFileErrors];
+
+export type DownloadFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type GetStatsOverviewData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/media/stats/overview";
+};
+
+export type GetStatsOverviewResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type GetAllFilesAdminData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Media Type
+     *
+     * 媒体类型过滤
+     */
+    media_type?: MediaType | null;
+    /**
+     * Usage
+     *
+     * 用途过滤
+     */
+    usage?: FileUsage | null;
+    /**
+     * Limit
+     *
+     * 限制数量
+     */
+    limit?: number;
+    /**
+     * Offset
+     *
+     * 偏移量
+     */
+    offset?: number;
+  };
+  url: "/api/v1/media/admin/all";
+};
+
+export type GetAllFilesAdminErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetAllFilesAdminError =
+  GetAllFilesAdminErrors[keyof GetAllFilesAdminErrors];
+
+export type GetAllFilesAdminResponses = {
+  /**
+   * Successful Response
+   */
+  200: MediaFileListResponse;
+};
+
+export type GetAllFilesAdminResponse =
+  GetAllFilesAdminResponses[keyof GetAllFilesAdminResponses];

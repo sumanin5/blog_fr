@@ -295,7 +295,14 @@ class TestFileValidation:
 
     def test_validate_file_extension_document_types(self):
         """测试文档文件扩展名验证"""
-        valid_docs = ["report.pdf", "letter.doc", "essay.docx", "note.txt", "readme.md"]
+        valid_docs = [
+            "report.pdf",
+            "letter.doc",
+            "essay.docx",
+            "note.txt",
+            "readme.md",
+            "component.mdx",
+        ]
 
         for filename in valid_docs:
             assert validate_file_extension(filename, "document"), (
@@ -401,7 +408,14 @@ class TestMediaTypeDetection:
 
     def test_detect_media_type_from_filename_documents(self):
         """测试从文件名检测文档类型"""
-        doc_files = ["report.pdf", "letter.doc", "essay.docx", "note.txt", "readme.md"]
+        doc_files = [
+            "report.pdf",
+            "letter.doc",
+            "essay.docx",
+            "note.txt",
+            "readme.md",
+            "component.mdx",
+        ]
 
         for filename in doc_files:
             media_type = detect_media_type_from_filename(filename)

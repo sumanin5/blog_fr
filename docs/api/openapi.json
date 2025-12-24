@@ -416,10 +416,988 @@
           }
         }
       }
+    },
+    "/api/v1/media/public": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "Get Public Files",
+        "description": "获取公开文件列表（无需认证）",
+        "operationId": "getPublicFiles",
+        "parameters": [
+          {
+            "name": "media_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MediaType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Type"
+            }
+          },
+          {
+            "name": "usage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FileUsage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Usage"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaFileResponse"
+                  },
+                  "title": "Response Getpublicfiles"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/{file_id}/publicity": {
+      "patch": {
+        "tags": [
+          "media"
+        ],
+        "summary": "Toggle File Publicity",
+        "description": "切换文件公开状态（需要认证）",
+        "operationId": "toggleFilePublicity",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TogglePublicityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/upload": {
+      "post": {
+        "tags": [
+          "media"
+        ],
+        "summary": "上传文件",
+        "description": "上传媒体文件（图片、视频、文档等）",
+        "operationId": "uploadFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_uploadFile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaFileUploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/media/": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "获取文件列表",
+        "description": "获取当前用户的媒体文件列表",
+        "operationId": "getUserFiles",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "media_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MediaType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "媒体类型过滤",
+              "title": "Media Type"
+            },
+            "description": "媒体类型过滤"
+          },
+          {
+            "name": "usage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FileUsage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "用途过滤",
+              "title": "Usage"
+            },
+            "description": "用途过滤"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "限制数量",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "限制数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "偏移量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "偏移量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaFileListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/{file_id}": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "获取文件详情",
+        "description": "根据ID获取媒体文件详细信息",
+        "operationId": "getFileDetail",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "媒体文件ID",
+              "title": "File Id"
+            },
+            "description": "媒体文件ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "media"
+        ],
+        "summary": "更新文件信息",
+        "description": "更新媒体文件的元数据信息",
+        "operationId": "updateFile",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "媒体文件ID",
+              "title": "File Id"
+            },
+            "description": "媒体文件ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaFileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "media"
+        ],
+        "summary": "删除文件",
+        "description": "删除媒体文件及其缩略图",
+        "operationId": "deleteFile",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "媒体文件ID",
+              "title": "File Id"
+            },
+            "description": "媒体文件ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/search": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "搜索文件",
+        "description": "根据关键词搜索媒体文件",
+        "operationId": "searchFiles",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "搜索关键词",
+              "title": "Q"
+            },
+            "description": "搜索关键词"
+          },
+          {
+            "name": "media_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MediaType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "媒体类型过滤",
+              "title": "Media Type"
+            },
+            "description": "媒体类型过滤"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "限制数量",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "限制数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "偏移量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "偏移量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaFileListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/batch-delete": {
+      "post": {
+        "tags": [
+          "media"
+        ],
+        "summary": "批量删除文件",
+        "description": "批量删除多个媒体文件",
+        "operationId": "batchDeleteFiles",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchDeleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/media/{file_id}/regenerate-thumbnails": {
+      "post": {
+        "tags": [
+          "media"
+        ],
+        "summary": "重新生成缩略图",
+        "description": "重新生成媒体文件的缩略图",
+        "operationId": "regenerateThumbnails",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "媒体文件ID",
+              "title": "File Id"
+            },
+            "description": "媒体文件ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThumbnailRegenerateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/{file_id}/view": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "查看文件",
+        "description": "查看媒体文件（带权限检查）",
+        "operationId": "viewFile",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "媒体文件ID",
+              "title": "File Id"
+            },
+            "description": "媒体文件ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/{file_id}/thumbnail/{size}": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "查看缩略图",
+        "description": "查看媒体文件缩略图（带权限检查）",
+        "operationId": "viewThumbnail",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "size",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Size"
+            }
+          },
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "媒体文件ID",
+              "title": "File Id"
+            },
+            "description": "媒体文件ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/{file_id}/download": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "下载文件",
+        "description": "下载媒体文件",
+        "operationId": "downloadFile",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "媒体文件ID",
+              "title": "File Id"
+            },
+            "description": "媒体文件ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/stats/overview": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "获取统计概览",
+        "description": "获取当前用户的媒体文件统计信息",
+        "operationId": "getStatsOverview",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/media/admin/all": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "获取所有文件（管理员）",
+        "description": "获取系统中所有媒体文件（仅管理员）",
+        "operationId": "getAllFilesAdmin",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "media_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MediaType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "媒体类型过滤",
+              "title": "Media Type"
+            },
+            "description": "媒体类型过滤"
+          },
+          {
+            "name": "usage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FileUsage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "用途过滤",
+              "title": "Usage"
+            },
+            "description": "用途过滤"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "限制数量",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "限制数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "偏移量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "偏移量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaFileListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "BatchDeleteRequest": {
+        "properties": {
+          "file_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "File Ids",
+            "description": "要删除的文件ID列表"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_ids"
+        ],
+        "title": "BatchDeleteRequest",
+        "description": "批量删除请求模型",
+        "examples": [
+          {
+            "file_ids": [
+              "123e4567-e89b-12d3-a456-426614174000",
+              "987fcdeb-51a2-43d1-9f12-123456789abc"
+            ]
+          }
+        ]
+      },
+      "BatchDeleteResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "删除结果消息"
+          },
+          "deleted_count": {
+            "type": "integer",
+            "title": "Deleted Count",
+            "description": "成功删除的文件数量"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "deleted_count"
+        ],
+        "title": "BatchDeleteResponse",
+        "description": "批量删除响应模型",
+        "examples": [
+          {
+            "deleted_count": 2,
+            "message": "批量删除完成"
+          }
+        ]
+      },
       "Body_login": {
         "properties": {
           "grant_type": {
@@ -479,6 +1457,57 @@
         ],
         "title": "Body_login"
       },
+      "Body_uploadFile": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "要上传的文件"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/FileUsage",
+            "description": "文件用途",
+            "default": "general"
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "description": "是否公开",
+            "default": false
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "文件描述",
+            "default": ""
+          },
+          "alt_text": {
+            "type": "string",
+            "title": "Alt Text",
+            "description": "替代文本",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_uploadFile"
+      },
+      "FileUsage": {
+        "type": "string",
+        "enum": [
+          "general",
+          "avatar",
+          "cover",
+          "icon",
+          "favicon",
+          "document",
+          "attachment"
+        ],
+        "title": "FileUsage"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -491,6 +1520,456 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "MediaFileListResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "总数"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/MediaFileResponse"
+            },
+            "type": "array",
+            "title": "Files",
+            "description": "文件列表"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "files"
+        ],
+        "title": "MediaFileListResponse",
+        "description": "媒体文件列表响应模型",
+        "examples": [
+          {
+            "files": [
+              {
+                "file_size": 1024000,
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "media_type": "image",
+                "original_filename": "photo.jpg"
+              }
+            ],
+            "total": 25
+          }
+        ]
+      },
+      "MediaFileResponse": {
+        "properties": {
+          "original_filename": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Original Filename",
+            "description": "原始文件名"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/FileUsage",
+            "description": "文件用途",
+            "default": "general"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Description",
+            "description": "文件描述",
+            "default": ""
+          },
+          "alt_text": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Alt Text",
+            "description": "替代文本（图片用）",
+            "default": ""
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "标签列表"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "文件ID"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path",
+            "description": "文件存储路径"
+          },
+          "file_size": {
+            "type": "integer",
+            "title": "File Size",
+            "description": "文件大小（字节）"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type",
+            "description": "MIME类型"
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType",
+            "description": "媒体类型"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width",
+            "description": "宽度（像素）"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height",
+            "description": "高度（像素）"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration",
+            "description": "时长（秒，视频用）"
+          },
+          "is_processing": {
+            "type": "boolean",
+            "title": "Is Processing",
+            "description": "是否正在处理中",
+            "default": false
+          },
+          "view_count": {
+            "type": "integer",
+            "title": "View Count",
+            "description": "查看次数",
+            "default": 0
+          },
+          "download_count": {
+            "type": "integer",
+            "title": "Download Count",
+            "description": "下载次数",
+            "default": 0
+          },
+          "uploader_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Uploader Id",
+            "description": "上传者ID"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "创建时间"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "更新时间"
+          },
+          "file_url": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "File Url",
+            "description": "文件访问URL"
+          },
+          "thumbnails": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThumbnailInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "缩略图URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "original_filename",
+          "id",
+          "file_path",
+          "file_size",
+          "mime_type",
+          "media_type",
+          "uploader_id",
+          "created_at",
+          "updated_at",
+          "file_url"
+        ],
+        "title": "MediaFileResponse",
+        "description": "媒体文件响应模型",
+        "examples": [
+          {
+            "created_at": "2025-12-24T10:00:00",
+            "file_path": "uploads/user123/abc123.jpg",
+            "file_size": 1024000,
+            "file_url": "http://localhost:8000/media/uploads/user123/abc123.jpg",
+            "height": 1080,
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "media_type": "image",
+            "mime_type": "image/jpeg",
+            "original_filename": "photo.jpg",
+            "usage": "avatar",
+            "width": 1920
+          }
+        ]
+      },
+      "MediaFileUpdate": {
+        "properties": {
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "文件用途"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "文件描述"
+          },
+          "alt_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alt Text",
+            "description": "替代文本"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "标签列表"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public",
+            "description": "是否公开"
+          }
+        },
+        "type": "object",
+        "title": "MediaFileUpdate",
+        "description": "更新媒体文件的请求模型（所有字段可选）"
+      },
+      "MediaFileUploadResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "上传结果消息"
+          },
+          "file": {
+            "$ref": "#/components/schemas/MediaFileResponse",
+            "description": "上传的文件信息"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "file"
+        ],
+        "title": "MediaFileUploadResponse",
+        "description": "文件上传响应模型",
+        "examples": [
+          {
+            "file": {
+              "file_url": "http://localhost:8000/media/uploads/user123/abc123.jpg",
+              "id": "123e4567-e89b-12d3-a456-426614174000",
+              "original_filename": "photo.jpg"
+            },
+            "message": "文件上传成功"
+          }
+        ]
+      },
+      "MediaType": {
+        "type": "string",
+        "enum": [
+          "image",
+          "video",
+          "document",
+          "other"
+        ],
+        "title": "MediaType"
+      },
+      "ThumbnailInfo": {
+        "properties": {
+          "small": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Small",
+            "description": "小尺寸缩略图URL"
+          },
+          "medium": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medium",
+            "description": "中等尺寸缩略图URL"
+          },
+          "large": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Large",
+            "description": "大尺寸缩略图URL"
+          },
+          "xlarge": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xlarge",
+            "description": "超大尺寸缩略图URL"
+          }
+        },
+        "type": "object",
+        "title": "ThumbnailInfo",
+        "description": "缩略图信息"
+      },
+      "ThumbnailRegenerateResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "处理结果消息"
+          },
+          "thumbnails": {
+            "$ref": "#/components/schemas/ThumbnailInfo",
+            "description": "新生成的缩略图URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "thumbnails"
+        ],
+        "title": "ThumbnailRegenerateResponse",
+        "description": "缩略图重新生成响应模型",
+        "examples": [
+          {
+            "message": "缩略图重新生成成功",
+            "thumbnails": {
+              "medium": "http://localhost:8000/media/thumbnails/user123/medium_abc123.webp",
+              "small": "http://localhost:8000/media/thumbnails/user123/small_abc123.webp"
+            }
+          }
+        ]
+      },
+      "TogglePublicityRequest": {
+        "properties": {
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "description": "是否公开"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_public"
+        ],
+        "title": "TogglePublicityRequest",
+        "description": "切换公开状态请求",
+        "examples": [
+          {
+            "is_public": true
+          },
+          {
+            "is_public": false
+          }
+        ]
       },
       "TokenResponse": {
         "properties": {

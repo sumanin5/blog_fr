@@ -52,6 +52,87 @@ async def async_client(session: AsyncSession) -> AsyncGenerator[AsyncClient, Non
         app.dependency_overrides.clear()
 
 
+# 预计算密码哈希，避免每次重复计算
+_CACHED_PASSWORD_HASH = None
+
+
+def get_cached_password_hash():
+    """获取缓存的密码哈希，避免重复计算"""
+    global _CACHED_PASSWORD_HASH
+    if _CACHED_PASSWORD_HASH is None:
+        _CACHED_PASSWORD_HASH = get_password_hash("password")
+    return _CACHED_PASSWORD_HASH
+
+
+# ============================================================
+# 用户 Fixtures (通用，供所有模块使用)
+# ============================================================
+
+
+@pytest.fixture(scope="function")
+async def normal_user(session: AsyncSession) -> User:
+    """创建普通用户"""
+    user = User(
+        username="normal_user",
+        email="normal@example.com",
+        hashed_password=get_cached_password_hash(),
+        role=UserRole.USER,
+        is_active=True,
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
+async def admin_user(session: AsyncSession) -> User:
+    """创建管理员用户"""
+    user = User(
+        username="admin_user",
+        email="admin@example.com",
+        hashed_password=get_cached_password_hash(),
+        role=UserRole.ADMIN,
+        is_active=True,
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
+async def superadmin_user(session: AsyncSession) -> User:
+    """创建超级管理员用户"""
+    user = User(
+        username="superadmin_user",
+        email="superadmin@example.com",
+        hashed_password=get_cached_password_hash(),
+        role=UserRole.SUPERADMIN,
+        is_active=True,
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
+async def inactive_user(session: AsyncSession) -> User:
+    """创建非激活用户"""
+    user = User(
+        username="inactive_user",
+        email="inactive@example.com",
+        hashed_password=get_cached_password_hash(),
+        role=UserRole.USER,
+        is_active=False,
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
 # ============================================================
 # Token Headers Fixtures (通用)
 # ============================================================

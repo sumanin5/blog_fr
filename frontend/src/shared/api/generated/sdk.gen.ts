@@ -2,22 +2,46 @@
 
 import {
   type Client,
+  formDataBodySerializer,
   type Options as Options2,
   type TDataShape,
   urlSearchParamsBodySerializer,
 } from "./client";
 import { client } from "./client.gen";
 import type {
+  BatchDeleteFilesData,
+  BatchDeleteFilesErrors,
+  BatchDeleteFilesResponses,
   DeleteCurrentUserAccountData,
   DeleteCurrentUserAccountResponses,
+  DeleteFileData,
+  DeleteFileErrors,
+  DeleteFileResponses,
   DeleteUserByIdData,
   DeleteUserByIdErrors,
   DeleteUserByIdResponses,
+  DownloadFileData,
+  DownloadFileErrors,
+  DownloadFileResponses,
+  GetAllFilesAdminData,
+  GetAllFilesAdminErrors,
+  GetAllFilesAdminResponses,
   GetCurrentUserInfoData,
   GetCurrentUserInfoResponses,
+  GetFileDetailData,
+  GetFileDetailErrors,
+  GetFileDetailResponses,
+  GetPublicFilesData,
+  GetPublicFilesErrors,
+  GetPublicFilesResponses,
+  GetStatsOverviewData,
+  GetStatsOverviewResponses,
   GetUserByIdData,
   GetUserByIdErrors,
   GetUserByIdResponses,
+  GetUserFilesData,
+  GetUserFilesErrors,
+  GetUserFilesResponses,
   GetUsersListData,
   GetUsersListErrors,
   GetUsersListResponses,
@@ -26,15 +50,36 @@ import type {
   LoginResponses,
   ReadRootData,
   ReadRootResponses,
+  RegenerateThumbnailsData,
+  RegenerateThumbnailsErrors,
+  RegenerateThumbnailsResponses,
   RegisterUserData,
   RegisterUserErrors,
   RegisterUserResponses,
+  SearchFilesData,
+  SearchFilesErrors,
+  SearchFilesResponses,
+  ToggleFilePublicityData,
+  ToggleFilePublicityErrors,
+  ToggleFilePublicityResponses,
   UpdateCurrentUserInfoData,
   UpdateCurrentUserInfoErrors,
   UpdateCurrentUserInfoResponses,
+  UpdateFileData,
+  UpdateFileErrors,
+  UpdateFileResponses,
   UpdateUserByIdData,
   UpdateUserByIdErrors,
   UpdateUserByIdResponses,
+  UploadFileData,
+  UploadFileErrors,
+  UploadFileResponses,
+  ViewFileData,
+  ViewFileErrors,
+  ViewFileResponses,
+  ViewThumbnailData,
+  ViewThumbnailErrors,
+  ViewThumbnailResponses,
 } from "./types.gen";
 
 export type Options<
@@ -236,4 +281,287 @@ export const updateUserById = <ThrowOnError extends boolean = false>(
       "Content-Type": "application/json",
       ...options.headers,
     },
+  });
+
+/**
+ * Get Public Files
+ *
+ * 获取公开文件列表（无需认证）
+ */
+export const getPublicFiles = <ThrowOnError extends boolean = false>(
+  options?: Options<GetPublicFilesData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    GetPublicFilesResponses,
+    GetPublicFilesErrors,
+    ThrowOnError
+  >({ url: "/api/v1/media/public", ...options });
+
+/**
+ * Toggle File Publicity
+ *
+ * 切换文件公开状态（需要认证）
+ */
+export const toggleFilePublicity = <ThrowOnError extends boolean = false>(
+  options: Options<ToggleFilePublicityData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    ToggleFilePublicityResponses,
+    ToggleFilePublicityErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/{file_id}/publicity",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * 上传文件
+ *
+ * 上传媒体文件（图片、视频、文档等）
+ */
+export const uploadFile = <ThrowOnError extends boolean = false>(
+  options: Options<UploadFileData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    UploadFileResponses,
+    UploadFileErrors,
+    ThrowOnError
+  >({
+    ...formDataBodySerializer,
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/upload",
+    ...options,
+    headers: {
+      "Content-Type": null,
+      ...options.headers,
+    },
+  });
+
+/**
+ * 获取文件列表
+ *
+ * 获取当前用户的媒体文件列表
+ */
+export const getUserFiles = <ThrowOnError extends boolean = false>(
+  options?: Options<GetUserFilesData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    GetUserFilesResponses,
+    GetUserFilesErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/",
+    ...options,
+  });
+
+/**
+ * 删除文件
+ *
+ * 删除媒体文件及其缩略图
+ */
+export const deleteFile = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteFileData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    DeleteFileResponses,
+    DeleteFileErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/{file_id}",
+    ...options,
+  });
+
+/**
+ * 获取文件详情
+ *
+ * 根据ID获取媒体文件详细信息
+ */
+export const getFileDetail = <ThrowOnError extends boolean = false>(
+  options: Options<GetFileDetailData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GetFileDetailResponses,
+    GetFileDetailErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/{file_id}",
+    ...options,
+  });
+
+/**
+ * 更新文件信息
+ *
+ * 更新媒体文件的元数据信息
+ */
+export const updateFile = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateFileData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    UpdateFileResponses,
+    UpdateFileErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/{file_id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * 搜索文件
+ *
+ * 根据关键词搜索媒体文件
+ */
+export const searchFiles = <ThrowOnError extends boolean = false>(
+  options?: Options<SearchFilesData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SearchFilesResponses,
+    SearchFilesErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/search",
+    ...options,
+  });
+
+/**
+ * 批量删除文件
+ *
+ * 批量删除多个媒体文件
+ */
+export const batchDeleteFiles = <ThrowOnError extends boolean = false>(
+  options: Options<BatchDeleteFilesData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    BatchDeleteFilesResponses,
+    BatchDeleteFilesErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/batch-delete",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * 重新生成缩略图
+ *
+ * 重新生成媒体文件的缩略图
+ */
+export const regenerateThumbnails = <ThrowOnError extends boolean = false>(
+  options: Options<RegenerateThumbnailsData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RegenerateThumbnailsResponses,
+    RegenerateThumbnailsErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/{file_id}/regenerate-thumbnails",
+    ...options,
+  });
+
+/**
+ * 查看文件
+ *
+ * 查看媒体文件（带权限检查）
+ */
+export const viewFile = <ThrowOnError extends boolean = false>(
+  options: Options<ViewFileData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ViewFileResponses,
+    ViewFileErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/{file_id}/view",
+    ...options,
+  });
+
+/**
+ * 查看缩略图
+ *
+ * 查看媒体文件缩略图（带权限检查）
+ */
+export const viewThumbnail = <ThrowOnError extends boolean = false>(
+  options: Options<ViewThumbnailData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ViewThumbnailResponses,
+    ViewThumbnailErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/{file_id}/thumbnail/{size}",
+    ...options,
+  });
+
+/**
+ * 下载文件
+ *
+ * 下载媒体文件
+ */
+export const downloadFile = <ThrowOnError extends boolean = false>(
+  options: Options<DownloadFileData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    DownloadFileResponses,
+    DownloadFileErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/{file_id}/download",
+    ...options,
+  });
+
+/**
+ * 获取统计概览
+ *
+ * 获取当前用户的媒体文件统计信息
+ */
+export const getStatsOverview = <ThrowOnError extends boolean = false>(
+  options?: Options<GetStatsOverviewData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    GetStatsOverviewResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/stats/overview",
+    ...options,
+  });
+
+/**
+ * 获取所有文件（管理员）
+ *
+ * 获取系统中所有媒体文件（仅管理员）
+ */
+export const getAllFilesAdmin = <ThrowOnError extends boolean = false>(
+  options?: Options<GetAllFilesAdminData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    GetAllFilesAdminResponses,
+    GetAllFilesAdminErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/media/admin/all",
+    ...options,
   });
