@@ -7,16 +7,16 @@
 import logging
 from typing import Annotated
 
-from app.core.config import settings
 from app.core.db import get_async_session
 from app.media import service
 from app.media.dependencies import (
     check_file_owner,
     check_file_owner_or_admin,
+    get_cache_headers,
     get_media_query_params,
     get_search_params,
+    validate_file_upload,
 )
-from app.media.exceptions import MediaFileNotFoundError
 from app.media.model import FileUsage, MediaFile
 from app.media.schema import (
     BatchDeleteRequest,
@@ -32,7 +32,7 @@ from app.media.schema import (
 )
 from app.users.dependencies import get_current_active_user, get_current_adminuser
 from app.users.model import User
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, Form, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -89,7 +89,7 @@ async def toggle_file_publicity(
     description="上传媒体文件（图片、视频、文档等）",
 )
 async def upload_file(
-    file: Annotated[UploadFile, File(..., description="要上传的文件")],
+    file: Annotated[UploadFile, Depends(validate_file_upload())],
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     usage: Annotated[FileUsage, Form(description="文件用途")] = FileUsage.GENERAL,
@@ -176,9 +176,7 @@ async def search_files(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """搜索媒体文件"""
-    from app.media import crud
-
-    files = await crud.search_media_files(
+    files = await service.search_media_files(
         session=session,
         query=search_params["query"],
         user_id=current_user.id,
@@ -296,15 +294,15 @@ async def view_file(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """查看媒体文件（带权限检查）"""
-    from app.media import crud
-
     # 更新查看次数
-    await crud.update_view_count(session, media_file)
+    await service.increment_view_count(session, media_file)
 
+    headers = get_cache_headers(media_file)
     return FileResponse(
         path=str(service.get_full_path(media_file)),
         filename=media_file.original_filename,
         media_type=media_file.mime_type,
+        headers=headers,
     )
 
 
@@ -319,19 +317,11 @@ async def view_thumbnail(
     media_file: Annotated[MediaFile, Depends(check_file_owner_or_admin)],
 ):
     """查看缩略图（带权限检查）"""
-    from pathlib import Path
-
-    # 检查缩略图是否存在
-    thumbnail_path = media_file.thumbnails.get(size)
-    if not thumbnail_path:
-        raise MediaFileNotFoundError(f"缩略图不存在: {size}")
-
-    # 构建文件路径
-    file_path = Path(settings.MEDIA_ROOT) / thumbnail_path
-    if not file_path.exists():
-        raise MediaFileNotFoundError(f"缩略图文件不存在: {thumbnail_path}")
-
-    return FileResponse(path=str(file_path), media_type="image/webp")
+    thumbnail_path = service.get_thumbnail_path(media_file, size)
+    headers = get_cache_headers(media_file)
+    return FileResponse(
+        path=str(thumbnail_path), media_type="image/webp", headers=headers
+    )
 
 
 @router.get(
@@ -345,10 +335,8 @@ async def download_file(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """下载媒体文件"""
-    from app.media import crud
-
     # 更新下载次数
-    await crud.update_download_count(session, media_file)
+    await service.increment_download_count(session, media_file)
 
     return FileResponse(
         path=str(service.get_full_path(media_file)),
@@ -392,10 +380,8 @@ async def get_all_files_admin(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """获取所有媒体文件（管理员接口）"""
-    from app.media import crud
-
     # 管理员可以查看所有文件，不限制 user_id
-    files = await crud.get_all_media_files(
+    files = await service.get_all_media_files(
         session=session,
         media_type=query_params.media_type,
         usage=query_params.usage,

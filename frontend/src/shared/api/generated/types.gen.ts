@@ -73,12 +73,6 @@ export type BodyLogin = {
  */
 export type BodyUploadFile = {
   /**
-   * File
-   *
-   * 要上传的文件
-   */
-  file: Blob | File;
-  /**
    * 文件用途
    */
   usage?: FileUsage;
@@ -100,6 +94,12 @@ export type BodyUploadFile = {
    * 替代文本
    */
   alt_text?: string;
+  /**
+   * File
+   *
+   * 要上传的文件
+   */
+  file: Blob | File;
 };
 
 /**
@@ -798,6 +798,8 @@ export type DeleteUserByIdData = {
   path: {
     /**
      * User Id
+     *
+     * 用户ID
      */
     user_id: string;
   };
@@ -830,6 +832,8 @@ export type GetUserByIdData = {
   path: {
     /**
      * User Id
+     *
+     * 用户ID
      */
     user_id: string;
   };
@@ -861,6 +865,8 @@ export type UpdateUserByIdData = {
   path: {
     /**
      * User Id
+     *
+     * 用户ID
      */
     user_id: string;
   };
@@ -939,6 +945,8 @@ export type ToggleFilePublicityData = {
   path: {
     /**
      * File Id
+     *
+     * 媒体文件ID
      */
     file_id: string;
   };

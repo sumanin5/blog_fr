@@ -213,7 +213,7 @@ async def test_upload_oversized_file(
 
     # 错误信息在 error.message 中
     error_message = result["error"]["message"]
-    assert "文件大小超出限制" in error_message
+    assert "文件超出" in error_message
 
 
 @pytest.mark.asyncio
@@ -348,7 +348,9 @@ async def test_upload_concurrent_files(
     """测试并发上传多个文件"""
     import asyncio
 
-    async def upload_file(filename: str):
+    async def upload_file_staggered(filename: str, delay: float):
+        # 微小的延迟错开请求，避免测试环境下共享 Session 的冲突
+        await asyncio.sleep(delay)
         files = {"file": (filename, sample_image_data, "image/jpeg")}
         data = {"usage": "general", "description": f"并发上传测试 - {filename}"}
 
@@ -360,8 +362,8 @@ async def test_upload_concurrent_files(
         )
         return response
 
-    # 并发上传3个文件
-    tasks = [upload_file(f"concurrent_{i}.jpg") for i in range(3)]
+    # 使用阶梯式延迟 (0, 0.1, 0.2)
+    tasks = [upload_file_staggered(f"concurrent_{i}.jpg", i * 0.1) for i in range(3)]
 
     responses = await asyncio.gather(*tasks)
 

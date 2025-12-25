@@ -292,8 +292,10 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "用户ID",
               "title": "User Id"
-            }
+            },
+            "description": "用户ID"
           }
         ],
         "responses": {
@@ -339,8 +341,10 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "用户ID",
               "title": "User Id"
-            }
+            },
+            "description": "用户ID"
           }
         ],
         "requestBody": {
@@ -396,8 +400,10 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "用户ID",
               "title": "User Id"
-            }
+            },
+            "description": "用户ID"
           }
         ],
         "responses": {
@@ -531,8 +537,10 @@
             "schema": {
               "type": "string",
               "format": "uuid",
+              "description": "媒体文件ID",
               "title": "File Id"
-            }
+            },
+            "description": "媒体文件ID"
           }
         ],
         "requestBody": {
@@ -1459,12 +1467,6 @@
       },
       "Body_uploadFile": {
         "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "title": "File",
-            "description": "要上传的文件"
-          },
           "usage": {
             "$ref": "#/components/schemas/FileUsage",
             "description": "文件用途",
@@ -1487,6 +1489,12 @@
             "title": "Alt Text",
             "description": "替代文本",
             "default": ""
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "要上传的文件"
           }
         },
         "type": "object",
@@ -2376,7 +2384,7 @@
         "flows": {
           "password": {
             "scopes": {},
-            "tokenUrl": "/users/login"
+            "tokenUrl": "/api/v1/users/login"
           }
         }
       }

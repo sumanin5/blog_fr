@@ -296,6 +296,19 @@ def get_full_path(media_file: MediaFile) -> Path:
     return Path(settings.MEDIA_ROOT) / media_file.file_path
 
 
+def get_thumbnail_path(media_file: MediaFile, size: str) -> Path:
+    """获取缩略图在磁盘上的完整路径"""
+    thumbnail_rel_path = media_file.thumbnails.get(size)
+    if not thumbnail_rel_path:
+        raise MediaFileNotFoundError(f"缩略图不存在: {size}")
+
+    full_path = Path(settings.MEDIA_ROOT) / thumbnail_rel_path
+    if not full_path.exists():
+        raise MediaFileNotFoundError(f"缩略图文件不存在: {thumbnail_rel_path}")
+
+    return full_path
+
+
 # ==========================================
 # 批量操作函数
 # ==========================================
@@ -337,6 +350,54 @@ async def get_media_files_by_usage(
         list: 媒体文件列表
     """
     return await crud.get_media_files_by_usage(session, usage, limit)
+
+
+async def search_media_files(
+    session: AsyncSession,
+    query: str,
+    user_id: Optional[UUID] = None,
+    media_type: Optional[MediaType] = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[MediaFile]:
+    """搜索媒体文件"""
+    return await crud.search_media_files(
+        session=session,
+        query=query,
+        user_id=user_id,
+        media_type=media_type,
+        limit=limit,
+        offset=offset,
+    )
+
+
+async def get_all_media_files(
+    session: AsyncSession,
+    media_type: Optional[MediaType] = None,
+    usage: Optional[FileUsage] = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[MediaFile]:
+    """获取所有媒体文件（管理员用）"""
+    return await crud.get_all_media_files(
+        session=session,
+        media_type=media_type,
+        usage=usage,
+        limit=limit,
+        offset=offset,
+    )
+
+
+async def increment_view_count(session: AsyncSession, media_file: MediaFile) -> None:
+    """增加文件查看次数"""
+    await crud.update_view_count(session, media_file)
+
+
+async def increment_download_count(
+    session: AsyncSession, media_file: MediaFile
+) -> None:
+    """增加文件下载次数"""
+    await crud.update_download_count(session, media_file)
 
 
 # ========================================

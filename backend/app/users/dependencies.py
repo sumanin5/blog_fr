@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ========================================
 # OAuth2 密码模式（用于获取 token）
 # ========================================
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/users/login")
 
 
 # ========================================
@@ -35,8 +35,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
 
 
 async def get_current_user(
-    session: Annotated[AsyncSession, Depends(get_async_session)],
     token: Annotated[str, Depends(oauth2_scheme)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> User:
     """
     获取当前登录用户

@@ -5,7 +5,7 @@
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 from uuid import UUID
 
 from app.core.db import get_async_session
@@ -16,7 +16,7 @@ from app.media.model import FileUsage, MediaFile, MediaType
 from app.media.schema import MediaFileQuery
 from app.users.dependencies import get_current_active_user
 from app.users.model import User
-from fastapi import Depends, Path, Query
+from fastapi import Depends, File, Path, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -56,8 +56,8 @@ async def get_media_file_by_id(
 
 
 async def check_file_owner_or_admin(
-    media_file: Annotated[MediaFile, Depends(get_media_file_by_id)],
     current_user: Annotated[User, Depends(get_current_active_user)],
+    media_file: Annotated[MediaFile, Depends(get_media_file_by_id)],
 ) -> MediaFile:
     """检查用户是否为文件所有者或管理员
 
@@ -81,8 +81,8 @@ async def check_file_owner_or_admin(
 
 
 async def check_file_owner(
-    media_file: Annotated[MediaFile, Depends(get_media_file_by_id)],
     current_user: Annotated[User, Depends(get_current_active_user)],
+    media_file: Annotated[MediaFile, Depends(get_media_file_by_id)],
 ) -> MediaFile:
     """检查用户是否为文件所有者
 
@@ -160,47 +160,34 @@ def get_search_params(
 
 
 def validate_file_upload(
-    max_size: int = 10 * 1024 * 1024,  # 10MB
-    allowed_types: list[str] | None = None,
+    max_size: Optional[int] = None,
 ) -> callable:
-    """创建文件上传验证依赖项
+    """创建文件上传验证依赖项（统一调用 utils 逻辑）
 
-    Args:
-        max_size: 最大文件大小（字节）
-        allowed_types: 允许的MIME类型列表
-
-    Returns:
-        验证函数
+    该依赖项会在 Router 层面初步检查文件的扩展名。
     """
-    if allowed_types is None:
-        allowed_types = [
-            "image/jpeg",
-            "image/png",
-            "image/gif",
-            "image/webp",
-            "video/mp4",
-            "video/webm",
-            "application/pdf",
-            "text/plain",
-        ]
+    from app.media import utils
+    from app.media.exceptions import FileSizeExceededError, UnsupportedFileTypeError
 
-    def _validate(file_size: int, mime_type: str) -> bool:
-        """验证文件
+    async def _validate(
+        file: Annotated[UploadFile, File(..., description="要上传的文件")],
+    ) -> UploadFile:
+        # 1. 自动检测类型
+        mime_type = file.content_type or utils.get_mime_type(file.filename)
+        media_type = utils.detect_media_type_from_mime(mime_type)
 
-        Args:
-            file_size: 文件大小
-            mime_type: MIME类型
+        # 2. 验证扩展名（早于读取内容）
+        if not utils.validate_file_extension(file.filename, media_type):
+            raise UnsupportedFileTypeError(f"不支持的文件类型: {file.filename}")
 
-        Returns:
-            是否通过验证
-        """
-        if file_size > max_size:
-            return False
+        # 3. 验证大小（如果浏览器提供了 size 属性，进行初步拦截）
+        if file.size:
+            if max_size and file.size > max_size:
+                raise FileSizeExceededError(f"文件超出自定义限制: {max_size}")
+            if not utils.validate_file_size(file.size, media_type):
+                raise FileSizeExceededError(f"文件超出 {media_type} 类型限制")
 
-        if mime_type not in allowed_types:
-            return False
-
-        return True
+        return file
 
     return _validate
 
@@ -210,16 +197,24 @@ def validate_file_upload(
 # ========================================
 
 
-def get_cache_headers(max_age: int = 3600) -> dict[str, str]:
-    """获取缓存头
+def get_cache_headers(
+    media_file: MediaFile, max_age: int = 3600 * 24 * 7
+) -> dict[str, str]:
+    """获取缓存头（基于文件元数据生成动态 ETag）
 
     Args:
-        max_age: 缓存时间（秒）
+        media_file: 媒体文件对象
+        max_age: 缓存时间（秒），默认 7 天
 
     Returns:
         缓存头字典
     """
+    # 结合文件 ID 和最后修改时间生成 ETag
+    # 这样如果文件由于某种原因更新了，ETag 也会变化
+    mtime = int(media_file.updated_at.timestamp())
+    etag = f'W/"{media_file.id}-{mtime}"'
+
     return {
-        "Cache-Control": f"public, max-age={max_age}",
-        "ETag": "media-file-etag",  # 实际应用中应该基于文件内容生成
+        "Cache-Control": f"public, max-age={max_age}, must-revalidate",
+        "ETag": etag,
     }
