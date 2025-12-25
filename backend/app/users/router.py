@@ -8,6 +8,7 @@ import uuid
 from typing import Annotated
 
 from app.core.db import get_async_session
+from app.users import service
 from app.users.dependencies import (
     get_current_active_user,
     get_current_superuser,
@@ -20,7 +21,6 @@ from app.users.schema import (
     UserResponse,
     UserUpdate,
 )
-from app.users.service import user_service
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,7 +54,7 @@ async def register_user(
     - **password**: 密码（至少 6 个字符）
     - **full_name**: 全名（可选）
     """
-    return await user_service.register_user(session, user_in)
+    return await service.register_user(session, user_in)
 
 
 @router.post(
@@ -76,7 +76,7 @@ async def login(
     Returns:
         JWT token
     """
-    return await user_service.authenticate_and_create_token(
+    return await service.authenticate_and_create_token(
         session, form_data.username, form_data.password
     )
 
@@ -111,7 +111,7 @@ async def update_current_user_info(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """部分更新当前用户信息"""
-    return await user_service.update_user_profile(
+    return await service.update_user_profile(
         session, current_user.id, user_in, current_user
     )
 
@@ -127,7 +127,7 @@ async def delete_current_user_account(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """删除当前用户账号"""
-    await user_service.delete_user_account(session, current_user.id, current_user)
+    await service.delete_user_account(session, current_user.id, current_user)
     return None
 
 
@@ -156,7 +156,7 @@ async def get_users_list(
     - **limit**: 返回的最大记录数
     - **is_active**: 是否只返回激活的用户
     """
-    users = await user_service.get_users_list(
+    users = await service.get_users_list(
         session, skip=skip, limit=limit, is_active=is_active, current_user=current_user
     )
     return UserListResponse(total=len(users), users=users)
@@ -174,7 +174,7 @@ async def get_user_by_id(
     current_user: Annotated[User, Depends(get_current_superuser)],
 ):
     """获取指定用户信息（仅管理员）"""
-    return await user_service.get_user_by_id(session, user_id)
+    return await service.get_user_by_id(session, user_id)
 
 
 @router.patch(
@@ -190,9 +190,7 @@ async def update_user_by_id(
     current_user: Annotated[User, Depends(get_current_superuser)],
 ):
     """部分更新指定用户信息（仅管理员）"""
-    return await user_service.update_user_profile(
-        session, user_id, user_in, current_user
-    )
+    return await service.update_user_profile(session, user_id, user_in, current_user)
 
 
 @router.delete(
@@ -207,5 +205,5 @@ async def delete_user_by_id(
     current_user: Annotated[User, Depends(get_current_superuser)],
 ):
     """删除指定用户（仅管理员）"""
-    await user_service.delete_user_account(session, user_id, current_user)
+    await service.delete_user_account(session, user_id, current_user)
     return None
