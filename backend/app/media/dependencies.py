@@ -206,35 +206,6 @@ def validate_file_upload(
 
 
 # ========================================
-# 统计相关依赖项
-# ========================================
-
-
-async def get_user_media_stats(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> dict:
-    """获取用户媒体文件统计信息
-
-    Args:
-        current_user: 当前用户
-        session: 数据库会话
-
-    Returns:
-        统计信息字典
-    """
-    total_count = await crud.get_user_media_count(session, current_user.id)
-    storage_usage = await crud.get_user_storage_usage(session, current_user.id)
-    stats_by_type = await crud.get_media_stats_by_type(session, current_user.id)
-
-    return {
-        "total_files": total_count,
-        "storage_usage": storage_usage,
-        "files_by_type": stats_by_type,
-    }
-
-
-# ========================================
 # 缓存相关依赖项
 # ========================================
 

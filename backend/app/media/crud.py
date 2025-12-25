@@ -327,6 +327,19 @@ async def get_media_stats_by_type(
     return {media_type: count for media_type, count in result.all()}
 
 
+async def get_user_media_stats(session: AsyncSession, user_id: UUID) -> dict:
+    """获取用户媒体文件统计信息 (综合)"""
+    total_count = await get_user_media_count(session, user_id)
+    storage_usage = await get_user_storage_usage(session, user_id)
+    stats_by_type = await get_media_stats_by_type(session, user_id)
+
+    return {
+        "total_files": total_count,
+        "storage_usage": storage_usage,
+        "files_by_type": stats_by_type,
+    }
+
+
 # ========================================
 # 批量操作
 # ========================================

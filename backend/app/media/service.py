@@ -17,6 +17,7 @@ from app.media.exceptions import (
     UnsupportedFileTypeError,
 )
 from app.media.model import FileUsage, MediaFile, MediaType
+from app.media.schema import MediaFileUpdate
 from app.media.utils import (
     cleanup_all_thumbnails,
     delete_file_from_disk,
@@ -118,12 +119,32 @@ async def create_media_file(
 # ==========================================
 
 
-async def delete_media_file(media_file: MediaFile, session: AsyncSession) -> None:
+async def update_media_file_info(
+    session: AsyncSession,
+    media_file: MediaFile,
+    update_data: MediaFileUpdate,
+) -> MediaFile:
+    """更新媒体文件记录
+
+    Args:
+        session: 数据库会话
+        media_file: 媒体文件实例
+        update_data: 更新数据
+
+    Returns:
+        MediaFile: 更新后的媒体文件对象
+    """
+    updated_file = await crud.update_media_file(session, media_file, update_data)
+    logger.info(f"成功更新媒体文件信息: {media_file.id}")
+    return updated_file
+
+
+async def delete_media_file(session: AsyncSession, media_file: MediaFile) -> None:
     """删除媒体文件及其缩略图
 
     Args:
-        media_file: 要删除的媒体文件
         session: 数据库会话
+        media_file: 要删除的媒体文件
     """
     # 1. 删除主文件
     main_file_path = Path(settings.MEDIA_ROOT) / media_file.file_path
@@ -243,35 +264,36 @@ async def get_user_media_files(
 
 
 # ==========================================
-# URL 生成函数
+# 响应转换函数
 # ==========================================
 
 
 def get_file_url(media_file: MediaFile) -> str:
-    """获取文件访问URL（带权限检查）
-
-    Args:
-        media_file: 媒体文件实例
-
-    Returns:
-        str: 文件访问URL
-    """
+    """获取文件访问URL（带权限检查）"""
     return f"{settings.BASE_URL}{settings.API_PREFIX}/media/{media_file.id}/view"
 
 
-def get_thumbnail_url(media_file: MediaFile, size: str = "medium") -> str | None:
-    """获取缩略图URL（带权限检查）
+def format_thumbnail_info(media_file: MediaFile) -> Optional[dict]:
+    """格式化缩略图信息"""
+    if not media_file.thumbnails:
+        return None
 
-    Args:
-        media_file: 媒体文件实例
-        size: 缩略图尺寸
+    base_url = settings.MEDIA_URL
+    return {size: f"{base_url}{path}" for size, path in media_file.thumbnails.items()}
 
-    Returns:
-        str: 缩略图URL或None
-    """
-    if size in media_file.thumbnails:
-        return f"{settings.API_PREFIX}/media/{media_file.id}/thumbnail/{size}"
-    return None
+
+def format_media_response(media_file: MediaFile) -> dict:
+    """将 MediaFile 转换为响应格式"""
+    return {
+        **media_file.model_dump(exclude={"thumbnails"}),
+        "file_url": get_file_url(media_file),
+        "thumbnails": format_thumbnail_info(media_file),
+    }
+
+
+def get_full_path(media_file: MediaFile) -> Path:
+    """获取文件在磁盘上的完整路径"""
+    return Path(settings.MEDIA_ROOT) / media_file.file_path
 
 
 # ==========================================
@@ -375,9 +397,6 @@ async def toggle_file_publicity(
     if not media_file:
         raise MediaFileNotFoundError(f"文件不存在: {file_id}")
 
-    # 使用CRUD层的更新函数
-    from app.media.schema import MediaFileUpdate
-
     update_data = MediaFileUpdate(is_public=is_public)
     updated_file = await crud.update_media_file(session, media_file, update_data)
 
@@ -393,14 +412,8 @@ async def get_accessible_media_files(
     limit: int = 50,
     offset: int = 0,
 ) -> list[MediaFile]:
-    """获取用户可访问的媒体文件
-
-    逻辑：
-    - 未登录用户：只能看到公开文件
-    - 登录用户：可以看到公开文件 + 自己的私有文件
-    """
+    """获取用户可访问的媒体文件"""
     if current_user_id is None:
-        # 未登录用户只能看公开文件
         return await get_public_media_files(
             session=session,
             media_type=media_type,
@@ -409,8 +422,6 @@ async def get_accessible_media_files(
             offset=offset,
         )
     else:
-        # 登录用户可以看到公开文件和自己的文件
-        # 使用CRUD层的高级查询函数
         return await crud.get_media_files_by_criteria(
             session=session,
             user_id=current_user_id,
@@ -419,3 +430,8 @@ async def get_accessible_media_files(
             limit=limit,
             offset=offset,
         )
+
+
+async def get_user_media_stats(session: AsyncSession, user_id: UUID) -> dict:
+    """获取用户的媒体文件统计信息"""
+    return await crud.get_user_media_stats(session, user_id)
