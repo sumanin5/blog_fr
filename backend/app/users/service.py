@@ -5,7 +5,6 @@
 """
 
 import logging
-import uuid
 from datetime import timedelta
 from typing import Optional
 
@@ -108,32 +107,12 @@ async def authenticate_and_create_token(
 
     return TokenResponse(access_token=access_token, token_type="bearer")
 
-
-async def get_user_by_id(session: AsyncSession, user_id: uuid.UUID) -> User:
-    """
-    根据ID获取用户
-
-    Args:
-        session: 数据库会话
-        user_id: 用户ID
-
-    Returns:
-        用户对象
-
-    Raises:
-        UserNotFoundError: 用户不存在
-    """
-    user = await crud.get_user_by_id(session, user_id)
-    if not user:
-        logger.warning(f"User not found: user_id={user_id}")
-        raise UserNotFoundError(f"User with ID {user_id} not found")
-
-    return user
+    return TokenResponse(access_token=access_token, token_type="bearer")
 
 
 async def update_user_profile(
     session: AsyncSession,
-    user_id: uuid.UUID,
+    user: User,
     update_data: UserUpdate,
     current_user: User,
 ) -> User:
@@ -142,7 +121,7 @@ async def update_user_profile(
 
     Args:
         session: 数据库会话
-        user_id: 要更新的用户ID
+        user: 要更新的用户对象
         update_data: 更新数据
         current_user: 当前操作用户
 
@@ -150,18 +129,12 @@ async def update_user_profile(
         更新后的用户对象
 
     Raises:
-        UserNotFoundError: 用户不存在
         UserAlreadyExistsError: 用户名或邮箱冲突
+        UserNotFoundError: 更新失败
     """
     logger.info(
-        f"User profile update attempt: user_id={user_id}, operator={current_user.username}"
+        f"User profile update attempt: user_id={user.id}, operator={current_user.username}"
     )
-
-    # 获取要更新的用户
-    user = await crud.get_user_by_id(session, user_id)
-    if not user:
-        logger.warning(f"Update failed - user not found: user_id={user_id}")
-        raise UserNotFoundError(f"User with ID {user_id} not found")
 
     # 检查更新数据中的冲突
     update_dict = update_data.model_dump(exclude_unset=True)
@@ -171,7 +144,7 @@ async def update_user_profile(
         existing_user = await crud.get_user_by_username(
             session, update_dict["username"]
         )
-        if existing_user and existing_user.id != user_id:
+        if existing_user and existing_user.id != user.id:
             logger.warning(
                 f"Update failed - username conflict: {update_dict['username']}"
             )
@@ -182,60 +155,54 @@ async def update_user_profile(
     # 检查邮箱冲突
     if "email" in update_dict and update_dict["email"] != user.email:
         existing_email = await crud.get_user_by_email(session, update_dict["email"])
-        if existing_email and existing_email.id != user_id:
+        if existing_email and existing_email.id != user.id:
             logger.warning(f"Update failed - email conflict: {update_dict['email']}")
             raise UserAlreadyExistsError(
                 f"Email '{update_dict['email']}' already exists"
             )
 
     # 执行更新
-    updated_user = await crud.update_user(session, user_id, update_data)
+    updated_user = await crud.update_user(session, user.id, update_data)
     if not updated_user:
-        logger.error(f"Update operation failed: user_id={user_id}")
-        raise UserNotFoundError(f"Failed to update user with ID {user_id}")
+        logger.error(f"Update operation failed: user_id={user.id}")
+        raise UserNotFoundError(f"Failed to update user with ID {user.id}")
 
     logger.info(
-        f"User profile updated successfully: user_id={user_id}, operator={current_user.username}"
+        f"User profile updated successfully: user_id={user.id}, operator={current_user.username}"
     )
 
     return updated_user
 
 
 async def delete_user_account(
-    session: AsyncSession, user_id: uuid.UUID, current_user: User
+    session: AsyncSession, user: User, current_user: User
 ) -> bool:
     """
     删除用户账号
 
     Args:
         session: 数据库会话
-        user_id: 要删除的用户ID
+        user: 要删除的用户对象
         current_user: 当前操作用户
 
     Returns:
         是否删除成功
 
     Raises:
-        UserNotFoundError: 用户不存在
+        UserNotFoundError: 删除失败
     """
     logger.warning(
-        f"User account deletion attempt: user_id={user_id}, operator={current_user.username}"
+        f"User account deletion attempt: user_id={user.id}, operator={current_user.username}"
     )
 
-    # 检查用户是否存在
-    user = await crud.get_user_by_id(session, user_id)
-    if not user:
-        logger.warning(f"Deletion failed - user not found: user_id={user_id}")
-        raise UserNotFoundError(f"User with ID {user_id} not found")
-
     # 执行删除
-    success = await crud.delete_user(session, user_id)
+    success = await crud.delete_user(session, user.id)
     if not success:
-        logger.error(f"Delete operation failed: user_id={user_id}")
-        raise UserNotFoundError(f"Failed to delete user with ID {user_id}")
+        logger.error(f"Delete operation failed: user_id={user.id}")
+        raise UserNotFoundError(f"Failed to delete user with ID {user.id}")
 
     logger.info(
-        f"User account deleted successfully: user_id={user_id}, username={user.username}, operator={current_user.username}"
+        f"User account deleted successfully: user_id={user.id}, username={user.username}, operator={current_user.username}"
     )
 
     return success

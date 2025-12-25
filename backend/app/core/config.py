@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     # ==========================================
     # 媒体文件配置
     # ==========================================
-    MEDIA_ROOT: str = Field(default="media", description="媒体文件存储根目录")
+    MEDIA_ROOT: str = Field(default="media_store", description="媒体文件存储根目录")
     MEDIA_URL: str = Field(
         default="http://localhost:8000/media/", description="媒体文件访问URL前缀"
     )

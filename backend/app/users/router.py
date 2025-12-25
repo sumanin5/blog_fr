@@ -4,11 +4,10 @@
 定义所有用户相关的 API 接口，专注于HTTP层面的处理
 """
 
-import uuid
 from typing import Annotated
 
 from app.core.db import get_async_session
-from app.users import service
+from app.users import dependencies, service
 from app.users.dependencies import (
     get_current_active_user,
     get_current_superuser,
@@ -112,7 +111,7 @@ async def update_current_user_info(
 ):
     """部分更新当前用户信息"""
     return await service.update_user_profile(
-        session, current_user.id, user_in, current_user
+        session, current_user, user_in, current_user
     )
 
 
@@ -127,7 +126,7 @@ async def delete_current_user_account(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """删除当前用户账号"""
-    await service.delete_user_account(session, current_user.id, current_user)
+    await service.delete_user_account(session, current_user, current_user)
     return None
 
 
@@ -169,12 +168,11 @@ async def get_users_list(
     description="根据 ID 获取用户信息（仅管理员）",
 )
 async def get_user_by_id(
-    user_id: uuid.UUID,
-    session: Annotated[AsyncSession, Depends(get_async_session)],
     current_user: Annotated[User, Depends(get_current_superuser)],
+    target_user: Annotated[User, Depends(dependencies.get_user_by_id_dep)],
 ):
     """获取指定用户信息（仅管理员）"""
-    return await service.get_user_by_id(session, user_id)
+    return target_user
 
 
 @router.patch(
@@ -184,13 +182,15 @@ async def get_user_by_id(
     description="部分更新指定用户的信息（仅管理员）",
 )
 async def update_user_by_id(
-    user_id: uuid.UUID,
     user_in: UserUpdate,
-    session: Annotated[AsyncSession, Depends(get_async_session)],
     current_user: Annotated[User, Depends(get_current_superuser)],
+    target_user: Annotated[User, Depends(dependencies.get_user_by_id_dep)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """部分更新指定用户信息（仅管理员）"""
-    return await service.update_user_profile(session, user_id, user_in, current_user)
+    return await service.update_user_profile(
+        session, target_user, user_in, current_user
+    )
 
 
 @router.delete(
@@ -200,10 +200,10 @@ async def update_user_by_id(
     description="删除指定用户（仅管理员）",
 )
 async def delete_user_by_id(
-    user_id: uuid.UUID,
-    session: Annotated[AsyncSession, Depends(get_async_session)],
     current_user: Annotated[User, Depends(get_current_superuser)],
+    target_user: Annotated[User, Depends(dependencies.get_user_by_id_dep)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """删除指定用户（仅管理员）"""
-    await service.delete_user_account(session, user_id, current_user)
+    await service.delete_user_account(session, target_user, current_user)
     return None

@@ -17,7 +17,7 @@ from app.users import crud
 from app.users.exceptions import InactiveUserError, InvalidCredentialsError
 from app.users.model import User
 from app.users.schema import TokenPayload
-from fastapi import Depends
+from fastapi import Depends, Path
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -157,3 +157,30 @@ async def get_current_superuser(
         )
         raise InsufficientPermissionsError("Superuser privileges required")
     return current_user
+
+
+async def get_user_by_id_dep(
+    user_id: Annotated[uuid.UUID, Path(description="用户ID")],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> User:
+    """
+    根据 ID 获取用户（作为依赖项）
+
+    Args:
+        user_id: 路径参数中的用户ID
+        session: 数据库会话
+
+    Returns:
+        用户对象
+
+    Raises:
+        UserNotFoundError: 如果用户不存在
+    """
+    user = await crud.get_user_by_id(session, user_id)
+    if not user:
+        from app.users.exceptions import UserNotFoundError
+
+        logger.warning(f"User not found (dependency): user_id={user_id}")
+        raise UserNotFoundError(f"User with ID {user_id} not found")
+
+    return user
