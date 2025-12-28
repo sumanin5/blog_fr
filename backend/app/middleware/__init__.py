@@ -6,7 +6,6 @@
 
 import logging as stdlib_logging
 
-from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.file_upload import setup_file_upload_middleware
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.request_id import RequestIDMiddleware
@@ -34,8 +33,7 @@ def setup_middleware(app: FastAPI) -> None:
     4. ErrorHandlerMiddleware（错误处理）
     """
 
-    # 1. 错误处理中间件
-    app.add_middleware(ErrorHandlerMiddleware)
+    # 1. 错误处理中间件已移至 main.py 作为 exception handlers
 
     # 2. 文件上传大小限制中间件
     setup_file_upload_middleware(app, max_size=50 * 1024 * 1024)  # 50MB

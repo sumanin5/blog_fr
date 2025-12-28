@@ -12,6 +12,7 @@ from app.core.base import Base
 from sqlmodel import JSON, Column, Field, Relationship
 
 if TYPE_CHECKING:
+    from app.posts.model import Category, Post
     from app.users.model import User
 
 
@@ -93,6 +94,8 @@ class MediaFile(Base, table=True):
 
     # 关系字段
     uploader: "User" = Relationship(back_populates="media_files")
+    categories_as_icon: list["Category"] = Relationship(back_populates="icon")
+    posts_as_cover: list["Post"] = Relationship(back_populates="cover_media")
 
     def __repr__(self) -> str:
         return f"MediaFile(id={self.id!r}, filename={self.original_filename!r}, type={self.media_type!r})"

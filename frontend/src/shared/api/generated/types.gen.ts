@@ -103,6 +103,88 @@ export type BodyUploadFile = {
 };
 
 /**
+ * CategoryResponse
+ */
+export type CategoryResponse = {
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Slug
+   */
+  slug: string;
+  /**
+   * Description
+   */
+  description?: string | null;
+  /**
+   * Parent Id
+   */
+  parent_id?: string | null;
+  /**
+   * Is Active
+   */
+  is_active?: boolean;
+  /**
+   * Sort Order
+   */
+  sort_order?: number;
+  /**
+   * Icon Id
+   */
+  icon_id?: string | null;
+  /**
+   * Icon Preset
+   */
+  icon_preset?: string | null;
+  post_type?: PostType;
+  /**
+   * Id
+   */
+  id: string;
+};
+
+/**
+ * ErrorDetail
+ *
+ * 错误详情模型
+ */
+export type ErrorDetail = {
+  /**
+   * Code
+   */
+  code: string;
+  /**
+   * Message
+   */
+  message: string;
+  /**
+   * Details
+   */
+  details?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Timestamp
+   */
+  timestamp: string;
+  /**
+   * Request Id
+   */
+  request_id: string;
+};
+
+/**
+ * ErrorResponse
+ *
+ * 统一错误响应模型
+ */
+export type ErrorResponse = {
+  error: ErrorDetail;
+};
+
+/**
  * FileUsage
  */
 export type FileUsage =
@@ -113,16 +195,6 @@ export type FileUsage =
   | "favicon"
   | "document"
   | "attachment";
-
-/**
- * HTTPValidationError
- */
-export type HttpValidationError = {
-  /**
-   * Detail
-   */
-  detail?: Array<ValidationError>;
-};
 
 /**
  * MediaFileListResponse
@@ -330,6 +402,430 @@ export type MediaFileUploadResponse = {
  * MediaType
  */
 export type MediaType = "image" | "video" | "document" | "other";
+
+/**
+ * PostCreate
+ */
+export type PostCreate = {
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Slug
+   */
+  slug?: string | null;
+  post_type?: PostType;
+  status?: PostStatus;
+  /**
+   * Category Id
+   */
+  category_id?: string | null;
+  /**
+   * Cover Media Id
+   */
+  cover_media_id?: string | null;
+  /**
+   * Is Featured
+   */
+  is_featured?: boolean;
+  /**
+   * Allow Comments
+   */
+  allow_comments?: boolean;
+  /**
+   * Meta Title
+   */
+  meta_title?: string | null;
+  /**
+   * Meta Description
+   */
+  meta_description?: string | null;
+  /**
+   * Meta Keywords
+   */
+  meta_keywords?: string | null;
+  /**
+   * Content Mdx
+   *
+   * 原始 MDX 内容
+   */
+  content_mdx: string;
+  /**
+   * Git Hash
+   */
+  git_hash?: string | null;
+  /**
+   * Source Path
+   */
+  source_path?: string | null;
+  /**
+   * Commit Message
+   */
+  commit_message?: string | null;
+};
+
+/**
+ * PostDetailResponse
+ *
+ * 文章详情响应
+ */
+export type PostDetailResponse = {
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Slug
+   */
+  slug: string;
+  post_type?: PostType;
+  status?: PostStatus;
+  /**
+   * Category Id
+   */
+  category_id?: string | null;
+  /**
+   * Cover Media Id
+   */
+  cover_media_id?: string | null;
+  /**
+   * Is Featured
+   */
+  is_featured?: boolean;
+  /**
+   * Allow Comments
+   */
+  allow_comments?: boolean;
+  /**
+   * Meta Title
+   */
+  meta_title?: string | null;
+  /**
+   * Meta Description
+   */
+  meta_description?: string | null;
+  /**
+   * Meta Keywords
+   */
+  meta_keywords?: string | null;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Excerpt
+   */
+  excerpt: string;
+  /**
+   * Reading Time
+   */
+  reading_time: number;
+  /**
+   * View Count
+   */
+  view_count: number;
+  /**
+   * Like Count
+   */
+  like_count: number;
+  /**
+   * Comment Count
+   */
+  comment_count?: number;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Updated At
+   */
+  updated_at: string;
+  /**
+   * Published At
+   */
+  published_at?: string | null;
+  /**
+   * Author Id
+   */
+  author_id: string;
+  category?: CategoryResponse | null;
+  /**
+   * Tags
+   */
+  tags?: Array<TagResponse>;
+  /**
+   * Content Mdx
+   */
+  content_mdx: string;
+  /**
+   * Content Html
+   */
+  content_html: string;
+  /**
+   * Toc
+   */
+  toc: {
+    [key: string]: unknown;
+  };
+  /**
+   * Git Hash
+   */
+  git_hash?: string | null;
+  /**
+   * Source Path
+   */
+  source_path?: string | null;
+  /**
+   * Versions
+   */
+  versions?: Array<PostVersionResponse>;
+};
+
+/**
+ * PostListResponse
+ */
+export type PostListResponse = {
+  /**
+   * Items
+   */
+  items: Array<PostShortResponse>;
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * Limit
+   */
+  limit: number;
+  /**
+   * Offset
+   */
+  offset: number;
+};
+
+/**
+ * PostShortResponse
+ *
+ * 用于列表展示的精简响应，规避 N+1 风险
+ */
+export type PostShortResponse = {
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Slug
+   */
+  slug: string;
+  post_type?: PostType;
+  status?: PostStatus;
+  /**
+   * Category Id
+   */
+  category_id?: string | null;
+  /**
+   * Cover Media Id
+   */
+  cover_media_id?: string | null;
+  /**
+   * Is Featured
+   */
+  is_featured?: boolean;
+  /**
+   * Allow Comments
+   */
+  allow_comments?: boolean;
+  /**
+   * Meta Title
+   */
+  meta_title?: string | null;
+  /**
+   * Meta Description
+   */
+  meta_description?: string | null;
+  /**
+   * Meta Keywords
+   */
+  meta_keywords?: string | null;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Excerpt
+   */
+  excerpt: string;
+  /**
+   * Reading Time
+   */
+  reading_time: number;
+  /**
+   * View Count
+   */
+  view_count: number;
+  /**
+   * Like Count
+   */
+  like_count: number;
+  /**
+   * Comment Count
+   */
+  comment_count?: number;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Updated At
+   */
+  updated_at: string;
+  /**
+   * Published At
+   */
+  published_at?: string | null;
+  /**
+   * Author Id
+   */
+  author_id: string;
+  category?: CategoryResponse | null;
+  /**
+   * Tags
+   */
+  tags?: Array<TagResponse>;
+};
+
+/**
+ * PostStatus
+ *
+ * 文章状态枚举
+ */
+export type PostStatus = "draft" | "published" | "archived";
+
+/**
+ * PostType
+ *
+ * 内容类型枚举
+ */
+export type PostType = "article" | "idea";
+
+/**
+ * PostUpdate
+ */
+export type PostUpdate = {
+  /**
+   * Title
+   */
+  title?: string | null;
+  /**
+   * Slug
+   */
+  slug?: string | null;
+  post_type?: PostType | null;
+  status?: PostStatus | null;
+  /**
+   * Category Id
+   */
+  category_id?: string | null;
+  /**
+   * Cover Media Id
+   */
+  cover_media_id?: string | null;
+  /**
+   * Is Featured
+   */
+  is_featured?: boolean | null;
+  /**
+   * Allow Comments
+   */
+  allow_comments?: boolean | null;
+  /**
+   * Content Mdx
+   */
+  content_mdx?: string | null;
+  /**
+   * Meta Title
+   */
+  meta_title?: string | null;
+  /**
+   * Meta Description
+   */
+  meta_description?: string | null;
+  /**
+   * Meta Keywords
+   */
+  meta_keywords?: string | null;
+  /**
+   * Git Hash
+   */
+  git_hash?: string | null;
+  /**
+   * Source Path
+   */
+  source_path?: string | null;
+  /**
+   * Commit Message
+   */
+  commit_message?: string | null;
+};
+
+/**
+ * PostVersionResponse
+ *
+ * 文章版本响应
+ */
+export type PostVersionResponse = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Version Num
+   */
+  version_num: number;
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Git Hash
+   */
+  git_hash?: string | null;
+  /**
+   * Commit Message
+   */
+  commit_message?: string | null;
+  /**
+   * Created At
+   */
+  created_at: string;
+};
+
+/**
+ * TagResponse
+ */
+export type TagResponse = {
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Slug
+   */
+  slug: string;
+  /**
+   * Color
+   */
+  color?: string;
+  /**
+   * Description
+   */
+  description?: string | null;
+  /**
+   * Id
+   */
+  id: string;
+};
 
 /**
  * ThumbnailInfo
@@ -610,30 +1106,41 @@ export type UserUpdate = {
   avatar?: string | null;
 };
 
-/**
- * ValidationError
- */
-export type ValidationError = {
-  /**
-   * Location
-   */
-  loc: Array<string | number>;
-  /**
-   * Message
-   */
-  msg: string;
-  /**
-   * Error Type
-   */
-  type: string;
-};
-
 export type ReadRootData = {
   body?: never;
   path?: never;
   query?: never;
   url: "/";
 };
+
+export type ReadRootErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type ReadRootError = ReadRootErrors[keyof ReadRootErrors];
 
 export type ReadRootResponses = {
   /**
@@ -651,9 +1158,29 @@ export type RegisterUserData = {
 
 export type RegisterUserErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type RegisterUserError = RegisterUserErrors[keyof RegisterUserErrors];
@@ -677,9 +1204,29 @@ export type LoginData = {
 
 export type LoginErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type LoginError = LoginErrors[keyof LoginErrors];
@@ -700,6 +1247,36 @@ export type DeleteCurrentUserAccountData = {
   url: "/api/v1/users/me";
 };
 
+export type DeleteCurrentUserAccountErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type DeleteCurrentUserAccountError =
+  DeleteCurrentUserAccountErrors[keyof DeleteCurrentUserAccountErrors];
+
 export type DeleteCurrentUserAccountResponses = {
   /**
    * Successful Response
@@ -716,6 +1293,36 @@ export type GetCurrentUserInfoData = {
   query?: never;
   url: "/api/v1/users/me";
 };
+
+export type GetCurrentUserInfoErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type GetCurrentUserInfoError =
+  GetCurrentUserInfoErrors[keyof GetCurrentUserInfoErrors];
 
 export type GetCurrentUserInfoResponses = {
   /**
@@ -736,9 +1343,29 @@ export type UpdateCurrentUserInfoData = {
 
 export type UpdateCurrentUserInfoErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type UpdateCurrentUserInfoError =
@@ -776,9 +1403,29 @@ export type GetUsersListData = {
 
 export type GetUsersListErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type GetUsersListError = GetUsersListErrors[keyof GetUsersListErrors];
@@ -809,9 +1456,29 @@ export type DeleteUserByIdData = {
 
 export type DeleteUserByIdErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type DeleteUserByIdError =
@@ -843,9 +1510,29 @@ export type GetUserByIdData = {
 
 export type GetUserByIdErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type GetUserByIdError = GetUserByIdErrors[keyof GetUserByIdErrors];
@@ -876,9 +1563,29 @@ export type UpdateUserByIdData = {
 
 export type UpdateUserByIdErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type UpdateUserByIdError =
@@ -920,9 +1627,29 @@ export type GetPublicFilesData = {
 
 export type GetPublicFilesErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type GetPublicFilesError =
@@ -956,9 +1683,29 @@ export type ToggleFilePublicityData = {
 
 export type ToggleFilePublicityErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type ToggleFilePublicityError =
@@ -983,9 +1730,29 @@ export type UploadFileData = {
 
 export type UploadFileErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type UploadFileError = UploadFileErrors[keyof UploadFileErrors];
@@ -1033,9 +1800,29 @@ export type GetUserFilesData = {
 
 export type GetUserFilesErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type GetUserFilesError = GetUserFilesErrors[keyof GetUserFilesErrors];
@@ -1066,9 +1853,29 @@ export type DeleteFileData = {
 
 export type DeleteFileErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type DeleteFileError = DeleteFileErrors[keyof DeleteFileErrors];
@@ -1098,9 +1905,29 @@ export type GetFileDetailData = {
 
 export type GetFileDetailErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type GetFileDetailError = GetFileDetailErrors[keyof GetFileDetailErrors];
@@ -1131,9 +1958,29 @@ export type UpdateFileData = {
 
 export type UpdateFileErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type UpdateFileError = UpdateFileErrors[keyof UpdateFileErrors];
@@ -1181,9 +2028,29 @@ export type SearchFilesData = {
 
 export type SearchFilesErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type SearchFilesError = SearchFilesErrors[keyof SearchFilesErrors];
@@ -1207,9 +2074,29 @@ export type BatchDeleteFilesData = {
 
 export type BatchDeleteFilesErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type BatchDeleteFilesError =
@@ -1241,9 +2128,29 @@ export type RegenerateThumbnailsData = {
 
 export type RegenerateThumbnailsErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type RegenerateThumbnailsError =
@@ -1275,9 +2182,29 @@ export type ViewFileData = {
 
 export type ViewFileErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type ViewFileError = ViewFileErrors[keyof ViewFileErrors];
@@ -1309,9 +2236,29 @@ export type ViewThumbnailData = {
 
 export type ViewThumbnailErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type ViewThumbnailError = ViewThumbnailErrors[keyof ViewThumbnailErrors];
@@ -1339,9 +2286,29 @@ export type DownloadFileData = {
 
 export type DownloadFileErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type DownloadFileError = DownloadFileErrors[keyof DownloadFileErrors];
@@ -1359,6 +2326,36 @@ export type GetStatsOverviewData = {
   query?: never;
   url: "/api/v1/media/stats/overview";
 };
+
+export type GetStatsOverviewErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type GetStatsOverviewError =
+  GetStatsOverviewErrors[keyof GetStatsOverviewErrors];
 
 export type GetStatsOverviewResponses = {
   /**
@@ -1401,9 +2398,29 @@ export type GetAllFilesAdminData = {
 
 export type GetAllFilesAdminErrors = {
   /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
    * Validation Error
    */
-  422: HttpValidationError;
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
 };
 
 export type GetAllFilesAdminError =
@@ -1418,3 +2435,377 @@ export type GetAllFilesAdminResponses = {
 
 export type GetAllFilesAdminResponse =
   GetAllFilesAdminResponses[keyof GetAllFilesAdminResponses];
+
+export type ListPostsData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Post Type
+     */
+    post_type?: PostType | null;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Tag Id
+     */
+    tag_id?: string | null;
+    /**
+     * Author Id
+     */
+    author_id?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean | null;
+    /**
+     * Search
+     */
+    search?: string | null;
+    /**
+     * Limit
+     */
+    limit?: number;
+    /**
+     * Offset
+     */
+    offset?: number;
+  };
+  url: "/api/v1/posts";
+};
+
+export type ListPostsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type ListPostsError = ListPostsErrors[keyof ListPostsErrors];
+
+export type ListPostsResponses = {
+  /**
+   * Successful Response
+   */
+  200: PostListResponse;
+};
+
+export type ListPostsResponse = ListPostsResponses[keyof ListPostsResponses];
+
+export type CreatePostData = {
+  body: PostCreate;
+  path?: never;
+  query?: never;
+  url: "/api/v1/posts";
+};
+
+export type CreatePostErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type CreatePostError = CreatePostErrors[keyof CreatePostErrors];
+
+export type CreatePostResponses = {
+  /**
+   * Successful Response
+   */
+  201: PostDetailResponse;
+};
+
+export type CreatePostResponse = CreatePostResponses[keyof CreatePostResponses];
+
+export type GetPostDetailData = {
+  body?: never;
+  path: {
+    /**
+     * Slug
+     */
+    slug: string;
+  };
+  query?: never;
+  url: "/api/v1/posts/detail/{slug}";
+};
+
+export type GetPostDetailErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type GetPostDetailError = GetPostDetailErrors[keyof GetPostDetailErrors];
+
+export type GetPostDetailResponses = {
+  /**
+   * Successful Response
+   */
+  200: PostDetailResponse;
+};
+
+export type GetPostDetailResponse =
+  GetPostDetailResponses[keyof GetPostDetailResponses];
+
+export type ListCategoriesData = {
+  body?: never;
+  path?: never;
+  query: {
+    post_type: PostType;
+  };
+  url: "/api/v1/posts/categories";
+};
+
+export type ListCategoriesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type ListCategoriesError =
+  ListCategoriesErrors[keyof ListCategoriesErrors];
+
+export type ListCategoriesResponses = {
+  /**
+   * Response Listcategories
+   *
+   * Successful Response
+   */
+  200: Array<CategoryResponse>;
+};
+
+export type ListCategoriesResponse =
+  ListCategoriesResponses[keyof ListCategoriesResponses];
+
+export type ListTagsData = {
+  body?: never;
+  path?: never;
+  query: {
+    post_type: PostType;
+  };
+  url: "/api/v1/posts/tags";
+};
+
+export type ListTagsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type ListTagsError = ListTagsErrors[keyof ListTagsErrors];
+
+export type ListTagsResponses = {
+  /**
+   * Response Listtags
+   *
+   * Successful Response
+   */
+  200: Array<TagResponse>;
+};
+
+export type ListTagsResponse = ListTagsResponses[keyof ListTagsResponses];
+
+export type DeletePostData = {
+  body?: never;
+  path: {
+    /**
+     * Post Id
+     */
+    post_id: string;
+  };
+  query?: never;
+  url: "/api/v1/posts/{post_id}";
+};
+
+export type DeletePostErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type DeletePostError = DeletePostErrors[keyof DeletePostErrors];
+
+export type DeletePostResponses = {
+  /**
+   * Successful Response
+   */
+  204: void;
+};
+
+export type DeletePostResponse = DeletePostResponses[keyof DeletePostResponses];
+
+export type UpdatePostData = {
+  body: PostUpdate;
+  path: {
+    /**
+     * Post Id
+     */
+    post_id: string;
+  };
+  query?: never;
+  url: "/api/v1/posts/{post_id}";
+};
+
+export type UpdatePostErrors = {
+  /**
+   * Bad Request
+   */
+  400: ErrorResponse;
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse;
+  /**
+   * Forbidden
+   */
+  403: ErrorResponse;
+  /**
+   * Not Found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: ErrorResponse;
+};
+
+export type UpdatePostError = UpdatePostErrors[keyof UpdatePostErrors];
+
+export type UpdatePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: PostDetailResponse;
+};
+
+export type UpdatePostResponse = UpdatePostResponses[keyof UpdatePostResponses];

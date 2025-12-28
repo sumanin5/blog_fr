@@ -131,17 +131,17 @@ async def test_register_user_validation_errors(
     assert response.status_code == test_data.StatusCodes.UNPROCESSABLE_ENTITY
     data = response.json()
 
-    # Pydantic验证错误使用FastAPI默认格式，不是我们的统一错误格式
-    # 因为验证发生在中间件之前
-    assert "detail" in data
-    assert isinstance(data["detail"], list)
-    assert len(data["detail"]) > 0
+    # 现在使用统一的错误响应格式
+    assert "error" in data
+    error = data["error"]
+    assert error["code"] == "VALIDATION_ERROR"
+    assert error["message"] == "Request validation failed"
+    assert "validation_errors" in error["details"]
 
     # 验证错误详情
-    error_detail = data["detail"][0]
-    assert "loc" in error_detail
-    assert "msg" in error_detail
-    assert "username" in str(error_detail["loc"])
+    validation_errors = error["details"]["validation_errors"]
+    assert len(validation_errors) > 0
+    assert any("username" in err["field"] for err in validation_errors)
 
 
 @pytest.mark.integration

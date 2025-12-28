@@ -7,8 +7,13 @@
 from datetime import datetime
 
 import pytest
+from app.core.error_handlers import (
+    app_exception_handler,
+    database_exception_handler,
+    unexpected_exception_handler,
+    validation_exception_handler,
+)
 from app.core.exceptions import BaseAppException
-from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.users.exceptions import (
     InactiveUserError,
     InvalidCredentialsError,
@@ -16,21 +21,31 @@ from app.users.exceptions import (
     UserNotFoundError,
 )
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 
 
 @pytest.mark.unit
 @pytest.mark.middleware
 class TestErrorHandlerMiddleware:
-    """错误处理中间件单元测试"""
+    """错误处理（原中间件现为异常处理器）单元测试"""
 
     def setup_method(self):
         """每个测试前创建独立的应用实例"""
         self.app = FastAPI()
-        self.app.add_middleware(ErrorHandlerMiddleware)
-        self.client = TestClient(self.app)
+
+        # 注册异常处理器
+        self.app.add_exception_handler(BaseAppException, app_exception_handler)
+        self.app.add_exception_handler(
+            RequestValidationError, validation_exception_handler
+        )
+        self.app.add_exception_handler(SQLAlchemyError, database_exception_handler)
+        self.app.add_exception_handler(Exception, unexpected_exception_handler)
+
+        # raise_server_exceptions=False 让测试客户端不抛出异常，而是返回响应
+        self.client = TestClient(self.app, raise_server_exceptions=False)
 
     def test_user_not_found_exception_handling(self):
         """测试用户不存在异常的处理"""
@@ -133,6 +148,8 @@ class TestErrorHandlerMiddleware:
 
     def test_pydantic_validation_error_handling(self):
         """测试Pydantic验证异常的处理"""
+        # 注意：Pydantic ValidationError 在端点内部抛出时会被当作未预期异常处理
+        # 只有 FastAPI 的 RequestValidationError 会被特殊处理
 
         @self.app.post("/test-validation-error")
         async def mock_endpoint():
@@ -148,21 +165,10 @@ class TestErrorHandlerMiddleware:
 
         response = self.client.post("/test-validation-error")
 
-        assert response.status_code == 422
+        # Pydantic ValidationError 在端点内部抛出时会被当作未预期异常
+        assert response.status_code == 500
         data = response.json()
-        assert data["error"]["code"] == "VALIDATION_ERROR"
-        assert data["error"]["message"] == "Request validation failed"
-        assert "validation_errors" in data["error"]["details"]
-
-        # 验证验证错误的格式
-        validation_errors = data["error"]["details"]["validation_errors"]
-        assert len(validation_errors) > 0
-
-        # 检查验证错误的结构
-        for error in validation_errors:
-            assert "field" in error
-            assert "message" in error
-            assert "type" in error
+        assert data["error"]["code"] == "INTERNAL_ERROR"
 
     def test_sqlalchemy_database_error_handling(self):
         """测试SQLAlchemy数据库异常的处理"""
@@ -203,6 +209,9 @@ class TestErrorHandlerMiddleware:
         assert response.status_code == 500
         data = response.json()
         assert data["error"]["code"] == "INTERNAL_ERROR"
+        assert "error" in data
+        assert "timestamp" in data["error"]
+        assert "request_id" in data["error"]
         # 消息内容取决于环境设置
 
     def test_normal_request_passes_through(self):

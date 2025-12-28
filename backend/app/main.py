@@ -2,12 +2,23 @@ import logging
 
 from app.core.config import settings
 from app.core.customID import custom_generate_unique_id
+from app.core.error_handlers import (
+    app_exception_handler,
+    database_exception_handler,
+    unexpected_exception_handler,
+    validation_exception_handler,
+)
+from app.core.exceptions import BaseAppException
+from app.core.schemas import ErrorResponse
 from app.initial_data import init_db
 from app.media.router import router as media_router
 from app.middleware import setup_middleware
+from app.posts.router import router as posts_router
 from app.users.router import router as users_router
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +28,23 @@ app = FastAPI(
     version="0.1.0",
     description="博客系统 API",
     generate_unique_id_function=custom_generate_unique_id,
+    responses={
+        400: {"model": ErrorResponse, "description": "Bad Request"},
+        401: {"model": ErrorResponse, "description": "Unauthorized"},
+        403: {"model": ErrorResponse, "description": "Forbidden"},
+        404: {"model": ErrorResponse, "description": "Not Found"},
+        422: {"model": ErrorResponse, "description": "Validation Error"},
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+    },
 )
+
+# ============================================================
+# 异常处理器注册
+# ============================================================
+app.add_exception_handler(BaseAppException, app_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(SQLAlchemyError, database_exception_handler)
+app.add_exception_handler(Exception, unexpected_exception_handler)
 
 # ============================================================
 # CORS 配置：允许前端跨域访问
@@ -76,3 +103,6 @@ async def read_root():
 # ============================================================
 app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["users"])
 app.include_router(media_router, prefix=f"{settings.API_PREFIX}/media", tags=["media"])
+app.include_router(
+    posts_router, prefix=f"{settings.API_PREFIX}", tags=["posts"]
+)  # 注意：posts 路由内部已带前缀

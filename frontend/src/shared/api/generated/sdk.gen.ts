@@ -12,11 +12,18 @@ import type {
   BatchDeleteFilesData,
   BatchDeleteFilesErrors,
   BatchDeleteFilesResponses,
+  CreatePostData,
+  CreatePostErrors,
+  CreatePostResponses,
   DeleteCurrentUserAccountData,
+  DeleteCurrentUserAccountErrors,
   DeleteCurrentUserAccountResponses,
   DeleteFileData,
   DeleteFileErrors,
   DeleteFileResponses,
+  DeletePostData,
+  DeletePostErrors,
+  DeletePostResponses,
   DeleteUserByIdData,
   DeleteUserByIdErrors,
   DeleteUserByIdResponses,
@@ -27,14 +34,19 @@ import type {
   GetAllFilesAdminErrors,
   GetAllFilesAdminResponses,
   GetCurrentUserInfoData,
+  GetCurrentUserInfoErrors,
   GetCurrentUserInfoResponses,
   GetFileDetailData,
   GetFileDetailErrors,
   GetFileDetailResponses,
+  GetPostDetailData,
+  GetPostDetailErrors,
+  GetPostDetailResponses,
   GetPublicFilesData,
   GetPublicFilesErrors,
   GetPublicFilesResponses,
   GetStatsOverviewData,
+  GetStatsOverviewErrors,
   GetStatsOverviewResponses,
   GetUserByIdData,
   GetUserByIdErrors,
@@ -45,10 +57,20 @@ import type {
   GetUsersListData,
   GetUsersListErrors,
   GetUsersListResponses,
+  ListCategoriesData,
+  ListCategoriesErrors,
+  ListCategoriesResponses,
+  ListPostsData,
+  ListPostsErrors,
+  ListPostsResponses,
+  ListTagsData,
+  ListTagsErrors,
+  ListTagsResponses,
   LoginData,
   LoginErrors,
   LoginResponses,
   ReadRootData,
+  ReadRootErrors,
   ReadRootResponses,
   RegenerateThumbnailsData,
   RegenerateThumbnailsErrors,
@@ -68,6 +90,9 @@ import type {
   UpdateFileData,
   UpdateFileErrors,
   UpdateFileResponses,
+  UpdatePostData,
+  UpdatePostErrors,
+  UpdatePostResponses,
   UpdateUserByIdData,
   UpdateUserByIdErrors,
   UpdateUserByIdResponses,
@@ -105,10 +130,11 @@ export type Options<
 export const readRoot = <ThrowOnError extends boolean = false>(
   options?: Options<ReadRootData, ThrowOnError>,
 ) =>
-  (options?.client ?? client).get<ReadRootResponses, unknown, ThrowOnError>({
-    url: "/",
-    ...options,
-  });
+  (options?.client ?? client).get<
+    ReadRootResponses,
+    ReadRootErrors,
+    ThrowOnError
+  >({ url: "/", ...options });
 
 /**
  * 注册新用户
@@ -159,7 +185,7 @@ export const deleteCurrentUserAccount = <ThrowOnError extends boolean = false>(
 ) =>
   (options?.client ?? client).delete<
     DeleteCurrentUserAccountResponses,
-    unknown,
+    DeleteCurrentUserAccountErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
@@ -177,7 +203,7 @@ export const getCurrentUserInfo = <ThrowOnError extends boolean = false>(
 ) =>
   (options?.client ?? client).get<
     GetCurrentUserInfoResponses,
-    unknown,
+    GetCurrentUserInfoErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
@@ -540,7 +566,7 @@ export const getStatsOverview = <ThrowOnError extends boolean = false>(
 ) =>
   (options?.client ?? client).get<
     GetStatsOverviewResponses,
-    unknown,
+    GetStatsOverviewErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
@@ -564,4 +590,122 @@ export const getAllFilesAdmin = <ThrowOnError extends boolean = false>(
     security: [{ scheme: "bearer", type: "http" }],
     url: "/api/v1/media/admin/all",
     ...options,
+  });
+
+/**
+ * 获取文章列表
+ *
+ * 获取已发布的文章列表 (带板块隔离)
+ */
+export const listPosts = <ThrowOnError extends boolean = false>(
+  options?: Options<ListPostsData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    ListPostsResponses,
+    ListPostsErrors,
+    ThrowOnError
+  >({ url: "/api/v1/posts", ...options });
+
+/**
+ * 创建文章
+ *
+ * 创建新文章 (自动解析 MDX)
+ */
+export const createPost = <ThrowOnError extends boolean = false>(
+  options: Options<CreatePostData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CreatePostResponses,
+    CreatePostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/posts",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * 获取文章详情
+ *
+ * 根据 Slug 获取文章详情并增加浏览量
+ */
+export const getPostDetail = <ThrowOnError extends boolean = false>(
+  options: Options<GetPostDetailData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GetPostDetailResponses,
+    GetPostDetailErrors,
+    ThrowOnError
+  >({ url: "/api/v1/posts/detail/{slug}", ...options });
+
+/**
+ * 分类列表
+ *
+ * 获取指定板块下的所有激活分类
+ */
+export const listCategories = <ThrowOnError extends boolean = false>(
+  options: Options<ListCategoriesData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ListCategoriesResponses,
+    ListCategoriesErrors,
+    ThrowOnError
+  >({ url: "/api/v1/posts/categories", ...options });
+
+/**
+ * 标签云
+ *
+ * 获取指定板块下有文章关联的标签列表
+ */
+export const listTags = <ThrowOnError extends boolean = false>(
+  options: Options<ListTagsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ListTagsResponses,
+    ListTagsErrors,
+    ThrowOnError
+  >({ url: "/api/v1/posts/tags", ...options });
+
+/**
+ * 删除文章
+ *
+ * 删除文章
+ */
+export const deletePost = <ThrowOnError extends boolean = false>(
+  options: Options<DeletePostData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    DeletePostResponses,
+    DeletePostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/posts/{post_id}",
+    ...options,
+  });
+
+/**
+ * 更新文章
+ *
+ * 更新文章内容
+ */
+export const updatePost = <ThrowOnError extends boolean = false>(
+  options: Options<UpdatePostData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    UpdatePostResponses,
+    UpdatePostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/api/v1/posts/{post_id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
   });

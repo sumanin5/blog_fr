@@ -315,7 +315,7 @@ def get_thumbnail_path(media_file: MediaFile, size: str) -> Path:
 
 
 async def batch_delete_media_files(file_ids: list[UUID], session: AsyncSession) -> int:
-    """批量删除媒体文件
+    """批量删除媒体文件（优化版：规避 N+1）
 
     Args:
         file_ids: 文件ID列表
@@ -324,15 +324,29 @@ async def batch_delete_media_files(file_ids: list[UUID], session: AsyncSession) 
     Returns:
         int: 成功删除的文件数量
     """
+    # 1. 一次性查询所有存在的文件对象（规避 N+1）
+    media_files = await crud.get_media_files_by_ids(session, file_ids)
+
     deleted_count = 0
+    for media_file in media_files:
+        # 2. 清理磁盘文件（主文件和缩略图）
+        main_file_path = Path(settings.MEDIA_ROOT) / media_file.file_path
+        await delete_file_from_disk(str(main_file_path))
 
-    for file_id in file_ids:
-        media_file = await get_media_file_by_id(file_id, session)
-        if media_file:
-            await delete_media_file(media_file, session)
-            deleted_count += 1
+        if media_file.thumbnails:
+            await cleanup_all_thumbnails(media_file.thumbnails, settings.MEDIA_ROOT)
 
-    logger.info(f"批量删除完成，共删除 {deleted_count} 个文件")
+        # 3. 标记数据库删除（仅在内存中标记）
+        await session.delete(media_file)
+        deleted_count += 1
+
+    # 4. 一次性提交所有更改（高性能）
+    if deleted_count > 0:
+        await session.commit()
+        logger.info(
+            f"批量删除完成，共清理磁盘并从数据库删除 {deleted_count} 个文件记录"
+        )
+
     return deleted_count
 
 

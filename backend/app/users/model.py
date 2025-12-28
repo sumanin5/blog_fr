@@ -13,6 +13,7 @@ from sqlmodel import Field, Relationship
 
 if TYPE_CHECKING:
     from app.media.model import MediaFile
+    from app.posts.model import Post
 
 
 # 定义用户角色枚举
@@ -55,6 +56,7 @@ class User(Base, table=True):
 
     # 关系字段
     media_files: list["MediaFile"] = Relationship(back_populates="uploader")
+    posts: list["Post"] = Relationship(back_populates="author")
 
     @property
     def is_admin(self) -> bool:
