@@ -57,7 +57,7 @@ async def get_public_files(
         limit=params.page_size,
         offset=(params.page - 1) * params.page_size,
     )
-    return [service.format_media_response(f) for f in files]
+    return files
 
 
 @router.patch("/{file_id}/publicity", response_model=MediaFileResponse)
@@ -73,7 +73,7 @@ async def toggle_file_publicity(
         user_id=media_file.uploader_id,
         is_public=request.is_public,
     )
-    return service.format_media_response(updated_file)
+    return updated_file
 
 
 # ========================================
@@ -115,9 +115,7 @@ async def upload_file(
         alt_text=alt_text,
     )
 
-    return MediaFileUploadResponse(
-        message="文件上传成功", file=service.format_media_response(media_file)
-    )
+    return MediaFileUploadResponse(message="文件上传成功", file=media_file)
 
 
 # ========================================
@@ -146,9 +144,7 @@ async def get_user_files(
         offset=query_params.offset,
     )
 
-    return MediaFileListResponse(
-        total=len(files), files=[service.format_media_response(f) for f in files]
-    )
+    return MediaFileListResponse(total=len(files), files=files)
 
 
 @router.get(
@@ -161,7 +157,7 @@ async def get_file_detail(
     media_file: Annotated[MediaFile, Depends(check_file_owner_or_admin)],
 ):
     """获取媒体文件详细信息"""
-    return service.format_media_response(media_file)
+    return media_file
 
 
 @router.get(
@@ -185,9 +181,7 @@ async def search_files(
         offset=search_params["offset"],
     )
 
-    return MediaFileListResponse(
-        total=len(files), files=[service.format_media_response(f) for f in files]
-    )
+    return MediaFileListResponse(total=len(files), files=files)
 
 
 # ========================================
@@ -210,7 +204,7 @@ async def update_file(
     updated_file = await service.update_media_file_info(
         session, media_file, update_data
     )
-    return service.format_media_response(updated_file)
+    return updated_file
 
 
 # ========================================
@@ -270,11 +264,11 @@ async def regenerate_thumbnails(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """重新生成缩略图"""
-    await service.regenerate_thumbnails(media_file, session)
+    thumbnails = await service.regenerate_thumbnails(media_file, session)
 
     return ThumbnailRegenerateResponse(
         message="缩略图重新生成成功",
-        thumbnails=service.format_thumbnail_info(media_file),
+        thumbnails=thumbnails,
     )
 
 
@@ -389,6 +383,4 @@ async def get_all_files_admin(
         offset=query_params.offset,
     )
 
-    return MediaFileListResponse(
-        total=len(files), files=[service.format_media_response(f) for f in files]
-    )
+    return MediaFileListResponse(total=len(files), files=files)

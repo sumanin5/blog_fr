@@ -17,6 +17,11 @@ async_engine = create_async_engine(
     str(settings.async_postgres_url),
     echo=settings.database_echo,  # 开发环境显示 SQL，生产环境设为 False
     future=True,
+    # 连接池配置（高并发性能优化）
+    pool_size=20,          # 连接池大小（常驻连接数）
+    max_overflow=10,       # 允许超出 pool_size 的额外连接数（总共最多 30 个连接）
+    pool_timeout=30,       # 获取连接的超时时间（秒）
+    pool_recycle=3600,     # 连接回收时间（秒），防止数据库断开长时间不用的连接
 )
 
 # 创建异步会话工厂

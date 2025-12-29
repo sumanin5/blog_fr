@@ -8,8 +8,9 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+from app.core.config import settings
 from app.media.model import FileUsage, MediaType
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, computed_field
 
 # ========================================
 # 基础模型（共享字段）
@@ -80,15 +81,6 @@ class MediaFileQuery(BaseModel):
 # ========================================
 
 
-class ThumbnailInfo(BaseModel):
-    """缩略图信息"""
-
-    small: Optional[HttpUrl] = Field(None, description="小尺寸缩略图URL")
-    medium: Optional[HttpUrl] = Field(None, description="中等尺寸缩略图URL")
-    large: Optional[HttpUrl] = Field(None, description="大尺寸缩略图URL")
-    xlarge: Optional[HttpUrl] = Field(None, description="超大尺寸缩略图URL")
-
-
 class MediaFileResponse(MediaFileBase):
     """媒体文件响应模型"""
 
@@ -115,12 +107,33 @@ class MediaFileResponse(MediaFileBase):
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
 
-    # URL信息
-    file_url: HttpUrl = Field(..., description="文件访问URL")
-    thumbnails: Optional[ThumbnailInfo] = Field(None, description="缩略图URL")
+    # 数据库中的原始缩略图路径（用于计算）
+    _thumbnails_raw: Optional[dict[str, str]] = Field(
+        None, alias="thumbnails", exclude=True
+    )
+
+    # 计算字段：动态生成文件访问 URL
+    @computed_field
+    @property
+    def file_url(self) -> str:
+        """文件访问 URL（带权限检查）"""
+        return f"{settings.BASE_URL}{settings.API_PREFIX}/media/{self.id}/view"
+
+    # 计算字段：动态生成缩略图 URL
+    @computed_field
+    @property
+    def thumbnails(self) -> Optional[dict[str, str]]:
+        """缩略图完整 URL 字典"""
+        if not self._thumbnails_raw:
+            return None
+        return {
+            size: f"{settings.MEDIA_URL}{path}"
+            for size, path in self._thumbnails_raw.items()
+        }
 
     model_config = {
         "from_attributes": True,
+        "populate_by_name": True,  # 允许使用 alias
         "json_schema_extra": {
             "examples": [
                 {
@@ -226,7 +239,7 @@ class ThumbnailRegenerateResponse(BaseModel):
     """缩略图重新生成响应模型"""
 
     message: str = Field(..., description="处理结果消息")
-    thumbnails: ThumbnailInfo = Field(..., description="新生成的缩略图URL")
+    thumbnails: dict[str, str] = Field(..., description="新生成的缩略图URL")
 
     model_config = {
         "json_schema_extra": {

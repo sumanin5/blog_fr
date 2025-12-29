@@ -28,7 +28,7 @@ from app.users.model import User
 from fastapi import APIRouter, Depends, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-router = APIRouter(prefix="/posts", tags=["文章管理"])
+router = APIRouter(prefix="/posts")
 
 
 # ========================================

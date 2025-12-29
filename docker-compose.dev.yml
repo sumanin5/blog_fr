@@ -22,6 +22,17 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      # 性能优化参数
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_MAX_CONNECTIONS: 200
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - max_connections=200
+      - -c
+      - fsync=off  # 开发环境可关闭，提升性能
     volumes:
       # 数据持久化
       - postgres_data:/var/lib/postgresql/data
@@ -62,8 +73,8 @@ services:
       db:
         condition: service_healthy
 
-    # 开发模式：启用热更新
-    command: fastapi run --workers 1 app/main.py --reload
+    # 开发模式：启用热更新（4 workers 提升性能）
+    command: fastapi run --workers 4 app/main.py --reload
 
   # ==========================================
   # 前端（开发模式）

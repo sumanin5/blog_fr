@@ -18,6 +18,7 @@ from app.users.router import router as users_router
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from scalar_fastapi import get_scalar_api_reference
 from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,15 @@ async def startup_event():
 @app.get("/")
 async def read_root():
     return {"Hello": "fastapi"}
+
+
+@app.get("/scalar", include_in_schema=False)
+async def scalar_html():
+    """Scalar API 文档界面 - 比 Swagger UI 更现代化"""
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title=app.title,
+    )
 
 
 # ============================================================

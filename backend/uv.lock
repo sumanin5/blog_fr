@@ -201,7 +201,9 @@ dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "bcrypt" },
+    { name = "dishka" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "faststream" },
     { name = "httpx" },
     { name = "latex2mathml" },
     { name = "mistune" },
@@ -213,6 +215,7 @@ dependencies = [
     { name = "pyjwt" },
     { name = "python-frontmatter" },
     { name = "python-slugify" },
+    { name = "scalar-fastapi" },
     { name = "sqlmodel" },
     { name = "uuid6" },
     { name = "uvicorn", extra = ["standard"] },
@@ -241,7 +244,9 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.17.2" },
     { name = "asyncpg", specifier = ">=0.31.0" },
     { name = "bcrypt", specifier = ">=5.0.0" },
+    { name = "dishka", specifier = ">=1.7.2" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.122.0" },
+    { name = "faststream", specifier = ">=0.6.4" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "ipdb", marker = "extra == 'dev'", specifier = ">=0.13.0" },
     { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.0.0" },
@@ -258,6 +263,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "python-frontmatter", specifier = ">=1.1.0" },
     { name = "python-slugify", specifier = ">=8.0.4" },
+    { name = "scalar-fastapi", specifier = ">=1.5.0" },
     { name = "sqlmodel", specifier = ">=0.0.27" },
     { name = "uuid6", specifier = ">=2025.0.1" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.38.0" },
@@ -529,6 +535,15 @@ wheels = [
 ]
 
 [[package]]
+name = "dishka"
+version = "1.7.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/d7/1be31f5ef32387059190353f9fa493ff4d07a1c75fa856c7566ca45e0800/dishka-1.7.2.tar.gz", hash = "sha256:47d4cb5162b28c61bf5541860e605ed5eaf5c667122299c7ef657c86fc8d5a49", size = 68132, upload-time = "2025-09-24T21:23:05.135Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/b9/89381173b4f336e986d72471198614806cd313e0f85c143ccb677c310223/dishka-1.7.2-py3-none-any.whl", hash = "sha256:f6faa6ab321903926b825b3337d77172ee693450279b314434864978d01fbad3", size = 94774, upload-time = "2025-09-24T21:23:03.246Z" },
+]
+
+[[package]]
 name = "dnspython"
 version = "2.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -557,6 +572,24 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cc/28/c14e053b6762b1044f34a13aab6859bbf40456d37d23aa286ac24cfd9a5d/executing-2.2.1.tar.gz", hash = "sha256:3632cc370565f6648cc328b32435bd120a1e4ebb20c77e3fdde9a13cd1e533c4", size = 1129488, upload-time = "2025-09-01T09:48:10.866Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/ea/53f2148663b321f21b5a606bd5f191517cf40b7072c0497d3c92c4a13b1e/executing-2.2.1-py2.py3-none-any.whl", hash = "sha256:760643d3452b4d777d295bb167ccc74c64a81df23fb5e08eff250c425a4b2017", size = 28317, upload-time = "2025-09-01T09:48:08.5Z" },
+]
+
+[[package]]
+name = "fast-depends"
+version = "3.0.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/07/f3/41e955f5f0811de6ef9f00f8462f2ade7bc4a99b93714c9b134646baa831/fast_depends-3.0.5.tar.gz", hash = "sha256:c915a54d6e0d0f0393686d37c14d54d9ec7c43d7b9def3f3fc4f7b4d52f67f2a", size = 18235, upload-time = "2025-11-30T20:26:12.92Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/dd/76697228ae63dcbaf0a0a1b20fc996433a33f184ac4f578382b681dcf5ea/fast_depends-3.0.5-py3-none-any.whl", hash = "sha256:38a3d7044d3d6d0b1bed703691275c870316426e8a9bfa6b1c89e979b15659e2", size = 25362, upload-time = "2025-11-30T20:26:10.96Z" },
+]
+
+[package.optional-dependencies]
+pydantic = [
+    { name = "pydantic" },
 ]
 
 [[package]]
@@ -683,6 +716,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/20/b5/23b216d9d985a956623b6bd12d4086b60f0059b27799f23016af04a74ea1/fastjsonschema-2.21.2.tar.gz", hash = "sha256:b1eb43748041c880796cd077f1a07c3d94e93ae84bba5ed36800a33554ae05de", size = 374130, upload-time = "2025-08-14T18:49:36.666Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/a8/20d0723294217e47de6d9e2e40fd4a9d2f7c4b6ef974babd482a59743694/fastjsonschema-2.21.2-py3-none-any.whl", hash = "sha256:1c797122d0a86c5cace2e54bf4e819c36223b552017172f32c5c024a6b77e463", size = 24024, upload-time = "2025-08-14T18:49:34.776Z" },
+]
+
+[[package]]
+name = "faststream"
+version = "0.6.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "fast-depends", extra = ["pydantic"] },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ec/2a/bf5617553a7a8af97e374320ee22656132b579a45b1a626e73e198398d0c/faststream-0.6.4.tar.gz", hash = "sha256:e7f0d8e8ccfa3f9014072166f7993cf5d178f57c7daf79fcf37f5ba0e6a3cc68", size = 302404, upload-time = "2025-12-07T11:54:19.165Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/26/75/8b74215e16c3aa005266b7ddd0b812c664f8571c4e0480c5971e99e522d7/faststream-0.6.4-py3-none-any.whl", hash = "sha256:e00306208659c40ed0c6782e93d4536ad9ef320d0a5fb507d4dcd4f2a07eb2f9", size = 507033, upload-time = "2025-12-07T11:54:17.27Z" },
 ]
 
 [[package]]
@@ -2188,6 +2235,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4a/3d/eb820f95dce4306f07a495ede02fb61bef36ea201d9137d4fcd5ab94ec1e/rpds_py-0.29.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:e7fa2ccc312bbd91e43aa5e0869e46bc03278a3dddb8d58833150a18b0f0283a", size = 557288, upload-time = "2025-11-16T14:50:10.73Z" },
     { url = "https://files.pythonhosted.org/packages/e9/f8/b8ff786f40470462a252918e0836e0db903c28e88e3eec66bc4a7856ee5d/rpds_py-0.29.0-cp314-cp314t-win32.whl", hash = "sha256:97c817863ffc397f1e6a6e9d2d89fe5408c0a9922dac0329672fb0f35c867ea5", size = 211382, upload-time = "2025-11-16T14:50:12.827Z" },
     { url = "https://files.pythonhosted.org/packages/c9/7f/1a65ae870bc9d0576aebb0c501ea5dccf1ae2178fe2821042150ebd2e707/rpds_py-0.29.0-cp314-cp314t-win_amd64.whl", hash = "sha256:2023473f444752f0f82a58dfcbee040d0a1b3d1b3c2ec40e884bd25db6d117d2", size = 225919, upload-time = "2025-11-16T14:50:14.734Z" },
+]
+
+[[package]]
+name = "scalar-fastapi"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/1a/4897819ef5682f40cce1f9b552a1e002d394bf7e12e5d6fe62f843ffef51/scalar_fastapi-1.5.0.tar.gz", hash = "sha256:5ae887fcc0db63305dc41dc39d61f7be183256085872aa33b294e0d48e29901e", size = 7447, upload-time = "2025-12-04T19:44:12.04Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7a/cc/c0712ac83a31ae96785d9916d7be54595914aa93375ea5df3ba3eadab8af/scalar_fastapi-1.5.0-py3-none-any.whl", hash = "sha256:8e712599ccdfbb614bff5583fdbee1bef03e5fac1e06520287337ff232cb667a", size = 6828, upload-time = "2025-12-04T19:44:11.242Z" },
 ]
 
 [[package]]

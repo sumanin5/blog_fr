@@ -264,31 +264,8 @@ async def get_user_media_files(
 
 
 # ==========================================
-# 响应转换函数
+# 文件路径辅助函数
 # ==========================================
-
-
-def get_file_url(media_file: MediaFile) -> str:
-    """获取文件访问URL（带权限检查）"""
-    return f"{settings.BASE_URL}{settings.API_PREFIX}/media/{media_file.id}/view"
-
-
-def format_thumbnail_info(media_file: MediaFile) -> Optional[dict]:
-    """格式化缩略图信息"""
-    if not media_file.thumbnails:
-        return None
-
-    base_url = settings.MEDIA_URL
-    return {size: f"{base_url}{path}" for size, path in media_file.thumbnails.items()}
-
-
-def format_media_response(media_file: MediaFile) -> dict:
-    """将 MediaFile 转换为响应格式"""
-    return {
-        **media_file.model_dump(exclude={"thumbnails"}),
-        "file_url": get_file_url(media_file),
-        "thumbnails": format_thumbnail_info(media_file),
-    }
 
 
 def get_full_path(media_file: MediaFile) -> Path:
