@@ -107,8 +107,8 @@ class MediaFileResponse(MediaFileBase):
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
 
-    # 数据库中的原始缩略图路径（用于计算）
-    _thumbnails_raw: Optional[dict[str, str]] = Field(
+    # 数据库中的原始缩略图路径（内部使用，不在 JSON 中显示）
+    thumbnails_raw: Optional[dict[str, str]] = Field(
         None, alias="thumbnails", exclude=True
     )
 
@@ -124,11 +124,11 @@ class MediaFileResponse(MediaFileBase):
     @property
     def thumbnails(self) -> Optional[dict[str, str]]:
         """缩略图完整 URL 字典"""
-        if not self._thumbnails_raw:
+        if not self.thumbnails_raw:
             return None
         return {
             size: f"{settings.MEDIA_URL}{path}"
-            for size, path in self._thumbnails_raw.items()
+            for size, path in self.thumbnails_raw.items()
         }
 
     model_config = {

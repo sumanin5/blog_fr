@@ -5,16 +5,12 @@ Revises: 142a5adf705f
 Create Date: 2025-12-29 01:49:55.020168
 
 """
+
 from typing import Sequence, Union
 
-from alembic import op
-import sqlalchemy as sa
-import sqlmodel  # SQLModel 类型支持（如 AutoString）
-
-
 # revision identifiers, used by Alembic.
-revision: str = '3cd0c20d5ad6'
-down_revision: Union[str, Sequence[str], None] = '142a5adf705f'
+revision: str = "3cd0c20d5ad6"
+down_revision: Union[str, Sequence[str], None] = "142a5adf705f"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
