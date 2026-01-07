@@ -18,6 +18,7 @@ from app.users.router import router as users_router
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_pagination import add_pagination
 from scalar_fastapi import get_scalar_api_reference
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -72,10 +73,8 @@ app.add_middleware(
 # 设置所有的自定义中间件
 setup_middleware(app)
 
-# ============================================================
-# 静态文件服务：提供媒体文件访问
-# ============================================================
-# 注意：不直接挂载静态文件目录，而是通过带权限检查的路由提供文件访问
+#  分页插件
+add_pagination(app)
 
 
 # ============================================================

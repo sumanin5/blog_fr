@@ -79,11 +79,34 @@ async def save_post_version(
     logger.debug(f"已保存文章版本快照: {post.title} v{version.version_num}")
 
 
-async def delete_post(session: AsyncSession, db_post: Post) -> None:
-    """删除文章"""
-    await session.delete(db_post)
+async def delete_post(
+    session: AsyncSession, post_id: UUID, current_user: "User"
+) -> None:
+    """删除文章（带细粒度权限检查）
+
+    Args:
+        session: 数据库会话
+        post_id: 文章ID
+        current_user: 当前用户
+
+    Raises:
+        PostNotFoundError: 文章不存在
+        InsufficientPermissionsError: 权限不足（非作者且非超级管理员）
+    """
+    from app.core.exceptions import InsufficientPermissionsError
+    from app.posts.exceptions import PostNotFoundError
+
+    post = await crud.get_post_by_id(session, post_id)
+    if not post:
+        raise PostNotFoundError()
+
+    # 细粒度权限检查：超级管理员可以删除任何文章，普通用户只能删除自己的
+    if not current_user.is_superadmin and post.author_id != current_user.id:
+        raise InsufficientPermissionsError("只能删除自己的文章")
+
+    await session.delete(post)
     await session.commit()
-    logger.info(f"文章已删除: {db_post.id}")
+    logger.info(f"文章已删除: {post.id} by user {current_user.id}")
 
 
 async def create_post(
@@ -158,9 +181,31 @@ async def create_post(
 
 
 async def update_post(
-    session: AsyncSession, db_post: Post, post_in: PostUpdate
+    session: AsyncSession, post_id: UUID, post_in: PostUpdate, current_user: "User"
 ) -> Post:
-    """更新文章"""
+    """更新文章（带细粒度权限检查）
+
+    Args:
+        session: 数据库会话
+        post_id: 文章ID
+        post_in: 更新数据
+        current_user: 当前用户
+
+    Raises:
+        PostNotFoundError: 文章不存在
+        InsufficientPermissionsError: 权限不足（非作者且非超级管理员）
+    """
+    from app.core.exceptions import InsufficientPermissionsError
+    from app.posts.exceptions import PostNotFoundError
+
+    db_post = await crud.get_post_by_id(session, post_id)
+    if not db_post:
+        raise PostNotFoundError()
+
+    # 细粒度权限检查：超级管理员可以修改任何文章，普通用户只能修改自己的
+    if not current_user.is_superadmin and db_post.author_id != current_user.id:
+        raise InsufficientPermissionsError("只能修改自己的文章")
+
     update_data = post_in.model_dump(exclude_unset=True)
 
     # 0. 在更新前保存当前版本作为快照

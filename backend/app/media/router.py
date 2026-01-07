@@ -2,22 +2,25 @@
 媒体文件路由（API Endpoints）
 
 定义所有媒体文件相关的 API 接口
+
+权限设计：
+- 路由层：粗粒度权限（是否登录、是否管理员）
+- Service层：细粒度权限（是否是所有者，超级管理员绕过）
 """
 
 import logging
 from typing import Annotated
+from uuid import UUID
 
 from app.core.db import get_async_session
-from app.media import service
+from app.media import crud, service
 from app.media.dependencies import (
-    check_file_owner,
-    check_file_owner_or_admin,
     get_cache_headers,
     get_media_query_params,
     get_search_params,
     validate_file_upload,
 )
-from app.media.model import FileUsage, MediaFile
+from app.media.model import FileUsage
 from app.media.schema import (
     BatchDeleteRequest,
     BatchDeleteResponse,
@@ -38,13 +41,17 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-# ========================================
-# 创建路由
-# ========================================
 router = APIRouter()
 
 
-@router.get("/public", response_model=list[MediaFileResponse])
+# ========================================
+# 公开接口（无需认证）
+# ========================================
+
+
+@router.get(
+    "/public", response_model=list[MediaFileResponse], summary="获取公开文件列表"
+)
 async def get_public_files(
     params: PublicMediaFilesParams = Depends(),
     session: AsyncSession = Depends(get_async_session),
@@ -60,24 +67,8 @@ async def get_public_files(
     return files
 
 
-@router.patch("/{file_id}/publicity", response_model=MediaFileResponse)
-async def toggle_file_publicity(
-    request: TogglePublicityRequest,
-    media_file: Annotated[MediaFile, Depends(check_file_owner)],
-    session: AsyncSession = Depends(get_async_session),
-):
-    """切换文件公开状态（需要认证）"""
-    updated_file = await service.toggle_file_publicity(
-        session=session,
-        file_id=media_file.id,
-        user_id=media_file.uploader_id,
-        is_public=request.is_public,
-    )
-    return updated_file
-
-
 # ========================================
-# 文件上传接口
+# 文件上传接口（需要登录）
 # ========================================
 
 
@@ -86,7 +77,6 @@ async def toggle_file_publicity(
     response_model=MediaFileUploadResponse,
     status_code=status.HTTP_201_CREATED,
     summary="上传文件",
-    description="上传媒体文件（图片、视频、文档等）",
 )
 async def upload_file(
     file: Annotated[UploadFile, Depends(validate_file_upload())],
@@ -97,13 +87,9 @@ async def upload_file(
     description: Annotated[str, Form(description="文件描述")] = "",
     alt_text: Annotated[str, Form(description="替代文本")] = "",
 ):
-    """
-    上传媒体文件
-    """
-    # 读取文件内容
+    """上传媒体文件（需要登录）"""
     file_content = await file.read()
 
-    # 创建媒体文件
     media_file = await service.create_media_file(
         file_content=file_content,
         filename=file.filename,
@@ -119,7 +105,7 @@ async def upload_file(
 
 
 # ========================================
-# 文件查询接口
+# 文件查询接口（需要登录）
 # ========================================
 
 
@@ -127,14 +113,13 @@ async def upload_file(
     "/",
     response_model=MediaFileListResponse,
     summary="获取文件列表",
-    description="获取当前用户的媒体文件列表",
 )
 async def get_user_files(
     current_user: Annotated[User, Depends(get_current_active_user)],
     query_params: Annotated[MediaFileQuery, Depends(get_media_query_params)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """获取当前用户的媒体文件列表"""
+    """获取当前用户的媒体文件列表（需要登录）"""
     files = await service.get_user_media_files(
         user_id=current_user.id,
         session=session,
@@ -151,12 +136,29 @@ async def get_user_files(
     "/{file_id}",
     response_model=MediaFileResponse,
     summary="获取文件详情",
-    description="根据ID获取媒体文件详细信息",
 )
 async def get_file_detail(
-    media_file: Annotated[MediaFile, Depends(check_file_owner_or_admin)],
+    file_id: UUID,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """获取媒体文件详细信息"""
+    """获取媒体文件详细信息（需要登录，service层检查权限）"""
+    from app.media.exceptions import MediaFileNotFoundError
+
+    media_file = await crud.get_media_file(session, file_id)
+    if not media_file:
+        raise MediaFileNotFoundError(f"媒体文件不存在: {file_id}")
+
+    # 公开文件或自己的文件或超级管理员可以查看
+    from app.core.exceptions import InsufficientPermissionsError
+
+    if (
+        not media_file.is_public
+        and media_file.uploader_id != current_user.id
+        and not current_user.is_superadmin
+    ):
+        raise InsufficientPermissionsError("无权访问此文件")
+
     return media_file
 
 
@@ -164,14 +166,13 @@ async def get_file_detail(
     "/search",
     response_model=MediaFileListResponse,
     summary="搜索文件",
-    description="根据关键词搜索媒体文件",
 )
 async def search_files(
     current_user: Annotated[User, Depends(get_current_active_user)],
     search_params: Annotated[dict, Depends(get_search_params)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """搜索媒体文件"""
+    """搜索媒体文件（需要登录）"""
     files = await service.search_media_files(
         session=session,
         query=search_params["query"],
@@ -185,7 +186,7 @@ async def search_files(
 
 
 # ========================================
-# 文件更新接口
+# 文件更新接口（需要登录）
 # ========================================
 
 
@@ -193,22 +194,44 @@ async def search_files(
     "/{file_id}",
     response_model=MediaFileResponse,
     summary="更新文件信息",
-    description="更新媒体文件的元数据信息",
 )
 async def update_file(
+    file_id: UUID,
     update_data: MediaFileUpdate,
-    media_file: Annotated[MediaFile, Depends(check_file_owner)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """更新媒体文件信息"""
+    """更新媒体文件信息（需要是所有者或超级管理员）"""
     updated_file = await service.update_media_file_info(
-        session, media_file, update_data
+        session, file_id, update_data, current_user.id, current_user.is_superadmin
+    )
+    return updated_file
+
+
+@router.patch(
+    "/{file_id}/publicity",
+    response_model=MediaFileResponse,
+    summary="切换文件公开状态",
+)
+async def toggle_file_publicity(
+    file_id: UUID,
+    request: TogglePublicityRequest,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    session: AsyncSession = Depends(get_async_session),
+):
+    """切换文件公开状态（需要是所有者或超级管理员）"""
+    updated_file = await service.toggle_file_publicity(
+        session=session,
+        file_id=file_id,
+        user_id=current_user.id,
+        is_public=request.is_public,
+        is_superadmin=current_user.is_superadmin,
     )
     return updated_file
 
 
 # ========================================
-# 文件删除接口
+# 文件删除接口（需要登录）
 # ========================================
 
 
@@ -216,16 +239,16 @@ async def update_file(
     "/{file_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除文件",
-    description="删除媒体文件及其缩略图",
 )
 async def delete_file(
-    media_file: Annotated[MediaFile, Depends(check_file_owner)],
+    file_id: UUID,
+    current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """
-    删除媒体文件
-    """
-    await service.delete_media_file(session, media_file)
+    """删除媒体文件（需要是所有者或超级管理员）"""
+    await service.delete_media_file(
+        session, file_id, current_user.id, current_user.is_superadmin
+    )
     return None
 
 
@@ -233,23 +256,19 @@ async def delete_file(
     "/batch-delete",
     response_model=BatchDeleteResponse,
     summary="批量删除文件",
-    description="批量删除多个媒体文件",
 )
 async def batch_delete_files(
     request: BatchDeleteRequest,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """
-    批量删除媒体文件
-    """
+    """批量删除媒体文件（需要登录）"""
     deleted_count = await service.batch_delete_media_files(request.file_ids, session)
-
     return BatchDeleteResponse(message="批量删除完成", deleted_count=deleted_count)
 
 
 # ========================================
-# 缩略图相关接口
+# 缩略图相关接口（需要登录）
 # ========================================
 
 
@@ -257,14 +276,16 @@ async def batch_delete_files(
     "/{file_id}/regenerate-thumbnails",
     response_model=ThumbnailRegenerateResponse,
     summary="重新生成缩略图",
-    description="重新生成媒体文件的缩略图",
 )
 async def regenerate_thumbnails(
-    media_file: Annotated[MediaFile, Depends(check_file_owner)],
+    file_id: UUID,
+    current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """重新生成缩略图"""
-    thumbnails = await service.regenerate_thumbnails(media_file, session)
+    """重新生成缩略图（需要是所有者或超级管理员）"""
+    thumbnails = await service.regenerate_thumbnails(
+        file_id, session, current_user.id, current_user.is_superadmin
+    )
 
     return ThumbnailRegenerateResponse(
         message="缩略图重新生成成功",
@@ -273,7 +294,7 @@ async def regenerate_thumbnails(
 
 
 # ========================================
-# 文件访问接口（带权限检查）
+# 文件访问接口（需要登录）
 # ========================================
 
 
@@ -281,13 +302,28 @@ async def regenerate_thumbnails(
     "/{file_id}/view",
     response_class=FileResponse,
     summary="查看文件",
-    description="查看媒体文件（带权限检查）",
 )
 async def view_file(
-    media_file: Annotated[MediaFile, Depends(check_file_owner_or_admin)],
+    file_id: UUID,
+    current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """查看媒体文件（带权限检查）"""
+    """查看媒体文件（需要登录，带权限检查）"""
+    from app.core.exceptions import InsufficientPermissionsError
+    from app.media.exceptions import MediaFileNotFoundError
+
+    media_file = await crud.get_media_file(session, file_id)
+    if not media_file:
+        raise MediaFileNotFoundError(f"媒体文件不存在: {file_id}")
+
+    # 权限检查：公开文件或自己的文件或超级管理员
+    if (
+        not media_file.is_public
+        and media_file.uploader_id != current_user.id
+        and not current_user.is_superadmin
+    ):
+        raise InsufficientPermissionsError("无权访问此文件")
+
     # 更新查看次数
     await service.increment_view_count(session, media_file)
 
@@ -304,13 +340,29 @@ async def view_file(
     "/{file_id}/thumbnail/{size}",
     response_class=FileResponse,
     summary="查看缩略图",
-    description="查看媒体文件缩略图（带权限检查）",
 )
 async def view_thumbnail(
+    file_id: UUID,
     size: str,
-    media_file: Annotated[MediaFile, Depends(check_file_owner_or_admin)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """查看缩略图（带权限检查）"""
+    """查看缩略图（需要登录，带权限检查）"""
+    from app.core.exceptions import InsufficientPermissionsError
+    from app.media.exceptions import MediaFileNotFoundError
+
+    media_file = await crud.get_media_file(session, file_id)
+    if not media_file:
+        raise MediaFileNotFoundError(f"媒体文件不存在: {file_id}")
+
+    # 权限检查：公开文件或自己的文件或超级管理员
+    if (
+        not media_file.is_public
+        and media_file.uploader_id != current_user.id
+        and not current_user.is_superadmin
+    ):
+        raise InsufficientPermissionsError("无权访问此文件")
+
     thumbnail_path = service.get_thumbnail_path(media_file, size)
     headers = get_cache_headers(media_file)
     return FileResponse(
@@ -322,13 +374,28 @@ async def view_thumbnail(
     "/{file_id}/download",
     response_class=FileResponse,
     summary="下载文件",
-    description="下载媒体文件",
 )
 async def download_file(
-    media_file: Annotated[MediaFile, Depends(check_file_owner_or_admin)],
+    file_id: UUID,
+    current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """下载媒体文件"""
+    """下载媒体文件（需要登录，带权限检查）"""
+    from app.core.exceptions import InsufficientPermissionsError
+    from app.media.exceptions import MediaFileNotFoundError
+
+    media_file = await crud.get_media_file(session, file_id)
+    if not media_file:
+        raise MediaFileNotFoundError(f"媒体文件不存在: {file_id}")
+
+    # 权限检查：公开文件或自己的文件或超级管理员
+    if (
+        not media_file.is_public
+        and media_file.uploader_id != current_user.id
+        and not current_user.is_superadmin
+    ):
+        raise InsufficientPermissionsError("无权访问此文件")
+
     # 更新下载次数
     await service.increment_download_count(session, media_file)
 
@@ -340,25 +407,24 @@ async def download_file(
 
 
 # ========================================
-# 统计接口
+# 统计接口（需要登录）
 # ========================================
 
 
 @router.get(
     "/stats/overview",
     summary="获取统计概览",
-    description="获取当前用户的媒体文件统计信息",
 )
 async def get_stats_overview(
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """获取用户媒体文件统计概览"""
+    """获取用户媒体文件统计概览（需要登录）"""
     return await service.get_user_media_stats(session, current_user.id)
 
 
 # ========================================
-# 管理员接口
+# 管理员接口（需要管理员权限）
 # ========================================
 
 
@@ -366,15 +432,13 @@ async def get_stats_overview(
     "/admin/all",
     response_model=MediaFileListResponse,
     summary="获取所有文件（管理员）",
-    description="获取系统中所有媒体文件（仅管理员）",
 )
 async def get_all_files_admin(
     current_user: Annotated[User, Depends(get_current_adminuser)],
     query_params: Annotated[MediaFileQuery, Depends(get_media_query_params)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """获取所有媒体文件（管理员接口）"""
-    # 管理员可以查看所有文件，不限制 user_id
+    """获取系统中所有媒体文件（仅管理员）"""
     files = await service.get_all_media_files(
         session=session,
         media_type=query_params.media_type,

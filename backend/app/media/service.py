@@ -121,31 +121,70 @@ async def create_media_file(
 
 async def update_media_file_info(
     session: AsyncSession,
-    media_file: MediaFile,
+    file_id: UUID,
     update_data: MediaFileUpdate,
+    current_user_id: UUID,
+    is_superadmin: bool = False,
 ) -> MediaFile:
-    """更新媒体文件记录
+    """更新媒体文件记录（带细粒度权限检查）
 
     Args:
         session: 数据库会话
-        media_file: 媒体文件实例
+        file_id: 文件ID
         update_data: 更新数据
+        current_user_id: 当前用户ID
+        is_superadmin: 是否是超级管理员
 
     Returns:
         MediaFile: 更新后的媒体文件对象
+
+    Raises:
+        MediaFileNotFoundError: 文件不存在
+        InsufficientPermissionsError: 权限不足（非所有者且非超级管理员）
     """
+    from app.core.exceptions import InsufficientPermissionsError
+
+    media_file = await crud.get_media_file(session, file_id)
+    if not media_file:
+        raise MediaFileNotFoundError(f"媒体文件不存在: {file_id}")
+
+    # 细粒度权限检查：超级管理员可以修改任何文件，普通用户只能修改自己的
+    if not is_superadmin and media_file.uploader_id != current_user_id:
+        raise InsufficientPermissionsError("只能修改自己上传的文件")
+
     updated_file = await crud.update_media_file(session, media_file, update_data)
-    logger.info(f"成功更新媒体文件信息: {media_file.id}")
+    logger.info(f"成功更新媒体文件信息: {media_file.id} by user {current_user_id}")
     return updated_file
 
 
-async def delete_media_file(session: AsyncSession, media_file: MediaFile) -> None:
-    """删除媒体文件及其缩略图
+async def delete_media_file(
+    session: AsyncSession,
+    file_id: UUID,
+    current_user_id: UUID,
+    is_superadmin: bool = False,
+) -> None:
+    """删除媒体文件及其缩略图（带细粒度权限检查）
 
     Args:
         session: 数据库会话
-        media_file: 要删除的媒体文件
+        file_id: 文件ID
+        current_user_id: 当前用户ID
+        is_superadmin: 是否是超级管理员
+
+    Raises:
+        MediaFileNotFoundError: 文件不存在
+        InsufficientPermissionsError: 权限不足（非所有者且非超级管理员）
     """
+    from app.core.exceptions import InsufficientPermissionsError
+
+    media_file = await crud.get_media_file(session, file_id)
+    if not media_file:
+        raise MediaFileNotFoundError(f"媒体文件不存在: {file_id}")
+
+    # 细粒度权限检查：超级管理员可以删除任何文件，普通用户只能删除自己的
+    if not is_superadmin and media_file.uploader_id != current_user_id:
+        raise InsufficientPermissionsError("只能删除自己上传的文件")
+
     # 1. 删除主文件
     main_file_path = Path(settings.MEDIA_ROOT) / media_file.file_path
     await delete_file_from_disk(str(main_file_path))
@@ -157,7 +196,9 @@ async def delete_media_file(session: AsyncSession, media_file: MediaFile) -> Non
     # 3. 删除数据库记录
     await crud.delete_media_file(session, media_file)
 
-    logger.info(f"成功删除媒体文件: {media_file.original_filename}")
+    logger.info(
+        f"成功删除媒体文件: {media_file.original_filename} by user {current_user_id}"
+    )
 
 
 async def delete_media_file_by_id(file_id: UUID, session: AsyncSession) -> None:
@@ -183,17 +224,36 @@ async def delete_media_file_by_id(file_id: UUID, session: AsyncSession) -> None:
 
 
 async def regenerate_thumbnails(
-    media_file: MediaFile, session: AsyncSession
+    file_id: UUID,
+    session: AsyncSession,
+    current_user_id: UUID,
+    is_superadmin: bool = False,
 ) -> dict[str, str]:
-    """重新生成缩略图
+    """重新生成缩略图（带细粒度权限检查）
 
     Args:
-        media_file: 媒体文件实例
+        file_id: 文件ID
         session: 数据库会话
+        current_user_id: 当前用户ID
+        is_superadmin: 是否是超级管理员
 
     Returns:
         dict: 新生成的缩略图路径字典
+
+    Raises:
+        MediaFileNotFoundError: 文件不存在
+        InsufficientPermissionsError: 权限不足（非所有者且非超级管理员）
     """
+    from app.core.exceptions import InsufficientPermissionsError
+
+    media_file = await crud.get_media_file(session, file_id)
+    if not media_file:
+        raise MediaFileNotFoundError(f"媒体文件不存在: {file_id}")
+
+    # 细粒度权限检查：超级管理员可以操作任何文件，普通用户只能操作自己的
+    if not is_superadmin and media_file.uploader_id != current_user_id:
+        raise InsufficientPermissionsError("只能操作自己上传的文件")
+
     # 1. 清理旧缩略图
     if media_file.thumbnails:
         await cleanup_all_thumbnails(media_file.thumbnails, settings.MEDIA_ROOT)
@@ -208,7 +268,9 @@ async def regenerate_thumbnails(
     media_file.thumbnails = thumbnails
     await session.commit()
 
-    logger.info(f"重新生成缩略图完成: {media_file.original_filename}")
+    logger.info(
+        f"重新生成缩略图完成: {media_file.original_filename} by user {current_user_id}"
+    )
     return thumbnails
 
 
@@ -429,30 +491,39 @@ async def toggle_file_publicity(
     file_id: UUID,
     user_id: UUID,
     is_public: bool,
+    is_superadmin: bool = False,
 ) -> MediaFile:
-    """切换文件的公开状态
+    """切换文件的公开状态（带细粒度权限检查）
 
     Args:
         session: 数据库会话
         file_id: 文件ID
         user_id: 当前用户ID
         is_public: 新的公开状态
+        is_superadmin: 是否是超级管理员
 
     Returns:
         更新后的MediaFile对象
 
     Raises:
         MediaFileNotFoundError: 文件不存在
+        InsufficientPermissionsError: 权限不足（非所有者且非超级管理员）
     """
+    from app.core.exceptions import InsufficientPermissionsError
+
     media_file = await crud.get_media_file(session, file_id)
 
     if not media_file:
         raise MediaFileNotFoundError(f"文件不存在: {file_id}")
 
+    # 细粒度权限检查：超级管理员可以修改任何文件，普通用户只能修改自己的
+    if not is_superadmin and media_file.uploader_id != user_id:
+        raise InsufficientPermissionsError("只能修改自己上传的文件")
+
     update_data = MediaFileUpdate(is_public=is_public)
     updated_file = await crud.update_media_file(session, media_file, update_data)
 
-    logger.info(f"文件 {file_id} 公开状态已更新为: {is_public}")
+    logger.info(f"文件 {file_id} 公开状态已更新为: {is_public} by user {user_id}")
     return updated_file
 
 

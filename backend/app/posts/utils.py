@@ -6,11 +6,15 @@
 
 import math
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 import frontmatter
 import latex2mathml.converter
 import mistune
+from app.posts.model import Post, PostStatus, PostType, Tag
+from sqlalchemy.orm import selectinload
+from sqlmodel import desc, select
 
 
 class PostProcessor:
@@ -158,3 +162,73 @@ class PostProcessor:
         if len(plain_text) <= length:
             return plain_text
         return plain_text[:length] + "..."
+
+
+# 以下是一些辅助函数，用于构建查询语句
+def build_posts_query(
+    *,
+    post_type: Optional[PostType] = None,
+    status: Optional[PostStatus] = PostStatus.PUBLISHED,
+    category_id: Optional[UUID] = None,
+    tag_id: Optional[UUID] = None,
+    author_id: Optional[UUID] = None,
+    is_featured: Optional[bool] = None,
+    search_query: Optional[str] = None,
+):
+    """构建文章查询（不执行）"""
+    stmt = select(Post)
+
+    if post_type:
+        stmt = stmt.where(Post.post_type == post_type)
+    if status:
+        stmt = stmt.where(Post.status == status)
+    if author_id:
+        stmt = stmt.where(Post.author_id == author_id)
+    if is_featured is not None:
+        stmt = stmt.where(Post.is_featured == is_featured)
+    if category_id:
+        stmt = stmt.where(Post.category_id == category_id)
+    if tag_id:
+        stmt = stmt.join(Post.tags).where(Tag.id == tag_id)
+    if search_query:
+        search_pattern = f"%{search_query}%"
+        stmt = stmt.where(
+            (Post.title.ilike(search_pattern)) | (Post.excerpt.ilike(search_pattern))
+        )
+
+    stmt = stmt.order_by(desc(Post.published_at), desc(Post.created_at))
+
+    stmt = stmt.options(
+        selectinload(Post.category),
+        selectinload(Post.author),
+        selectinload(Post.tags),
+        selectinload(Post.cover_media),
+    )
+
+    return stmt
+
+
+def build_categories_query(post_type: PostType):
+    """构建分类查询（不执行）"""
+    from app.posts.model import Category
+
+    stmt = (
+        select(Category)
+        .where(Category.post_type == post_type)
+        .where(Category.is_active)
+        .order_by(Category.sort_order.asc(), Category.name.asc())
+        .options(selectinload(Category.parent), selectinload(Category.icon))
+    )
+    return stmt
+
+
+def build_tags_query(post_type: PostType):
+    """构建标签查询（不执行）"""
+    stmt = (
+        select(Tag)
+        .join(Tag.posts)
+        .where(Post.post_type == post_type)
+        .distinct()
+        .order_by(Tag.name.asc())
+    )
+    return stmt

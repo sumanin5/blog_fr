@@ -1,19 +1,32 @@
 """
 文章模块数据库操作 (CRUD)
 
-使用 SQLModel 进行数据库操作，重点优化 N+1 查询问题。
+只包含异步数据库操作
 """
 
 import logging
-from typing import Optional, Sequence
+from typing import Optional
 from uuid import UUID
 
-from app.posts.model import Category, Post, PostStatus, PostType, Tag
+from app.posts.model import Category, Post, PostType, Tag
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import selectinload
-from sqlmodel import and_, desc, select
+from sqlmodel import and_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
+
+
+# ========================================
+# 通用分页函数
+# ========================================
+
+
+async def paginate_query(session: AsyncSession, query) -> Page:
+    """通用分页查询"""
+    return await paginate(session, query)
+
 
 # ========================================
 # 文章 (Post) CRUD
@@ -52,67 +65,7 @@ async def get_post_by_slug(session: AsyncSession, slug: str) -> Optional[Post]:
     return result.scalar_one_or_none()
 
 
-async def get_posts(
-    session: AsyncSession,
-    *,
-    post_type: Optional[PostType] = None,
-    status: Optional[PostStatus] = PostStatus.PUBLISHED,
-    category_id: Optional[UUID] = None,
-    tag_id: Optional[UUID] = None,
-    author_id: Optional[UUID] = None,
-    is_featured: Optional[bool] = None,
-    search_query: Optional[str] = None,
-    limit: int = 20,
-    offset: int = 0,
-) -> Sequence[Post]:
-    """
-    获取文章列表 (高性能预加载版)
-
-    采用 selectinload 解决 N+1 风险。
-    """
-    stmt = select(Post)
-
-    # 基础过滤
-    if post_type:
-        stmt = stmt.where(Post.post_type == post_type)
-    if status:
-        stmt = stmt.where(Post.status == status)
-    if author_id:
-        stmt = stmt.where(Post.author_id == author_id)
-    if is_featured is not None:
-        stmt = stmt.where(Post.is_featured == is_featured)
-    if category_id:
-        stmt = stmt.where(Post.category_id == category_id)
-
-    # 标签过滤 (多对多)
-    if tag_id:
-        # 这是一个技巧：通过 join 标签表来过滤，但后续加载依然用 selectinload 保持性能
-        stmt = stmt.join(Post.tags).where(Tag.id == tag_id)
-
-    # 搜索过滤
-    if search_query:
-        search_pattern = f"%{search_query}%"
-        stmt = stmt.where(
-            (Post.title.ilike(search_pattern)) | (Post.excerpt.ilike(search_pattern))
-        )
-
-    # 排序与分页
-    stmt = (
-        stmt.order_by(desc(Post.published_at), desc(Post.created_at))
-        .limit(limit)
-        .offset(offset)
-    )
-
-    # 加载关联 (解决显示作者名字、分类名、预览图时的 N+1)
-    stmt = stmt.options(
-        selectinload(Post.category),
-        selectinload(Post.author),
-        selectinload(Post.tags),
-        selectinload(Post.cover_media),
-    )
-
-    result = await session.execute(stmt)
-    return result.scalars().all()
+# 删除 get_posts_paginated，改用通用的 paginate_query
 
 
 async def increment_view_count(session: AsyncSession, post_id: UUID) -> None:
@@ -130,23 +83,7 @@ async def increment_view_count(session: AsyncSession, post_id: UUID) -> None:
 # ========================================
 
 
-async def get_categories(
-    session: AsyncSession, post_type: PostType
-) -> Sequence[Category]:
-    """
-    获取指定板块(Post/Idea)的全量分类。
-
-    这里是物理隔离的关键：只查出当前板块下的分类。
-    """
-    stmt = (
-        select(Category)
-        .where(Category.post_type == post_type)
-        .where(Category.is_active)  # 修正：直接使用字段作为真值判断
-        .order_by(Category.sort_order.asc(), Category.name.asc())
-        .options(selectinload(Category.parent), selectinload(Category.icon))
-    )
-    result = await session.execute(stmt)
-    return result.scalars().all()
+# 删除 get_categories 和 get_tags_by_type，改用通用的 paginate_query
 
 
 async def get_category_by_slug_and_type(
@@ -178,24 +115,7 @@ async def get_category_by_id(
 # 标签 (Tag) CRUD
 # ========================================
 
-
-async def get_tags_by_type(
-    session: AsyncSession, post_type: PostType, limit: int = 100
-) -> Sequence[Tag]:
-    """
-    获取指定板块文章中所包含的所有标签。
-    通过 join 只有在对应板块出现过的标签才会显示出来。
-    """
-    stmt = (
-        select(Tag)
-        .join(Tag.posts)
-        .where(Post.post_type == post_type)
-        .distinct()
-        .order_by(Tag.name.asc())
-        .limit(limit)
-    )
-    result = await session.execute(stmt)
-    return result.scalars().all()
+# 删除 get_tags_by_type，改用通用的 paginate_query
 
 
 async def get_tag_by_slug(session: AsyncSession, slug: str) -> Optional[Tag]:
