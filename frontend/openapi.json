@@ -958,7 +958,7 @@
         "tags": [
           "media"
         ],
-        "summary": "Get Public Files",
+        "summary": "获取公开文件列表",
         "description": "获取公开文件列表（无需认证）",
         "operationId": "getPublicFiles",
         "parameters": [
@@ -1096,124 +1096,13 @@
         }
       }
     },
-    "/api/v1/media/{file_id}/publicity": {
-      "patch": {
-        "tags": [
-          "media"
-        ],
-        "summary": "Toggle File Publicity",
-        "description": "切换文件公开状态（需要认证）",
-        "operationId": "toggleFilePublicity",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "file_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "description": "媒体文件ID",
-              "title": "File Id"
-            },
-            "description": "媒体文件ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TogglePublicityRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MediaFileResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/media/upload": {
       "post": {
         "tags": [
           "media"
         ],
         "summary": "上传文件",
-        "description": "上传媒体文件（图片、视频、文档等）",
+        "description": "上传媒体文件（需要登录）",
         "operationId": "uploadFile",
         "requestBody": {
           "content": {
@@ -1310,7 +1199,7 @@
           "media"
         ],
         "summary": "获取文件列表",
-        "description": "获取当前用户的媒体文件列表",
+        "description": "获取当前用户的媒体文件列表（需要登录）",
         "operationId": "getUserFiles",
         "security": [
           {
@@ -1462,7 +1351,7 @@
           "media"
         ],
         "summary": "获取文件详情",
-        "description": "根据ID获取媒体文件详细信息",
+        "description": "获取媒体文件详细信息（需要登录，service层检查权限）",
         "operationId": "getFileDetail",
         "security": [
           {
@@ -1477,10 +1366,8 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "媒体文件ID",
               "title": "File Id"
-            },
-            "description": "媒体文件ID"
+            }
           }
         ],
         "responses": {
@@ -1561,7 +1448,7 @@
           "media"
         ],
         "summary": "更新文件信息",
-        "description": "更新媒体文件的元数据信息",
+        "description": "更新媒体文件信息（需要是所有者或超级管理员）",
         "operationId": "updateFile",
         "security": [
           {
@@ -1576,10 +1463,8 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "媒体文件ID",
               "title": "File Id"
-            },
-            "description": "媒体文件ID"
+            }
           }
         ],
         "requestBody": {
@@ -1670,7 +1555,7 @@
           "media"
         ],
         "summary": "删除文件",
-        "description": "删除媒体文件及其缩略图",
+        "description": "删除媒体文件（需要是所有者或超级管理员）",
         "operationId": "deleteFile",
         "security": [
           {
@@ -1685,10 +1570,8 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "媒体文件ID",
               "title": "File Id"
-            },
-            "description": "媒体文件ID"
+            }
           }
         ],
         "responses": {
@@ -1764,7 +1647,7 @@
           "media"
         ],
         "summary": "搜索文件",
-        "description": "根据关键词搜索媒体文件",
+        "description": "搜索媒体文件（需要登录）",
         "operationId": "searchFiles",
         "security": [
           {
@@ -1912,13 +1795,122 @@
         }
       }
     },
+    "/api/v1/media/{file_id}/publicity": {
+      "patch": {
+        "tags": [
+          "media"
+        ],
+        "summary": "切换文件公开状态",
+        "description": "切换文件公开状态（需要是所有者或超级管理员）",
+        "operationId": "toggleFilePublicity",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TogglePublicityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaFileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/media/batch-delete": {
       "post": {
         "tags": [
           "media"
         ],
         "summary": "批量删除文件",
-        "description": "批量删除多个媒体文件",
+        "description": "批量删除媒体文件（需要登录）",
         "operationId": "batchDeleteFiles",
         "requestBody": {
           "content": {
@@ -2015,7 +2007,7 @@
           "media"
         ],
         "summary": "重新生成缩略图",
-        "description": "重新生成媒体文件的缩略图",
+        "description": "重新生成缩略图（需要是所有者或超级管理员）",
         "operationId": "regenerateThumbnails",
         "security": [
           {
@@ -2030,10 +2022,8 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "媒体文件ID",
               "title": "File Id"
-            },
-            "description": "媒体文件ID"
+            }
           }
         ],
         "responses": {
@@ -2116,7 +2106,7 @@
           "media"
         ],
         "summary": "查看文件",
-        "description": "查看媒体文件（带权限检查）",
+        "description": "查看媒体文件（需要登录，带权限检查）",
         "operationId": "viewFile",
         "security": [
           {
@@ -2131,10 +2121,8 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "媒体文件ID",
               "title": "File Id"
-            },
-            "description": "媒体文件ID"
+            }
           }
         ],
         "responses": {
@@ -2210,7 +2198,7 @@
           "media"
         ],
         "summary": "查看缩略图",
-        "description": "查看媒体文件缩略图（带权限检查）",
+        "description": "查看缩略图（需要登录，带权限检查）",
         "operationId": "viewThumbnail",
         "security": [
           {
@@ -2219,6 +2207,16 @@
         ],
         "parameters": [
           {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "File Id"
+            }
+          },
+          {
             "name": "size",
             "in": "path",
             "required": true,
@@ -2226,18 +2224,6 @@
               "type": "string",
               "title": "Size"
             }
-          },
-          {
-            "name": "file_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "description": "媒体文件ID",
-              "title": "File Id"
-            },
-            "description": "媒体文件ID"
           }
         ],
         "responses": {
@@ -2313,7 +2299,7 @@
           "media"
         ],
         "summary": "下载文件",
-        "description": "下载媒体文件",
+        "description": "下载媒体文件（需要登录，带权限检查）",
         "operationId": "downloadFile",
         "security": [
           {
@@ -2328,10 +2314,8 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "媒体文件ID",
               "title": "File Id"
-            },
-            "description": "媒体文件ID"
+            }
           }
         ],
         "responses": {
@@ -2407,7 +2391,7 @@
           "media"
         ],
         "summary": "获取统计概览",
-        "description": "获取当前用户的媒体文件统计信息",
+        "description": "获取用户媒体文件统计概览（需要登录）",
         "operationId": "getStatsOverview",
         "responses": {
           "200": {
@@ -2638,15 +2622,106 @@
         }
       }
     },
-    "/api/v1/posts": {
+    "/api/v1/posts/types": {
       "get": {
         "tags": [
-          "posts",
-          "文章管理"
+          "posts"
         ],
-        "summary": "获取文章列表",
-        "description": "获取已发布的文章列表 (带板块隔离)",
-        "operationId": "listPosts",
+        "summary": "获取所有板块类型",
+        "description": "获取所有板块类型（用于前端构建菜单）\n\n返回示例：\n[\n    {\"value\": \"article\", \"label\": \"Article\"},\n    {\"value\": \"idea\", \"label\": \"Idea\"}\n]",
+        "operationId": "getPostTypes",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Getposttypes"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/me": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "获取当前用户的文章列表",
+        "description": "获取当前用户的所有文章（包括草稿）\n\n示例：\n- GET /posts/me - 我的所有文章\n- GET /posts/me?status=draft - 我的草稿\n- GET /posts/me?status=published - 我的已发布文章\n\n注意：需要登录才能访问",
+        "operationId": "getMyPosts",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "post_type",
@@ -2663,6 +2738,24 @@
               ],
               "title": "Post Type"
             }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PostStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "文章状态",
+              "title": "Status"
+            },
+            "description": "文章状态"
           },
           {
             "name": "category_id",
@@ -2769,6 +2862,29 @@
               "default": 0,
               "title": "Offset"
             }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
+            }
           }
         ],
         "responses": {
@@ -2777,7 +2893,254 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PostListResponse"
+                  "$ref": "#/components/schemas/Page_PostShortResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "获取指定板块的文章列表",
+        "description": "获取指定板块的文章列表（自动分页）\n\n示例：\n- GET /posts/article?page=1&size=20 - 文章列表\n- GET /posts/idea?page=1&size=20 - 想法列表\n- GET /posts/article?status=draft - 草稿列表（需要登录）",
+        "operationId": "listPostsByType",
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PostType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Post Type"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PostStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "文章状态",
+              "title": "Status"
+            },
+            "description": "文章状态"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category Id"
+            }
+          },
+          {
+            "name": "tag_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "author_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Author Id"
+            }
+          },
+          {
+            "name": "is_featured",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Is Featured"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PostShortResponse_"
                 }
               }
             }
@@ -2846,15 +3209,26 @@
       },
       "post": {
         "tags": [
-          "posts",
-          "文章管理"
+          "posts"
         ],
         "summary": "创建文章",
-        "description": "创建新文章 (自动解析 MDX)",
-        "operationId": "createPost",
+        "description": "创建新文章（需要登录）\n\n示例：\n- POST /posts/article - 创建文章\n- POST /posts/idea - 创建想法",
+        "operationId": "createPostByType",
         "security": [
           {
             "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
           }
         ],
         "requestBody": {
@@ -2941,23 +3315,333 @@
         }
       }
     },
-    "/api/v1/posts/detail/{slug}": {
+    "/api/v1/posts/{post_type}/categories": {
       "get": {
         "tags": [
-          "posts",
-          "文章管理"
+          "posts"
         ],
-        "summary": "获取文章详情",
-        "description": "根据 Slug 获取文章详情并增加浏览量",
-        "operationId": "getPostDetail",
+        "summary": "获取指定板块的分类列表",
+        "description": "获取指定板块的分类列表（自动分页）\n\n示例：\n- GET /posts/article/categories - 文章分类\n- GET /posts/idea/categories - 想法分类",
+        "operationId": "listCategoriesByType",
         "parameters": [
           {
-            "name": "slug",
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CategoryResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "创建分类",
+        "description": "创建新分类（仅超级管理员）\n\n示例：\n- POST /posts/article/categories - 创建文章分类\n- POST /posts/idea/categories - 创建想法分类",
+        "operationId": "createCategoryByType",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}/tags": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "获取指定板块的标签列表",
+        "description": "获取指定板块的标签列表（自动分页）\n\n示例：\n- GET /posts/article/tags - 文章标签\n- GET /posts/idea/tags - 想法标签",
+        "operationId": "listTagsByType",
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TagResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}/{post_id}": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "通过ID获取文章详情",
+        "description": "根据 UUID 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n示例：\n- GET /posts/article/{uuid}\n- GET /posts/idea/{uuid}\n\n注意：使用 :uuid 路径转换器确保与 slug 路由不冲突",
+        "operationId": "getPostById",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "post_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Slug"
+              "format": "uuid",
+              "title": "Post Id"
             }
           }
         ],
@@ -3033,217 +3717,30 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/posts/categories": {
-      "get": {
-        "tags": [
-          "posts",
-          "文章管理"
-        ],
-        "summary": "分类列表",
-        "description": "获取指定板块下的所有激活分类",
-        "operationId": "listCategories",
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CategoryResponse"
-                  },
-                  "title": "Response Listcategories"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/posts/tags": {
-      "get": {
-        "tags": [
-          "posts",
-          "文章管理"
-        ],
-        "summary": "标签云",
-        "description": "获取指定板块下有文章关联的标签列表",
-        "operationId": "listTags",
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TagResponse"
-                  },
-                  "title": "Response Listtags"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/posts/{post_id}": {
+      },
       "patch": {
         "tags": [
-          "posts",
-          "文章管理"
+          "posts"
         ],
         "summary": "更新文章",
-        "description": "更新文章内容",
-        "operationId": "updatePost",
+        "description": "更新文章（需要是作者或超级管理员）\n\n示例：\n- PATCH /posts/article/{post_id}\n- PATCH /posts/idea/{post_id}",
+        "operationId": "updatePostByType",
         "security": [
           {
             "OAuth2PasswordBearer": []
           }
         ],
         "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
           {
             "name": "post_id",
             "in": "path",
@@ -3340,18 +3837,27 @@
       },
       "delete": {
         "tags": [
-          "posts",
-          "文章管理"
+          "posts"
         ],
         "summary": "删除文章",
-        "description": "删除文章",
-        "operationId": "deletePost",
+        "description": "删除文章（需要是作者或超级管理员）\n\n示例：\n- DELETE /posts/article/{post_id}\n- DELETE /posts/idea/{post_id}",
+        "operationId": "deletePostByType",
         "security": [
           {
             "OAuth2PasswordBearer": []
           }
         ],
         "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
           {
             "name": "post_id",
             "in": "path",
@@ -3428,6 +3934,624 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/posts/{post_type}/slug/{slug}": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "通过Slug获取文章详情",
+        "description": "根据 Slug 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n示例：\n- GET /posts/article/slug/my-post-slug\n- GET /posts/idea/slug/my-idea-slug\n\n注意：使用 /slug/ 前缀明确区分 UUID 和 Slug 路由",
+        "operationId": "getPostBySlug",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}/categories/{category_id}": {
+      "patch": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "更新分类",
+        "description": "更新分类（仅超级管理员）\n\n示例：\n- PATCH /posts/article/categories/{category_id}\n- PATCH /posts/idea/categories/{category_id}",
+        "operationId": "updateCategoryByType",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "删除分类",
+        "description": "删除分类（仅超级管理员）\n\n示例：\n- DELETE /posts/article/categories/{category_id}\n- DELETE /posts/idea/categories/{category_id}",
+        "operationId": "deleteCategoryByType",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/admin/tags/{tag_id}": {
+      "patch": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "更新标签",
+        "description": "更新标签（仅超级管理员）\n\n用于统一标签命名、更新颜色、描述等\n\n示例：\n- PATCH /api/v1/posts/admin/tags/{tag_id}\n\n请求体：\n{\n    \"name\": \"React.js\",\n    \"color\": \"#61DAFB\",\n    \"description\": \"React 前端框架\"\n}",
+        "operationId": "updateTag",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/admin/tags/orphaned": {
+      "delete": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "清理孤立标签",
+        "description": "删除孤立标签（仅超级管理员）\n\n删除所有没有任何文章关联的标签\n\n示例：\n- DELETE /api/v1/posts/admin/tags/orphaned\n\n响应示例：\n{\n    \"deleted_count\": 5,\n    \"deleted_tags\": [\"old-tag-1\", \"old-tag-2\", ...]\n}",
+        "operationId": "deleteOrphanedTags",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/posts/admin/tags/merge": {
+      "post": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "合并标签",
+        "description": "合并标签（仅超级管理员）\n\n将源标签的所有文章关联转移到目标标签，然后删除源标签\n用于合并重复标签（如 \"React.js\" 和 \"ReactJS\"）\n\n示例：\n- POST /api/v1/posts/admin/tags/merge\n\n请求体：\n{\n    \"source_tag_id\": \"...\",\n    \"target_tag_id\": \"...\"\n}\n\n注意：\n- 源标签将被删除\n- 所有原本使用源标签的文章将使用目标标签",
+        "operationId": "mergeTags",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     }
   },
@@ -3585,6 +4709,87 @@
         ],
         "title": "Body_uploadFile"
       },
+      "CategoryCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Slug"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "default": ""
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          },
+          "icon_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Id"
+          },
+          "icon_preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Preset"
+          },
+          "post_type": {
+            "$ref": "#/components/schemas/PostType",
+            "default": "article"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "slug"
+        ],
+        "title": "CategoryCreate"
+      },
       "CategoryResponse": {
         "properties": {
           "name": {
@@ -3671,6 +4876,112 @@
           "id"
         ],
         "title": "CategoryResponse"
+      },
+      "CategoryUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          },
+          "icon_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Id"
+          },
+          "icon_preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Preset"
+          },
+          "post_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PostType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "CategoryUpdate"
       },
       "ErrorDetail": {
         "properties": {
@@ -3911,22 +5222,25 @@
           },
           "file_url": {
             "type": "string",
-            "maxLength": 2083,
-            "minLength": 1,
-            "format": "uri",
             "title": "File Url",
-            "description": "文件访问URL"
+            "description": "文件访问 URL（带权限检查）",
+            "readOnly": true
           },
           "thumbnails": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ThumbnailInfo"
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "缩略图URL"
+            "title": "Thumbnails",
+            "description": "缩略图完整 URL 字典",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -3940,7 +5254,8 @@
           "uploader_id",
           "created_at",
           "updated_at",
-          "file_url"
+          "file_url",
+          "thumbnails"
         ],
         "title": "MediaFileResponse",
         "description": "媒体文件响应模型",
@@ -4071,6 +5386,126 @@
         ],
         "title": "MediaType"
       },
+      "Page_CategoryResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Size"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages"
+        ],
+        "title": "Page[CategoryResponse]"
+      },
+      "Page_PostShortResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PostShortResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Size"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages"
+        ],
+        "title": "Page[PostShortResponse]"
+      },
+      "Page_TagResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TagResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Size"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages"
+        ],
+        "title": "Page[TagResponse]"
+      },
       "PostCreate": {
         "properties": {
           "title": {
@@ -4171,6 +5606,31 @@
             "type": "string",
             "title": "Content Mdx",
             "description": "原始 MDX 内容"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
           },
           "git_hash": {
             "anyOf": [
@@ -4355,6 +5815,16 @@
             "format": "uuid",
             "title": "Author Id"
           },
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "category": {
             "anyOf": [
               {
@@ -4382,8 +5852,8 @@
             "title": "Content Html"
           },
           "toc": {
-            "additionalProperties": true,
-            "type": "object",
+            "items": {},
+            "type": "array",
             "title": "Toc"
           },
           "git_hash": {
@@ -4435,37 +5905,6 @@
         ],
         "title": "PostDetailResponse",
         "description": "文章详情响应"
-      },
-      "PostListResponse": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PostShortResponse"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "limit",
-          "offset"
-        ],
-        "title": "PostListResponse"
       },
       "PostShortResponse": {
         "properties": {
@@ -4608,6 +6047,16 @@
             "type": "string",
             "format": "uuid",
             "title": "Author Id"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "category": {
             "anyOf": [
@@ -4764,6 +6213,31 @@
             ],
             "title": "Content Mdx"
           },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
           "meta_title": {
             "anyOf": [
               {
@@ -4887,6 +6361,27 @@
         "title": "PostVersionResponse",
         "description": "文章版本响应"
       },
+      "TagMergeRequest": {
+        "properties": {
+          "source_tag_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Tag Id"
+          },
+          "target_tag_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Tag Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_tag_id",
+          "target_tag_id"
+        ],
+        "title": "TagMergeRequest",
+        "description": "标签合并请求"
+      },
       "TagResponse": {
         "properties": {
           "name": {
@@ -4930,72 +6425,55 @@
         ],
         "title": "TagResponse"
       },
-      "ThumbnailInfo": {
+      "TagUpdate": {
         "properties": {
-          "small": {
+          "name": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Small",
-            "description": "小尺寸缩略图URL"
+            "title": "Name"
           },
-          "medium": {
+          "slug": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Medium",
-            "description": "中等尺寸缩略图URL"
+            "title": "Slug"
           },
-          "large": {
+          "color": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Large",
-            "description": "大尺寸缩略图URL"
+            "title": "Color"
           },
-          "xlarge": {
+          "description": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Xlarge",
-            "description": "超大尺寸缩略图URL"
+            "title": "Description"
           }
         },
         "type": "object",
-        "title": "ThumbnailInfo",
-        "description": "缩略图信息"
+        "title": "TagUpdate"
       },
       "ThumbnailRegenerateResponse": {
         "properties": {
@@ -5005,7 +6483,11 @@
             "description": "处理结果消息"
           },
           "thumbnails": {
-            "$ref": "#/components/schemas/ThumbnailInfo",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Thumbnails",
             "description": "新生成的缩略图URL"
           }
         },

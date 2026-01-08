@@ -53,7 +53,7 @@ echo ""
 echo -e "${YELLOW}🔧 步骤 2: 生成前端 TypeScript 代码...${NC}"
 cd "$PROJECT_ROOT/frontend"
 
-npm run api:generate
+pnpm run api:generate
 
 echo -e "${GREEN}   ✅ TypeScript 代码生成成功${NC}"
 echo ""
