@@ -130,8 +130,10 @@ class Post(Base, table=True):
     reading_time: int = Field(default=0, description="预计阅读时间(分钟)")
 
     # 预处理数据
-    toc: dict = Field(
-        default_factory=dict, sa_column=Column(JSON), description="文章目录结构(JSON)"
+    toc: list = Field(
+        default_factory=list,
+        sa_column=Column(JSON),
+        description="文章目录结构(JSON数组)",
     )
 
     # SEO 字段

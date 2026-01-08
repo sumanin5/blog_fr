@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图表渲染示例</title>
+
+  <!-- Mermaid.js -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <!-- Prism.js for code highlighting -->
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #2563eb;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    h2 {
+      color: #1e40af;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+    }
+
+    /* 图表容器样式 */
+    .diagram-container {
+      margin: 2rem 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f9fafb;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 图表渲染区域 */
+    .diagram-render {
+      padding: 2rem;
+      background: white;
+      overflow-x: auto;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Mermaid 图表样式 */
+    .diagram-render.mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* 源码折叠区域 */
+    .diagram-source {
+      border-top: 1px solid #e5e7eb;
+      background: #f3f4f6;
+    }
+
+    .diagram-source summary {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.875rem;
+      color: #6b7280;
+      font-weight: 500;
+      transition: all 0.2s;
+      list-style: none;
+    }
+
+    .diagram-source summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .diagram-source summary::before {
+      content: '▶ ';
+      display: inline-block;
+      margin-right: 0.5rem;
+      transition: transform 0.2s;
+    }
+
+    .diagram-source[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    .diagram-source summary:hover {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .diagram-source pre {
+      margin: 0;
+      padding: 1.5rem;
+      background: #1e293b;
+      overflow-x: auto;
+    }
+
+    .diagram-source code {
+      color: #e2e8f0;
+      font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+      font-size: 0.875rem;
+      line-height: 1.7;
+    }
+
+    /* 类型标签 */
+    .diagram-type-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: #dbeafe;
+      color: #1e40af;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    /* 加载状态 */
+    .diagram-loading {
+      text-align: center;
+      color: #6b7280;
+      padding: 2rem;
+    }
+
+    /* 错误提示 */
+    .diagram-error {
+      padding: 1rem 1.5rem;
+      color: #dc2626;
+      background: #fee2e2;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      border-left: 4px solid #dc2626;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .diagram-render {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>📊 图表渲染示例</h1>
+    <p>这是后端 <code>PostProcessor</code> 处理后的 HTML 输出示例，展示了如何在前端渲染各种图表。</p>
+
+    <h2>1. 流程图（Flowchart）</h2>
+    <div class="diagram-container" data-type="mermaid">
+      <div class="diagram-render mermaid">
+        graph TD
+        A[开始] --> B{是否登录?}
+        B -->|是| C[显示主页]
+        B -->|否| D[跳转登录页]
+        C --> E[加载数据]
+        E --> F[渲染页面]
+      </div>
+      <details class="diagram-source">
+        <summary>查看源码</summary>
+        <pre><code class="language-mermaid">graph TD
+    A[开始] --> B{是否登录?}
+    B -->|是| C[显示主页]
+    B -->|否| D[跳转登录页]
+    C --> E[加载数据]
+    E --> F[渲染页面]</code></pre>
+      </details>
+    </div>
+
+    <h2>2. 时序图（Sequence Diagram）</h2>
+    <div class="diagram-container" data-type="mermaid">
+      <div class="diagram-render mermaid">
+        sequenceDiagram
+        participant 用户
+        participant 前端
+        participant 后端
+        participant 数据库
+
+        用户->>前端: 提交表单
+        前端->>后端: POST /api/posts
+        后端->>数据库: INSERT INTO posts
+        数据库-->>后端: 返回 ID
+        后端-->>前端: 201 Created
+        前端-->>用户: 显示成功消息
+      </div>
+      <details class="diagram-source">
+        <summary>查看源码</summary>
+        <pre><code class="language-mermaid">sequenceDiagram
+    participant 用户
+    participant 前端
+    participant 后端
+    participant 数据库
+
+    用户->>前端: 提交表单
+    前端->>后端: POST /api/posts
+    后端->>数据库: INSERT INTO posts
+    数据库-->>后端: 返回 ID
+    后端-->>前端: 201 Created
+    前端-->>用户: 显示成功消息</code></pre>
+      </details>
+    </div>
+
+    <h2>3. 类图（Class Diagram）</h2>
+    <div class="diagram-container" data-type="mermaid">
+      <div class="diagram-render mermaid">
+        classDiagram
+        class Post {
+        +UUID id
+        +String title
+        +String content
+        +DateTime created_at
+        +create()
+        +update()
+        +delete()
+        }
+
+        class User {
+        +UUID id
+        +String username
+        +String email
+        +login()
+        +logout()
+        }
+
+        class Category {
+        +UUID id
+        +String name
+        +String slug
+        }
+
+        User "1" --> "*" Post : 创建
+        Post "*" --> "1" Category : 属于
+      </div>
+      <details class="diagram-source">
+        <summary>查看源码</summary>
+        <pre><code class="language-mermaid">classDiagram
+    class Post {
+        +UUID id
+        +String title
+        +String content
+        +DateTime created_at
+        +create()
+        +update()
+        +delete()
+    }
+
+    class User {
+        +UUID id
+        +String username
+        +String email
+        +login()
+        +logout()
+    }
+
+    class Category {
+        +UUID id
+        +String name
+        +String slug
+    }
+
+    User "1" --> "*" Post : 创建
+    Post "*" --> "1" Category : 属于</code></pre>
+      </details>
+    </div>
+
+    <h2>4. 状态图（State Diagram）</h2>
+    <div class="diagram-container" data-type="mermaid">
+      <div class="diagram-render mermaid">
+        stateDiagram-v2
+        [*] --> 草稿
+        草稿 --> 审核中: 提交审核
+        审核中 --> 已发布: 审核通过
+        审核中 --> 草稿: 审核拒绝
+        已发布 --> 已归档: 归档
+        已归档 --> [*]
+      </div>
+      <details class="diagram-source">
+        <summary>查看源码</summary>
+        <pre><code class="language-mermaid">stateDiagram-v2
+    [*] --> 草稿
+    草稿 --> 审核中: 提交审核
+    审核中 --> 已发布: 审核通过
+    审核中 --> 草稿: 审核拒绝
+    已发布 --> 已归档: 归档
+    已归档 --> [*]</code></pre>
+      </details>
+    </div>
+
+    <h2>5. 甘特图（Gantt Chart）</h2>
+    <div class="diagram-container" data-type="mermaid">
+      <div class="diagram-render mermaid">
+        gantt
+        title 项目开发计划
+        dateFormat YYYY-MM-DD
+        section 后端开发
+        数据库设计 :done, des1, 2024-01-01, 2024-01-05
+        API 开发 :active, des2, 2024-01-06, 2024-01-15
+        测试 : des3, 2024-01-16, 2024-01-20
+        section 前端开发
+        UI 设计 :done, des4, 2024-01-01, 2024-01-08
+        组件开发 :active, des5, 2024-01-09, 2024-01-18
+        集成测试 : des6, 2024-01-19, 2024-01-25
+      </div>
+      <details class="diagram-source">
+        <summary>查看源码</summary>
+        <pre><code class="language-mermaid">gantt
+    title 项目开发计划
+    dateFormat  YYYY-MM-DD
+    section 后端开发
+    数据库设计           :done,    des1, 2024-01-01, 2024-01-05
+    API 开发            :active,  des2, 2024-01-06, 2024-01-15
+    测试                :         des3, 2024-01-16, 2024-01-20
+    section 前端开发
+    UI 设计             :done,    des4, 2024-01-01, 2024-01-08
+    组件开发            :active,  des5, 2024-01-09, 2024-01-18
+    集成测试            :         des6, 2024-01-19, 2024-01-25</code></pre>
+      </details>
+    </div>
+
+    <h2>6. 饼图（Pie Chart）</h2>
+    <div class="diagram-container" data-type="mermaid">
+      <div class="diagram-render mermaid">
+        pie title 编程语言使用占比
+        "Python" : 45
+        "JavaScript" : 30
+        "TypeScript" : 15
+        "Go" : 10
+      </div>
+      <details class="diagram-source">
+        <summary>查看源码</summary>
+        <pre><code class="language-mermaid">pie title 编程语言使用占比
+    "Python" : 45
+    "JavaScript" : 30
+    "TypeScript" : 15
+    "Go" : 10</code></pre>
+      </details>
+    </div>
+  </div>
+
+  <script>
+    // 初始化 Mermaid
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
+
+    // 渲染所有 Mermaid 图表
+    async function renderDiagrams() {
+      const diagrams = document.querySelectorAll('.diagram-render.mermaid');
+
+      for (let i = 0; i < diagrams.length; i++) {
+        const element = diagrams[i];
+        const code = element.textContent.trim();
+        const id = `mermaid-diagram-${i}`;
+
+        try {
+          // 显示加载状态
+          element.innerHTML = '<div class="diagram-loading">正在渲染图表...</div>';
+
+          // 渲染图表
+          const { svg } = await mermaid.render(id, code);
+          element.innerHTML = svg;
+
+          console.log(`✅ 图表 ${i + 1} 渲染成功`);
+        } catch (error) {
+          console.error(`❌ 图表 ${i + 1} 渲染失败:`, error);
+          element.innerHTML = `
+                        <div class="diagram-error">
+                            <strong>图表渲染失败</strong><br>
+                            ${error.message || '未知错误'}
+                        </div>
+                    `;
+        }
+      }
+    }
+
+    // 页面加载完成后渲染
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 开始渲染图表...');
+      renderDiagrams();
+    });
+
+    // 代码高亮
+    document.addEventListener('DOMContentLoaded', () => {
+      Prism.highlightAll();
+    });
+  </script>
+</body>
+
+</html>

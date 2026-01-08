@@ -19,14 +19,17 @@ from app.users.model import User
 from app.users.schema import TokenPayload
 from fastapi import Depends, Path
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 
 # ========================================
 # OAuth2 密码模式（用于获取 token）
 # ========================================
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/users/login")
+# auto_error=False 允许在没有 token 时返回 None 而非抛出 401 异常
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_PREFIX}/users/login", auto_error=False
+)
 
 
 # ========================================
@@ -35,7 +38,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/users/logi
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: Annotated[str | None, Depends(oauth2_scheme)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> User:
     """
@@ -51,14 +54,15 @@ async def get_current_user(
     Raises:
         InvalidCredentialsError: 如果 token 无效或用户不存在
     """
+    # 🛡️ 防御性检查：如果 token 是 None，说明没有提供认证
+    if token is None:
+        raise InvalidCredentialsError("Authentication required")
 
     try:
         # 解码 JWT token
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
-        if user_id is None:
-            logger.warning(f"JWT token missing user ID: token={token[:20]}...")
-            raise InvalidCredentialsError("Invalid token: missing user ID")
+
         token_data = TokenPayload(sub=user_id)
     except jwt.ExpiredSignatureError:
         logger.warning(f"JWT token expired: token={token[:20]}...")
@@ -111,6 +115,41 @@ async def get_current_active_user(
         )
         raise InactiveUserError(f"User account '{current_user.username}' is inactive")
     return current_user
+
+
+async def get_optional_current_user(
+    token: Annotated[str | None, Depends(oauth2_scheme)] = None,
+    session: Annotated[AsyncSession, Depends(get_async_session)] = None,
+) -> User | None:
+    """
+    获取可选的当前用户（用于公开接口的权限控制）
+
+    与 get_current_user 的区别：
+    - 如果没有提供 token，返回 None（不抛异常）
+    - 如果提供了 token 但无效，仍然抛异常
+
+    适用场景：
+    - 已发布文章：不需要登录即可访问
+    - 草稿文章：需要登录且是作者或超管才能访问
+
+    Args:
+        token: JWT token（可选）
+        session: 数据库会话
+
+    Returns:
+        当前用户对象或 None
+
+    Raises:
+        InvalidCredentialsError: 如果提供了 token 但无效
+    """
+    # 如果没有 token，直接返回 None（游客访问）
+    if token is None:
+        logger.debug("No token provided, treating as guest access")
+        return None
+
+    # 如果有 token，则复用 get_current_user 的验证逻辑
+    user = await get_current_user(token, session)
+    return user
 
 
 async def get_current_adminuser(

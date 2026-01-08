@@ -12,7 +12,7 @@ from app.core.security import get_password_hash, verify_password
 from app.users.model import User, UserRole
 from app.users.schema import UserCreate, UserUpdate
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 

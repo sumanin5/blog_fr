@@ -8,11 +8,11 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-from app.posts.model import Category, Post, PostType, Tag
-from fastapi_pagination import Page
+from app.posts.model import Category, Post, PostType, PostVersion, Tag
+from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import selectinload
-from sqlmodel import and_, select
+from sqlmodel import and_, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -23,9 +23,11 @@ logger = logging.getLogger(__name__)
 # ========================================
 
 
-async def paginate_query(session: AsyncSession, query) -> Page:
+async def paginate_query(
+    session: AsyncSession, query: select, params: Params = None
+) -> Page:
     """通用分页查询"""
-    return await paginate(session, query)
+    return await paginate(session, query, params)
 
 
 # ========================================
@@ -43,10 +45,11 @@ async def get_post_by_id(session: AsyncSession, post_id: UUID) -> Optional[Post]
             selectinload(Post.author),
             selectinload(Post.tags),
             selectinload(Post.cover_media),
+            selectinload(Post.versions),  # 预加载 versions
         )
     )
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    result = await session.exec(stmt)
+    return result.one_or_none()
 
 
 async def get_post_by_slug(session: AsyncSession, slug: str) -> Optional[Post]:
@@ -59,10 +62,11 @@ async def get_post_by_slug(session: AsyncSession, slug: str) -> Optional[Post]:
             selectinload(Post.author),
             selectinload(Post.tags),
             selectinload(Post.cover_media),
+            selectinload(Post.versions),  # 预加载 versions
         )
     )
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    result = await session.exec(stmt)
+    return result.one_or_none()
 
 
 # 删除 get_posts_paginated，改用通用的 paginate_query
@@ -74,7 +78,7 @@ async def increment_view_count(session: AsyncSession, post_id: UUID) -> None:
     from sqlalchemy import update
 
     stmt = update(Post).where(Post.id == post_id).values(view_count=Post.view_count + 1)
-    await session.execute(stmt)
+    await session.exec(stmt)
     await session.commit()
 
 
@@ -95,8 +99,8 @@ async def get_category_by_slug_and_type(
         .where(and_(Category.slug == slug, Category.post_type == post_type))
         .options(selectinload(Category.icon))
     )
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    result = await session.exec(stmt)
+    return result.one_or_none()
 
 
 async def get_category_by_id(
@@ -107,8 +111,46 @@ async def get_category_by_id(
     if post_type:
         stmt = stmt.where(Category.post_type == post_type)
 
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    result = await session.exec(stmt)
+    return result.one_or_none()
+
+
+async def get_category_by_slug(
+    session: AsyncSession, slug: str, post_type: Optional[PostType] = None
+) -> Optional[Category]:
+    """根据 Slug 获取分类（用于检查 slug 冲突）"""
+    stmt = select(Category).where(Category.slug == slug)
+    if post_type:
+        stmt = stmt.where(Category.post_type == post_type)
+
+    result = await session.exec(stmt)
+    return result.one_or_none()
+
+
+async def create_category(session: AsyncSession, category: Category) -> Category:
+    """创建分类"""
+    session.add(category)
+    await session.flush()
+    await session.refresh(category)
+    return category
+
+
+async def update_category(
+    session: AsyncSession, category: Category, update_data: dict
+) -> Category:
+    """更新分类"""
+    for field, value in update_data.items():
+        setattr(category, field, value)
+    session.add(category)
+    await session.flush()
+    await session.refresh(category)
+    return category
+
+
+async def delete_category(session: AsyncSession, category: Category) -> None:
+    """删除分类"""
+    await session.delete(category)
+    await session.flush()
 
 
 # ========================================
@@ -121,18 +163,106 @@ async def get_category_by_id(
 async def get_tag_by_slug(session: AsyncSession, slug: str) -> Optional[Tag]:
     """根据 Slug 获取标签"""
     stmt = select(Tag).where(Tag.slug == slug)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    result = await session.exec(stmt)
+    return result.one_or_none()
+
+
+async def get_tag_by_id(session: AsyncSession, tag_id: UUID) -> Optional[Tag]:
+    """根据 ID 获取标签"""
+    stmt = select(Tag).where(Tag.id == tag_id)
+    result = await session.exec(stmt)
+    return result.one_or_none()
 
 
 async def get_or_create_tag(session: AsyncSession, name: str, slug: str) -> Tag:
     """获取或创建标签 (用于同步 MDX 标签)"""
     stmt = select(Tag).where(Tag.name == name)
-    result = await session.execute(stmt)
-    tag = result.scalar_one_or_none()
+    result = await session.exec(stmt)
+    tag = result.one_or_none()
 
     if not tag:
         tag = Tag(name=name, slug=slug)
         session.add(tag)
         await session.flush()  # 获取 ID 但不提交事务
     return tag
+
+
+async def get_orphaned_tags(session: AsyncSession) -> list[Tag]:
+    """获取孤立标签（没有任何文章关联）"""
+    from app.posts.model import PostTagLink
+    from sqlalchemy import not_
+
+    # 查找不在 PostTagLink 中的标签
+    stmt = (
+        select(Tag)
+        .where(not_(Tag.id.in_(select(PostTagLink.tag_id))))
+        .order_by(Tag.name)
+    )
+    result = await session.exec(stmt)
+    return list(result.all())
+
+
+async def update_tag(session: AsyncSession, tag: Tag, update_data: dict) -> Tag:
+    """更新标签"""
+    for field, value in update_data.items():
+        setattr(tag, field, value)
+    session.add(tag)
+    await session.flush()
+    await session.refresh(tag)
+    return tag
+
+
+async def delete_tag(session: AsyncSession, tag: Tag) -> None:
+    """删除标签"""
+    await session.delete(tag)
+    await session.flush()
+
+
+async def merge_tags(
+    session: AsyncSession, source_tag_id: UUID, target_tag_id: UUID
+) -> Tag:
+    """合并标签：将 source_tag 的所有文章关联转移到 target_tag，然后删除 source_tag"""
+    from app.posts.model import PostTagLink
+    from sqlalchemy import delete, update
+
+    # 1. 处理冲突：如果文章已经有了 target_tag，直接删除 source_tag 的关联
+    # 避免 UPDATE 时产生 (post_id, target_tag_id) 的重复键
+    stmt_conflict = (
+        delete(PostTagLink)
+        .where(PostTagLink.tag_id == source_tag_id)
+        .where(
+            PostTagLink.post_id.in_(
+                select(PostTagLink.post_id).where(PostTagLink.tag_id == target_tag_id)
+            )
+        )
+    )
+    await session.exec(stmt_conflict)
+
+    # 2. 更新剩余的关联：source_tag → target_tag
+    stmt = (
+        update(PostTagLink)
+        .where(PostTagLink.tag_id == source_tag_id)
+        .values(tag_id=target_tag_id)
+    )
+    await session.exec(stmt)
+
+    # 删除源标签
+    source_tag = await get_tag_by_id(session, source_tag_id)
+    if source_tag:
+        await session.delete(source_tag)
+
+    # 返回目标标签
+    target_tag = await get_tag_by_id(session, target_tag_id)
+    await session.flush()
+    return target_tag
+
+
+# 获取最大版本号
+# crud.py - 纯数据库操作
+async def get_max_post_version(session, post_id: UUID) -> int:
+    """获取最大版本号"""
+    stmt = select(func.max(PostVersion.version_num)).where(
+        PostVersion.post_id == post_id
+    )
+    result = await session.exec(stmt)
+    return result.one() or 0

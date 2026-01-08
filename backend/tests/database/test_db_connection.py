@@ -1,8 +1,8 @@
 import pytest
 from app.core.db import async_engine, sync_engine
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 @pytest.mark.unit

@@ -9,7 +9,7 @@ from app.core.db import get_async_session
 from app.core.exceptions import InsufficientPermissionsError
 from app.posts import crud
 from app.posts.exceptions import PostNotFoundError
-from app.posts.model import Post, PostType
+from app.posts.model import Post, PostStatus, PostType
 from app.users.dependencies import get_current_active_user
 from app.users.model import User
 from fastapi import Depends, Query
@@ -52,6 +52,7 @@ class PostFilterParams:
     def __init__(
         self,
         post_type: Optional[PostType] = None,
+        status: Optional[PostStatus] = Query(None, description="文章状态"),
         category_id: Optional[UUID] = None,
         tag_id: Optional[UUID] = None,
         author_id: Optional[UUID] = None,
@@ -61,6 +62,7 @@ class PostFilterParams:
         offset: int = Query(0, ge=0),
     ):
         self.post_type = post_type
+        self.status = status
         self.category_id = category_id
         self.tag_id = tag_id
         self.author_id = author_id

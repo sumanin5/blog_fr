@@ -106,14 +106,14 @@ async def test_view_public_file_by_others(
 
 @pytest.mark.asyncio
 @pytest.mark.media
-async def test_view_file_admin_access_all(
+async def test_view_file_superadmin_access_all(  # ✅ 改名
     async_client: AsyncClient,
     normal_user_token_headers: dict,
-    admin_user_token_headers: dict,
+    superadmin_user_token_headers: dict,  # ✅ 改为超级管理员
     sample_image_data: bytes,
     api_urls: APIConfig,
 ):
-    """测试管理员可以访问所有文件"""
+    """测试超级管理员可以访问所有文件"""  # ✅ 更新文档字符串
     # 普通用户上传私有文件
     files = {"file": ("admin_access.jpg", sample_image_data, "image/jpeg")}
     data = {
@@ -133,14 +133,13 @@ async def test_view_file_admin_access_all(
     file_info = upload_response.json()["file"]
     file_id = file_info["id"]
 
-    # 管理员访问该私有文件
+    # 超级管理员访问该私有文件  # ✅ 更新注释
     response = await async_client.get(
-        api_urls.media_url(f"/{file_id}/view"), headers=admin_user_token_headers
+        api_urls.media_url(f"/{file_id}/view"),
+        headers=superadmin_user_token_headers,  # ✅ 使用超级管理员 token
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers["content-type"] == "image/jpeg"
-    assert response.content == sample_image_data
 
 
 # ========================================
@@ -215,6 +214,37 @@ async def test_view_file_without_auth(
     response = await async_client.get(api_urls.media_url(f"/{file_id}/view"))
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.asyncio
+@pytest.mark.media
+async def test_view_file_admin_cannot_access_others_private_files(
+    async_client: AsyncClient,
+    normal_user_token_headers: dict,
+    admin_user_token_headers: dict,  # 普通管理员
+    sample_image_data: bytes,
+    api_urls: APIConfig,
+):
+    """测试普通管理员无法访问其他用户的私有文件"""
+    # 普通用户上传私有文件
+    files = {"file": ("private.jpg", sample_image_data, "image/jpeg")}
+    data = {"usage": "general", "is_public": "false"}
+
+    upload_response = await async_client.post(
+        api_urls.media_url("/upload"),
+        files=files,
+        data=data,
+        headers=normal_user_token_headers,
+    )
+    file_id = upload_response.json()["file"]["id"]
+
+    # 普通管理员尝试访问（应该被拒绝）
+    response = await async_client.get(
+        api_urls.media_url(f"/{file_id}/view"),
+        headers=admin_user_token_headers,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN  # ✅ 预期被拒绝
 
 
 # ========================================

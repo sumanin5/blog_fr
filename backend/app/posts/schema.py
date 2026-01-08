@@ -5,11 +5,15 @@
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from app.posts.model import PostStatus, PostType
 from pydantic import BaseModel, ConfigDict, Field
+
+# 使用 TYPE_CHECKING 避免循环导入
+if TYPE_CHECKING:
+    from app.users.schema import UserResponse
 
 # ========================================
 # 标签 (Tag) Schemas
@@ -37,6 +41,13 @@ class TagUpdate(BaseModel):
 class TagResponse(TagBase):
     id: UUID
     model_config = ConfigDict(from_attributes=True)
+
+
+class TagMergeRequest(BaseModel):
+    """标签合并请求"""
+
+    source_tag_id: UUID
+    target_tag_id: UUID
 
 
 # ========================================
@@ -84,7 +95,7 @@ class CategoryResponse(CategoryBase):
 
 class PostBase(BaseModel):
     title: str = Field(..., max_length=200)
-    slug: Optional[str] = None  # 如果不填，后端自动根据标题生成
+    slug: Optional[str] = None  # 如果不填，后端自动生成 base-slug-xxxxxx 格式
     post_type: PostType = PostType.ARTICLE
     status: PostStatus = PostStatus.DRAFT
     category_id: Optional[UUID] = None
@@ -100,6 +111,8 @@ class PostBase(BaseModel):
 
 class PostCreate(PostBase):
     content_mdx: str = Field(..., description="原始 MDX 内容")
+    excerpt: Optional[str] = None  # 允许用户手动指定摘要
+    tags: Optional[List[str]] = None  # 允许用户通过 API 传入标签名称列表
     git_hash: Optional[str] = None
     source_path: Optional[str] = None
     commit_message: Optional[str] = None
@@ -115,6 +128,8 @@ class PostUpdate(BaseModel):
     is_featured: Optional[bool] = None
     allow_comments: Optional[bool] = None
     content_mdx: Optional[str] = None
+    excerpt: Optional[str] = None  # 允许用户更新摘要
+    tags: Optional[List[str]] = None  # 允许用户更新标签
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
     meta_keywords: Optional[str] = None
@@ -153,7 +168,8 @@ class PostShortResponse(PostBase):
     # 关联 ID
     author_id: UUID
 
-    # 精简关联对象 (由 Service 层决定是否填充)
+    # 关联对象（需要预加载）
+    author: Optional["UserResponse"] = None  # 作者信息（使用字符串引用避免循环导入）
     category: Optional[CategoryResponse] = None
     tags: List[TagResponse] = []
 
@@ -165,7 +181,7 @@ class PostDetailResponse(PostShortResponse):
 
     content_mdx: str
     content_html: str
-    toc: dict
+    toc: list  # 目录数组，格式: [{"id": "...", "title": "...", "level": 1}, ...]
 
     # 追踪信息
     git_hash: Optional[str] = None
@@ -182,3 +198,10 @@ class PostListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+# 解析延迟引用（Pydantic v2）
+from app.users.schema import UserResponse
+
+PostShortResponse.model_rebuild()
+PostDetailResponse.model_rebuild()

@@ -25,7 +25,27 @@ os.environ["ENVIRONMENT"] = (
 
 from app.core.base import Base
 from app.core.db import async_engine
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from fastapi_pagination import add_pagination
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+
+# 添加分页支持
+@pytest.fixture(scope="session", autouse=True)
+def setup_pagination():
+    """初始化 fastapi-pagination（全局配置）
+
+    目的：
+    - Posts 模块使用 fastapi-pagination 进行分页
+    - 测试环境需要初始化分页上下文
+    - 设置为 session 级别，所有测试共享
+    - autouse=True 表示自动执行，无需手动调用
+    """
+    from app.main import app
+
+    add_pagination(app)
+    yield
+
 
 # ============================================================
 # 数据库 Fixtures

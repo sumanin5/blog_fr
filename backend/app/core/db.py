@@ -7,8 +7,9 @@
 from typing import AsyncGenerator
 
 from app.core.config import settings
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import create_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 # ========================================
 # 异步数据库引擎（推荐用于 FastAPI）
@@ -18,10 +19,10 @@ async_engine = create_async_engine(
     echo=settings.database_echo,  # 开发环境显示 SQL，生产环境设为 False
     future=True,
     # 连接池配置（高并发性能优化）
-    pool_size=20,          # 连接池大小（常驻连接数）
-    max_overflow=10,       # 允许超出 pool_size 的额外连接数（总共最多 30 个连接）
-    pool_timeout=30,       # 获取连接的超时时间（秒）
-    pool_recycle=3600,     # 连接回收时间（秒），防止数据库断开长时间不用的连接
+    pool_size=20,  # 连接池大小（常驻连接数）
+    max_overflow=10,  # 允许超出 pool_size 的额外连接数（总共最多 30 个连接）
+    pool_timeout=30,  # 获取连接的超时时间（秒）
+    pool_recycle=3600,  # 连接回收时间（秒），防止数据库断开长时间不用的连接
 )
 
 # 创建异步会话工厂

@@ -19,7 +19,7 @@ from app.users.exceptions import (
 )
 from app.users.model import User, UserRole
 from app.users.schema import TokenResponse, UserCreate, UserRegister, UserUpdate
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 

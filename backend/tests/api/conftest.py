@@ -7,7 +7,7 @@ from app.core.security import get_password_hash
 from app.main import app
 from app.users.model import User, UserRole
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 # ============================================================
 # API URL 配置
@@ -287,6 +287,7 @@ class TestData:
         VALIDATION_ERROR = "VALIDATION_ERROR"
         DATABASE_ERROR = "DATABASE_ERROR"
         INTERNAL_ERROR = "INTERNAL_ERROR"
+        SLUG_CONFLICT = "SLUG_CONFLICT"  # 添加 slug 冲突错误码
 
     # 测试数据常量
     VALID_UPDATE_DATA = {

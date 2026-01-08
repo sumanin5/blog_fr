@@ -17,7 +17,7 @@ from app.media.schema import MediaFileQuery
 from app.users.dependencies import get_current_active_user
 from app.users.model import User
 from fastapi import Depends, File, Path, Query, UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 

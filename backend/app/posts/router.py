@@ -13,7 +13,7 @@
 - 前端可动态构建菜单
 """
 
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 from uuid import UUID
 
 from app.core.db import get_async_session
@@ -21,17 +21,25 @@ from app.posts import crud, service, utils
 from app.posts.dependencies import PostFilterParams
 from app.posts.model import PostStatus, PostType
 from app.posts.schema import (
+    CategoryCreate,
     CategoryResponse,
+    CategoryUpdate,
     PostCreate,
     PostDetailResponse,
     PostShortResponse,
     PostUpdate,
+    TagMergeRequest,
     TagResponse,
+    TagUpdate,
 )
-from app.users.dependencies import get_current_active_user
+from app.users.dependencies import (
+    get_current_active_user,
+    get_current_superuser,
+    get_optional_current_user,
+)
 from app.users.model import User
 from fastapi import APIRouter, Depends, Path, status
-from fastapi_pagination import Page
+from fastapi_pagination import Page, Params
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 router = APIRouter(prefix="/posts")
@@ -55,6 +63,38 @@ async def get_post_types():
     return [{"value": pt.value, "label": pt.value.title()} for pt in PostType]
 
 
+@router.get(
+    "/me",
+    response_model=Page[PostShortResponse],
+    summary="获取当前用户的文章列表",
+)
+async def get_my_posts(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    filters: Annotated[PostFilterParams, Depends()],
+    params: Annotated[Params, Depends()],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """获取当前用户的所有文章（包括草稿）
+
+    示例：
+    - GET /posts/me - 我的所有文章
+    - GET /posts/me?status=draft - 我的草稿
+    - GET /posts/me?status=published - 我的已发布文章
+
+    注意：需要登录才能访问
+    """
+    query = utils.build_posts_query(
+        post_type=filters.post_type,  # 可以筛选类型
+        status=filters.status,  # 可以筛选状态
+        author_id=current_user.id,  # 只显示当前用户的
+        category_id=filters.category_id,
+        tag_id=filters.tag_id,
+        is_featured=filters.is_featured,
+        search_query=filters.search,
+    )
+    return await crud.paginate_query(session, query, params)
+
+
 # ========================================
 # 动态板块接口（公开）
 # ========================================
@@ -68,6 +108,7 @@ async def get_post_types():
 async def list_posts_by_type(
     post_type: Annotated[PostType, Path(description="板块类型")],
     filters: Annotated[PostFilterParams, Depends()],
+    params: Annotated[Params, Depends()],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """获取指定板块的文章列表（自动分页）
@@ -75,6 +116,7 @@ async def list_posts_by_type(
     示例：
     - GET /posts/article?page=1&size=20 - 文章列表
     - GET /posts/idea?page=1&size=20 - 想法列表
+    - GET /posts/article?status=draft - 草稿列表（需要登录）
     """
     query = utils.build_posts_query(
         post_type=post_type,
@@ -83,9 +125,11 @@ async def list_posts_by_type(
         author_id=filters.author_id,
         is_featured=filters.is_featured,
         search_query=filters.search,
-        status=PostStatus.PUBLISHED,
+        status=filters.status
+        if filters.status
+        else PostStatus.PUBLISHED,  # 默认只显示已发布
     )
-    return await crud.paginate_query(session, query)
+    return await crud.paginate_query(session, query, params)
 
 
 @router.get(
@@ -127,27 +171,64 @@ async def list_tags_by_type(
 
 
 @router.get(
-    "/{post_type}/{slug}", response_model=PostDetailResponse, summary="获取文章详情"
+    "/{post_type}/{post_id:uuid}",
+    response_model=PostDetailResponse,
+    summary="通过ID获取文章详情",
 )
-async def get_post_detail_by_type(
+async def get_post_by_id(
+    post_type: Annotated[PostType, Path(description="板块类型")],
+    post_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    current_user: Annotated[Optional[User], Depends(get_optional_current_user)] = None,
+):
+    """根据 UUID 获取文章详情并增加浏览量
+
+    权限规则：
+    - 已发布文章：任何人可访问（包括未登录）
+    - 草稿文章：只有作者或超级管理员可访问
+
+    示例：
+    - GET /posts/article/{uuid}
+    - GET /posts/idea/{uuid}
+
+    注意：使用 :uuid 路径转换器确保与 slug 路由不冲突
+    """
+    post = await service.get_post_detail(session, post_id, post_type, current_user)
+    return PostDetailResponse.model_validate(post)
+
+
+@router.get(
+    "/{post_type}/slug/{slug}",
+    response_model=PostDetailResponse,
+    summary="通过Slug获取文章详情",
+)
+async def get_post_by_slug(
     post_type: Annotated[PostType, Path(description="板块类型")],
     slug: str,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    current_user: Annotated[Optional[User], Depends(get_optional_current_user)] = None,
 ):
-    """根据 Slug 获取文章详情并增加浏览量（公开接口）
+    """根据 Slug 获取文章详情并增加浏览量
+
+    权限规则：
+    - 已发布文章：任何人可访问（包括未登录）
+    - 草稿文章：只有作者或超级管理员可访问
 
     示例：
-    - GET /posts/article/my-post-slug
-    - GET /posts/idea/my-idea-slug
+    - GET /posts/article/slug/my-post-slug
+    - GET /posts/idea/slug/my-idea-slug
+
+    注意：使用 /slug/ 前缀明确区分 UUID 和 Slug 路由
     """
     from app.posts.exceptions import PostNotFoundError
 
+    # 先通过 slug 查找文章 ID
     post = await crud.get_post_by_slug(session, slug)
     if not post or post.post_type != post_type:
         raise PostNotFoundError()
 
-    # 异步增加浏览量
-    await crud.increment_view_count(session, post.id)
+    # 复用 service 层的权限检查逻辑
+    post = await service.get_post_detail(session, post.id, post_type, current_user)
     return PostDetailResponse.model_validate(post)
 
 
@@ -215,3 +296,169 @@ async def delete_post_by_type(
     """
     await service.delete_post(session, post_id, current_user)
     return None
+
+
+# ========================================
+# 分类管理接口 (需要超级管理员)
+# ========================================
+
+
+@router.post(
+    "/{post_type}/categories",
+    response_model=CategoryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建分类",
+)
+async def create_category_by_type(
+    post_type: Annotated[PostType, Path(description="板块类型")],
+    category_in: CategoryCreate,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """创建新分类（仅超级管理员）
+
+    示例：
+    - POST /posts/article/categories - 创建文章分类
+    - POST /posts/idea/categories - 创建想法分类
+    """
+    # 确保 post_type 匹配
+    category_in.post_type = post_type
+    return await service.create_category(session, category_in, current_user)
+
+
+@router.patch(
+    "/{post_type}/categories/{category_id}",
+    response_model=CategoryResponse,
+    summary="更新分类",
+)
+async def update_category_by_type(
+    post_type: Annotated[PostType, Path(description="板块类型")],
+    category_id: UUID,
+    category_in: CategoryUpdate,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """更新分类（仅超级管理员）
+
+    示例：
+    - PATCH /posts/article/categories/{category_id}
+    - PATCH /posts/idea/categories/{category_id}
+    """
+    return await service.update_category(
+        session, category_id, category_in, current_user, post_type
+    )
+
+
+@router.delete(
+    "/{post_type}/categories/{category_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除分类",
+)
+async def delete_category_by_type(
+    post_type: Annotated[PostType, Path(description="板块类型")],
+    category_id: UUID,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """删除分类（仅超级管理员）
+
+    示例：
+    - DELETE /posts/article/categories/{category_id}
+    - DELETE /posts/idea/categories/{category_id}
+    """
+    await service.delete_category(session, category_id, current_user, post_type)
+    return None
+
+
+# ========================================
+# 标签管理接口 (需要超级管理员)
+# ========================================
+
+
+@router.patch("/admin/tags/{tag_id}", response_model=TagResponse, summary="更新标签")
+async def update_tag(
+    tag_id: UUID,
+    tag_in: TagUpdate,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """更新标签（仅超级管理员）
+
+    用于统一标签命名、更新颜色、描述等
+
+    示例：
+    - PATCH /api/v1/posts/admin/tags/{tag_id}
+
+    请求体：
+    {
+        "name": "React.js",
+        "color": "#61DAFB",
+        "description": "React 前端框架"
+    }
+    """
+    return await service.update_tag(session, tag_id, tag_in, current_user)
+
+
+@router.delete(
+    "/admin/tags/orphaned",
+    status_code=status.HTTP_200_OK,
+    summary="清理孤立标签",
+)
+async def delete_orphaned_tags(
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """删除孤立标签（仅超级管理员）
+
+    删除所有没有任何文章关联的标签
+
+    示例：
+    - DELETE /api/v1/posts/admin/tags/orphaned
+
+    响应示例：
+    {
+        "deleted_count": 5,
+        "deleted_tags": ["old-tag-1", "old-tag-2", ...]
+    }
+    """
+    deleted_count, deleted_names = await service.delete_orphaned_tags(
+        session, current_user
+    )
+    return {
+        "deleted_count": deleted_count,
+        "deleted_tags": deleted_names,
+        "message": f"已删除 {deleted_count} 个孤立标签",
+    }
+
+
+@router.post(
+    "/admin/tags/merge",
+    response_model=TagResponse,
+    summary="合并标签",
+)
+async def merge_tags(
+    request: TagMergeRequest,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """合并标签（仅超级管理员）
+
+    将源标签的所有文章关联转移到目标标签，然后删除源标签
+    用于合并重复标签（如 "React.js" 和 "ReactJS"）
+
+    示例：
+    - POST /api/v1/posts/admin/tags/merge
+
+    请求体：
+    {
+        "source_tag_id": "...",
+        "target_tag_id": "..."
+    }
+
+    注意：
+    - 源标签将被删除
+    - 所有原本使用源标签的文章将使用目标标签
+    """
+    return await service.merge_tags(
+        session, request.source_tag_id, request.target_tag_id, current_user
+    )
