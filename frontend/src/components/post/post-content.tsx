@@ -1,152 +1,135 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useTheme } from "next-themes";
+import parse, {
+  Element,
+  HTMLReactParserOptions,
+  Text,
+  domToReact,
+  DOMNode,
+} from "html-react-parser";
+import { MermaidDiagram } from "@/components/mdx/mermaid-diagram";
+import { CodeBlock } from "@/components/mdx/code-block";
+import { KatexMath } from "@/components/mdx/katex-math";
+import React from "react";
 
+interface SimpleNode {
+  type: string;
+  data?: string;
+  children?: SimpleNode[];
+}
+
+// --- Main Parser Logic ---
 interface PostContentProps {
   html: string;
   className?: string;
 }
 
+// 在现有的 import 下面添加这个简单的 ID 生成函数
+// 注意：这个逻辑需要和您后端生成 TOC ID 的逻辑保持一致
+// 如果后端用的是 python-slugify，前端最好也尽量匹配
+const generateId = (text: string) => {
+  // trying to match backend behavior: remove dots, space to dash
+  return text
+    .toLowerCase()
+    .replace(/\./g, "") // Remove dots
+    .replace(/\s+/g, "-"); // Space to dash
+};
+
 export function PostContent({ html, className = "" }: PostContentProps) {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const { resolvedTheme } = useTheme();
+  const options: HTMLReactParserOptions = {
+    replace: (domNode) => {
+      if (domNode instanceof Element) {
+        // A. Handle Mermaid: <div class="mermaid">...</div>
+        if (
+          domNode.attribs &&
+          domNode.attribs.class &&
+          domNode.attribs.class.includes("mermaid")
+        ) {
+          // 安全获取文本内容
+          const firstChild = domNode.children[0];
+          const code =
+            firstChild && firstChild.type === "text"
+              ? (firstChild as Text).data
+              : "";
+          return <MermaidDiagram code={code} />;
+        }
 
-  useEffect(() => {
-    let isCancelled = false; // 用于标记当前 Effect 是否已失效
+        // B. Handle Code Blocks: <pre><code class="...">...</code></pre>
+        // 注意：html-react-parser 遍历是深度的，如果只匹配 code 可能会丢失 pre 的上下文
+        // 这里我们拦截 pre，如果有 code 子元素，就接管
+        if (domNode.name === "pre") {
+          const codeNode = domNode.children.find(
+            (child): child is Element =>
+              child instanceof Element && child.name === "code"
+          );
 
-    // 使用防抖 (Debounce) 解决 "系统主题" 模式下的快速重渲染竞态问题
-    const timer = setTimeout(() => {
-      // 如果在等待期间 Effect 被清理了，根据闭包特性，isCancelled 可能会被 cleanup 置为 true
-      // 但更安全的是在 cleanup 里清除 timer。这里双重保险。
-      if (isCancelled) return;
-
-      const initContent = async () => {
-        // 任何一步 await 之后都要检查 isCancelled，防止在组件卸载后继续执行操作
-        if (!contentRef.current || isCancelled) return;
-
-        // 1. KaTeX - Render math formulas
-        const mathElements = contentRef.current.querySelectorAll(
-          ".math-inline, .math-block"
-        );
-        if (mathElements.length > 0) {
-          try {
-            const katex = (await import("katex")).default;
-            if (isCancelled) return; // Async guard
-
-            mathElements.forEach((el) => {
-              if (el.querySelector(".katex")) return;
-              const latex = el.textContent || "";
-              const isBlock = el.classList.contains("math-block");
-              try {
-                katex.render(latex, el as HTMLElement, {
-                  displayMode: isBlock,
-                  throwOnError: false,
-                });
-              } catch (e) {
-                console.error("KaTeX render error:", e);
+          if (codeNode) {
+            const codeClass = codeNode.attribs.class || "";
+            // 递归获取所有文本子节点（处理可能存在的嵌套）
+            let codeText = "";
+            const extractText = (node: SimpleNode) => {
+              if (node.type === "text") {
+                codeText += node.data || "";
+              } else if (node.children) {
+                node.children.forEach(extractText);
               }
-            });
-          } catch (e) {
-            console.error("KaTeX load error:", e);
+            };
+            // Cast strictly enough to work down the tree
+            (codeNode.children as any[]).forEach(extractText);
+
+            return <CodeBlock className={codeClass} code={codeText} />;
           }
         }
 
-        // 2. Mermaid - Render diagrams
-        // 这一步最容易受竞态影响，必须严格检查
-        if (isCancelled) return;
-        const mermaidElements = contentRef.current.querySelectorAll(".mermaid");
-        if (mermaidElements.length > 0) {
-          try {
-            const mermaid = (await import("mermaid")).default;
-            if (isCancelled) return; // Async guard
+        // C. Handle KaTeX: .math-inline or .math-block
+        if (domNode.attribs && domNode.attribs.class) {
+          const isInline = domNode.attribs.class.includes("math-inline");
+          const isBlock = domNode.attribs.class.includes("math-block");
 
-            mermaid.initialize({
-              startOnLoad: false,
-              theme: resolvedTheme === "dark" ? "dark" : "default",
-              themeVariables: {
-                darkMode: resolvedTheme === "dark",
-              },
-              suppressErrorRendering: true, // 恢复错误抑制，避免页面出现红框干扰用户体验
-            });
+          if (isInline || isBlock) {
+            const firstChild = domNode.children[0];
+            const latex =
+              firstChild && firstChild.type === "text"
+                ? (firstChild as Text).data
+                : "";
+            return <KatexMath latex={latex} isBlock={isBlock} />;
+          }
+        }
+        // ... (在 Meramid, CodeBlock, Katex 之后)
 
-            const nodesToRender: HTMLElement[] = [];
-
-            mermaidElements.forEach((el) => {
-              const element = el as HTMLElement;
-
-              // [核心修复] 源码一致性还原
-              // 获取或备份原始代码
-              let originalCode = element.getAttribute("data-original-code");
-              if (!originalCode) {
-                if (element.textContent) {
-                  originalCode = element.textContent;
-                  element.setAttribute("data-original-code", originalCode);
-                }
-              }
-
-              // 强制用原始代码覆盖内容 (这会清除任何 SVG 或 插件注入的 HTML)
-              if (originalCode) {
-                element.textContent = originalCode;
-              }
-              element.removeAttribute("data-processed");
-              nodesToRender.push(element);
-            });
-
-            if (nodesToRender.length > 0) {
-              await mermaid.run({
-                nodes: nodesToRender,
-              });
+        // D. 处理标题：自动添加ID (h1-h6)
+        if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(domNode.name)) {
+          // --- 修改开始：更强健的递归提取 ---
+          let headerText = "";
+          const extractTextRecursive = (node: any) => {
+            if (node.type === "text") {
+              headerText += node.data || "";
+            } else if (node.children) {
+              node.children.forEach(extractTextRecursive);
             }
-          } catch (e) {
-            // 即便出错，也只在开发环境打印，且只打印非空错误
-            if (process.env.NODE_ENV === "development" && !isCancelled) {
-              const err = e as { message?: string; str?: string };
-              // 进一步减少噪音：这里的错误通常是 "element not found" (因为被卸载) 或者解析错误
-              // 如果是解析错误，suppressErrorRendering 已经处理了 UI
-              // 我们只 log 极其严重的
-            }
+          };
+
+          // 对所有子节点通过递归收集文本
+          if (domNode.children) {
+            domNode.children.forEach(extractTextRecursive);
           }
+          // --- 修改结束 ---
+
+          // 2. 如果标签本身还没有 ID，我们就根据文本生成一个
+          const id = domNode.attribs.id || generateId(headerText);
+          // 3. 构造新的带有 ID 的 React 元素
+          return React.createElement(
+            domNode.name,
+            { id, className: "scroll-mt-24" },
+            domToReact(domNode.children as DOMNode[], options)
+          );
         }
-
-        // 3. Highlight.js - Syntax highlighting
-        if (isCancelled) return;
-        const codeBlocks = contentRef.current.querySelectorAll(
-          "pre code[class*='language-']"
-        );
-        if (codeBlocks.length > 0) {
-          try {
-            const hljs = (await import("highlight.js")).default;
-            if (isCancelled) return; // Async guard
-
-            codeBlocks.forEach((block) => {
-              const element = block as HTMLElement;
-              // 增强的高亮检查：必须同时拥有类名和 span 标签
-              const hasHighlightTags = element.querySelector("span") !== null;
-              if (element.classList.contains("hljs") && hasHighlightTags)
-                return;
-
-              element.classList.remove("hljs");
-              hljs.highlightElement(element);
-            });
-          } catch (e) {
-            console.error("Highlight load error:", e);
-          }
-        }
-      };
-
-      initContent();
-    }, 100);
-
-    return () => {
-      isCancelled = true; // 标记该次 Effect 已作废
-      clearTimeout(timer);
-    };
-  }, [html, resolvedTheme]);
+      }
+    },
+  };
 
   return (
     <article
-      ref={contentRef}
       className={`
         prose prose-lg dark:prose-invert max-w-none
         prose-headings:scroll-mt-20
@@ -156,7 +139,8 @@ export function PostContent({ html, className = "" }: PostContentProps) {
         prose-img:rounded-lg prose-img:shadow-md
         ${className}
       `}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    >
+      {parse(html, options)}
+    </article>
   );
 }

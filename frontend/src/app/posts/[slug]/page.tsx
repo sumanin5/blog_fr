@@ -5,8 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getPostBySlug } from "@/shared/api";
 import { PostContent } from "@/components/post/post-content";
 import { PostMeta } from "@/components/post/post-meta";
-import { PostToc } from "@/components/post/post-toc";
+import { TableOfContents } from "@/components/mdx/table-of-contents";
 
+// This interface from the API might differ slightly from the component's expected type
+// but we map it below anyway.
 interface TocItemRaw {
   id: string;
   title: string;
@@ -67,7 +69,22 @@ export default function PostPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mx-auto max-w-4xl">
+      {/*
+        浮动目录按钮
+        它有 fixed 定位，放在哪里都不会影响布局文档流，
+        但放在这里逻辑上比较清晰
+      */}
+      {postData.toc && postData.toc.length > 0 && (
+        <TableOfContents
+          toc={(postData.toc as TocItemRaw[]).map((item) => ({
+            id: item.id,
+            title: item.title,
+            level: item.level,
+          }))}
+        />
+      )}
+
+      <div className="mx-auto max-w-6xl">
         {/* 文章标题 */}
         <h1 className="mb-6 text-4xl font-bold">{postData.title}</h1>
 
@@ -100,24 +117,12 @@ export default function PostPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_250px]">
-          {/* 文章内容 */}
+        {/*
+           文章内容
+           移除了右侧侧边栏，现在的布局是单栏居中，更适合长文阅读
+        */}
+        <div className="w-full min-w-0">
           <PostContent html={postData.content_html} />
-
-          {/* 侧边栏：目录 */}
-          {postData.toc && postData.toc.length > 0 && (
-            <aside className="hidden lg:block">
-              <div className="sticky top-20">
-                <PostToc
-                  toc={(postData.toc as TocItemRaw[]).map((item) => ({
-                    id: item.id,
-                    title: item.title,
-                    level: item.level,
-                  }))}
-                />
-              </div>
-            </aside>
-          )}
         </div>
       </div>
     </div>
