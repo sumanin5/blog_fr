@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     """
 
     # 环境配置
-    environment: Literal["local", "production", "test"] = "local"
+    environment: Literal["local", "production", "test", "development"] = "local"
 
     # 安全配置
     SECRET_KEY: str = Field(
@@ -69,8 +69,54 @@ class Settings(BaseSettings):
     )
     BASE_URL: str = Field(default="http://localhost:8000", description="项目基础URL")
 
+    # ==========================================
+    # 监控配置（APM）
+    # ==========================================
+    sentry_dsn: str = Field(default="", description="Sentry DSN（留空则不启用）")
+    sentry_environment: str = Field(
+        default="development", description="Sentry 环境标识"
+    )
+    sentry_traces_sample_rate: float = Field(
+        default=0.1, description="Sentry 追踪采样率"
+    )
+    enable_opentelemetry: bool = Field(
+        default=False, description="是否启用 OpenTelemetry"
+    )
+    otel_exporter_endpoint: str = Field(
+        default="http://localhost:4317", description="OpenTelemetry 导出端点"
+    )
+    slow_request_threshold: float = Field(default=1.0, description="慢请求阈值（秒）")
+
+    # ==========================================
+    # APM 监控配置
+    # ==========================================
+    # Sentry 配置
+    sentry_dsn: str = Field(default="", description="Sentry DSN（留空则不启用）")
+    sentry_environment: str = Field(
+        default="development", description="Sentry 环境标识"
+    )
+    sentry_traces_sample_rate: float = Field(
+        default=0.1, description="Sentry 性能追踪采样率（0.0-1.0）"
+    )
+
+    # OpenTelemetry 配置
+    enable_opentelemetry: bool = Field(
+        default=False, description="是否启用 OpenTelemetry"
+    )
+    otel_exporter_endpoint: str = Field(
+        default="http://localhost:4317", description="OTLP Exporter 端点"
+    )
+
+    # 性能监控配置
+    slow_request_threshold: float = Field(default=1.0, description="慢请求阈值（秒）")
+
     model_config = SettingsConfigDict(
-        env_file="../.env.test" if os.getenv("ENVIRONMENT") == "test" else "../.env",
+        # 优先级：.env.local（本地开发）> .env.test（测试）> .env（Docker）
+        env_file=(
+            "../.env.test"
+            if os.getenv("ENVIRONMENT") == "test"
+            else ("../.env.local" if os.path.exists("../.env.local") else "../.env")
+        ),
         env_ignore_empty=True,
         extra="ignore",
     )

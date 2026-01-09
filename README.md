@@ -4,6 +4,9 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.13%2B-blue)](https://www.python.org/)
 [![Node](https://img.shields.io/badge/Node-20%2B-green)](https://nodejs.org/)
+[![Backend CI](https://github.com/sumanin5/blog_fr/workflows/Backend%20CI/badge.svg)](https://github.com/sumanin5/blog_fr/actions)
+[![Frontend CI](https://github.com/sumanin5/blog_fr/workflows/Frontend%20CI/badge.svg)](https://github.com/sumanin5/blog_fr/actions)
+[![codecov](https://codecov.io/gh/sumanin5/blog_fr/branch/main/graph/badge.svg)](https://codecov.io/gh/sumanin5/blog_fr)
 
 **Blog FR** 是一个基于 **FastAPI** 和 **React 19** 构建的现代全栈博客系统。它集成了高性能后端、动态前端以及丰富的 MDX 渲染能力，旨在提供极致的写作与阅读体验。
 

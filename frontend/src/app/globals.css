@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
+
+/* KaTeX 数学公式样式 */
+@import "katex/dist/katex.min.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -122,4 +126,173 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ============================================
+   MDX 文章内容样式
+   ============================================ */
+
+/* 代码块容器 (pre 标签) */
+.prose pre {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+  background: transparent;
+}
+
+/* 代码内容基础样式 */
+.prose pre code.hljs {
+  display: block;
+  padding: 1rem;
+  white-space: pre;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+/* 代码块样式 - 亮色模式 */
+:root:not(.dark) pre code.hljs {
+  background: #f6f8fa;
+  color: #24292f;
+}
+
+:root:not(.dark) .hljs-comment,
+:root:not(.dark) .hljs-quote {
+  color: #6e7781;
+}
+
+:root:not(.dark) .hljs-keyword,
+:root:not(.dark) .hljs-selector-tag,
+:root:not(.dark) .hljs-type {
+  color: #cf222e;
+}
+
+:root:not(.dark) .hljs-string,
+:root:not(.dark) .hljs-number,
+:root:not(.dark) .hljs-selector-attr,
+:root:not(.dark) .hljs-selector-pseudo,
+:root:not(.dark) .hljs-template-variable,
+:root:not(.dark) .hljs-variable {
+  color: #0a3069;
+}
+
+:root:not(.dark) .hljs-function,
+:root:not(.dark) .hljs-title {
+  color: #8250df;
+}
+
+/* 代码块样式 - 暗色模式 */
+.dark pre code.hljs {
+  background: #0d1117;
+  color: #e6edf3;
+}
+
+.dark .hljs-comment,
+.dark .hljs-quote {
+  color: #8b949e;
+}
+
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-type {
+  color: #ff7b72;
+}
+
+.dark .hljs-string,
+.dark .hljs-number,
+.dark .hljs-selector-attr,
+.dark .hljs-selector-pseudo,
+.dark .hljs-template-variable,
+.dark .hljs-variable {
+  color: #a5d6ff;
+}
+
+.dark .hljs-function,
+.dark .hljs-title {
+  color: #d2a8ff;
+}
+
+/* 修复内联 HTML 样式背景问题 */
+.prose div[style*="background"] {
+  background-color: hsl(var(--muted)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.prose div[style*="padding"] {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Mermaid 图表容器 */
+.prose .diagram-container {
+  display: block;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background: transparent;
+}
+
+.prose .diagram-render {
+  display: block;
+  overflow-x: auto;
+}
+
+.prose .mermaid {
+  display: block;
+  text-align: center;
+  font-family: inherit;
+}
+
+.prose .diagram-source {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.prose .diagram-source summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.prose .diagram-source summary:hover {
+  color: hsl(var(--foreground));
+}
+
+.prose .diagram-source pre {
+  margin-top: 0.5rem;
+  border-radius: 0.375rem;
+  background: hsl(var(--muted));
+  padding: 1rem;
+  font-size: 0.875rem;
+}
+
+/* 数学公式样式 */
+.prose math {
+  display: inline-block;
+  font-family: "Latin Modern Math", "STIX Two Math", "Cambria Math", serif;
+  vertical-align: middle;
+}
+
+.prose .math-block {
+  display: block;
+  margin: 1.5rem 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.prose .math-block math {
+  display: block;
+}
+
+/* 数学公式颜色适配 */
+.dark .katex,
+.dark math {
+  color: hsl(var(--foreground));
+}
+
+:root:not(.dark) .katex,
+:root:not(.dark) math {
+  color: hsl(var(--foreground));
 }

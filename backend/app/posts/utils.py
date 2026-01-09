@@ -1,7 +1,5 @@
 """
-文章处理器工具类
-
-负责 MDX 内容的解析、预处理、HTML 转换、TOC 生成等"脏活累活"
+文章处理器工具类 - 使用 markdown-it-py
 """
 
 import math
@@ -12,9 +10,11 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import frontmatter
-import latex2mathml.converter
-import mistune
 from app.posts.model import Post, PostStatus, PostType, Tag
+from markdown_it import MarkdownIt
+from mdit_py_plugins.deflist import deflist_plugin
+from mdit_py_plugins.footnote import footnote_plugin
+from mdit_py_plugins.tasklists import tasklists_plugin
 from slugify import slugify as python_slugify
 from sqlalchemy import delete
 from sqlalchemy.orm import load_only, selectinload
@@ -23,92 +23,42 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 def generate_slug_with_random_suffix(title: str, random_length: int = 6) -> str:
-    """
-    生成带随机后缀的 slug，格式：base-slug-XXXXXX
-
-    优点：
-    1. 完全避免冲突（36^6 ≈ 2.1亿种组合）
-    2. 无需数据库查询
-    3. 适合作为纯函数进行单元测试
-
-    Args:
-        title: 文章标题或 slug 基础
-        random_length: 随机字符长度（默认6位）
-
-    Returns:
-        格式为 "base-slug-xxxxxx" 的 slug
-
-    Examples:
-        >>> slug = generate_slug_with_random_suffix("Hello World")
-        >>> slug.startswith("hello-world-")  # True
-        >>> len(slug.split("-")[-1]) == 6  # True
-    """
-    # 1. 生成基础 slug
+    """生成带随机后缀的 slug"""
     base_slug = python_slugify(title)
     if not base_slug:
         base_slug = "post"
-
-    # 2. 生成随机后缀 (使用小写字母和数字)
     random_suffix = "".join(
         random.choices(string.ascii_lowercase + string.digits, k=random_length)
     )
-
-    # 3. 组合成最终 slug
     return f"{base_slug}-{random_suffix}"
 
 
 async def sync_post_tags(
     session: AsyncSession, post: Post, tag_names: List[str]
 ) -> None:
-    """同步文章标签：自动创建新标签并关联
-
-    使用底层 SQL 操作避免触发 ORM 懒加载，采用“全删全增”策略保持代码简单。
-
-    Args:
-        session: 数据库会话
-        post: 文章对象（必须已有 ID）
-        tag_names: 标签名称列表
-
-    Raises:
-        ValueError: 如果 post.id 为 None
-
-    Examples:
-        >>> await sync_post_tags(session, post, ["Python", "FastAPI"])
-    """
+    """同步文章标签"""
     from app.posts import crud
     from app.posts.model import PostTagLink
 
     if post.id is None:
         raise ValueError("Post must be persisted (have an ID) before syncing tags")
 
-    # 1. 获取或创建标签
     tag_ids = []
     for name in tag_names:
         tag_slug = python_slugify(name)
         tag = await crud.get_or_create_tag(session, name, tag_slug)
         tag_ids.append(tag.id)
 
-    # 2. 清空现有关联（使用 SQL DELETE）
     stmt = delete(PostTagLink).where(PostTagLink.post_id == post.id)
     await session.exec(stmt)
 
-    # 3. 创建新关联（使用 SQL INSERT）
     for tag_id in tag_ids:
         link = PostTagLink(post_id=post.id, tag_id=tag_id)
         session.add(link)
 
 
 class PostProcessor:
-    """
-    MDX 文章处理器
-
-    功能：
-    1. 解析 Frontmatter (YAML)
-    2. 生成 TOC (目录)
-    3. 估计阅读时间
-    4. 将 LaTeX 公式转换为 MathML (用于 content_html)
-    5. 生成摘要 (Excerpt)
-    """
+    """MDX 文章处理器"""
 
     def __init__(self, raw_content: str):
         self.raw_content = raw_content
@@ -119,8 +69,53 @@ class PostProcessor:
         self.reading_time: int = 0
         self.excerpt: str = ""
 
-        # 初始化 mistune 渲染器 (纯净模式，不产生复杂 class)
-        self.markdown_renderer = mistune.create_markdown(escape=False)
+        # 初始化 markdown-it
+        self.md = (
+            MarkdownIt(
+                "commonmark", {"html": True, "linkify": True, "typographer": True}
+            )
+            .enable(["table", "strikethrough"])
+            .use(footnote_plugin)
+            .use(deflist_plugin)
+            .use(tasklists_plugin)
+        )
+
+        # 自定义 fence 渲染规则（代码块）
+        self._setup_custom_renderers()
+
+    def _setup_custom_renderers(self):
+        """设置自定义渲染规则"""
+        # 保存原始的 fence 渲染器
+        default_fence = self.md.renderer.rules.get("fence")
+
+        def custom_fence(tokens, idx, options, env):
+            token = tokens[idx]
+            info = token.info.strip() if token.info else ""
+            lang = info.split()[0] if info else ""
+
+            # Mermaid 图表特殊处理
+            if lang == "mermaid":
+                code = token.content.strip()
+                return f'<div class="mermaid">\n{code}\n</div>\n'
+
+            # 其他代码块使用默认渲染
+            if default_fence:
+                return default_fence(tokens, idx, options, env)
+
+            # 如果没有默认渲染器，手动渲染
+            code = token.content
+            escaped = (
+                code.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace('"', "&quot;")
+                .replace("'", "&#39;")
+            )
+            if lang:
+                return f'<pre><code class="language-{lang}">{escaped}</code></pre>\n'
+            return f"<pre><code>{escaped}</code></pre>\n"
+
+        self.md.renderer.rules["fence"] = custom_fence
 
     def process(self) -> "PostProcessor":
         """执行完整处理流水线"""
@@ -129,49 +124,36 @@ class PostProcessor:
         self.metadata = post_data.metadata
         self.content_mdx = post_data.content
 
-        # 2. 生成目录 (基于原始正文，避免处理 HTML 后的干扰)
+        # 2. 生成目录（在处理前，基于原始 Markdown）
         self.toc = self._generate_toc(self.content_mdx)
 
-        # 3. 计算阅读时间
+        # 3. 计算阅读时间（在处理前，基于原始 Markdown）
         self.reading_time = self._calculate_reading_time(self.content_mdx)
 
-        # 4. 生成 content_html (包含公式转换和流程图处理)
-        # 注意：这里我们先处理公式，再处理流程图，最后过 Markdown 渲染器
-        processed_md = self._convert_latex_to_mathml(self.content_mdx)
-        processed_md = self._process_diagrams(processed_md)
-        # 过滤掉常见的 JSX 标签，防止 HTML 渲染错乱 (简单正则过滤)
-        processed_md = self._strip_jsx_tags(processed_md)
-        self.content_html = self.markdown_renderer(processed_md)
+        # 4. 预处理数学公式
+        processed_md = self._preprocess_math(self.content_mdx)
 
-        # 5. 生成摘要
-        self.excerpt = self._generate_excerpt(self.content_html)
+        # 5. 渲染 Markdown → HTML（自定义渲染器会处理 Mermaid）
+        self.content_html = self.md.render(processed_md)
+
+        # 6. 生成摘要（基于原始 Markdown）
+        self.excerpt = self._generate_excerpt(self.content_mdx)
 
         return self
 
     def _generate_toc(self, content: str) -> List[Dict[str, Any]]:
-        """
-        生成目录树
-        识别 #, ##, ###, ####, #####, ###### (h1-h6)
-
-        优化：
-        1. 处理重复标题（添加数字后缀）
-        2. 生成唯一 slug（避免 ID 冲突）
-        """
+        """生成目录"""
         toc = []
-        slug_counter = {}  # 记录 slug 出现次数，用于去重
-
-        # 匹配以 # 开头的行，过滤掉代码块内的内容
+        slug_counter = {}
         lines = content.split("\n")
         in_code_block = False
 
         for line in lines:
-            # 检测代码块
             if line.startswith("```"):
                 in_code_block = not in_code_block
                 continue
 
             if not in_code_block:
-                # ATX 风格：# 标题
                 match = re.match(r"^(#{1,6})\s+(.+)$", line)
                 if match:
                     level = len(match.group(1))
@@ -182,70 +164,33 @@ class PostProcessor:
         return toc
 
     def _generate_unique_slug(self, title: str, slug_counter: dict) -> str:
-        """
-        生成唯一的 slug
-
-        处理逻辑：
-        1. 移除特殊字符
-        2. 转小写
-        3. 空格转连字符
-        4. 如果重复，添加数字后缀
-
-        Args:
-            title: 标题文本
-            slug_counter: slug 计数器字典
-
-        Returns:
-            唯一的 slug
-        """
-        # 基础 slug 生成
+        """生成唯一 slug"""
         base_slug = re.sub(r"[^\w\s-]", "", title).strip().lower().replace(" ", "-")
+        base_slug = re.sub(r"-+", "-", base_slug).strip("-")
 
-        # 移除多余的连字符
-        base_slug = re.sub(r"-+", "-", base_slug)
-        base_slug = base_slug.strip("-")
-
-        # 如果为空，使用默认值
         if not base_slug:
             base_slug = "heading"
 
-        # 处理重复
         if base_slug not in slug_counter:
             slug_counter[base_slug] = 1
             return base_slug
         else:
-            # 已存在，添加数字后缀
             count = slug_counter[base_slug]
             slug_counter[base_slug] += 1
             return f"{base_slug}-{count}"
 
     def _calculate_reading_time(self, content: str) -> int:
-        """
-        估算阅读时间
-        中文字符算 1 个字，英文单词算 1 个字
-        平均阅读速度 300/min
-        """
-        # 匹配中文字符
+        """估算阅读时间"""
         chinese_chars = len(re.findall(r"[\u4e00-\u9fa5]", content))
-        # 匹配英文单词 (去掉中文后)
         remaining_text = re.sub(r"[\u4e00-\u9fa5]", " ", content)
         english_words = len(re.findall(r"\b\w+\b", remaining_text))
-
         total_count = chinese_chars + english_words
         minutes = math.ceil(total_count / 300)
         return max(1, minutes)
 
-    def _convert_latex_to_mathml(self, content: str) -> str:
-        """
-        将 LaTeX 公式 ($...$ 和 $...$) 转换为 MathML
-        从而前端不需要加载 KaTeX 即可预览公式
-
-        优化：
-        1. 使用占位符保护代码块（防止误伤代码）
-        2. 支持多行块级公式
-        3. 更严格的行内公式匹配（减少货币符号误判）
-        """
-        # 1. 保护代码块：用占位符临时替换
+    def _preprocess_math(self, content: str) -> str:
+        """预处理数学公式：包裹在 HTML 标签中"""
+        # 保护代码块
         code_blocks = []
 
         def save_code(match):
@@ -254,104 +199,48 @@ class PostProcessor:
 
         content = re.sub(r"```.*?```", save_code, content, flags=re.DOTALL)
 
-        # 2. 处理块级公式 $$ ... $$（支持多行）
-        def replace_block(match):
-            latex = match.group(1).strip()
-            try:
-                mathml = latex2mathml.converter.convert(latex)
-                return f'<div class="math-block">{mathml}</div>'
-            except Exception:
-                return f"$$\n{latex}\n$$"
+        # 块级公式
+        content = re.sub(
+            r"\$\$(.*?)\$\$",
+            r'<div class="math-block">\1</div>',
+            content,
+            flags=re.DOTALL,
+        )
 
-        content = re.sub(r"\$\$(.*?)\$\$", replace_block, content, flags=re.DOTALL)
-
-        # 3. 处理行内公式 $ ... $
-        # 要求：$ 后面必须是非空白字符，且内容中包含字母（排除纯数字的货币）
+        # 行内公式（移除 $ 符号）
         def replace_inline(match):
-            latex = match.group(1).strip()
-            # 如果内容不包含字母或反斜杠，很可能是货币符号，跳过
+            latex = match.group(1)
             if not re.search(r"[a-zA-Z\\]", latex):
-                return match.group(0)  # 原样返回
-            try:
-                return latex2mathml.converter.convert(latex)
-            except Exception:
-                return f"${latex}$"
+                return match.group(0)
+            return f'<span class="math-inline">{latex}</span>'
 
-        # 匹配规则：$ 后面紧跟非空白，中间不能有换行，结尾 $ 前不能有空白
         content = re.sub(r"(?<!\\)\$(\S[^$\n]*?\S)\$", replace_inline, content)
 
-        # 4. 还原代码块
+        # 还原代码块
         for i, block in enumerate(code_blocks):
             content = content.replace(f"<!--CODE_BLOCK_{i}-->", block)
 
         return content
 
-    def _strip_jsx_tags(self, content: str) -> str:
-        """
-        简单移除 MDX 中的自定义组件标签，例如 <CustomComponent />
-        只保留内容，确保 content_html 的纯净度用于 SEO
-        """
-        # 移除自闭合标签 <Tag />
-        content = re.sub(r"<[A-Z][a-zA-Z0-9]*\s*[^>]*?/>", "", content)
-        # 移除成对标签 <Tag>...</Tag> (暂不移除内容，只移除标签)
-        content = re.sub(r"</?[A-Z][a-zA-Z0-9]*\s*[^>]*?>", "", content)
-        return content
+    def _generate_excerpt(self, markdown_content: str, length: int = 200) -> str:
+        """从 Markdown 提取摘要"""
+        content = re.sub(r"```.*?```", "", markdown_content, flags=re.DOTALL)
+        content = re.sub(r"^#+\s+", "", content, flags=re.MULTILINE)
+        content = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", content)
+        content = re.sub(r"!\[([^\]]*)\]\([^\)]+\)", "", content)
+        content = re.sub(r"\$\$.*?\$\$", "", content, flags=re.DOTALL)
+        content = re.sub(r"\$[^$]+\$", "", content)
+        content = re.sub(r"[*_~`]", "", content)
+        # 移除 HTML 标签
+        content = re.sub(r"<[^>]+>", "", content)
+        content = re.sub(r"\s+", " ", content).strip()
 
-    def _process_diagrams(self, content: str) -> str:
-        """
-        处理各种图表代码块（Mermaid、PlantUML 等）
-        将代码块转换为带源码的可折叠 HTML 结构
-
-        支持的图表类型：
-        - mermaid: 流程图、时序图、甘特图等
-        - plantuml: UML 图
-        - graphviz/dot: 图形可视化
-        """
-
-        def replace_diagram(match):
-            diagram_type = match.group(1).lower()
-            code = match.group(2).strip()
-
-            # 转义 HTML 特殊字符，用于显示源码
-            escaped_code = (
-                code.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace('"', "&quot;")
-            )
-
-            # 返回带源码的可折叠结构
-            return f'''<div class="diagram-container" data-type="{diagram_type}">
-  <div class="diagram-render {diagram_type}">
-{code}
-  </div>
-  <details class="diagram-source">
-    <summary>查看源码</summary>
-    <pre><code class="language-{diagram_type}">{escaped_code}</code></pre>
-  </details>
-</div>'''
-
-        # 匹配各种图表代码块
-        # 支持：```mermaid, ```plantuml, ```dot, ```graphviz
-        pattern = r"```(mermaid|plantuml|dot|graphviz)\n(.*?)```"
-        content = re.sub(pattern, replace_diagram, content, flags=re.DOTALL)
-
-        return content
-
-    def _generate_excerpt(self, html_content: str, length: int = 200) -> str:
-        """
-        从生成的 HTML 中剥离标签并截取摘要
-        """
-        # 简单剥离 HTML 标签
-        plain_text = re.sub(r"<[^>]+>", "", html_content)
-        plain_text = re.sub(r"\s+", " ", plain_text).strip()
-
-        if len(plain_text) <= length:
-            return plain_text
-        return plain_text[:length] + "..."
+        if len(content) <= length:
+            return content
+        return content[:length] + "..."
 
 
-# 以下是一些辅助函数，用于构建查询语句
+# 查询辅助函数
 def build_posts_query(
     *,
     post_type: Optional[PostType] = None,
@@ -362,20 +251,13 @@ def build_posts_query(
     is_featured: Optional[bool] = None,
     search_query: Optional[str] = None,
 ):
-    """构建文章查询（不执行）
-
-    性能优化：
-    - 使用 load_only() 避免查询 content_mdx, content_html, toc 等大字段
-    - 列表查询只需要摘要，不需要完整正文
-    - 可节省 96% 的数据库 I/O 和内存占用
-    """
+    """构建文章查询"""
     stmt = select(Post).options(
-        # ✅ 只加载列表展示需要的字段（排除 content_mdx, content_html, toc）
         load_only(
             Post.id,
             Post.slug,
             Post.title,
-            Post.excerpt,  # ✅ 摘要（小字段）
+            Post.excerpt,
             Post.post_type,
             Post.status,
             Post.is_featured,
@@ -394,7 +276,6 @@ def build_posts_query(
             Post.meta_description,
             Post.meta_keywords,
         ),
-        # ✅ 预加载关联对象（避免 N+1 查询）
         selectinload(Post.category),
         selectinload(Post.author),
         selectinload(Post.tags),
@@ -420,12 +301,11 @@ def build_posts_query(
         )
 
     stmt = stmt.order_by(desc(Post.published_at), desc(Post.created_at))
-
     return stmt
 
 
 def build_categories_query(post_type: PostType):
-    """构建分类查询（不执行）"""
+    """构建分类查询"""
     from app.posts.model import Category
 
     stmt = (
@@ -439,7 +319,7 @@ def build_categories_query(post_type: PostType):
 
 
 def build_tags_query(post_type: PostType):
-    """构建标签查询（不执行）"""
+    """构建标签查询"""
     stmt = (
         select(Tag)
         .join(Tag.posts)

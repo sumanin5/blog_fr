@@ -9,6 +9,7 @@ from app.core.error_handlers import (
     validation_exception_handler,
 )
 from app.core.exceptions import BaseAppException
+from app.core.monitoring import setup_monitoring
 from app.core.schemas import ErrorResponse
 from app.initial_data import init_db
 from app.media.router import router as media_router
@@ -53,13 +54,10 @@ app.add_exception_handler(Exception, unexpected_exception_handler)
 # ============================================================
 # 开发环境允许的前端地址
 origins = [
-    "http://localhost:5173",  # Vite 开发服务器
-    "http://localhost:3000",  # 备用端口
+    "http://localhost:3000",  # Next.js 开发服务器
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",  # Vite 开发服务器（兼容旧项目）
     "http://127.0.0.1:5173",
-    "http://localhost:5174",  # Vite 开发服务器
-    "http://127.0.0.1:5174",  # Vite 开发服务器
-    "http://localhost:4173",  # vite 生产服务器
-    "http://127.0.0.1:4173",  # vite 生产服务器
 ]
 
 app.add_middleware(
@@ -72,6 +70,9 @@ app.add_middleware(
 
 # 设置所有的自定义中间件
 setup_middleware(app)
+
+# 设置 APM 监控（Sentry、OpenTelemetry、性能监控）
+setup_monitoring(app)
 
 #  分页插件
 add_pagination(app)
