@@ -67,17 +67,71 @@ async def get_post_types():
 
 @router.post("/preview", response_model=PostPreviewResponse, summary="文章实时预览")
 async def preview_post(request: PostPreviewRequest):
-    """通用的文章预览接口
+    """预览 MDX 内容（转换 Markdown -> HTML）"""
+    return utils.PostProcessor(request.content_mdx).process()
 
-    接收 MDX 内容，返回处理后的 HTML、目录、摘要和阅读时间
-    """
-    processor = utils.PostProcessor(request.content_mdx).process()
-    return PostPreviewResponse(
-        content_html=processor.content_html,
-        toc=processor.toc,
-        reading_time=processor.reading_time,
-        excerpt=processor.excerpt,
+
+# ========================================
+# 标签管理接口 (需要超级管理员) - 防止 Admin 被视为 PostType，需放在动态路由前
+# ========================================
+
+
+@router.get("/admin/tags", response_model=Page[TagResponse], summary="获取所有标签")
+async def list_tags(
+    params: Annotated[Params, Depends()],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    search: str = None,
+):
+    """获取所有标签列表（支持搜索）"""
+    return await crud.list_tags_with_count(session, params, search)
+
+
+@router.delete(
+    "/admin/tags/orphaned",
+    status_code=status.HTTP_200_OK,
+    summary="清理孤立标签",
+)
+async def delete_orphaned_tags(
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """删除孤立标签（仅超级管理员）"""
+    deleted_count, deleted_names = await service.delete_orphaned_tags(
+        session, current_user
     )
+    return {
+        "deleted_count": deleted_count,
+        "deleted_tags": deleted_names,
+        "message": f"已删除 {deleted_count} 个孤立标签",
+    }
+
+
+@router.post(
+    "/admin/tags/merge",
+    response_model=TagResponse,
+    summary="合并标签",
+)
+async def merge_tags(
+    request: TagMergeRequest,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """合并标签（仅超级管理员）"""
+    return await service.merge_tags(
+        session, request.source_tag_id, request.target_tag_id, current_user
+    )
+
+
+@router.patch("/admin/tags/{tag_id}", response_model=TagResponse, summary="更新标签")
+async def update_tag(
+    tag_id: UUID,
+    tag_in: TagUpdate,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """更新标签（仅超级管理员）"""
+    return await service.update_tag(session, tag_id, tag_in, current_user)
 
 
 @router.get(
@@ -157,14 +211,16 @@ async def list_posts_by_type(
 async def list_categories_by_type(
     post_type: Annotated[PostType, Path(description="板块类型")],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    include_inactive: bool = False,
 ):
     """获取指定板块的分类列表（自动分页）
 
     示例：
-    - GET /posts/article/categories - 文章分类
-    - GET /posts/idea/categories - 想法分类
+    - GET /posts/article/categories - 文章分类（仅启用）
+    - GET /posts/article/categories?include_inactive=true - 所有分类
     """
-    query = utils.build_categories_query(post_type)
+    is_active = None if include_inactive else True
+    query = utils.build_categories_query(post_type, is_active=is_active)
     return await crud.paginate_query(session, query)
 
 
@@ -385,97 +441,3 @@ async def delete_category_by_type(
     """
     await service.delete_category(session, category_id, current_user, post_type)
     return None
-
-
-# ========================================
-# 标签管理接口 (需要超级管理员)
-# ========================================
-
-
-@router.patch("/admin/tags/{tag_id}", response_model=TagResponse, summary="更新标签")
-async def update_tag(
-    tag_id: UUID,
-    tag_in: TagUpdate,
-    current_user: Annotated[User, Depends(get_current_superuser)],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-):
-    """更新标签（仅超级管理员）
-
-    用于统一标签命名、更新颜色、描述等
-
-    示例：
-    - PATCH /api/v1/posts/admin/tags/{tag_id}
-
-    请求体：
-    {
-        "name": "React.js",
-        "color": "#61DAFB",
-        "description": "React 前端框架"
-    }
-    """
-    return await service.update_tag(session, tag_id, tag_in, current_user)
-
-
-@router.delete(
-    "/admin/tags/orphaned",
-    status_code=status.HTTP_200_OK,
-    summary="清理孤立标签",
-)
-async def delete_orphaned_tags(
-    current_user: Annotated[User, Depends(get_current_superuser)],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-):
-    """删除孤立标签（仅超级管理员）
-
-    删除所有没有任何文章关联的标签
-
-    示例：
-    - DELETE /api/v1/posts/admin/tags/orphaned
-
-    响应示例：
-    {
-        "deleted_count": 5,
-        "deleted_tags": ["old-tag-1", "old-tag-2", ...]
-    }
-    """
-    deleted_count, deleted_names = await service.delete_orphaned_tags(
-        session, current_user
-    )
-    return {
-        "deleted_count": deleted_count,
-        "deleted_tags": deleted_names,
-        "message": f"已删除 {deleted_count} 个孤立标签",
-    }
-
-
-@router.post(
-    "/admin/tags/merge",
-    response_model=TagResponse,
-    summary="合并标签",
-)
-async def merge_tags(
-    request: TagMergeRequest,
-    current_user: Annotated[User, Depends(get_current_superuser)],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-):
-    """合并标签（仅超级管理员）
-
-    将源标签的所有文章关联转移到目标标签，然后删除源标签
-    用于合并重复标签（如 "React.js" 和 "ReactJS"）
-
-    示例：
-    - POST /api/v1/posts/admin/tags/merge
-
-    请求体：
-    {
-        "source_tag_id": "...",
-        "target_tag_id": "..."
-    }
-
-    注意：
-    - 源标签将被删除
-    - 所有原本使用源标签的文章将使用目标标签
-    """
-    return await service.merge_tags(
-        session, request.source_tag_id, request.target_tag_id, current_user
-    )

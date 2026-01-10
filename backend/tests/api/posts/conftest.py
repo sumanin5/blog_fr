@@ -62,7 +62,7 @@ async def test_category(session: AsyncSession) -> Category:
     category = Category(
         name="测试分类",
         slug="test-category",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLE,  # 使用 Enum 值
         description="用于测试的分类",
         order=1,
     )

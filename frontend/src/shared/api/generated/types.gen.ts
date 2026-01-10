@@ -1034,6 +1034,10 @@ export type TagResponse = {
      * Id
      */
     id: string;
+    /**
+     * Post Count
+     */
+    post_count?: number;
 };
 
 /**
@@ -2846,6 +2850,202 @@ export type PreviewPostResponses = {
 
 export type PreviewPostResponse = PreviewPostResponses[keyof PreviewPostResponses];
 
+export type ListTagsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Search
+         */
+        search?: string;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Size
+         */
+        size?: number;
+    };
+    url: '/api/v1/posts/admin/tags';
+};
+
+export type ListTagsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListTagsError = ListTagsErrors[keyof ListTagsErrors];
+
+export type ListTagsResponses = {
+    /**
+     * Successful Response
+     */
+    200: PageTagResponse;
+};
+
+export type ListTagsResponse = ListTagsResponses[keyof ListTagsResponses];
+
+export type DeleteOrphanedTagsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/posts/admin/tags/orphaned';
+};
+
+export type DeleteOrphanedTagsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type DeleteOrphanedTagsError = DeleteOrphanedTagsErrors[keyof DeleteOrphanedTagsErrors];
+
+export type DeleteOrphanedTagsResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type MergeTagsData = {
+    body: TagMergeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/posts/admin/tags/merge';
+};
+
+export type MergeTagsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type MergeTagsError = MergeTagsErrors[keyof MergeTagsErrors];
+
+export type MergeTagsResponses = {
+    /**
+     * Successful Response
+     */
+    200: TagResponse;
+};
+
+export type MergeTagsResponse = MergeTagsResponses[keyof MergeTagsResponses];
+
+export type UpdateTagData = {
+    body: TagUpdate;
+    path: {
+        /**
+         * Tag Id
+         */
+        tag_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/admin/tags/{tag_id}';
+};
+
+export type UpdateTagErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type UpdateTagError = UpdateTagErrors[keyof UpdateTagErrors];
+
+export type UpdateTagResponses = {
+    /**
+     * Successful Response
+     */
+    200: TagResponse;
+};
+
+export type UpdateTagResponse = UpdateTagResponses[keyof UpdateTagResponses];
+
 export type GetMyPostsData = {
     body?: never;
     path?: never;
@@ -3089,7 +3289,12 @@ export type ListCategoriesByTypeData = {
          */
         post_type: PostType;
     };
-    query?: never;
+    query?: {
+        /**
+         * Include Inactive
+         */
+        include_inactive?: boolean;
+    };
     url: '/api/v1/posts/{post_type}/categories';
 };
 
@@ -3554,141 +3759,3 @@ export type UpdateCategoryByTypeResponses = {
 };
 
 export type UpdateCategoryByTypeResponse = UpdateCategoryByTypeResponses[keyof UpdateCategoryByTypeResponses];
-
-export type UpdateTagData = {
-    body: TagUpdate;
-    path: {
-        /**
-         * Tag Id
-         */
-        tag_id: string;
-    };
-    query?: never;
-    url: '/api/v1/posts/admin/tags/{tag_id}';
-};
-
-export type UpdateTagErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type UpdateTagError = UpdateTagErrors[keyof UpdateTagErrors];
-
-export type UpdateTagResponses = {
-    /**
-     * Successful Response
-     */
-    200: TagResponse;
-};
-
-export type UpdateTagResponse = UpdateTagResponses[keyof UpdateTagResponses];
-
-export type DeleteOrphanedTagsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/posts/admin/tags/orphaned';
-};
-
-export type DeleteOrphanedTagsErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type DeleteOrphanedTagsError = DeleteOrphanedTagsErrors[keyof DeleteOrphanedTagsErrors];
-
-export type DeleteOrphanedTagsResponses = {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type MergeTagsData = {
-    body: TagMergeRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/posts/admin/tags/merge';
-};
-
-export type MergeTagsErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type MergeTagsError = MergeTagsErrors[keyof MergeTagsErrors];
-
-export type MergeTagsResponses = {
-    /**
-     * Successful Response
-     */
-    200: TagResponse;
-};
-
-export type MergeTagsResponse = MergeTagsResponses[keyof MergeTagsResponses];

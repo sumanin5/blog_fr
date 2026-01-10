@@ -41,6 +41,43 @@ async def test_get_tags_list(
         assert_tag_response(tag)
 
 
+@pytest.mark.asyncio
+@pytest.mark.posts
+async def test_admin_get_tags_list(
+    async_client: AsyncClient,
+    normal_user_token_headers: dict,
+    post_with_tags: Post,
+    session,
+    api_urls: APIConfig,
+):
+    """测试后台获取标签列表（包含 post_count）"""
+    # 确保有一个标签确实关联了文章
+    # post_with_tags 已经关联了至少一个标签
+
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/admin/tags",
+        headers=normal_user_token_headers,  # 普通登录用户即可访问
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    items = data["items"]
+    assert len(items) > 0
+
+    # 验证 post_count 字段
+    for tag in items:
+        assert_tag_response(tag)
+        assert "post_count" in tag
+        assert isinstance(tag["post_count"], int)
+
+    # 验证关联文章的标签计数 > 0
+    # post_with_tags 的标签应该有计数
+    linked_tag_ids = [t.id for t in post_with_tags.tags]
+    for tag in items:
+        if str(tag["id"]) in [str(id) for id in linked_tag_ids]:
+            assert tag["post_count"] >= 1
+
+
 # ============================================================
 # 标签更新测试（需要超级管理员权限）
 # ============================================================
@@ -169,6 +206,7 @@ async def test_delete_orphaned_tags_success(
     data = response.json()
     assert data["deleted_count"] >= 3
     assert "deleted_tags" in data
+    assert "message" in data
     assert len(data["deleted_tags"]) >= 3
 
 

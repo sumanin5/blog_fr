@@ -74,6 +74,43 @@ async def test_get_categories_by_post_type(
     assert all(cat["post_type"] == "idea" for cat in data["items"])
 
 
+@pytest.mark.asyncio
+@pytest.mark.posts
+async def test_get_categories_include_inactive(
+    async_client: AsyncClient,
+    session,
+    api_urls: APIConfig,
+):
+    """测试获取包含未启用状态的分类"""
+    from app.posts.model import Category, PostType
+
+    # 创建一个未启用的分类
+    inactive_cat = Category(
+        name="未启用分类",
+        slug="inactive-cat",
+        post_type=PostType.ARTICLE,
+        is_active=False,
+    )
+    session.add(inactive_cat)
+    await session.commit()
+    await session.refresh(inactive_cat)
+
+    # 1. 默认查询（不包含未启用）
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert not any(cat["id"] == str(inactive_cat.id) for cat in data["items"])
+
+    # 2. 包含未启用字段查询
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/article/categories",
+        params={"include_inactive": "true"},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert any(cat["id"] == str(inactive_cat.id) for cat in data["items"])
+
+
 # ============================================================
 # 分类创建测试（需要超级管理员权限）
 # ============================================================

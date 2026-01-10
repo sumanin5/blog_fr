@@ -16,7 +16,7 @@ from mdit_py_plugins.deflist import deflist_plugin
 from mdit_py_plugins.footnote import footnote_plugin
 from mdit_py_plugins.tasklists import tasklists_plugin
 from slugify import slugify as python_slugify
-from sqlalchemy import delete
+from sqlalchemy import delete, func
 from sqlalchemy.orm import load_only, selectinload
 from sqlmodel import desc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -306,17 +306,24 @@ def build_posts_query(
     return stmt
 
 
-def build_categories_query(post_type: PostType):
-    """构建分类查询"""
+def build_categories_query(post_type: PostType, is_active: Optional[bool] = True):
+    """构建分类查询
+    :param is_active: 是否只显示启用的分类。None 表示显示所有。
+    """
     from app.posts.model import Category
+    from sqlalchemy import String, cast
 
     stmt = (
         select(Category)
-        .where(Category.post_type == post_type)
-        .where(Category.is_active)
+        # 将 Enum 类型显式转换为字符串后再进行 lower() 比较
+        .where(func.lower(cast(Category.post_type, String)) == post_type.value.lower())
         .order_by(Category.sort_order.asc(), Category.name.asc())
         .options(selectinload(Category.parent), selectinload(Category.icon))
     )
+
+    if is_active is not None:
+        stmt = stmt.where(Category.is_active == is_active)
+
     return stmt
 
 

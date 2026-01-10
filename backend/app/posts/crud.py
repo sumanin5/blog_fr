@@ -167,6 +167,41 @@ async def get_tag_by_slug(session: AsyncSession, slug: str) -> Optional[Tag]:
     return result.one_or_none()
 
 
+async def list_tags_with_count(
+    session: AsyncSession, params: Params, search: str = None
+) -> Page[Tag]:
+    """获取标签列表并附加文章关联数"""
+    from app.posts.model import PostTagLink
+
+    # 1. 基础查询
+    stmt = select(Tag)
+    if search:
+        stmt = stmt.where(Tag.name.ilike(f"%{search}%"))
+    stmt = stmt.order_by(Tag.name)
+
+    # 2. 分页
+    page = await paginate_query(session, stmt, params)
+
+    if not page.items:
+        return page
+
+    # 3. 聚合查询计数
+    tag_ids = [tag.id for tag in page.items]
+    count_stmt = (
+        select(PostTagLink.tag_id, func.count(PostTagLink.post_id))
+        .where(PostTagLink.tag_id.in_(tag_ids))
+        .group_by(PostTagLink.tag_id)
+    )
+    count_result = await session.exec(count_stmt)
+    count_map = {row[0]: row[1] for row in count_result.all()}
+
+    # 4. 填充计数
+    for tag in page.items:
+        setattr(tag, "post_count", count_map.get(tag.id, 0))
+
+    return page
+
+
 async def get_tag_by_id(session: AsyncSession, tag_id: UUID) -> Optional[Tag]:
     """根据 ID 获取标签"""
     stmt = select(Tag).where(Tag.id == tag_id)

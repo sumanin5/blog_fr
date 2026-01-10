@@ -41,6 +41,7 @@ class TagUpdate(BaseModel):
 
 class TagResponse(TagBase):
     id: UUID
+    post_count: int = 0  # 统计关联文章数
     model_config = ConfigDict(from_attributes=True)
 
 

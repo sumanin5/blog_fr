@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   MoreHorizontal,
   Settings,
+  Tags,
   User as UserIcon,
 } from "lucide-react";
 
@@ -59,6 +60,7 @@ export function AdminSidebar({
   const adminMenuItems = [
     { icon: ShieldCheck, label: "全站文章管理", href: "/admin/posts/all" },
     { icon: FolderTree, label: "分类运维", href: "/admin/categories" },
+    { icon: Tags, label: "标签治理", href: "/admin/tags" },
   ];
 
   return (

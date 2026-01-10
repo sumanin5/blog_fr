@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
+import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -331,12 +331,62 @@ export const getPostTypes = <ThrowOnError extends boolean = false>(options?: Opt
 /**
  * 文章实时预览
  *
- * 通用的文章预览接口
- *
- * 接收 MDX 内容，返回处理后的 HTML、目录、摘要和阅读时间
+ * 预览 MDX 内容（转换 Markdown -> HTML）
  */
 export const previewPost = <ThrowOnError extends boolean = false>(options: Options<PreviewPostData, ThrowOnError>) => (options.client ?? client).post<PreviewPostResponses, PreviewPostErrors, ThrowOnError>({
     url: '/api/v1/posts/preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 获取所有标签
+ *
+ * 获取所有标签列表（支持搜索）
+ */
+export const listTags = <ThrowOnError extends boolean = false>(options?: Options<ListTagsData, ThrowOnError>) => (options?.client ?? client).get<ListTagsResponses, ListTagsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/admin/tags',
+    ...options
+});
+
+/**
+ * 清理孤立标签
+ *
+ * 删除孤立标签（仅超级管理员）
+ */
+export const deleteOrphanedTags = <ThrowOnError extends boolean = false>(options?: Options<DeleteOrphanedTagsData, ThrowOnError>) => (options?.client ?? client).delete<DeleteOrphanedTagsResponses, DeleteOrphanedTagsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/admin/tags/orphaned',
+    ...options
+});
+
+/**
+ * 合并标签
+ *
+ * 合并标签（仅超级管理员）
+ */
+export const mergeTags = <ThrowOnError extends boolean = false>(options: Options<MergeTagsData, ThrowOnError>) => (options.client ?? client).post<MergeTagsResponses, MergeTagsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/admin/tags/merge',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 更新标签
+ *
+ * 更新标签（仅超级管理员）
+ */
+export const updateTag = <ThrowOnError extends boolean = false>(options: Options<UpdateTagData, ThrowOnError>) => (options.client ?? client).patch<UpdateTagResponses, UpdateTagErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/admin/tags/{tag_id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -399,8 +449,8 @@ export const createPostByType = <ThrowOnError extends boolean = false>(options: 
  * 获取指定板块的分类列表（自动分页）
  *
  * 示例：
- * - GET /posts/article/categories - 文章分类
- * - GET /posts/idea/categories - 想法分类
+ * - GET /posts/article/categories - 文章分类（仅启用）
+ * - GET /posts/article/categories?include_inactive=true - 所有分类
  */
 export const listCategoriesByType = <ThrowOnError extends boolean = false>(options: Options<ListCategoriesByTypeData, ThrowOnError>) => (options.client ?? client).get<ListCategoriesByTypeResponses, ListCategoriesByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/categories', ...options });
 
@@ -537,86 +587,6 @@ export const deleteCategoryByType = <ThrowOnError extends boolean = false>(optio
 export const updateCategoryByType = <ThrowOnError extends boolean = false>(options: Options<UpdateCategoryByTypeData, ThrowOnError>) => (options.client ?? client).patch<UpdateCategoryByTypeResponses, UpdateCategoryByTypeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/posts/{post_type}/categories/{category_id}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * 更新标签
- *
- * 更新标签（仅超级管理员）
- *
- * 用于统一标签命名、更新颜色、描述等
- *
- * 示例：
- * - PATCH /api/v1/posts/admin/tags/{tag_id}
- *
- * 请求体：
- * {
- * "name": "React.js",
- * "color": "#61DAFB",
- * "description": "React 前端框架"
- * }
- */
-export const updateTag = <ThrowOnError extends boolean = false>(options: Options<UpdateTagData, ThrowOnError>) => (options.client ?? client).patch<UpdateTagResponses, UpdateTagErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/admin/tags/{tag_id}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * 清理孤立标签
- *
- * 删除孤立标签（仅超级管理员）
- *
- * 删除所有没有任何文章关联的标签
- *
- * 示例：
- * - DELETE /api/v1/posts/admin/tags/orphaned
- *
- * 响应示例：
- * {
- * "deleted_count": 5,
- * "deleted_tags": ["old-tag-1", "old-tag-2", ...]
- * }
- */
-export const deleteOrphanedTags = <ThrowOnError extends boolean = false>(options?: Options<DeleteOrphanedTagsData, ThrowOnError>) => (options?.client ?? client).delete<DeleteOrphanedTagsResponses, DeleteOrphanedTagsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/admin/tags/orphaned',
-    ...options
-});
-
-/**
- * 合并标签
- *
- * 合并标签（仅超级管理员）
- *
- * 将源标签的所有文章关联转移到目标标签，然后删除源标签
- * 用于合并重复标签（如 "React.js" 和 "ReactJS"）
- *
- * 示例：
- * - POST /api/v1/posts/admin/tags/merge
- *
- * 请求体：
- * {
- * "source_tag_id": "...",
- * "target_tag_id": "..."
- * }
- *
- * 注意：
- * - 源标签将被删除
- * - 所有原本使用源标签的文章将使用目标标签
- */
-export const mergeTags = <ThrowOnError extends boolean = false>(options: Options<MergeTagsData, ThrowOnError>) => (options.client ?? client).post<MergeTagsResponses, MergeTagsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/admin/tags/merge',
     ...options,
     headers: {
         'Content-Type': 'application/json',
