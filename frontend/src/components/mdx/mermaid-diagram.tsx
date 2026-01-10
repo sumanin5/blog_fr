@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useTheme } from "next-themes";
+// import { useTheme } from "next-themes";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const MermaidDiagram = ({ code }: { code: string }) => {
-  const { theme, resolvedTheme } = useTheme();
+  // const { theme, resolvedTheme } = useTheme();
   // State for the rendered SVG content
   const [svgContent, setSvgContent] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -22,12 +22,13 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
     let isMounted = true;
 
     // Determine the actual theme for mermaid
-    const mermaidTheme =
-      resolvedTheme === "dark" ||
-      (theme === "system" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-        ? "dark"
-        : "default";
+    const mermaidTheme = "dark";
+    // resolvedTheme === "dark"
+    // ||
+    // (theme === "system" &&
+    //   window.matchMedia("(prefers-color-scheme: dark)").matches)
+    //   ? "dark"
+    //   : "default";
 
     const render = async () => {
       if (!isMounted) return;
@@ -78,7 +79,8 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
       isMounted = false;
       clearTimeout(timeout);
     };
-  }, [code, theme, resolvedTheme, chartId]);
+  }, [code, chartId]);
+  //, theme, resolvedTheme # 监听主题的变化
 
   // --- Render States ---
 
@@ -102,10 +104,10 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
 
   // 2. Normal / Loading State
   return (
-    <div className="relative my-6 w-full flex flex-col items-center justify-center rounded-xl border bg-card p-4 shadow-sm transition-colors">
+    <div className="relative my-6 w-full flex flex-col items-center justify-center rounded-xl border border-slate-700 bg-slate-700 p-4 shadow-sm transition-colors">
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-card/50 backdrop-blur-sm z-10 transition-opacity">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-700/50 backdrop-blur-sm z-10 transition-opacity">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
         </div>
       )}
 
@@ -122,7 +124,7 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
         <summary className="text-xs text-muted-foreground cursor-pointer hover:underline text-center">
           查看源码
         </summary>
-        <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto text-muted-foreground">
+        <pre className="mt-2 p-2 bg-slate-800 rounded text-xs overflow-x-auto text-slate-300">
           {code}
         </pre>
       </details>

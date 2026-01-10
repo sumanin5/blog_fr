@@ -1,130 +1,85 @@
-"use client";
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { PostDetailView } from "@/components/post/post-detail-view";
 
-import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { getPostBySlug } from "@/shared/api";
-import { PostContent } from "@/components/post/post-content";
-import { PostMeta } from "@/components/post/post-meta";
-import { TableOfContents } from "@/components/mdx/table-of-contents";
-
-// This interface from the API might differ slightly from the component's expected type
-// but we map it below anyway.
-interface TocItemRaw {
-  id: string;
-  title: string;
-  level: number;
+interface PageProps {
+  params: Promise<{
+    slug: string;
+  }>;
 }
 
-export default function PostPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+import { PostDetailResponse } from "@/shared/api/generated/types.gen";
+import { settings } from "@/config/settings";
 
-  const {
-    data: post,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["post", slug],
-    queryFn: () =>
-      getPostBySlug({
-        path: {
-          post_type: "article",
-          slug,
-        },
-      }),
-  });
+// 1. 获取数据的辅助函数
+async function getPost(slug: string): Promise<PostDetailResponse | null> {
+  try {
+    const url = `${settings.BACKEND_INTERNAL_URL}${settings.API_PREFIX}/posts/article/slug/${slug}`;
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="animate-pulse">
-            <div className="mb-6 h-12 w-3/4 rounded bg-muted"></div>
-            <div className="mb-8 h-6 w-1/2 rounded bg-muted"></div>
-            <div className="space-y-4">
-              <div className="h-4 w-full rounded bg-muted"></div>
-              <div className="h-4 w-full rounded bg-muted"></div>
-              <div className="h-4 w-3/4 rounded bg-muted"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    const res = await fetch(url, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      console.error(`[SSR] Fetch failed: ${res.status} ${res.statusText}`);
+      return null;
+    }
+
+    const data = (await res.json()) as PostDetailResponse;
+    return data;
+  } catch (error) {
+    console.error("Failed to fetch post:", error);
+    return null;
+  }
+}
+
+// 2. 动态生成 SEO 元数据
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPost(slug);
+
+  if (!post) {
+    return {
+      title: "文章不存在",
+    };
   }
 
-  if (error || !post?.data) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="mb-4 text-4xl font-bold">文章未找到</h1>
-          <p className="text-muted-foreground">
-            抱歉，您访问的文章不存在或已被删除。
-          </p>
-        </div>
-      </div>
-    );
+  const summary =
+    post.excerpt || post.content_html?.substring(0, 150) || post.title;
+
+  return {
+    title: post.title,
+    description: summary,
+    keywords: post.tags?.map((t) => t.name).join(", "),
+    openGraph: {
+      title: post.title,
+      description: summary,
+      type: "article",
+      publishedTime: post.published_at || undefined,
+      authors: post.author?.full_name || post.author?.username,
+      images: [], // 目前 PostDetailResponse 中没有直接的 cover_image URL，先置空
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: summary,
+      images: [],
+    },
+  };
+}
+
+// 3. 服务端页面组件
+export default async function Page({ params }: PageProps) {
+  const { slug } = await params;
+  const post = await getPost(slug);
+
+  if (!post) {
+    notFound();
   }
 
-  const postData = post.data;
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/*
-        浮动目录按钮
-        它有 fixed 定位，放在哪里都不会影响布局文档流，
-        但放在这里逻辑上比较清晰
-      */}
-      {postData.toc && postData.toc.length > 0 && (
-        <TableOfContents
-          toc={(postData.toc as TocItemRaw[]).map((item) => ({
-            id: item.id,
-            title: item.title,
-            level: item.level,
-          }))}
-        />
-      )}
-
-      <div className="mx-auto max-w-6xl">
-        {/* 文章标题 */}
-        <h1 className="mb-6 text-4xl font-bold">{postData.title}</h1>
-
-        {/* 文章元信息 */}
-        {postData.author && (
-          <PostMeta
-            author={{
-              username: postData.author.username,
-              full_name: postData.author.full_name || undefined,
-              avatar: postData.author.avatar || undefined,
-            }}
-            publishedAt={postData.published_at || ""}
-            readingTime={postData.reading_time}
-            viewCount={postData.view_count}
-            className="mb-8"
-          />
-        )}
-
-        {/* 标签 */}
-        {postData.tags && postData.tags.length > 0 && (
-          <div className="mb-8 flex flex-wrap gap-2">
-            {postData.tags.map((tag) => (
-              <span
-                key={tag.id}
-                className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary"
-              >
-                {tag.name}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/*
-           文章内容
-           移除了右侧侧边栏，现在的布局是单栏居中，更适合长文阅读
-        */}
-        <div className="w-full min-w-0">
-          <PostContent html={postData.content_html} />
-        </div>
-      </div>
-    </div>
-  );
+  // 将数据传递给客户端组件进行交互渲染
+  return <PostDetailView post={post} />;
 }

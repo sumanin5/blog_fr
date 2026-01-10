@@ -3,16 +3,16 @@
 import { PostContent } from "@/components/post/post-content";
 import { PostMeta } from "@/components/post/post-meta";
 import { TableOfContents } from "@/components/mdx/table-of-contents";
-import { Post } from "@/shared/schemas"; // 假设这里可以导入类型，如果不行我会调整
+import { PostDetailResponse } from "@/shared/api/generated/types.gen";
 
-interface TocItemRaw {
+interface TocItem {
   id: string;
   title: string;
   level: number;
 }
 
 interface PostDetailViewProps {
-  post: Post; // 接收完整的 post 数据作为 prop
+  post: PostDetailResponse;
 }
 
 export function PostDetailView({ post }: PostDetailViewProps) {
@@ -21,7 +21,7 @@ export function PostDetailView({ post }: PostDetailViewProps) {
       {/* 浮动目录按钮 */}
       {post.toc && post.toc.length > 0 && (
         <TableOfContents
-          toc={(post.toc as TocItemRaw[]).map((item) => ({
+          toc={(post.toc as TocItem[]).map((item) => ({
             id: item.id,
             title: item.title,
             level: item.level,
@@ -42,8 +42,8 @@ export function PostDetailView({ post }: PostDetailViewProps) {
               avatar: post.author.avatar || undefined,
             }}
             publishedAt={post.published_at || ""}
-            readingTime={post.reading_time}
-            viewCount={post.view_count}
+            readingTime={post.reading_time || 0}
+            viewCount={post.view_count || 0}
             className="mb-8"
           />
         )}

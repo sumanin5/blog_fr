@@ -1,14 +1,11 @@
 import { client } from "./generated/client.gen";
-
-// 后端 API 基础路径
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { settings } from "@/config/settings";
 
 /**
  * 初始化 API 客户端
  */
 client.setConfig({
-  baseUrl: API_BASE_URL,
+  baseUrl: settings.NEXT_PUBLIC_API_URL,
 });
 
 /**

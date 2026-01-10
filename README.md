@@ -1,6 +1,6 @@
 # 🚀 Blog FR - 现代全栈博客系统
 
-[![Stack](https://img.shields.io/badge/Stack-FastAPI%20%2B%20React%2019-blue.svg)](https://github.com/sumanin5/blog_fr)
+[![Stack](https://img.shields.io/badge/Stack-FastAPI%20%2B%20Next.js%2016-blue.svg)](https://github.com/sumanin5/blog_fr)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.13%2B-blue)](https://www.python.org/)
 [![Node](https://img.shields.io/badge/Node-20%2B-green)](https://nodejs.org/)
@@ -8,21 +8,23 @@
 [![Frontend CI](https://github.com/sumanin5/blog_fr/workflows/Frontend%20CI/badge.svg)](https://github.com/sumanin5/blog_fr/actions)
 [![codecov](https://codecov.io/gh/sumanin5/blog_fr/branch/main/graph/badge.svg)](https://codecov.io/gh/sumanin5/blog_fr)
 
-**Blog FR** 是一个基于 **FastAPI** 和 **React 19** 构建的现代全栈博客系统。它集成了高性能后端、动态前端以及丰富的 MDX 渲染能力，旨在提供极致的写作与阅读体验。
+**Blog FR** 是一个基于 **FastAPI** 和 **Next.js 16** 构建的现代全栈博客系统。它集成了高性能后端、React Server Components 以及丰富的 MDX 渲染能力，旨在提供极致的写作与阅读体验。
 
 ---
 
 ## ✨ 核心特性
 
-- 🎨 **极致设计**: 基于 Tailwind CSS 4 和 Shadcn UI 的高级 UI 系统，支持深色/浅色模式切换与玻璃拟态效果。
+- 🎨 **现代设计**: 基于 Tailwind CSS 4 和 Shadcn UI 的高级 UI 系统，支持深色/浅色模式切换与响应式布局。
 - 📝 **增强型 MDX**: 支持 MDX 渲染，集成 Mermaid 图表、代码高亮、数学公式（KaTeX）以及幻灯片演示。
-- ⚡ **高性能架构**:
-  - **后端**: 使用 FastAPI + SQLModel (SQLAlchemy + Pydantic)，支持异步操作与高效并发。
-  - **前端**: 基于 Vite 6 + React 19，使用 TanStack Router 实现精细化路由管理，TanStack Query 处理数据流。
-- 🖼️ **媒体管理**: 自动生成缩略图，支持多种图片格式，优化加载速度。
-- 🔍 **SEO 友好**: 语义化 HTML、动态 Title 标签与 Meta 描述优化。
-- 🐳 **容器化部署**: 完整的 Docker & Docker Compose 配置，一键启动开发与生产环境。
-- 🧪 **质量保证**: 集成 Vitest、Playwright 和 Pytest，覆盖单元测试与 E2E 测试。
+- ⚡ **混合渲染架构**:
+  - **SSR (服务端渲染)**: 用于博客文章和内容页面，提供最佳 SEO 和首屏加载速度
+  - **CSR (客户端渲染)**: 用于用户交互界面，提供流畅的 SPA 体验
+  - **后端**: 使用 FastAPI + SQLModel (SQLAlchemy + Pydantic)，支持异步操作与高效并发
+- 🔗 **OpenAPI 驱动**: 自动生成类型安全的前端 SDK，实现端到端类型安全
+- 🖼️ **媒体管理**: 自动生成缩略图，支持多种图片格式，优化加载速度
+- 🔍 **SEO 友好**: 语义化 HTML、动态元数据生成与 OpenGraph 标签优化
+- 🐳 **容器化部署**: 完整的 Docker & Docker Compose 配置，一键启动开发与生产环境
+- 🧪 **质量保证**: 集成 Pytest 和测试覆盖率工具
 
 ---
 
@@ -35,15 +37,17 @@
 - **迁移**: [Alembic](https://alembic.sqlalchemy.org/)
 - **数据库**: [PostgreSQL 17](https://www.postgresql.org/)
 - **包管理**: [UV](https://github.com/astral-sh/uv) (极速 Python 包管理器)
+- **API 文档**: [Scalar](https://scalar.com/) + OpenAPI 3.0
 
 ### 前端 (Frontend)
 
-- **基础**: [React 19](https://react.dev/), [Vite 6](https://vitejs.dev/)
+- **框架**: [Next.js 16](https://nextjs.org/) (React 19 + App Router)
 - **语言**: [TypeScript](https://www.typescriptlang.org/)
 - **样式**: [Tailwind CSS 4](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/)
-- **路由**: [TanStack Router](https://tanstack.com/router)
 - **状态管理**: [TanStack Query v5](https://tanstack.com/query)
-- **动画**: [Framer Motion](https://www.framer.com/motion/)
+- **数据获取**: [hey-api SDK](https://www.heypi.com/) (基于 OpenAPI 自动生成)
+- **主题**: [next-themes](https://github.com/pacocoursey/next-themes)
+- **内容渲染**: MDX + Mermaid + KaTeX + highlight.js
 
 ---
 
@@ -79,23 +83,40 @@ docker compose up -d
 
 访问：
 
-- 前端: `http://localhost:5173` (开发) 或 `http://localhost:80` (生产)
-- API 文档: `http://localhost:8000/docs`
-- 数据库管理 (Adminer): `http://localhost:8080`
+- 前端: `http://localhost:3000` (开发) 或 `http://localhost:80` (生产)
+- API 文档: `http://localhost:8000/scalar`
+- 后端健康检查: `http://localhost:8000/`
 
 ---
 
 ## 💻 本地开发
 
-如果你希望在本地运行而不使用容器，请参考以下指南：
+### 前端开发
 
-- **后端开发指南**: [backend/README.md](./backend/README.md)
-- **前端开发指南**: [frontend/QUICK_START.md](./frontend/QUICK_START.md)
+```bash
+cd frontend
+npm install
+npm run dev        # 启动开发服务器 (http://localhost:3000)
+npm run build      # 构建生产版本
+npm run api:generate  # 从 OpenAPI schema 生成类型安全的 SDK
+```
 
-### 快速概览：
+### 后端开发
 
-- **后端**: `cd backend && uv sync && fastapi run app/main.py --reload`
-- **前端**: `cd frontend && npm install && npm run dev`
+```bash
+cd backend
+uv sync            # 安装依赖
+fastapi dev app/main.py  # 启动开发服务器 (http://localhost:8000)
+pytest            # 运行测试
+```
+
+### API SDK 生成
+
+项目使用 OpenAPI 规范实现前后端类型安全：
+
+1. 后端自动生成 OpenAPI schema: `http://localhost:8000/openapi.json`
+2. 前端使用 hey-api/openapi-ts 自动生成 TypeScript SDK
+3. 修改后端 API 后运行 `npm run api:generate` 更新前端类型
 
 ---
 
@@ -103,20 +124,39 @@ docker compose up -d
 
 ```text
 blog_fr/
-├── backend/            # FastAPI 后端服务
-│   ├── app/            # 业务逻辑
-│   ├── tests/          # pytest 测试
-│   └── alembic/        # 数据库迁移
-├── frontend/           # React 前端应用
-│   ├── src/            # 源代码
-│   ├── tests/          # Vitest & Playwright 测试
-│   └── docs/           # 前端详细文档
-├── scripts/            # 通用自动化脚本
-├── docker-compose.yml  # 生产环境配置
-└── README.md           # 本文件
+├── backend/                      # FastAPI 后端服务
+│   ├── app/
+│   │   ├── core/                # 核心配置和工具
+│   │   ├── users/               # 用户认证和授权
+│   │   ├── posts/               # 文章管理
+│   │   ├── media/               # 媒体文件管理
+│   │   └── middleware/          # 自定义中间件
+│   ├── tests/                   # Pytest 测试
+│   ├── alembic/                 # 数据库迁移
+│   └── pyproject.toml           # Python 项目配置
+├── frontend/                     # Next.js 前端应用
+│   ├── src/
+│   │   ├── app/                 # Next.js App Router 页面
+│   │   ├── components/          # React 组件
+│   │   ├── shared/api/          # 自动生成的 API SDK
+│   │   └── config/              # 配置文件
+│   ├── public/                  # 静态资源
+│   └── package.json             # Node.js 项目配置
+├── scripts/                     # 自动化脚本
+├── docker-compose.yml           # 生产环境配置
+├── docker-compose.dev.yml       # 开发环境配置
+├── ARCHITECTURE.md              # 架构详细文档
+└── README.md                    # 本文件
 ```
 
-关于前端架构的详细说明，请参阅 [前端架构文档](./frontend/PROJECT_STRUCTURE.md)。
+### 架构亮点
+
+- **混合渲染**: Next.js App Router 支持 SSR 和 CSR，根据页面特性自动选择最佳渲染策略
+- **类型安全**: OpenAPI schema 自动生成 TypeScript SDK，确保前后端接口类型一致
+- **模块化设计**: 后端按功能模块划分（users、posts、media），前端按组件和功能组织
+- **开发体验**: 支持 Hot Reload、TypeScript 检查、自动格式化
+
+关于架构的详细说明，请参阅 [架构文档](./ARCHITECTURE.md)。
 
 ---
 
@@ -126,16 +166,86 @@ blog_fr/
 
 ```bash
 cd backend
+# 运行所有测试
 pytest
+
+# 运行测试并生成覆盖率报告
+pytest --cov=app --cov-report=html
+
+# 运行特定模块的测试
+pytest tests/api/posts/
+pytest tests/api/users/
+pytest tests/api/media/
 ```
 
-### 前端测试
+### 数据库迁移
 
 ```bash
-cd frontend
-npm run test        # 单元测试
-npm run test:e2e    # E2E 测试
+cd backend
+# 创建新的迁移
+alembic revision --autogenerate -m "描述"
+
+# 应用迁移
+alembic upgrade head
+
+# 回滚迁移
+alembic downgrade -1
 ```
+
+---
+
+## 🚀 部署
+
+### 生产环境部署
+
+```bash
+# 构建并启动所有服务
+docker compose up -d
+
+# 查看日志
+docker compose logs -f
+
+# 停止服务
+docker compose down
+```
+
+### 环境变量配置
+
+主要环境变量（参考 `.env.example`）：
+
+- **数据库**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+- **后端**: `SECRET_KEY`, `ENVIRONMENT`, `API_PREFIX`
+- **前端**: `NEXT_PUBLIC_API_URL`, `BACKEND_INTERNAL_URL`
+
+### API 端点
+
+后端提供的主要 API 接口：
+
+- **用户认证**: `/api/v1/users/register`, `/api/v1/users/login`
+- **文章管理**: `/api/v1/posts/`, `/api/v1/posts/article/{slug}`
+- **媒体文件**: `/api/v1/media/upload`, `/api/v1/media/files/`
+- **API 文档**: `/scalar` (交互式 API 文档)
+
+---
+
+## 📚 相关文档
+
+- [架构设计文档](./ARCHITECTURE.md) - 混合渲染架构和数据流详解
+- [后端 API 文档](./backend/README.md) - FastAPI 开发指南
+- [前端开发指南](./frontend/SETUP.md) - Next.js 开发环境配置
+- [API 集成指南](./docs/api/FRONTEND_API_INTEGRATION_GUIDE.md) - 前端如何使用后端 API
+
+---
+
+## 🤝 贡献指南
+
+欢迎贡献！请随时提交 Issue 或 Pull Request。
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
 
 ---
 

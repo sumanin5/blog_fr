@@ -11,43 +11,43 @@ export type MenuItem = {
 
 export const BlogArray: MenuItem[] = [
   {
-    title: "blog",
-    link: "/blog",
+    title: "博客列表",
+    link: "/posts",
     icon: BookOpen,
     description: "前端深度架构、性能优化与开发随笔",
   },
   {
-    title: "mdx",
-    link: "/mdx/showcase",
+    title: "MDX 测试",
+    link: "/test-mdx",
     icon: FileCode,
-    description: "MDX 示例",
+    description: "验证 MDX 与代码块渲染效果",
   },
 ];
 
 export const MenuArray: MenuItem[] = [
   {
-    title: "Home",
+    title: "首页",
     link: "/",
     icon: Home,
-    description: "Home",
+    description: "返回首页",
   },
   {
-    title: "Blog",
-    link: "/blog",
+    title: "博客",
+    link: "/posts",
     icon: BookOpen,
-    description: "Blog",
+    description: "技术文章与知识分享",
     items: BlogArray,
   },
   {
-    title: "Dashboard",
+    title: "仪表盘",
     link: "/dashboard",
     icon: LayoutDashboard,
-    description: "Dashboard",
+    description: "管理你的内容",
   },
   {
-    title: "About",
+    title: "关于",
     link: "/about",
     icon: Info,
-    description: "About",
+    description: "了解更多信息",
   },
 ];
