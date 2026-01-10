@@ -9,11 +9,12 @@ from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from app.posts.model import PostStatus, PostType
+from app.users.schema import UserResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 # 使用 TYPE_CHECKING 避免循环导入
 if TYPE_CHECKING:
-    from app.users.schema import UserResponse
+    pass
 
 # ========================================
 # 标签 (Tag) Schemas
@@ -169,9 +170,13 @@ class PostShortResponse(PostBase):
     author_id: UUID
 
     # 关联对象（需要预加载）
-    author: Optional["UserResponse"] = None  # 作者信息（使用字符串引用避免循环导入）
+    author: Optional["UserResponse"] = None  # 作者信息
     category: Optional[CategoryResponse] = None
     tags: List[TagResponse] = []
+
+    # 追踪信息
+    git_hash: Optional[str] = None
+    source_path: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -200,8 +205,22 @@ class PostListResponse(BaseModel):
     offset: int
 
 
+class PostPreviewRequest(BaseModel):
+    """文章预览请求"""
+
+    content_mdx: str = Field(..., description="要预览的 MDX 内容")
+
+
+class PostPreviewResponse(BaseModel):
+    """文章预览响应"""
+
+    content_html: str
+    toc: list
+    reading_time: int
+    excerpt: str
+
+
 # 解析延迟引用（Pydantic v2）
-from app.users.schema import UserResponse
 
 PostShortResponse.model_rebuild()
 PostDetailResponse.model_rebuild()

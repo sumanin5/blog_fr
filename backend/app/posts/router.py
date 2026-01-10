@@ -26,6 +26,8 @@ from app.posts.schema import (
     CategoryUpdate,
     PostCreate,
     PostDetailResponse,
+    PostPreviewRequest,
+    PostPreviewResponse,
     PostShortResponse,
     PostUpdate,
     TagMergeRequest,
@@ -61,6 +63,21 @@ async def get_post_types():
     ]
     """
     return [{"value": pt.value, "label": pt.value.title()} for pt in PostType]
+
+
+@router.post("/preview", response_model=PostPreviewResponse, summary="文章实时预览")
+async def preview_post(request: PostPreviewRequest):
+    """通用的文章预览接口
+
+    接收 MDX 内容，返回处理后的 HTML、目录、摘要和阅读时间
+    """
+    processor = utils.PostProcessor(request.content_mdx).process()
+    return PostPreviewResponse(
+        content_html=processor.content_html,
+        toc=processor.toc,
+        reading_time=processor.reading_time,
+        excerpt=processor.excerpt,
+    )
 
 
 @router.get(

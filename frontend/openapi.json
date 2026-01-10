@@ -2709,6 +2709,98 @@
         }
       }
     },
+    "/api/v1/posts/preview": {
+      "post": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "文章实时预览",
+        "description": "通用的文章预览接口\n\n接收 MDX 内容，返回处理后的 HTML、目录、摘要和阅读时间",
+        "operationId": "previewPost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/posts/me": {
       "get": {
         "tags": [
@@ -5843,19 +5935,6 @@
             "title": "Tags",
             "default": []
           },
-          "content_mdx": {
-            "type": "string",
-            "title": "Content Mdx"
-          },
-          "content_html": {
-            "type": "string",
-            "title": "Content Html"
-          },
-          "toc": {
-            "items": {},
-            "type": "array",
-            "title": "Toc"
-          },
           "git_hash": {
             "anyOf": [
               {
@@ -5877,6 +5956,19 @@
               }
             ],
             "title": "Source Path"
+          },
+          "content_mdx": {
+            "type": "string",
+            "title": "Content Mdx"
+          },
+          "content_html": {
+            "type": "string",
+            "title": "Content Html"
+          },
+          "toc": {
+            "items": {},
+            "type": "array",
+            "title": "Toc"
           },
           "versions": {
             "items": {
@@ -5905,6 +5997,51 @@
         ],
         "title": "PostDetailResponse",
         "description": "文章详情响应"
+      },
+      "PostPreviewRequest": {
+        "properties": {
+          "content_mdx": {
+            "type": "string",
+            "title": "Content Mdx",
+            "description": "要预览的 MDX 内容"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content_mdx"
+        ],
+        "title": "PostPreviewRequest",
+        "description": "文章预览请求"
+      },
+      "PostPreviewResponse": {
+        "properties": {
+          "content_html": {
+            "type": "string",
+            "title": "Content Html"
+          },
+          "toc": {
+            "items": {},
+            "type": "array",
+            "title": "Toc"
+          },
+          "reading_time": {
+            "type": "integer",
+            "title": "Reading Time"
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content_html",
+          "toc",
+          "reading_time",
+          "excerpt"
+        ],
+        "title": "PostPreviewResponse",
+        "description": "文章预览响应"
       },
       "PostShortResponse": {
         "properties": {
@@ -6075,6 +6212,28 @@
             "type": "array",
             "title": "Tags",
             "default": []
+          },
+          "git_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Hash"
+          },
+          "source_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Path"
           }
         },
         "type": "object",

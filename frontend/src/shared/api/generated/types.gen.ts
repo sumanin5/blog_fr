@@ -717,6 +717,14 @@ export type PostDetailResponse = {
      */
     tags?: Array<TagResponse>;
     /**
+     * Git Hash
+     */
+    git_hash?: string | null;
+    /**
+     * Source Path
+     */
+    source_path?: string | null;
+    /**
      * Content Mdx
      */
     content_mdx: string;
@@ -729,17 +737,47 @@ export type PostDetailResponse = {
      */
     toc: Array<unknown>;
     /**
-     * Git Hash
-     */
-    git_hash?: string | null;
-    /**
-     * Source Path
-     */
-    source_path?: string | null;
-    /**
      * Versions
      */
     versions?: Array<PostVersionResponse>;
+};
+
+/**
+ * PostPreviewRequest
+ *
+ * 文章预览请求
+ */
+export type PostPreviewRequest = {
+    /**
+     * Content Mdx
+     *
+     * 要预览的 MDX 内容
+     */
+    content_mdx: string;
+};
+
+/**
+ * PostPreviewResponse
+ *
+ * 文章预览响应
+ */
+export type PostPreviewResponse = {
+    /**
+     * Content Html
+     */
+    content_html: string;
+    /**
+     * Toc
+     */
+    toc: Array<unknown>;
+    /**
+     * Reading Time
+     */
+    reading_time: number;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
 };
 
 /**
@@ -832,6 +870,14 @@ export type PostShortResponse = {
      * Tags
      */
     tags?: Array<TagResponse>;
+    /**
+     * Git Hash
+     */
+    git_hash?: string | null;
+    /**
+     * Source Path
+     */
+    source_path?: string | null;
 };
 
 /**
@@ -2754,6 +2800,51 @@ export type GetPostTypesResponses = {
 };
 
 export type GetPostTypesResponse = GetPostTypesResponses[keyof GetPostTypesResponses];
+
+export type PreviewPostData = {
+    body: PostPreviewRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/posts/preview';
+};
+
+export type PreviewPostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type PreviewPostError = PreviewPostErrors[keyof PreviewPostErrors];
+
+export type PreviewPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PostPreviewResponse;
+};
+
+export type PreviewPostResponse = PreviewPostResponses[keyof PreviewPostResponses];
 
 export type GetMyPostsData = {
     body?: never;

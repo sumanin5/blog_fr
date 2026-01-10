@@ -275,6 +275,8 @@ def build_posts_query(
             Post.meta_title,
             Post.meta_description,
             Post.meta_keywords,
+            Post.git_hash,
+            Post.source_path,
         ),
         selectinload(Post.category),
         selectinload(Post.author),
