@@ -27,6 +27,7 @@
 - [x] **Schema 完善**: 在短响应模型中补充 Git 追踪字段。
 - [x] **预览接口**: 开发专用的预览 API (`/posts/preview`)，支持实时解析 MDX 而不持久化。
 - [x] **自动生成工具**: 修复并打通了 `generate-api.sh` 脚本，实现前后端 SDK 零成本同步。
+- [x] **GitOps 核心服务**: 完成了后端 `GitOpsService`，实现了基于文件扫描的全量同步逻辑 (Sync All)，支持 Create/Update/Delete 完整生命周期，并包含完善的集成测试。
 
 ---
 
@@ -37,15 +38,40 @@
 - [x] **全功能分类管理**:
   - [x] 完成“新增/编辑分类”的对话框表单。
   - [x] 对接后端 PATCH/POST 接口。
-- [ ] **标签治理 (Tag Management)**:
-  - [ ] 实现标签合并 (Merge) 界面。
-  - [ ] 实现孤立标签清理接口对接。
+- [x] **标签治理 (Tag Management)**:
+  - [x] 实现标签合并 (Merge) 界面。
+  - [x] 实现孤立标签清理接口对接。
 - [ ] **删除确认**: 为全站删除操作引入 `AlertDialog` 确认流程。
 
 ### 2. Git 同步核心 (Git Core)
 
-- [ ] **后端物理同步**: 实现真正的 `git pull` 与本地 MDX 文件扫描逻辑。
-- [ ] **同步差异对比**: 在 UI 上展示本地文件与数据库记录的差异明细。
+### 2. Git 同步核心 (Git Core) - **High Complexity** ⭐️⭐️⭐️
+
+**目标**：实现 "Git as Source of Truth" 的博客工作流。允许用户通过 push git 仓库来管理文章，而非仅依赖后台编辑器。
+
+**核心挑战与性能要求**：
+
+- **增量同步 (Incremental Sync)**：
+  - 避免全量扫描和全量数据库写入。
+  - **策略**：构建 `file_path -> content_hash (sha256)` 的映射。每次同步仅处理 `git diff` 产生变更的文件。
+- **Frontmatter 解析**：
+  - 高效解析 MDX 头部元数据（title, slug, date, tags），将其映射到数据库字段。
+- **双向冲突处理**：
+  - **原则**：Git 仓库具有最高优先级。
+  - 当发生冲突时，Git 版本强制覆盖数据库版本（但可以保留一个数据库版本快照 `PostVersion` 以防万一）。
+- **任务队列**：
+  - 由于 `git pull` 和文件扫描属 IO 密集型且耗时较长，建议设计为异步任务（Background Task）。
+
+**细分任务**：
+
+- [x] **物理层**: 后端实现 `GitClient` 和 `MDXScanner`。
+- [x] **同步层**: 后端实现 `SyncManager` (即 GitOpsService) 及其 CRUD 映射。
+- [ ] **集成层**: 将 `GitClient.pull()` 集成到同步流程中，实现真正的远程同步。
+- [ ] **UI 层**:
+  - [ ] 同步触发器：在前端“Git 同步中心”添加“立即同步”按钮。
+  - [ ] 状态反馈：展示上次同步时间、同步结果统计 (Added/Updated/Deleted)。
+  - [ ] (可选) 差异预览页：在执行同步前，展示“即将新增 3 篇，更新 2 篇，删除 1 篇”。
+- [ ] **Webhook**: (可选) 支持 GitHub Webhook 自动触发同步。
 
 ### 3. 内容创作增强 (Editor Extra)
 

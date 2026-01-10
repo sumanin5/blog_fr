@@ -61,6 +61,38 @@
 - **数据流**: 服务端组件优先获取数据 (SSR)，客户端组件通过 React Query 获取数据 (CSR)。
 - **提交信息**: 遵循 Conventional Commits 规范。
 
+## 4. 自动化脚本 (Automation Scripts)
+
+为了简化开发与运维，项目在 `scripts/` 目录下提供了一系列自动化脚本。**任何涉及 API 更新或环境重置的操作，优先使用脚本。**
+
+### 核心开发脚本
+
+- **`./scripts/generate-api.sh`** (最常用)
+
+  - **功能**：全自动 API 同步脚本。
+  - **流程**：自动调用后端导出 OpenAPI JSON -> 调用前端 `hey-api` 生成 TypeScript SDK。
+  - **使用场景**：每次修改后端 `router` 或 `schema` 后，**必须**运行此脚本，前端才能获得最新的类型提示。
+
+- **`./scripts/db-migrate.sh`**
+  - **功能**：数据库迁移辅助工具。
+  - **使用场景**：创建新表或修改字段后。
+  - **参数**：
+    - 不带参数：自动生成迁移文件并应用。
+    - `reset`: **危险操作**，重置整个数据库（Drop all tables）。
+
+### Docker 运维脚本
+
+- **`./scripts/docker-rebuild.sh`**
+
+  - **功能**：完全重建并重启整个 Docker 集群。
+  - **使用场景**：当 `Dockerfile` 或 `pyproject.toml/package.json` 发生变更，需要重新打镜像时。
+
+- **`./scripts/docker-rebuild-frontend.sh`**
+  - **功能**：仅重建前端容器。
+  - **使用场景**：调试前端构建问题时。
+
 ---
+
+## 5. 开发规范摘要 (Development Standards)
 
 _Last Updated: 2026-01-10_

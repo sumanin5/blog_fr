@@ -43,15 +43,37 @@ async def sync_post_tags(
     if post.id is None:
         raise ValueError("Post must be persisted (have an ID) before syncing tags")
 
-    tag_ids = []
+    # 使用字典去重，保持顺序（Python 3.7+）
+    unique_tags = {}
     for name in tag_names:
+        # 清理并限制标签名长度（数据库限制50字符）
+        name = name.strip()
+        if not name:
+            continue
+
+        # 如果超过50字符，截断并添加省略号
+        if len(name) > 50:
+            name = name[:47] + "..."
+
+        # 生成slug并确保不超过50字符
         tag_slug = python_slugify(name)
-        tag = await crud.get_or_create_tag(session, name, tag_slug)
+        if len(tag_slug) > 50:
+            tag_slug = tag_slug[:50]
+
+        # 使用标签名作为key去重（忽略大小写）
+        unique_tags[name.lower()] = (name, tag_slug)
+
+    # 获取或创建标签
+    tag_ids = []
+    for name, slug in unique_tags.values():
+        tag = await crud.get_or_create_tag(session, name, slug)
         tag_ids.append(tag.id)
 
+    # 删除旧的关联
     stmt = delete(PostTagLink).where(PostTagLink.post_id == post.id)
     await session.exec(stmt)
 
+    # 创建新的关联
     for tag_id in tag_ids:
         link = PostTagLink(post_id=post.id, tag_id=tag_id)
         session.add(link)

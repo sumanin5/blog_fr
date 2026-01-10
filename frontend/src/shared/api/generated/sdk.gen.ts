@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
+import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, BookmarkPostData, BookmarkPostErrors, BookmarkPostResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, LikePostData, LikePostErrors, LikePostResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, UnbookmarkPostData, UnbookmarkPostErrors, UnbookmarkPostResponses, UnlikePostData, UnlikePostErrors, UnlikePostResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -559,6 +559,34 @@ export const getPostBySlug = <ThrowOnError extends boolean = false>(options: Opt
     url: '/api/v1/posts/{post_type}/slug/{slug}',
     ...options
 });
+
+/**
+ * 取消点赞
+ *
+ * 取消点赞 (-1)
+ */
+export const unlikePost = <ThrowOnError extends boolean = false>(options: Options<UnlikePostData, ThrowOnError>) => (options.client ?? client).delete<UnlikePostResponses, UnlikePostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/like', ...options });
+
+/**
+ * 点赞文章
+ *
+ * 点赞文章 (+1)
+ */
+export const likePost = <ThrowOnError extends boolean = false>(options: Options<LikePostData, ThrowOnError>) => (options.client ?? client).post<LikePostResponses, LikePostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/like', ...options });
+
+/**
+ * 取消收藏
+ *
+ * 取消收藏 (-1)
+ */
+export const unbookmarkPost = <ThrowOnError extends boolean = false>(options: Options<UnbookmarkPostData, ThrowOnError>) => (options.client ?? client).delete<UnbookmarkPostResponses, UnbookmarkPostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/bookmark', ...options });
+
+/**
+ * 收藏文章
+ *
+ * 收藏文章 (+1)
+ */
+export const bookmarkPost = <ThrowOnError extends boolean = false>(options: Options<BookmarkPostData, ThrowOnError>) => (options.client ?? client).post<BookmarkPostResponses, BookmarkPostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/bookmark', ...options });
 
 /**
  * 删除分类

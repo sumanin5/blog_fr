@@ -3652,6 +3652,222 @@ export type GetPostBySlugResponses = {
 
 export type GetPostBySlugResponse = GetPostBySlugResponses[keyof GetPostBySlugResponses];
 
+export type UnlikePostData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_type}/{post_id}/like';
+};
+
+export type UnlikePostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type UnlikePostError = UnlikePostErrors[keyof UnlikePostErrors];
+
+export type UnlikePostResponses = {
+    /**
+     * Response Unlikepost
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type UnlikePostResponse = UnlikePostResponses[keyof UnlikePostResponses];
+
+export type LikePostData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_type}/{post_id}/like';
+};
+
+export type LikePostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type LikePostError = LikePostErrors[keyof LikePostErrors];
+
+export type LikePostResponses = {
+    /**
+     * Response Likepost
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type LikePostResponse = LikePostResponses[keyof LikePostResponses];
+
+export type UnbookmarkPostData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_type}/{post_id}/bookmark';
+};
+
+export type UnbookmarkPostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type UnbookmarkPostError = UnbookmarkPostErrors[keyof UnbookmarkPostErrors];
+
+export type UnbookmarkPostResponses = {
+    /**
+     * Response Unbookmarkpost
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type UnbookmarkPostResponse = UnbookmarkPostResponses[keyof UnbookmarkPostResponses];
+
+export type BookmarkPostData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_type}/{post_id}/bookmark';
+};
+
+export type BookmarkPostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type BookmarkPostError = BookmarkPostErrors[keyof BookmarkPostErrors];
+
+export type BookmarkPostResponses = {
+    /**
+     * Response Bookmarkpost
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type BookmarkPostResponse = BookmarkPostResponses[keyof BookmarkPostResponses];
+
 export type DeleteCategoryByTypeData = {
     body?: never;
     path: {

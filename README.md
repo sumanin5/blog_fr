@@ -110,6 +110,20 @@ fastapi dev app/main.py  # 启动开发服务器 (http://localhost:8000)
 pytest            # 运行测试
 ```
 
+pytest # 运行测试
+
+````
+
+### 🔧 自动化开发脚本
+
+项目在 `scripts/` 目录下提供了一系列脚本来简化日常开发任务：
+
+| 脚本 | 描述 | 使用场景 |
+|------|------|----------|
+| `./scripts/generate-api.sh` | **全自动生成 API SDK** | 后端接口变更后，一键更新前端 TypeScript 类型定义 |
+| `./scripts/db-migrate.sh` | 数据库迁移辅助 | 创建新表或修改模型后使用 |
+| `./scripts/docker-rebuild.sh` | 重建所有 Docker 容器 | 修改了依赖或 Dockerfile 后使用 |
+
 ### API SDK 生成
 
 项目使用 OpenAPI 规范实现前后端类型安全：
@@ -147,7 +161,7 @@ blog_fr/
 ├── docker-compose.dev.yml       # 开发环境配置
 ├── ARCHITECTURE.md              # 架构详细文档
 └── README.md                    # 本文件
-```
+````
 
 ### 架构亮点
 

@@ -7,8 +7,14 @@ import {
   updateTag,
   mergeTags,
   deleteOrphanedTags,
-  TagResponse,
+  type TagResponse,
 } from "@/shared/api/generated";
+
+// Extend TagResponse to include optional properties that might be returned by backend
+// but not yet in OpenAPI schema (e.g. annotated counts)
+interface ExtendedTagResponse extends TagResponse {
+  post_count?: number;
+}
 import {
   Table,
   TableBody,
@@ -26,6 +32,7 @@ import {
   ShieldAlert,
   Merge,
   Search,
+  MoreHorizontal,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
@@ -49,7 +56,129 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
+
+// -----------------------------------------------------------------------------
+// Tag Merge Dialog Component
+// -----------------------------------------------------------------------------
+
+function TagMergeDialog({
+  open,
+  onOpenChange,
+  tags,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tags: TagResponse[];
+  onSuccess: () => void;
+}) {
+  const [sourceId, setSourceId] = React.useState("");
+  const [targetId, setTargetId] = React.useState("");
+
+  const mergeMutation = useMutation({
+    mutationFn: () =>
+      mergeTags({
+        body: { source_tag_id: sourceId, target_tag_id: targetId },
+        throwOnError: true,
+      }),
+    onSuccess: () => {
+      onSuccess();
+      onOpenChange(false);
+      setSourceId("");
+      setTargetId("");
+      toast.success("标签合并成功");
+    },
+    onError: (err) =>
+      toast.error(
+        "合并失败：" + (err instanceof Error ? err.message : "未知错误")
+      ),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>合并标签</DialogTitle>
+          <DialogDescription>
+            将“源标签”合并到“目标标签”。
+            <br />
+            <span className="text-destructive font-bold">
+              源标签将被永久删除
+            </span>
+            ，其关联的所有文章将自动转移到目标标签。
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>源标签 (Source)</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={sourceId}
+              onChange={(e) => setSourceId(e.target.value)}
+            >
+              <option value="">选择要删除的标签...</option>
+              {tags.map((t) => (
+                <option key={t.id} value={t.id} disabled={t.id === targetId}>
+                  {t.name} ({t.slug})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-center text-muted-foreground/50">
+            ⬇ 合并到
+          </div>
+
+          <div className="space-y-2">
+            <Label>目标标签 (Target)</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={targetId}
+              onChange={(e) => setTargetId(e.target.value)}
+            >
+              <option value="">选择保留的标签...</option>
+              {tags.map((t) => (
+                <option key={t.id} value={t.id} disabled={t.id === sourceId}>
+                  {t.name} ({t.slug})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => mergeMutation.mutate()}
+            disabled={
+              mergeMutation.isPending ||
+              !sourceId ||
+              !targetId ||
+              sourceId === targetId
+            }
+          >
+            {mergeMutation.isPending ? "合并中..." : "确认合并"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Main Config Page
+// -----------------------------------------------------------------------------
 
 export default function TagsPage() {
   const { user } = useAuth();
@@ -62,45 +191,38 @@ export default function TagsPage() {
   const [isMergeOpen, setIsMergeOpen] = React.useState(false);
   const [isCleanupOpen, setIsCleanupOpen] = React.useState(false);
 
-  // Forms
-  const [editForm, setEditForm] = React.useState({ name: "", slug: "" });
-  const [mergeForm, setMergeForm] = React.useState({
-    sourceId: "",
-    targetId: "",
+  // Edit Form
+  const [editForm, setEditForm] = React.useState({
+    name: "",
+    slug: "",
+    color: "",
   });
-
-  // Query Tags (We might need to implement a dedicated listTags endpoint logic if it's paginated differently,
-  // but assuming we can filter or search on client side for now if list is small, or use backend search)
-  // NOTE: The current SDK might not have a direct `listTags` for admin without filters.
-  // We'll use listTags from generated SDK, assuming it exists or we mock it for now.
-  // Checking router.py, there isn't a direct "list all tags" for admin, but usually tags are fetched via posts or separate endpoint.
-  // Let's check generated/sdk.gen.ts to be sure. I will assume it exists or use a workaround.
-  // Actually, checking standard blog implementations, usually there is `listTags`.
-
-  // WORKAROUND: If listTags is missing in SDK for simple listing, we might need to add it to backend.
-  // But for now, let's assume `listTags` exists as per standard conventions or we use `listCategoriesByType` equivalent for tags.
-  // Wait, I didn't see `listTags` in router.py explicitly exporting a general list.
-  // Let's implement the UI assuming the API exists, and if it fails, I'll fix the backend.
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin", "tags"],
     queryFn: async () => {
-      // Since we didn't explicitly see a "list all tags" endpoint in the viewed router.py snippets,
-      // only update/delete/merge.
-      // I'll fetch tags via a known public endpoint or assume one was generated.
-      // Re-checking previous context... standard `listTags` usually exists for autocomplete.
+      // Fetch all tags (page 1, large size)
+      // Warning: Backend limit is likely 50 or 100 via fastapi-pagination default Params
       return listTags({
-        query: { page: 1, size: 100 }, // Fetch first 100 for now
+        query: { page: 1, size: 50 },
         throwOnError: true,
       });
     },
+    // Only fetch if user is admin
+    enabled:
+      !!user?.role && (user.role === "admin" || user.role === "superadmin"),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string; name: string; slug: string }) =>
+    mutationFn: (data: {
+      id: string;
+      name: string;
+      slug: string;
+      color?: string;
+    }) =>
       updateTag({
         path: { tag_id: data.id },
-        body: { name: data.name, slug: data.slug },
+        body: { name: data.name, slug: data.slug, color: data.color },
         throwOnError: true,
       }),
     onSuccess: () => {
@@ -114,30 +236,13 @@ export default function TagsPage() {
       ),
   });
 
-  const mergeMutation = useMutation({
-    mutationFn: (data: { sourceId: string; targetId: string }) =>
-      mergeTags({
-        body: { source_tag_id: data.sourceId, target_tag_id: data.targetId },
-        throwOnError: true,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
-      toast.success("标签合并成功");
-      setIsMergeOpen(false);
-      setMergeForm({ sourceId: "", targetId: "" });
-    },
-    onError: (err) =>
-      toast.error(
-        "合并失败：" + (err instanceof Error ? err.message : "未知错误")
-      ),
-  });
-
   const cleanupMutation = useMutation({
     mutationFn: () => deleteOrphanedTags({ throwOnError: true }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
-      const responseData = data.data as unknown as { message: string };
-      toast.success(`清理完成: ${responseData.message}`);
+      // @ts-expect-error - access custom response message safely
+      const msg = data.data?.message || "清理完成";
+      toast.success(msg);
       setIsCleanupOpen(false);
     },
     onError: (err) =>
@@ -163,12 +268,24 @@ export default function TagsPage() {
     t.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleEdit = (tag: TagResponse) => {
+    setEditingTag(tag);
+    setEditForm({
+      name: tag.name,
+      slug: tag.slug,
+      color: tag.color || "#6c757d",
+    });
+    setIsEditOpen(true);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">标签治理</h1>
-          <p className="text-muted-foreground">合并重复标签，清理无用标签。</p>
+          <p className="text-muted-foreground">
+            管理全站标签、合并同义词及清理孤立数据。
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -195,15 +312,15 @@ export default function TagsPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 bg-muted/30 p-4 rounded-lg">
+      <div className="flex items-center gap-4 bg-muted/30 p-4 rounded-lg border">
         <Search className="h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="搜索标签..."
+          placeholder="搜索标签名称..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-xs bg-background"
         />
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground ml-auto">
           共 {tags.length} 个标签
         </div>
       </div>
@@ -214,6 +331,7 @@ export default function TagsPage() {
             <TableRow className="bg-muted/50">
               <TableHead>名称</TableHead>
               <TableHead>Slug</TableHead>
+              <TableHead>颜色</TableHead>
               <TableHead>关联文章数</TableHead>
               <TableHead className="text-right">操作</TableHead>
             </TableRow>
@@ -221,17 +339,17 @@ export default function TagsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
-                  正在加载...
+                <TableCell colSpan={5} className="h-24 text-center">
+                  正在加载标签数据...
                 </TableCell>
               </TableRow>
             ) : filteredTags.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  无匹配标签
+                  未找到匹配的标签
                 </TableCell>
               </TableRow>
             ) : (
@@ -239,33 +357,56 @@ export default function TagsPage() {
                 <TableRow key={tag.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Tags className="size-4 text-primary/60" />
+                      <Tags className="size-4 text-primary/40" />
                       <span className="font-medium">{tag.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
+                  <TableCell className="font-mono text-xs text-muted-foreground">
                     {tag.slug}
                   </TableCell>
                   <TableCell>
-                    {/* Assuming tag object has count or we calculate it? Schema usually has post_count */}
-                    <Badge variant="secondary">
-                      {(tag as unknown as { post_count: number }).post_count ??
-                        0}{" "}
-                      篇
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="size-3 rounded-full border shadow-sm"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {tag.color}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="font-mono">
+                      {(tag as ExtendedTagResponse).post_count ?? 0}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingTag(tag);
-                        setEditForm({ name: tag.name, slug: tag.slug });
-                        setIsEditOpen(true);
-                      }}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">打开菜单</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>操作</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleEdit(tag)}>
+                          <Edit2 className="mr-2 h-4 w-4" />
+                          编辑
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => {
+                            // 这里可以复用合并逻辑，或者单独做删除
+                            toast.info("请使用合并功能来移除此标签");
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -279,9 +420,9 @@ export default function TagsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>编辑标签</DialogTitle>
-            <DialogDescription>修改标签名称和 URL 别名</DialogDescription>
+            <DialogDescription>修改标签的基本信息。</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>标签名称</Label>
               <Input
@@ -291,14 +432,41 @@ export default function TagsPage() {
                 }
               />
             </div>
-            <div className="space-y-2">
-              <Label>Slug</Label>
-              <Input
-                value={editForm.slug}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, slug: e.target.value }))
-                }
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Slug</Label>
+                <Input
+                  value={editForm.slug}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({ ...prev, slug: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>颜色 (Hex)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    className="w-12 p-1 cursor-pointer"
+                    value={editForm.color}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                      }))
+                    }
+                  />
+                  <Input
+                    value={editForm.color}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -312,94 +480,21 @@ export default function TagsPage() {
               }
               disabled={updateMutation.isPending}
             >
-              保存
+              {updateMutation.isPending ? "保存中..." : "保存更改"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Merge Dialog */}
-      <Dialog open={isMergeOpen} onOpenChange={setIsMergeOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>合并标签</DialogTitle>
-            <DialogDescription>
-              将“源标签”合并到“目标标签”。合并后，所有关联文章将指向目标标签，
-              <span className="text-destructive font-bold">源标签将被删除</span>
-              。
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>源标签 (要被删除的)</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={mergeForm.sourceId}
-                onChange={(e) =>
-                  setMergeForm((prev) => ({
-                    ...prev,
-                    sourceId: e.target.value,
-                  }))
-                }
-              >
-                <option value="">选择标签...</option>
-                {tags.map((t) => (
-                  <option
-                    key={t.id}
-                    value={t.id}
-                    disabled={t.id === mergeForm.targetId}
-                  >
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex justify-center text-muted-foreground">
-              ⬇ 合并到 ⬇
-            </div>
-            <div className="space-y-2">
-              <Label>目标标签 (保留的)</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={mergeForm.targetId}
-                onChange={(e) =>
-                  setMergeForm((prev) => ({
-                    ...prev,
-                    targetId: e.target.value,
-                  }))
-                }
-              >
-                <option value="">选择标签...</option>
-                {tags.map((t) => (
-                  <option
-                    key={t.id}
-                    value={t.id}
-                    disabled={t.id === mergeForm.sourceId}
-                  >
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMergeOpen(false)}>
-              取消
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => mergeMutation.mutate(mergeForm)}
-              disabled={
-                mergeMutation.isPending ||
-                !mergeForm.sourceId ||
-                !mergeForm.targetId
-              }
-            >
-              确认合并
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Merge Dialog (Extracted Component) */}
+      <TagMergeDialog
+        open={isMergeOpen}
+        onOpenChange={setIsMergeOpen}
+        tags={tags}
+        onSuccess={() =>
+          queryClient.invalidateQueries({ queryKey: ["admin", "tags"] })
+        }
+      />
 
       {/* Cleanup Alert */}
       <AlertDialog open={isCleanupOpen} onOpenChange={setIsCleanupOpen}>
@@ -407,7 +502,10 @@ export default function TagsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>确认清理孤立标签？</AlertDialogTitle>
             <AlertDialogDescription>
-              此操作将永久删除所有未被任何文章引用的空标签。此操作无法撤销。
+              此操作将扫描整个数据库，并<strong>永久删除</strong>
+              所有未被任何文章引用的空标签。
+              <br />
+              这通常用于清理自动导入产生的垃圾数据。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -415,8 +513,9 @@ export default function TagsPage() {
             <AlertDialogAction
               onClick={() => cleanupMutation.mutate()}
               className="bg-destructive hover:bg-destructive/90"
+              disabled={cleanupMutation.isPending}
             >
-              确认清理
+              {cleanupMutation.isPending ? "清理中..." : "确认清理"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

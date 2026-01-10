@@ -10,7 +10,7 @@ from uuid import UUID
 
 from app.posts.model import PostStatus, PostType
 from app.users.schema import UserResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # 使用 TYPE_CHECKING 避免循环导入
 if TYPE_CHECKING:
@@ -119,6 +119,29 @@ class PostCreate(PostBase):
     source_path: Optional[str] = None
     commit_message: Optional[str] = None
 
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """验证标签列表"""
+        if v is None:
+            return v
+
+        # 限制标签数量
+        if len(v) > 20:
+            raise ValueError("标签数量不能超过20个")
+
+        # 验证每个标签的长度
+        validated_tags = []
+        for tag in v:
+            tag = tag.strip()
+            if not tag:
+                continue
+            if len(tag) > 50:
+                raise ValueError(f'标签名不能超过50个字符: "{tag[:20]}..."')
+            validated_tags.append(tag)
+
+        return validated_tags
+
 
 class PostUpdate(BaseModel):
     title: Optional[str] = None
@@ -138,6 +161,29 @@ class PostUpdate(BaseModel):
     git_hash: Optional[str] = None
     source_path: Optional[str] = None
     commit_message: Optional[str] = None
+
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """验证标签列表"""
+        if v is None:
+            return v
+
+        # 限制标签数量
+        if len(v) > 20:
+            raise ValueError("标签数量不能超过20个")
+
+        # 验证每个标签的长度
+        validated_tags = []
+        for tag in v:
+            tag = tag.strip()
+            if not tag:
+                continue
+            if len(tag) > 50:
+                raise ValueError(f'标签名不能超过50个字符: "{tag[:20]}..."')
+            validated_tags.append(tag)
+
+        return validated_tags
 
 
 class PostVersionResponse(BaseModel):

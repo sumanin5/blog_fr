@@ -306,6 +306,67 @@ async def get_post_by_slug(
 
 
 # ========================================
+# 互动接口 (无需认证)
+# ========================================
+
+
+@router.post(
+    "/{post_type}/{post_id}/like",
+    response_model=dict,
+    summary="点赞文章",
+)
+async def like_post(
+    post_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """点赞文章 (+1)"""
+    count = await service.update_post_like(session, post_id, increment=True)
+    return {"like_count": count}
+
+
+@router.delete(
+    "/{post_type}/{post_id}/like",
+    response_model=dict,
+    summary="取消点赞",
+)
+async def unlike_post(
+    post_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """取消点赞 (-1)"""
+    count = await service.update_post_like(session, post_id, increment=False)
+    return {"like_count": count}
+
+
+@router.post(
+    "/{post_type}/{post_id}/bookmark",
+    response_model=dict,
+    summary="收藏文章",
+)
+async def bookmark_post(
+    post_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """收藏文章 (+1)"""
+    count = await service.update_post_bookmark(session, post_id, increment=True)
+    return {"bookmark_count": count}
+
+
+@router.delete(
+    "/{post_type}/{post_id}/bookmark",
+    response_model=dict,
+    summary="取消收藏",
+)
+async def unbookmark_post(
+    post_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """取消收藏 (-1)"""
+    count = await service.update_post_bookmark(session, post_id, increment=False)
+    return {"bookmark_count": count}
+
+
+# ========================================
 # 创作接口 (需要认证)
 # ========================================
 

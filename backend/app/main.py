@@ -11,6 +11,7 @@ from app.core.error_handlers import (
 from app.core.exceptions import BaseAppException
 from app.core.monitoring import setup_monitoring
 from app.core.schemas import ErrorResponse
+from app.git_ops.router import router as git_ops_router
 from app.initial_data import init_db
 from app.media.router import router as media_router
 from app.middleware import setup_middleware
@@ -113,6 +114,7 @@ async def scalar_html():
 # ============================================================
 app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["users"])
 app.include_router(media_router, prefix=f"{settings.API_PREFIX}/media", tags=["media"])
+app.include_router(posts_router, prefix=f"{settings.API_PREFIX}", tags=["posts"])
 app.include_router(
-    posts_router, prefix=f"{settings.API_PREFIX}", tags=["posts"]
-)  # 注意：posts 路由内部已带前缀
+    git_ops_router, prefix=f"{settings.API_PREFIX}/ops/git", tags=["git-ops"]
+)

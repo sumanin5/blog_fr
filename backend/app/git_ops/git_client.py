@@ -1,0 +1,82 @@
+import asyncio
+import logging
+from pathlib import Path
+from typing import List, Tuple
+
+logger = logging.getLogger(__name__)
+
+
+class GitError(Exception):
+    pass
+
+
+class GitClient:
+    def __init__(self, repo_path: Path):
+        self.repo_path = repo_path
+        if not (repo_path / ".git").exists():
+            logger.warning(f"GitClient initialized with non-git directory: {repo_path}")
+
+    async def run(self, *args: str) -> Tuple[int, str, str]:
+        """运行 git 命令 (非阻塞)"""
+        cmd = ["git"] + list(args)
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=self.repo_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+            return process.returncode, stdout.decode().strip(), stderr.decode().strip()
+        except FileNotFoundError:
+            raise GitError("git command not found. Please install git.")
+        except Exception as e:
+            raise GitError(f"Error executing git command: {e}")
+
+    async def pull(self) -> str:
+        """执行 git pull"""
+        code, out, err = await self.run("pull")
+        if code != 0:
+            # 常见错误处理
+            if "not a git repository" in err.lower():
+                raise GitError("Not a git repository")
+            raise GitError(f"Git pull failed: {err}")
+        return out
+
+    async def get_current_hash(self) -> str:
+        """获取当前 HEAD hash"""
+        code, out, err = await self.run("rev-parse", "HEAD")
+        if code != 0:
+            raise GitError(f"Failed to get current hash: {err}")
+        return out
+
+    async def get_changed_files(self, since_hash: str) -> List[str]:
+        """获取自指定 hash 以来的变更文件列表"""
+        # git diff --name-only <old>..HEAD
+        code, out, err = await self.run("diff", "--name-only", f"{since_hash}..HEAD")
+        if code != 0:
+            raise GitError(f"Failed to get diff: {err}")
+
+        # 过滤掉空行
+        return [f.strip() for f in out.splitlines() if f.strip()]
+
+    async def get_file_status(self) -> List[Tuple[str, str]]:
+        """获取工作区文件状态 (git status --porcelain)
+
+        Returns:
+            List of (status, filepath)
+            e.g. [('M', 'README.md'), ('??', 'new_file.md')]
+        """
+        code, out, err = await self.run("status", "--porcelain")
+        if code != 0:
+            raise GitError(f"Failed to get status: {err}")
+
+        results = []
+        for line in out.splitlines():
+            if not line.strip():
+                continue
+            # porcelain format: XY Path
+            status_code = line[:2].strip()
+            path = line[3:].strip()
+            results.append((status_code, path))
+        return results

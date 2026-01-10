@@ -124,12 +124,23 @@ async def get_post_detail(
             )
             raise InsufficientPermissionsError("无权访问此草稿")
 
-    # 3. 已发布文章，任何人都可以访问
-    # 增加浏览量
-    await crud.increment_view_count(session, post.id)
+    # 3. 浏览量统计逻辑
+    # 只有当用户不是管理员时，才增加浏览量
+    # - 匿名用户 (None): +1
+    # - 普通用户 (USER): +1
+    # - 管理员 (ADMIN/SUPERADMIN): 不计数
+    should_increment_view = True
+    if current_user and current_user.is_admin:
+        should_increment_view = False
+        logger.debug(
+            f"Admin user {current_user.username} accessing post, view count skipped"
+        )
+
+    if should_increment_view:
+        await crud.increment_view_count(session, post.id)
 
     logger.debug(
-        f"Post detail accessed: post_id={post_id}, status={post.status}, user={'guest' if not current_user else current_user.id}"
+        f"Post detail accessed: post_id={post_id}, status={post.status}, user={'guest' if not current_user else current_user.username}"
     )
     return post
 
@@ -194,8 +205,12 @@ async def create_post(
     if not slug:
         slug = await generate_unique_slug(session, title)
     else:
-        # 如果手动指定了 slug，也要确保唯一
-        slug = await generate_unique_slug(session, slug)
+        # 如果手动指定了 slug，先检查是否已存在
+        existing_post = await crud.get_post_by_slug(session, slug)
+        if existing_post:
+            # 冲突，生成带后缀的新 slug
+            slug = await generate_unique_slug(session, slug)
+        # 否则直接使用用户指定的 slug
 
     # 5. 组装对象
     db_post = Post(
@@ -609,3 +624,62 @@ async def merge_tags(
         f"标签合并成功: '{source_name}' → '{result_tag.name}' by user {current_user.id}"
     )
     return result_tag
+
+
+# ========================================
+# 互动功能 (Likes & Bookmarks)
+# ========================================
+
+
+async def update_post_like(
+    session: AsyncSession, post_id: UUID, increment: bool = True
+) -> int:
+    """更新文章点赞数
+
+    Args:
+        session: 数据库会话
+        post_id: 文章ID
+        increment: True为增加，False为减少
+
+    Returns:
+        最新点赞数
+    """
+    post = await crud.get_post_by_id(session, post_id)
+    if not post:
+        raise PostNotFoundError()
+
+    if increment:
+        count = await crud.increment_like_count(session, post_id)
+        logger.debug(f"文章点赞 +1: {post.title} (Top: {count})")
+    else:
+        count = await crud.decrement_like_count(session, post_id)
+        logger.debug(f"文章点赞 -1: {post.title} (Top: {count})")
+
+    return count
+
+
+async def update_post_bookmark(
+    session: AsyncSession, post_id: UUID, increment: bool = True
+) -> int:
+    """更新文章收藏数
+
+    Args:
+        session: 数据库会话
+        post_id: 文章ID
+        increment: True为增加，False为减少
+
+    Returns:
+        最新收藏数
+    """
+    post = await crud.get_post_by_id(session, post_id)
+    if not post:
+        raise PostNotFoundError()
+
+    if increment:
+        count = await crud.increment_bookmark_count(session, post_id)
+        logger.debug(f"文章收藏 +1: {post.title} (Top: {count})")
+    else:
+        count = await crud.decrement_bookmark_count(session, post_id)
+        logger.debug(f"文章收藏 -1: {post.title} (Top: {count})")
+
+    return count

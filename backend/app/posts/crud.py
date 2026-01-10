@@ -82,6 +82,69 @@ async def increment_view_count(session: AsyncSession, post_id: UUID) -> None:
     await session.commit()
 
 
+async def increment_like_count(session: AsyncSession, post_id: UUID) -> int:
+    """原子化递增点赞数"""
+    from sqlalchemy import update
+
+    # 执行更新
+    stmt = update(Post).where(Post.id == post_id).values(like_count=Post.like_count + 1)
+    await session.exec(stmt)
+    await session.commit()
+
+    # 返回最新数量
+    post = await get_post_by_id(session, post_id)
+    return post.like_count if post else 0
+
+
+async def decrement_like_count(session: AsyncSession, post_id: UUID) -> int:
+    """原子化递减点赞数（从不小于0）"""
+    from sqlalchemy import update
+
+    # 仅当数量大于0时减少
+    stmt = (
+        update(Post)
+        .where(Post.id == post_id, Post.like_count > 0)
+        .values(like_count=Post.like_count - 1)
+    )
+    await session.exec(stmt)
+    await session.commit()
+
+    post = await get_post_by_id(session, post_id)
+    return post.like_count if post else 0
+
+
+async def increment_bookmark_count(session: AsyncSession, post_id: UUID) -> int:
+    """原子化递增收藏数"""
+    from sqlalchemy import update
+
+    stmt = (
+        update(Post)
+        .where(Post.id == post_id)
+        .values(bookmark_count=Post.bookmark_count + 1)
+    )
+    await session.exec(stmt)
+    await session.commit()
+
+    post = await get_post_by_id(session, post_id)
+    return post.bookmark_count if post else 0
+
+
+async def decrement_bookmark_count(session: AsyncSession, post_id: UUID) -> int:
+    """原子化递减收藏数（从不小于0）"""
+    from sqlalchemy import update
+
+    stmt = (
+        update(Post)
+        .where(Post.id == post_id, Post.bookmark_count > 0)
+        .values(bookmark_count=Post.bookmark_count - 1)
+    )
+    await session.exec(stmt)
+    await session.commit()
+
+    post = await get_post_by_id(session, post_id)
+    return post.bookmark_count if post else 0
+
+
 # ========================================
 # 分类 (Category) CRUD
 # ========================================

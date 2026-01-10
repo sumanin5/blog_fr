@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     )
 
     # ==========================================
+    # GitOps 内容配置
+    # ==========================================
+    CONTENT_DIR: str = Field(default="content", description="Git 内容仓库根目录")
+
+    # ==========================================
     # 媒体文件配置
     # ==========================================
     MEDIA_ROOT: str = Field(default="media_store", description="媒体文件存储根目录")
