@@ -18,20 +18,24 @@ GitOps 模块是一个**内容同步引擎**，实现了从文件系统（Git �
 ### ✅ 已实现
 
 1. **MDX 文件扫描**
+
    - 递归扫描 `content/` 目录下的 `.md` 和 `.mdx` 文件
    - 解析 Frontmatter 元数据（标题、摘要、封面等）
    - 提取正文内容
 
 2. **内容哈希计算**
+
    - 全文哈希（`content_hash`）- 用于变更检测
    - 元数据哈希（`meta_hash`）- 用于判断是否仅修改了 frontmatter
 
 3. **增量同步逻辑**
+
    - **新增** - 文件存在但数据库中无记录
    - **更新** - 文件已存在且数据库中有对应记录
    - **删除** - 数据库中有记录但文件已被删除
 
 4. **手动触发接口**
+
    - `POST /api/v1/ops/git/sync` - 管理员触发同步
    - 返回详细统计信息（新增/更新/删除数量、错误列表）
 
@@ -43,16 +47,19 @@ GitOps 模块是一个**内容同步引擎**，实现了从文件系统（Git �
 ### 🚧 待实现
 
 1. **Git 集成**（已预留 `GitClient` 类）
+
    - 自动 `git pull` 拉取最新内容
    - 检测文件变更（`git diff`）- 只同步变更的文件
    - 获取 commit 信息
 
 2. **自动化触发**
+
    - 定时任务（Cron / APScheduler）
    - Webhook 监听（GitHub/GitLab Webhooks）
    - 文件系统监听（watchdog）
 
 3. **高级功能**
+
    - 增量同步优化（只处理变更文件）
    - 并发处理（asyncio.gather）
    - 同步历史记录
@@ -60,6 +67,7 @@ GitOps 模块是一个**内容同步引擎**，实现了从文件系统（Git �
    - 草稿/发布状态管理
 
 4. **Frontmatter 映射增强**
+
    - 标签（tags）自动关联
    - 分类（category）自动创建/关联
    - 自定义字段映射
@@ -228,14 +236,24 @@ cover: "https://example.com/cover.jpg"
 
 ### 3. 触发同步
 
-**方式一：通过 API**
+**方式一：命令行脚本（推荐）**
+
+```bash
+# 在 backend 目录下执行
+python scripts/sync_git_content.py
+
+# 或者
+python -m scripts.sync_git_content
+```
+
+**方式二：通过 API**
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/ops/git/sync \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
-**方式二：通过代码**
+**方式三：通过代码**
 
 ```python
 from app.git_ops.service import GitOpsService
@@ -264,17 +282,18 @@ print(f"Added: {len(stats.added)}, Updated: {len(stats.updated)}")
 
 ## 📁 Frontmatter 字段映射
 
-| Frontmatter 字段 | Post 模型字段 | 说明 |
-|-----------------|---------------|------|
-| `title` | `title` | 文章标题 |
-| `slug` | `slug` | URL 友好标识符 |
-| `summary` / `excerpt` | `excerpt` | 文章摘要 |
-| `published` | `is_published` | 发布状态（默认 true）|
-| `cover` / `image` | `cover_image` | 封面图片 URL |
-| `content` (正文) | `content_mdx` | MDX 格式正文 |
-| - | `source_path` | 文件相对路径（自动填充）|
+| Frontmatter 字段      | Post 模型字段  | 说明                     |
+| --------------------- | -------------- | ------------------------ |
+| `title`               | `title`        | 文章标题                 |
+| `slug`                | `slug`         | URL 友好标识符           |
+| `summary` / `excerpt` | `excerpt`      | 文章摘要                 |
+| `published`           | `is_published` | 发布状态（默认 true）    |
+| `cover` / `image`     | `cover_image`  | 封面图片 URL             |
+| `content` (正文)      | `content_mdx`  | MDX 格式正文             |
+| -                     | `source_path`  | 文件相对路径（自动填充） |
 
 **待支持字段：**
+
 - `tags` → 标签关联
 - `category` → 分类关联
 - `date` → 创建时间覆盖
@@ -302,23 +321,26 @@ print(f"Added: {len(stats.added)}, Updated: {len(stats.updated)}")
 
 ### 异常类型
 
-| 异常 | HTTP 状态码 | 说明 |
-|------|------------|------|
-| `GitOpsConfigurationError` | 500 | 配置或环境错误（致命）|
-| `GitOpsSyncError` | 400 | 同步过程中的非致命错误 |
-| `ValidationError` | 422 | Pydantic 验证失败 |
+| 异常                       | HTTP 状态码 | 说明                   |
+| -------------------------- | ----------- | ---------------------- |
+| `GitOpsConfigurationError` | 500         | 配置或环境错误（致命） |
+| `GitOpsSyncError`          | 400         | 同步过程中的非致命错误 |
+| `ValidationError`          | 422         | Pydantic 验证失败      |
 
 ### 常见问题
 
 **问题：同步后文章丢失**
+
 - 检查文件 `source_path` 字段是否正确
 - 确认文件未被意外删除
 
 **问题：Frontmatter 解析失败**
+
 - 确保 YAML 格式正确（三个短横线包裹）
 - 使用 YAML 验证器检查语法
 
 **问题：权限不足**
+
 - 确认当前用户具有 ADMIN 或 SUPERADMIN 角色
 
 ---
@@ -326,21 +348,25 @@ print(f"Added: {len(stats.added)}, Updated: {len(stats.updated)}")
 ## 🚀 未来路线图
 
 ### Phase 1: 基础增强（当前）
+
 - ✅ 基础文件扫描
 - ✅ CRUD 同步
 - 🚧 标签/分类映射
 
 ### Phase 2: Git 集成
+
 - 实现 `git pull` 自动拉取
 - 基于 `git diff` 的增量同步
 - Commit 信息记录
 
 ### Phase 3: 自动化
+
 - 后台定时任务
 - Webhook 触发
 - 文件系统监听
 
 ### Phase 4: 高级特性
+
 - 冲突解决策略
 - 多仓库支持
 - 同步历史查询
@@ -353,6 +379,7 @@ print(f"Added: {len(stats.added)}, Updated: {len(stats.updated)}")
 ### 测试用例
 
 1. **功能测试**
+
    - 新文件同步（CREATE）
    - 文件更新同步（UPDATE）
    - 文件删除同步（DELETE）
@@ -360,6 +387,7 @@ print(f"Added: {len(stats.added)}, Updated: {len(stats.updated)}")
    - 哈希计算正确性
 
 2. **边界测试**
+
    - 空目录处理
    - 无效 Frontmatter
    - 超大文件处理

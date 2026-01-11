@@ -1,16 +1,18 @@
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from app.core.config import settings
 from app.git_ops.exceptions import GitOpsConfigurationError, GitOpsSyncError
+from app.git_ops.git_client import GitClient, GitError
+from app.git_ops.mapper import FrontmatterMapper
 from app.git_ops.scanner import MDXScanner, ScannedPost
 from app.posts import service as post_service
 from app.posts.model import Post
 from app.posts.schema import PostCreate, PostUpdate
 from app.users.model import User, UserRole
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -34,8 +36,16 @@ class GitOpsService:
             raise GitOpsConfigurationError("settings.CONTENT_DIR not configured")
 
         self.content_dir = Path(settings.CONTENT_DIR)
+
+        # ✅ 初始化时就检查目录是否存在
+        if not self.content_dir.exists():
+            raise GitOpsConfigurationError(
+                f"Content directory not found: {self.content_dir}"
+            )
+
         self.scanner = MDXScanner(self.content_dir)
-        # self.git_client = GitClient(self.content_dir) # Reserved for git pull integration
+        self.mapper = FrontmatterMapper(session)
+        self.git_client = GitClient(self.content_dir)
 
     async def sync_all(self, default_user: User = None) -> SyncStats:
         """执行全量同步（扫描本地文件 -> 更新数据库）"""
@@ -43,11 +53,6 @@ class GitOpsService:
         stats = SyncStats()
 
         logger.info("Starting GitOps sync...")
-
-        if not self.content_dir.exists():
-            raise GitOpsConfigurationError(
-                f"Content directory not found: {self.content_dir}"
-            )
 
         # 0. 确定操作用户 (作者)
         operating_user = default_user
@@ -57,10 +62,21 @@ class GitOpsService:
             result = await self.session.exec(stmt)
             operating_user = result.first()
 
-        if not operating_user:
             raise GitOpsConfigurationError(
                 "No user provided and no superuser found. Cannot assign author to git-synced posts."
             )
+
+        # 0.5 Git Pull (如果在 Git 仓库中)
+        try:
+            logger.info("Attempting git pull...")
+            pull_output = await self.git_client.pull()
+            logger.info(f"Git pull result: {pull_output}")
+        except GitError as e:
+            # 允许失败（例如：不是 Git 仓库，或者网络问题），降级为仅同步本地
+            # 但记录为 error 并在 stats 中体现
+            warning_msg = f"Git pull skipped/failed: {e}"
+            logger.warning(warning_msg)
+            stats.errors.append(warning_msg)
 
         # 1. 扫描文件系统
         scanned_posts: List[ScannedPost] = await self.scanner.scan_all()
@@ -84,25 +100,26 @@ class GitOpsService:
                 await self._sync_single_file(
                     file_path, scanned, existing_map, operating_user, stats
                 )
-            except (GitOpsSyncError, ValidationError, ValueError) as e:
-                # 仅捕获预期的同步错误，允许系统级错误冒泡（如果需要完全健壮性，可以捕获更多，但这里遵循用户要求不要滥用try）
-                err_msg = f"Failed to sync {file_path}: {e}"
-                logger.warning(err_msg)
-                stats.errors.append(f"{file_path}: {str(e)}")
+            except GitOpsSyncError as e:
+                # 捕获同步错误，记录到 errors 数组，继续处理其他文件
+                error_msg = f"{file_path}: {e.message}"
+                if e.details and "info" in e.details:
+                    error_msg += f" ({e.details['info']})"
+                stats.errors.append(error_msg)
+                logger.error(f"Sync error for {file_path}: {e.message}")
+            except Exception as e:
+                # 其他未预期的错误也记录，但不中断整个同步
+                error_msg = f"{file_path}: Unexpected error - {str(e)}"
+                stats.errors.append(error_msg)
+                logger.exception(f"Unexpected error syncing {file_path}")
 
         # 3.2 处理删除
         for source_path, post in existing_map.items():
             if source_path not in scanned_map:
-                try:
-                    await post_service.delete_post(
-                        self.session, post.id, current_user=operating_user
-                    )
-                    stats.deleted.append(source_path)
-                except Exception as e:
-                    # 删除失败通常不应该中断整个流程
-                    err_msg = f"Failed to delete {source_path}: {e}"
-                    logger.error(err_msg)
-                    stats.errors.append(f"DELETE {source_path}: {str(e)}")
+                await post_service.delete_post(
+                    self.session, post.id, current_user=operating_user
+                )
+                stats.deleted.append(source_path)
 
         stats.duration = time.time() - start_time
         logger.info(
@@ -120,21 +137,12 @@ class GitOpsService:
     ):
         """处理单个文件的同步逻辑"""
 
-        # 映射字段
-        # 如果 frontmatter 解析本身出错，scanner 应该已经处理了或者在此之前处理？
-        # 目前 MDXScanner 比较简单，假设 scanned 结构是合法的
-
         if file_path in existing_map:
             # === UPDATE ===
             existing_post = existing_map[file_path]
 
-            update_dict = self._map_frontmatter_to_post(scanned)
-            try:
-                post_in = PostUpdate(**update_dict)
-            except ValidationError as e:
-                raise GitOpsSyncError(
-                    f"Validation error for update: {e}", detail=str(e)
-                )
+            update_dict = await self.mapper.map_to_post(scanned)
+            post_in = PostUpdate(**update_dict)
 
             await post_service.update_post(
                 self.session,
@@ -146,35 +154,19 @@ class GitOpsService:
 
         else:
             # === CREATE ===
-            create_dict = self._map_frontmatter_to_post(scanned)
+            create_dict = await self.mapper.map_to_post(scanned)
             create_dict["source_path"] = file_path
 
             # Slug Fallback
             if "slug" not in create_dict or not create_dict["slug"]:
                 create_dict["slug"] = Path(file_path).stem
 
-            try:
-                post_in = PostCreate(**create_dict)
-            except ValidationError as e:
-                # Pydantic 校验错误
-                raise GitOpsSyncError(
-                    f"Validation error for create: {e}", detail=str(e)
-                )
+            post_in = PostCreate(**create_dict)
 
+            # author_id 已经在 create_dict 中（从 frontmatter 获取）
             await post_service.create_post(
-                self.session, post_in, author_id=default_author.id
+                self.session,
+                post_in,
+                author_id=create_dict["author_id"],
             )
             stats.added.append(file_path)
-
-    def _map_frontmatter_to_post(self, scanned: ScannedPost) -> Dict[str, Any]:
-        """将 Frontmatter 转换为 Post 模型字段"""
-        meta = scanned.frontmatter
-        return {
-            "title": meta.get("title", Path(scanned.file_path).stem),
-            "slug": meta.get("slug"),
-            "excerpt": meta.get("summary") or meta.get("excerpt") or "",
-            "content_mdx": scanned.content,
-            "is_published": meta.get("published", True),
-            "cover_image": meta.get("cover") or meta.get("image"),
-            # Tags and Categories can be added here
-        }

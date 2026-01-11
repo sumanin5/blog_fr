@@ -34,7 +34,8 @@ async def test_manual_sync_flow(
     session.expire_all()
     from sqlmodel import select
 
-    stmt = select(Post).where(Post.slug == "git-sync-test")
+    # 由于 slug 会自动添加后缀，使用 like 查询
+    stmt = select(Post).where(Post.source_path == "git-post.mdx")
     result = await session.exec(stmt)
     post = result.one_or_none()
 
@@ -43,14 +44,23 @@ async def test_manual_sync_flow(
     assert post.excerpt == "This is a summary from frontmatter"
     assert post.content_mdx.strip() == "# Hello Git\n\nThis is a test post from git."
     assert post.source_path == "git-post.mdx"
+    assert post.slug.startswith("git-sync-test-")  # slug 会添加随机后缀
 
     # 3. 测试更新 (修改文件)
     # 直接修改 sample_git_post 文件的内容
+    from app.users.model import User
+    from sqlmodel import select as sql_select
+
+    stmt = sql_select(User).where(User.role == "superadmin").limit(1)
+    result = await session.exec(stmt)
+    admin = result.first()
+
     sample_git_post.write_text(
-        """---
+        f"""---
 title: "Git Sync Test Updated"
 slug: "git-sync-test"
 published: true
+author: "{admin.username}"
 ---
 
 # Hello Git Updated
@@ -68,6 +78,7 @@ published: true
 
     # 验证更新
     session.expire_all()  # 清除缓存
+    stmt = select(Post).where(Post.source_path == "git-post.mdx")
     result = await session.exec(stmt)
     post = result.one()
     assert post.title == "Git Sync Test Updated"

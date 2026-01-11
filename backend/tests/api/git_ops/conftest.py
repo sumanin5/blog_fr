@@ -19,18 +19,19 @@ def mock_content_dir(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def sample_git_post(mock_content_dir: Path):
+def sample_git_post(mock_content_dir: Path, superadmin_user):
     """
     在 mock 的内容目录中创建一篇测试文章。
     """
     p = mock_content_dir / "git-post.mdx"
     p.write_text(
-        """---
+        f"""---
 title: "Git Sync Test"
 slug: "git-sync-test"
 published: true
 tags: ["git", "test"]
 summary: "This is a summary from frontmatter"
+author: "{superadmin_user.username}"
 ---
 
 # Hello Git

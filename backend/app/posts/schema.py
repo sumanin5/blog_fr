@@ -215,6 +215,7 @@ class PostShortResponse(PostBase):
 
     # 关联 ID
     author_id: UUID
+    cover_media_id: Optional[UUID] = None  # 封面图 ID
 
     # 关联对象（需要预加载）
     author: Optional["UserResponse"] = None  # 作者信息
@@ -226,6 +227,13 @@ class PostShortResponse(PostBase):
     source_path: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+    @property
+    def cover_thumbnail(self) -> Optional[str]:
+        """获取缩略图 URL（列表页用 small 尺寸）"""
+        if self.cover_media_id:
+            return f"/api/media/{self.cover_media_id}/thumbnail/small"
+        return None
 
 
 class PostDetailResponse(PostShortResponse):
@@ -243,6 +251,13 @@ class PostDetailResponse(PostShortResponse):
     versions: List[PostVersionResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+    @property
+    def cover_image(self) -> Optional[str]:
+        """获取封面图 URL（详情页用 xlarge 尺寸）"""
+        if self.cover_media_id:
+            return f"/api/media/{self.cover_media_id}/thumbnail/xlarge"
+        return None
 
 
 class PostListResponse(BaseModel):

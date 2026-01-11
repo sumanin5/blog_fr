@@ -117,6 +117,59 @@ async def test_create_post_with_custom_slug(
 
 @pytest.mark.asyncio
 @pytest.mark.posts
+async def test_create_post_with_duplicate_slug(
+    async_client: AsyncClient,
+    normal_user_token_headers: dict,
+    api_urls: APIConfig,
+):
+    """测试创建文章时 slug 总是添加后缀
+
+    即使用户指定相同的 slug，由于总是添加随机后缀，所以不会冲突
+    """
+    # 1. 创建第一篇文章
+    post_data_1 = {
+        "title": "第一篇文章",
+        "slug": "duplicate-slug",
+        "content_mdx": "# 第一篇",
+        "post_type": "article",
+        "status": "draft",
+    }
+
+    response_1 = await async_client.post(
+        f"{api_urls.API_PREFIX}/posts/article",
+        json=post_data_1,
+        headers=normal_user_token_headers,
+    )
+
+    assert response_1.status_code == status.HTTP_201_CREATED
+    data_1 = response_1.json()
+    assert data_1["slug"].startswith("duplicate-slug-")  # 第一次也会添加后缀
+
+    # 2. 创建第二篇文章，使用相同的 slug
+    post_data_2 = {
+        "title": "第二篇文章",
+        "slug": "duplicate-slug",  # 相同的 slug
+        "content_mdx": "# 第二篇",
+        "post_type": "article",
+        "status": "draft",
+    }
+
+    response_2 = await async_client.post(
+        f"{api_urls.API_PREFIX}/posts/article",
+        json=post_data_2,
+        headers=normal_user_token_headers,
+    )
+
+    assert response_2.status_code == status.HTTP_201_CREATED
+    data_2 = response_2.json()
+
+    # 断言：两篇文章都有后缀，且后缀不同
+    assert data_2["slug"].startswith("duplicate-slug-")
+    assert data_2["slug"] != data_1["slug"]  # 确保两个 slug 不同（后缀不同）
+
+
+@pytest.mark.asyncio
+@pytest.mark.posts
 async def test_create_post_with_category(
     async_client: AsyncClient,
     normal_user_token_headers: dict,

@@ -172,7 +172,10 @@ async def delete_post(session: AsyncSession, post_id: UUID, current_user: User) 
 
 
 async def create_post(
-    session: AsyncSession, post_in: PostCreate, author_id: UUID
+    session: AsyncSession,
+    post_in: PostCreate,
+    author_id: UUID,
+    preserve_slug: bool = False,
 ) -> Post:
     """
     创建文章流水线
@@ -182,6 +185,12 @@ async def create_post(
     4. 生成唯一 Slug
     5. 保存核心数据
     6. 自动同步标签
+
+    Args:
+        session: 数据库会话
+        post_in: 文章创建数据
+        author_id: 作者ID
+        preserve_slug: 是否保留原始 slug（Git 同步时使用）
     """
     # 1. 校验分类与板块逻辑隔离
     if post_in.category_id:
@@ -203,14 +212,12 @@ async def create_post(
     # 4. 处理 Slug
     slug = post_in.slug or metadata.get("slug")
     if not slug:
+        # 没有指定 slug，从标题生成
         slug = await generate_unique_slug(session, title)
     else:
-        # 如果手动指定了 slug，先检查是否已存在
-        existing_post = await crud.get_post_by_slug(session, slug)
-        if existing_post:
-            # 冲突，生成带后缀的新 slug
+        # Git 同步时保留原始 slug，API 创建时添加随机后缀
+        if not preserve_slug:
             slug = await generate_unique_slug(session, slug)
-        # 否则直接使用用户指定的 slug
 
     # 5. 组装对象
     db_post = Post(
