@@ -53,7 +53,11 @@ export default function PostPreviewPage() {
 
       {previewData && (
         <div className="mx-auto max-w-4xl">
-          <PostContent html={previewData.content_html} />
+          <PostContent
+            html={previewData.content_html}
+            mdx={previewData.content_mdx}
+            enableJsx={previewData.enable_jsx}
+          />
         </div>
       )}
     </div>

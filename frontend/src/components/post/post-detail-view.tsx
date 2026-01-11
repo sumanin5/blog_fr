@@ -62,7 +62,11 @@ export function PostDetailView({ post }: PostDetailViewProps) {
 
         {/* 文章内容 */}
         <div className="w-full min-w-0">
-          <PostContent html={post.content_html} />
+          <PostContent
+            html={post.content_html}
+            mdx={post.content_mdx}
+            enableJsx={post.enable_jsx}
+          />
         </div>
       </div>
     </div>

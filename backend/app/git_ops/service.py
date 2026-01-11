@@ -140,6 +140,11 @@ class GitOpsService:
             existing_post = existing_map[file_path]
 
             update_dict = await self.mapper.map_to_post(scanned)
+
+            # ⚠️ 更新时不应该改变 slug（slug 是永久标识符）
+            if "slug" in update_dict:
+                del update_dict["slug"]
+
             post_in = PostUpdate(**update_dict)
 
             await post_service.update_post(
@@ -155,16 +160,51 @@ class GitOpsService:
             create_dict = await self.mapper.map_to_post(scanned)
             create_dict["source_path"] = file_path
 
-            # Slug Fallback
-            if "slug" not in create_dict or not create_dict["slug"]:
-                create_dict["slug"] = Path(file_path).stem
+            # Slug 处理：即使 frontmatter 有 slug，也加随机后缀
+            from app.posts.utils import generate_slug_with_random_suffix
+
+            base_slug = create_dict.get("slug") or Path(file_path).stem
+            generated_slug = generate_slug_with_random_suffix(base_slug)
+            create_dict["slug"] = generated_slug
 
             post_in = PostCreate(**create_dict)
 
             # author_id 已经在 create_dict 中（从 frontmatter 获取）
-            await post_service.create_post(
+            created_post = await post_service.create_post(
                 self.session,
                 post_in,
                 author_id=create_dict["author_id"],
             )
+
+            # ✅ 将生成的 slug 写回到 MDX 文件的 frontmatter
+            await self._update_frontmatter_slug(file_path, generated_slug)
+
             stats.added.append(file_path)
+
+    async def _update_frontmatter_slug(self, file_path: str, slug: str):
+        """将生成的 slug 写回到 MDX 文件的 frontmatter
+
+        Args:
+            file_path: 相对于 content_dir 的文件路径
+            slug: 生成的 slug
+        """
+        import frontmatter
+
+        full_path = self.content_dir / file_path
+
+        try:
+            # 读取文件
+            with open(full_path, "r", encoding="utf-8") as f:
+                post = frontmatter.load(f)
+
+            # 更新 slug
+            post.metadata["slug"] = slug
+
+            # 写回文件
+            with open(full_path, "w", encoding="utf-8") as f:
+                f.write(frontmatter.dumps(post))
+
+            logger.info(f"Updated slug in frontmatter: {file_path} -> {slug}")
+        except Exception as e:
+            # 写回失败不应该中断同步流程，只记录警告
+            logger.warning(f"Failed to update slug in {file_path}: {e}")

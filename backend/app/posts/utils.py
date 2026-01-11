@@ -139,6 +139,62 @@ class PostProcessor:
 
         self.md.renderer.rules["fence"] = custom_fence
 
+        # 处理 HTML 块（包括 JSX/TSX）
+        def custom_html_block(tokens, idx, options, env):
+            """处理块级 HTML/JSX - 检测到 JSX 就不处理，用标记包裹"""
+            token = tokens[idx]
+            content = token.content
+
+            # 检测是否是 JSX/TSX 语法
+            if self._is_jsx_syntax(content):
+                # 用 base64 编码保存原始内容，避免转义问题
+                import base64
+
+                encoded = base64.b64encode(content.encode("utf-8")).decode("ascii")
+                # 用特殊标记包裹，前端识别后用 MDX 处理
+                return f'<div data-mdx-component="true" data-mdx-content="{encoded}"></div>\n'
+
+            # 普通 HTML，正常输出
+            return content
+
+        self.md.renderer.rules["html_block"] = custom_html_block
+
+        # 处理行内 HTML（包括 JSX/TSX）
+        def custom_html_inline(tokens, idx, options, env):
+            """处理行内 HTML/JSX - 检测到 JSX 就不处理，用标记包裹"""
+            token = tokens[idx]
+            content = token.content
+
+            # 检测是否是 JSX/TSX 语法
+            if self._is_jsx_syntax(content):
+                # 用 base64 编码保存原始内容
+                import base64
+
+                encoded = base64.b64encode(content.encode("utf-8")).decode("ascii")
+                # 用特殊标记包裹
+                return f'<span data-mdx-component="true" data-mdx-content="{encoded}"></span>'
+
+            # 普通 HTML，正常输出
+            return content
+
+        self.md.renderer.rules["html_inline"] = custom_html_inline
+
+    def _is_jsx_syntax(self, content: str) -> bool:
+        """检测是否是 JSX/TSX 语法"""
+        jsx_patterns = [
+            r"style=\{\{",  # style={{...}}
+            r"onClick=\{",  # onClick={...}
+            r"onChange=\{",  # onChange={...}
+            r"onSubmit=\{",  # onSubmit={...}
+            r"className=",  # className (JSX 特有，HTML 用 class)
+            r"=\{[^}]+\}",  # 任何属性={...}
+        ]
+        return any(re.search(pattern, content) for pattern in jsx_patterns)
+
+    def has_jsx_components(self) -> bool:
+        """检测整个文档是否包含 JSX/TSX 组件"""
+        return self._is_jsx_syntax(self.content_mdx)
+
     def process(self) -> "PostProcessor":
         """执行完整处理流水线"""
         # 1. 拆分 Frontmatter 和正文
@@ -152,13 +208,24 @@ class PostProcessor:
         # 3. 计算阅读时间（在处理前，基于原始 Markdown）
         self.reading_time = self._calculate_reading_time(self.content_mdx)
 
-        # 4. 预处理数学公式
-        processed_md = self._preprocess_math(self.content_mdx)
+        # 4. 处理自定义组件容器（第一步：替换为占位符）
+        from app.posts.custom_components import (
+            process_custom_containers,
+            restore_custom_components,
+        )
 
-        # 5. 渲染 Markdown → HTML（自定义渲染器会处理 Mermaid）
+        processed_md, placeholders = process_custom_containers(self.content_mdx)
+
+        # 5. 预处理数学公式
+        processed_md = self._preprocess_math(processed_md)
+
+        # 6. 渲染 Markdown → HTML（自定义渲染器会处理 Mermaid）
         self.content_html = self.md.render(processed_md)
 
-        # 6. 生成摘要（基于原始 Markdown）
+        # 7. 恢复自定义组件（第二步：将占位符替换回 HTML）
+        self.content_html = restore_custom_components(self.content_html, placeholders)
+
+        # 8. 生成摘要（基于原始 Markdown）
         self.excerpt = self._generate_excerpt(self.content_mdx)
 
         return self

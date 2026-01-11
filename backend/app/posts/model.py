@@ -10,7 +10,16 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from app.core.base import Base
-from sqlmodel import JSON, TEXT, Column, Field, Relationship, SQLModel, UniqueConstraint
+from sqlmodel import (
+    JSON,
+    TEXT,
+    Boolean,
+    Column,
+    Field,
+    Relationship,
+    SQLModel,
+    UniqueConstraint,
+)
 
 if TYPE_CHECKING:
     from app.media.model import MediaFile
@@ -116,6 +125,11 @@ class Post(Base, table=True):
     )
     content_html: str = Field(
         sa_column=Column(TEXT), description="正文预览(HTML)，用于 SEO 和摘要"
+    )
+    enable_jsx: bool = Field(
+        default=False,
+        sa_column=Column(Boolean, server_default="false", nullable=False),
+        description="是否启用 JSX 组件（true=前端渲染，false=后端渲染）",
     )
 
     # 状态与属性

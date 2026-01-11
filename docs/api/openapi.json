@@ -6256,6 +6256,11 @@
             "title": "Allow Comments",
             "default": true
           },
+          "enable_jsx": {
+            "type": "boolean",
+            "title": "Enable Jsx",
+            "default": false
+          },
           "meta_title": {
             "anyOf": [
               {
@@ -6415,6 +6420,11 @@
             "type": "boolean",
             "title": "Allow Comments",
             "default": true
+          },
+          "enable_jsx": {
+            "type": "boolean",
+            "title": "Enable Jsx",
+            "default": false
           },
           "meta_title": {
             "anyOf": [
@@ -6704,6 +6714,11 @@
             "title": "Allow Comments",
             "default": true
           },
+          "enable_jsx": {
+            "type": "boolean",
+            "title": "Enable Jsx",
+            "default": false
+          },
           "meta_title": {
             "anyOf": [
               {
@@ -6978,6 +6993,17 @@
               }
             ],
             "title": "Allow Comments"
+          },
+          "enable_jsx": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Jsx"
           },
           "content_mdx": {
             "anyOf": [

@@ -63,7 +63,7 @@ class FrontmatterMapper:
         # 构建基础字段映射
         result = {
             "title": meta.get("title", Path(scanned.file_path).stem),
-            "slug": meta.get("slug"),
+            "slug": meta.get("slug"),  # 返回 frontmatter 的 slug，可能是 None
             "excerpt": meta.get("summary")
             or meta.get("excerpt")
             or meta.get("description")
@@ -81,6 +81,9 @@ class FrontmatterMapper:
             "allow_comments": meta.get("allow_comments", True)
             if "allow_comments" in meta
             else meta.get("comments", True),
+            "enable_jsx": meta.get("enable_jsx", False)
+            if "enable_jsx" in meta
+            else False,
             # SEO 字段
             "meta_title": meta.get("meta_title") or meta.get("seo_title") or "",
             "meta_description": meta.get("meta_description")

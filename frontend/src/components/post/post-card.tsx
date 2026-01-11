@@ -41,22 +41,26 @@ export function PostCard({ post }: PostCardProps) {
             </div>
           )}
 
-          {/* 渐变叠加层 - 暗色模式更明显 */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent dark:from-background dark:via-background/40" />
+          {/* 渐变叠加层 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
 
           {/* 分类/标签 - 左下角 */}
-          <div className="absolute bottom-3 left-3 z-10">
+          <div className="absolute bottom-3 left-3 z-10 flex flex-wrap gap-2">
             {post.category?.name ? (
-              <span className="inline-block px-2.5 py-1 bg-primary/90 dark:bg-primary/20 backdrop-blur-sm border border-primary dark:border-primary/30 text-primary-foreground dark:text-primary rounded text-xs font-mono uppercase tracking-wider shadow-sm">
+              <span className="inline-block px-2.5 py-1 bg-primary/90 backdrop-blur-sm border border-primary text-primary-foreground rounded text-xs font-mono uppercase tracking-wider shadow-sm">
                 {post.category.name}
               </span>
             ) : (
               post.tags &&
-              post.tags.length > 0 && (
-                <span className="inline-block px-2.5 py-1 bg-primary/90 dark:bg-primary/20 backdrop-blur-sm border border-primary dark:border-primary/30 text-primary-foreground dark:text-primary rounded text-xs font-mono uppercase tracking-wider shadow-sm">
-                  {post.tags[0].name}
+              post.tags.length > 0 &&
+              post.tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="inline-block px-2.5 py-1 bg-primary/90 backdrop-blur-sm border border-primary text-primary-foreground rounded text-xs font-mono uppercase tracking-wider shadow-sm"
+                >
+                  {tag.name}
                 </span>
-              )
+              ))
             )}
           </div>
         </div>

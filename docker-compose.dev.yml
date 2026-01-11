@@ -57,6 +57,7 @@ services:
     # 挂载源代码（热更新）
     volumes:
       - ./backend:/app
+      - ./content:/content
       - /app/.venv
 
     ports:

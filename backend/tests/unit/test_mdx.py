@@ -435,7 +435,154 @@ console.log("test");
 
 
 # ============================================================================
-# JSX/TSX 组件测试（应该保留）
+# JSX/TSX 组件测试（应该用标记包裹）
+# ============================================================================
+
+
+def test_jsx_style_object_detected():
+    """测试检测 JSX style 对象语法"""
+    content = '<div style={{ padding: "20px", background: "#f0f0f0" }}>内容</div>'
+    processor = PostProcessor(content).process()
+    # 应该被检测为 JSX，用标记包裹
+    assert 'data-mdx-component="true"' in processor.content_html
+    assert "data-mdx-content=" in processor.content_html
+
+
+def test_jsx_onclick_detected():
+    """测试检测 JSX onClick 事件"""
+    # 使用块级标签（独立一行），markdown-it 会识别为 HTML 块
+    content = """
+<div onClick={() => alert("Hi")}>点击</div>
+"""
+    processor = PostProcessor(content).process()
+    assert 'data-mdx-component="true"' in processor.content_html
+    assert "data-mdx-content=" in processor.content_html
+
+
+def test_jsx_classname_detected():
+    """测试检测 JSX className 属性"""
+    content = '<div className="container">内容</div>'
+    processor = PostProcessor(content).process()
+    assert 'data-mdx-component="true"' in processor.content_html
+    assert "data-mdx-content=" in processor.content_html
+
+
+def test_jsx_complex_component():
+    """测试复杂 JSX 组件"""
+    content = """
+<div style={{ padding: '20px', background: '#f0f0f0', borderRadius: '8px' }}>
+  <h2 style={{ color: '#333' }}>标题</h2>
+  <button onClick={() => alert('Hello')}>点我</button>
+</div>
+"""
+    processor = PostProcessor(content).process()
+    assert 'data-mdx-component="true"' in processor.content_html
+    # 原始内容应该被 base64 编码保存
+    assert "data-mdx-content=" in processor.content_html
+
+
+def test_jsx_vs_html_distinction():
+    """测试区分 JSX 和普通 HTML"""
+    content = """
+<div style="padding: 20px">这是普通 HTML</div>
+
+<div style={{ padding: '20px' }}>这是 JSX</div>
+"""
+    processor = PostProcessor(content).process()
+    # 普通 HTML 应该正常输出
+    assert '<div style="padding: 20px">' in processor.content_html
+    # JSX 应该被标记包裹
+    assert 'data-mdx-component="true"' in processor.content_html
+
+
+def test_jsx_multiple_components():
+    """测试多个 JSX 组件"""
+    content = """
+<div style={{ padding: '10px' }}>第一个</div>
+
+一些文本
+
+<div onCk={() => console.log('test')}>按钮</div>
+"""
+    processor = PostProcessor(content).process()
+    # 应该有两个 JSX 组件被标记
+    assert processor.content_html.count('data-mdx-component="true"') == 2
+
+
+def test_jsx_with_markdown_mixed():
+    """测试 JSX 和 Markdown 混合"""
+    content = """
+# 标题
+
+这是 **粗体** 文本
+
+<div style={{ padding: '20px' }}>
+  JSX 组件内容
+</div>
+
+- 列表项 1
+- 列表项 2
+"""
+    processor = PostProcessor(content).process()
+    # Markdown 应该正常处理
+    assert "<h1>标题</h1>" in processor.content_html
+    assert "<strong>粗体</strong>" in processor.content_html
+    assert "<ul>" in processor.content_html
+    # JSX 应该被标记
+    assert 'data-mdx-component="true"' in processor.content_html
+
+
+def test_jsx_base64_encoding():
+    """测试 JSX 内容被正确 base64 编码"""
+    import base64
+
+    jsx_code = '<div onClick={() => alert("Hi")}>点击</div>'
+    content = f"""
+{jsx_code}
+"""
+    processor = PostProcessor(content).process()
+
+    # 提取 data-mdx-content 的值
+    import re
+
+    match = re.search(r'data-mdx-content="([^"]+)"', processor.content_html)
+    assert match is not None
+
+    encoded = match.group(1)
+    # 解码应该得到原始 JSX（可能包含换行符）
+    decoded = base64.b64decode(encoded).decode("utf-8")
+    assert jsx_code in decoded
+
+
+def test_jsx_special_chars_preserved():
+    """测试 JSX 中的特殊字符被保留"""
+    content = '<div style={{ margin: "10px" }}>内容 & 符号 < > " \'</div>'
+    processor = PostProcessor(content).process()
+    assert 'data-mdx-component="true"' in processor.content_html
+    # 原始内容应该被编码保存，不应该被转义
+
+
+def test_jsx_multiline_preserved():
+    """测试多行 JSX 被保留"""
+    content = """
+<div
+  style={{
+    padding: '20px',
+    background: '#f0f0f0'
+  }}
+  onClick={() => {
+    console.log('clicked');
+  }}
+>
+  多行内容
+</div>
+"""
+    processor = PostProcessor(content).process()
+    assert 'data-mdx-component="true"' in processor.content_html
+
+
+# ============================================================================
+# JSX/TSX 组件测试（旧的，应该保留）
 # ============================================================================
 
 

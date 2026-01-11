@@ -587,6 +587,10 @@ export type PostCreate = {
      */
     allow_comments?: boolean;
     /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
+    /**
      * Meta Title
      */
     meta_title?: string | null;
@@ -658,6 +662,10 @@ export type PostDetailResponse = {
      * Allow Comments
      */
     allow_comments?: boolean;
+    /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
     /**
      * Meta Title
      */
@@ -814,6 +822,10 @@ export type PostShortResponse = {
      */
     allow_comments?: boolean;
     /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
+    /**
      * Meta Title
      */
     meta_title?: string | null;
@@ -926,6 +938,10 @@ export type PostUpdate = {
      * Allow Comments
      */
     allow_comments?: boolean | null;
+    /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean | null;
     /**
      * Content Mdx
      */
@@ -1560,6 +1576,10 @@ export type PostDetailResponseWritable = {
      */
     allow_comments?: boolean;
     /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
+    /**
      * Meta Title
      */
     meta_title?: string | null;
@@ -1676,6 +1696,10 @@ export type PostShortResponseWritable = {
      * Allow Comments
      */
     allow_comments?: boolean;
+    /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
     /**
      * Meta Title
      */
