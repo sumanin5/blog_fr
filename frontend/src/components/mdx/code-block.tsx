@@ -1,8 +1,5 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-import { Check, Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import hljs from "highlight.js";
+import { CopyButton } from "./copy-button";
 
 export const CodeBlock = ({
   className,
@@ -11,46 +8,20 @@ export const CodeBlock = ({
   className?: string;
   code: string;
 }) => {
-  const ref = useRef<HTMLElement>(null);
-  const [copied, setCopied] = useState(false);
-
   // Extract language name from className (e.g., "language-typescript" -> "typescript")
   const language = className?.match(/language-([\w-]+)/)?.[1] || "";
 
-  useEffect(() => {
-    let isMounted = true;
-    const element = ref.current;
-    if (!element) return;
-
-    const highlight = async () => {
-      if (!isMounted) return;
-
-      const hljs = (await import("highlight.js")).default;
-      if (!isMounted) return;
-
-      // Reset for re-highlighting
-      element.removeAttribute("data-highlighted");
-      element.classList.remove("hljs");
-
-      hljs.highlightElement(element);
-    };
-
-    highlight();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [code, className]);
-
-  const onCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy text: ", err);
+  // 在服务端直接高亮代码
+  let highlightedCode = code;
+  try {
+    if (language && hljs.getLanguage(language)) {
+      highlightedCode = hljs.highlight(code, { language }).value;
+    } else {
+      highlightedCode = hljs.highlightAuto(code).value;
     }
-  };
+  } catch (err) {
+    console.error("Highlight.js error:", err);
+  }
 
   return (
     <div className="relative my-4 group rounded-lg border bg-muted/50">
@@ -61,31 +32,17 @@ export const CodeBlock = ({
           {language || "TEXT"}
         </span>
 
-        {/* Copy Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground"
-          onClick={onCopy}
-          aria-label="Copy code"
-        >
-          {copied ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        {/* Copy Button - 客户端组件 */}
+        <CopyButton code={code} />
       </div>
 
       {/* Code Area */}
       <div className="overflow-x-auto p-4 pt-2">
         <pre className="m-0! p-0! bg-transparent">
           <code
-            ref={ref}
-            className={`${className || ""} bg-transparent p-0! border-0`}
-          >
-            {code}
-          </code>
+            className={`hljs ${className || ""} bg-transparent p-0! border-0`}
+            dangerouslySetInnerHTML={{ __html: highlightedCode }}
+          />
         </pre>
       </div>
     </div>

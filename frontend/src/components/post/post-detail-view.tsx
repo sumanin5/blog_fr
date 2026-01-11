@@ -1,5 +1,3 @@
-"use client";
-
 import { PostContent } from "@/components/post/post-content";
 import { PostMeta } from "@/components/post/post-meta";
 import { TableOfContents } from "@/components/mdx/table-of-contents";

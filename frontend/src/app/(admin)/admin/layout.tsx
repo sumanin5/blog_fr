@@ -44,19 +44,10 @@ export default function AdminLayout({
   // 3. 渲染后台布局
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-background">
-        <AdminSidebar />
+      <div className="flex w-full overflow-hidden bg-background">
+        <AdminSidebar className="mt-16" />
         <SidebarInset className="flex flex-col overflow-hidden">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <div className="h-4 w-px bg-border" />
-            <div className="flex flex-1 items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">
-                管理控制台
-              </span>
-            </div>
-          </header>
-
+          {/* 可滚动的主内容区域 */}
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/20">
             <div className="mx-auto max-w-7xl">{children}</div>
           </main>

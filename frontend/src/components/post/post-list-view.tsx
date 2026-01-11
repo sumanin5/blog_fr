@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
 import {
   CategoryResponse,
   PagePostShortResponse,
@@ -23,7 +21,7 @@ export function PostListView({
   categories,
   currentCategory,
 }: PostListViewProps) {
-  const [posts] = useState<PostShortResponse[]>(initialData.items);
+  const posts: PostShortResponse[] = initialData.items;
 
   return (
     <div className="relative min-h-screen bg-background transition-colors duration-300">
@@ -37,7 +35,7 @@ export function PostListView({
         }}
       />
       {/* 背景遮罩：亮色模式浅色遮罩，暗色模式深色遮罩 */}
-      <div className="fixed inset-0 z-1 bg-white/85 dark:bg-slate-950/60" />
+      <div className="fixed inset-0 z-1 bg-white/60 dark:bg-slate-950/60" />
 
       <div className="relative z-10 flex flex-col">
         {/* 2. Hero Section - 居中透明设计 */}

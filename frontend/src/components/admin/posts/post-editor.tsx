@@ -33,10 +33,23 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
   );
   const [activeTab, setActiveTab] = React.useState("edit");
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const [previewReady, setPreviewReady] = React.useState(false);
 
-  // 当 MDX 内容改变时，通知预览 iframe
+  // 监听预览页面的就绪消息
   React.useEffect(() => {
-    if (activeTab === "preview" && iframeRef.current) {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === "PREVIEW_READY") {
+        setPreviewReady(true);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  // 当 MDX 内容改变或切换到预览标签时，通知预览 iframe
+  React.useEffect(() => {
+    if (activeTab === "preview" && previewReady && iframeRef.current) {
       iframeRef.current.contentWindow?.postMessage(
         {
           type: "MDX_PREVIEW",
@@ -45,7 +58,7 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
         "*"
       );
     }
-  }, [contentMdx, activeTab]);
+  }, [contentMdx, activeTab, previewReady]);
 
   return (
     <div className="flex h-[calc(100vh-6rem)] flex-col gap-4">

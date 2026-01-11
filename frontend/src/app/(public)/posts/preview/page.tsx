@@ -23,18 +23,16 @@ export default function PostPreviewPage() {
 
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // 这里的 origin 检查可以根据实际部署环境增加
       if (event.data && event.data.type === "MDX_PREVIEW") {
         mutation.mutate(event.data.content);
       }
     };
 
     window.addEventListener("message", handleMessage);
-    // 通知父窗口预览页面已就绪
     window.parent.postMessage({ type: "PREVIEW_READY" }, "*");
 
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [mutation]);
 
   if (!previewData && !mutation.isPending) {
     return (
