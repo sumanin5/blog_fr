@@ -1,13 +1,14 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { listPostsByType } from "@/shared/api/generated";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { listPostsByType, deletePostByType } from "@/shared/api/generated";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 export default function AllPostsPage() {
   const { user } = useAuth();
@@ -23,6 +24,23 @@ export default function AllPostsPage() {
         query: { status: null }, // Admins should see all statuses
         throwOnError: true,
       }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      deletePostByType({
+        path: { post_type: activeTab, post_id: id }, // Use activeTab correctly
+        throwOnError: true,
+      }),
+    onSuccess: () => {
+      toast.success("文章已删除");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error("删除失败", {
+        description: error.message,
+      });
+    },
   });
 
   if (user?.role !== "superadmin") {
@@ -76,9 +94,7 @@ export default function AllPostsPage() {
             posts={posts}
             isLoading={isLoading}
             showAuthor={true}
-            onDelete={(id) => {
-              console.log("Admin delete post:", id);
-            }}
+            onDelete={(post) => deleteMutation.mutate(post.id)}
           />
         </div>
       </Tabs>

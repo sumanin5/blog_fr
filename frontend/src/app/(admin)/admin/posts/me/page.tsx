@@ -1,17 +1,38 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getMyPosts } from "@/shared/api/generated";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { getMyPosts, deletePostByType } from "@/shared/api/generated";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function MyPostsPage() {
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin", "posts", "me"],
     queryFn: () => getMyPosts({ throwOnError: true }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (variables: { id: string; type: string }) =>
+      deletePostByType({
+        path: {
+          post_type: variables.type as "article" | "idea",
+          post_id: variables.id,
+        },
+        throwOnError: true,
+      }),
+    onSuccess: () => {
+      toast.success("文章已删除");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error("删除失败", {
+        description: error.message,
+      });
+    },
   });
 
   const posts = data?.data?.items || [];
@@ -46,10 +67,12 @@ export default function MyPostsPage() {
       <PostListTable
         posts={posts}
         isLoading={isLoading}
-        onDelete={(id) => {
-          // TODO: Implement delete logic
-          console.log("Delete post:", id);
-        }}
+        onDelete={(post) =>
+          deleteMutation.mutate({
+            id: post.id,
+            type: post.post_type ?? "article",
+          })
+        }
       />
     </div>
   );

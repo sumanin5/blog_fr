@@ -10,6 +10,7 @@ import {
   Calendar,
   GitCommit,
   FileText,
+  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -34,11 +35,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PostShortResponse, PostStatus } from "@/shared/api/generated";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PostListTableProps {
   posts: PostShortResponse[];
   isLoading: boolean;
-  onDelete?: (id: string) => void;
+  onDelete?: (post: PostShortResponse) => void;
   showAuthor?: boolean;
 }
 
@@ -48,6 +59,9 @@ export function PostListTable({
   onDelete,
   showAuthor = false,
 }: PostListTableProps) {
+  const [deletingPost, setDeletingPost] =
+    React.useState<PostShortResponse | null>(null);
+
   if (isLoading) {
     return (
       <div className="rounded-md border bg-card p-8 text-center">
@@ -166,21 +180,35 @@ export function PostListTable({
                           <Eye className="mr-2 h-4 w-4" /> 查看原文
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href={`/admin/posts/edit/${post.id}`}
-                          className="flex items-center"
-                        >
-                          <Edit className="mr-2 h-4 w-4" /> 编辑修改
-                        </Link>
-                      </DropdownMenuItem>
+                      {post.source_path ? (
+                        <DropdownMenuItem disabled>
+                          <Lock className="mr-2 h-4 w-4 opacity-50" />
+                          Git托管(不可编辑)
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/admin/posts/edit/${post.id}`}
+                            className="flex items-center"
+                          >
+                            <Edit className="mr-2 h-4 w-4" /> 编辑修改
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => onDelete?.(post.id)}
-                        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> 删除文章
-                      </DropdownMenuItem>
+                      {post.source_path ? (
+                        <DropdownMenuItem disabled>
+                          <Lock className="mr-2 h-4 w-4 opacity-50" />
+                          Git托管(不可删除)
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => setDeletingPost(post)}
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> 删除文章
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -189,6 +217,38 @@ export function PostListTable({
           </AnimatePresence>
         </TableBody>
       </Table>
+
+      <AlertDialog
+        open={!!deletingPost}
+        onOpenChange={() => setDeletingPost(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除这篇文章吗？</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作无法撤销。这将永久删除文章
+              <span className="font-bold text-foreground mx-1">
+                {deletingPost?.title}
+              </span>
+              及其所有关联数据。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingPost && onDelete) {
+                  onDelete(deletingPost);
+                }
+                setDeletingPost(null);
+              }}
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -107,7 +107,26 @@ class CoverResolver:
         media = result.first()
 
         if media:
-            logger.info(f"通过文件名匹配到封面: {filename} -> {media.file_path}")
+            logger.info(f"通过原始文件名匹配到封面: {filename} -> {media.file_path}")
+            return media.id
+
+        # 3. 尝试匹配 file_path 的后缀 (解决 uploads/xxx/file.png 无法通过 file.png 找到的问题)
+        stmt = select(MediaFile).where(MediaFile.file_path.endswith(f"/{filename}"))
+        result = await self.session.exec(stmt)
+        # 可能有重名文件，取最新的一个
+        media = result.first()
+
+        # 4. 尝试精确匹配 file_path 等于 filename (解决 file_path 只是文件名的情况)
+        if not media:
+            stmt = select(MediaFile).where(MediaFile.file_path == filename)
+            result = await self.session.exec(stmt)
+            media = result.first()
+            if media:
+                logger.info(f"通过路径全名匹配到封面: {filename} -> {media.file_path}")
+                return media.id
+
+        if media:
+            logger.info(f"通过路径后缀匹配到封面: {filename} -> {media.file_path}")
             return media.id
 
         logger.warning(f"未找到封面图: {cover_path}")

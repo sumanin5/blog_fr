@@ -716,6 +716,7 @@ export type PostDetailResponse = {
      * Tags
      */
     tags?: Array<TagResponse>;
+    cover_media?: MediaFileResponse | null;
     /**
      * Git Hash
      */
@@ -870,6 +871,7 @@ export type PostShortResponse = {
      * Tags
      */
     tags?: Array<TagResponse>;
+    cover_media?: MediaFileResponse | null;
     /**
      * Git Hash
      */
@@ -992,6 +994,36 @@ export type PostVersionResponse = {
      * Created At
      */
     created_at: string;
+};
+
+/**
+ * SyncStats
+ */
+export type SyncStats = {
+    /**
+     * Added
+     */
+    added?: Array<string>;
+    /**
+     * Updated
+     */
+    updated?: Array<string>;
+    /**
+     * Deleted
+     */
+    deleted?: Array<string>;
+    /**
+     * Skipped
+     */
+    skipped?: number;
+    /**
+     * Errors
+     */
+    errors?: Array<string>;
+    /**
+     * Duration
+     */
+    duration?: number;
 };
 
 /**
@@ -1467,6 +1499,250 @@ export type MediaFileUploadResponseWritable = {
      * 上传的文件信息
      */
     file: MediaFileResponseWritable;
+};
+
+/**
+ * Page[PostShortResponse]
+ */
+export type PagePostShortResponseWritable = {
+    /**
+     * Items
+     */
+    items: Array<PostShortResponseWritable>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Size
+     */
+    size: number;
+    /**
+     * Pages
+     */
+    pages: number;
+};
+
+/**
+ * PostDetailResponse
+ *
+ * 文章详情响应
+ */
+export type PostDetailResponseWritable = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    post_type?: PostType;
+    status?: PostStatus;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
+    /**
+     * Allow Comments
+     */
+    allow_comments?: boolean;
+    /**
+     * Meta Title
+     */
+    meta_title?: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description?: string | null;
+    /**
+     * Meta Keywords
+     */
+    meta_keywords?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+    /**
+     * Reading Time
+     */
+    reading_time: number;
+    /**
+     * View Count
+     */
+    view_count: number;
+    /**
+     * Like Count
+     */
+    like_count: number;
+    /**
+     * Comment Count
+     */
+    comment_count?: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+    /**
+     * Published At
+     */
+    published_at?: string | null;
+    /**
+     * Author Id
+     */
+    author_id: string;
+    author?: UserResponse | null;
+    category?: CategoryResponse | null;
+    /**
+     * Tags
+     */
+    tags?: Array<TagResponse>;
+    cover_media?: MediaFileResponseWritable | null;
+    /**
+     * Git Hash
+     */
+    git_hash?: string | null;
+    /**
+     * Source Path
+     */
+    source_path?: string | null;
+    /**
+     * Content Mdx
+     */
+    content_mdx: string;
+    /**
+     * Content Html
+     */
+    content_html: string;
+    /**
+     * Toc
+     */
+    toc: Array<unknown>;
+    /**
+     * Versions
+     */
+    versions?: Array<PostVersionResponse>;
+};
+
+/**
+ * PostShortResponse
+ *
+ * 用于列表展示的精简响应，规避 N+1 风险
+ */
+export type PostShortResponseWritable = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    post_type?: PostType;
+    status?: PostStatus;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
+    /**
+     * Allow Comments
+     */
+    allow_comments?: boolean;
+    /**
+     * Meta Title
+     */
+    meta_title?: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description?: string | null;
+    /**
+     * Meta Keywords
+     */
+    meta_keywords?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+    /**
+     * Reading Time
+     */
+    reading_time: number;
+    /**
+     * View Count
+     */
+    view_count: number;
+    /**
+     * Like Count
+     */
+    like_count: number;
+    /**
+     * Comment Count
+     */
+    comment_count?: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+    /**
+     * Published At
+     */
+    published_at?: string | null;
+    /**
+     * Author Id
+     */
+    author_id: string;
+    author?: UserResponse | null;
+    category?: CategoryResponse | null;
+    /**
+     * Tags
+     */
+    tags?: Array<TagResponse>;
+    cover_media?: MediaFileResponseWritable | null;
+    /**
+     * Git Hash
+     */
+    git_hash?: string | null;
+    /**
+     * Source Path
+     */
+    source_path?: string | null;
 };
 
 export type ReadRootData = {
@@ -3975,3 +4251,48 @@ export type UpdateCategoryByTypeResponses = {
 };
 
 export type UpdateCategoryByTypeResponse = UpdateCategoryByTypeResponses[keyof UpdateCategoryByTypeResponses];
+
+export type TriggerSyncData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ops/git/sync';
+};
+
+export type TriggerSyncErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type TriggerSyncError = TriggerSyncErrors[keyof TriggerSyncErrors];
+
+export type TriggerSyncResponses = {
+    /**
+     * Successful Response
+     */
+    200: SyncStats;
+};
+
+export type TriggerSyncResponse = TriggerSyncResponses[keyof TriggerSyncResponses];

@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getMyPosts } from "@/shared/api/generated";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { getMyPosts, triggerSync } from "@/shared/api/generated";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +27,49 @@ export default function GitSyncPage() {
   const gitManagedPosts = allPosts.filter((post) => !!post.source_path);
   const dbOnlyPosts = allPosts.filter((post) => !post.source_path);
 
+  const syncMutation = useMutation({
+    mutationFn: () => triggerSync({ throwOnError: true }),
+    onSuccess: (response) => {
+      const stats = response.data;
+      if (!stats) return;
+
+      toast.success("Git 同步完成", {
+        description: (
+          <div className="mt-2 space-y-1 text-sm">
+            <p className="text-green-600">
+              ✨ 新增: {stats.added?.length ?? 0} 篇
+            </p>
+            <p className="text-blue-600">
+              📝 更新: {stats.updated?.length ?? 0} 篇
+            </p>
+            <p className="text-red-600">
+              🗑️ 删除: {stats.deleted?.length ?? 0} 篇
+            </p>
+            <p className="text-xs text-muted-foreground pt-1">
+              耗时: {stats.duration?.toFixed(2) ?? "0.00"}秒
+            </p>
+          </div>
+        ),
+      });
+
+      // 如果有错误，单独显示
+      if (stats.errors && stats.errors.length > 0) {
+        toast.warning(`同步过程中出现 ${stats.errors.length} 个警告`, {
+          description: "请查看服务器日志获取详情",
+        });
+      }
+
+      refetch(); // 刷新列表
+    },
+    onError: (error) => {
+      toast.error("同步失败", {
+        description: error.message || "请检查后端 Git 配置",
+      });
+    },
+  });
+
   const handleManualSync = () => {
-    toast.promise(new Promise((resolve) => setTimeout(resolve, 2000)), {
-      loading: "正在扫描 Git 仓库并同步数据库...",
-      success: "Git 同步完成！已更新 0 个文件。",
-      error: "同步失败，请检查后端 Git 配置",
-    });
+    syncMutation.mutate();
   };
 
   const stats = [
@@ -80,7 +117,9 @@ export default function GitSyncPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
+            onClick={() => {
+              refetch().then(() => toast.success("状态已刷新"));
+            }}
             disabled={isFetching}
           >
             <History
@@ -88,8 +127,17 @@ export default function GitSyncPage() {
             />
             刷新状态
           </Button>
-          <Button size="sm" onClick={handleManualSync}>
-            <RefreshCw className="mr-2 h-4 w-4" /> 立即全量同步
+          <Button
+            size="sm"
+            onClick={handleManualSync}
+            disabled={syncMutation.isPending}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${
+                syncMutation.isPending ? "animate-spin" : ""
+              }`}
+            />
+            {syncMutation.isPending ? "同步中..." : "立即全量同步"}
           </Button>
         </div>
       </div>

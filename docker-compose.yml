@@ -18,7 +18,7 @@ services:
       # 宿主机 5433 → 容器 5432（避免与本地 PostgreSQL 冲突）
       - "5433:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -34,6 +34,7 @@ services:
     # 这样你在本地修改代码，容器里会同步更新
     volumes:
       - ./backend:/app
+      - ./content:/content
       - /app/.venv
 
     ports:

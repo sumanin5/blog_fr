@@ -73,10 +73,8 @@ class GitOpsService:
             logger.info(f"Git pull result: {pull_output}")
         except GitError as e:
             # 允许失败（例如：不是 Git 仓库，或者网络问题），降级为仅同步本地
-            # 但记录为 error 并在 stats 中体现
-            warning_msg = f"Git pull skipped/failed: {e}"
-            logger.warning(warning_msg)
-            stats.errors.append(warning_msg)
+            # 这不算作同步错误，只记录警告日志
+            logger.warning(f"Git pull skipped/failed: {e}")
 
         # 1. 扫描文件系统
         scanned_posts: List[ScannedPost] = await self.scanner.scan_all()

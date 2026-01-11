@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from app.core.config import settings
 from app.core.customID import custom_generate_unique_id
@@ -20,6 +21,7 @@ from app.users.router import router as users_router
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi_pagination import add_pagination
 from scalar_fastapi import get_scalar_api_reference
 from sqlalchemy.exc import SQLAlchemyError
@@ -112,9 +114,24 @@ async def scalar_html():
 # ============================================================
 # 包含路由
 # ============================================================
+# 包含路由
+# ============================================================
 app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["users"])
 app.include_router(media_router, prefix=f"{settings.API_PREFIX}/media", tags=["media"])
 app.include_router(posts_router, prefix=f"{settings.API_PREFIX}", tags=["posts"])
 app.include_router(
     git_ops_router, prefix=f"{settings.API_PREFIX}/ops/git", tags=["git-ops"]
 )
+
+# ============================================================
+# 静态文件服务：挂载媒体文件目录（必须在路由之后）
+# ============================================================
+media_path = Path(settings.MEDIA_ROOT).resolve()
+logger.info(f"尝试挂载媒体文件目录: {media_path}")
+logger.info(f"目录是否存在: {media_path.exists()}")
+if media_path.exists():
+    logger.info(f"目录内容: {list(media_path.iterdir())[:5]}")
+    app.mount("/media", StaticFiles(directory=str(media_path)), name="media")
+    logger.info(f"✅ 静态文件服务已挂载: /media -> {media_path}")
+else:
+    logger.error(f"❌ 媒体文件目录不存在: {media_path}")

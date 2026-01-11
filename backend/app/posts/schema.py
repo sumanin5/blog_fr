@@ -5,16 +5,13 @@
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
+from app.core.config import settings
 from app.posts.model import PostStatus, PostType
 from app.users.schema import UserResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
-# 使用 TYPE_CHECKING 避免循环导入
-if TYPE_CHECKING:
-    pass
 
 # ========================================
 # 标签 (Tag) Schemas
@@ -221,6 +218,7 @@ class PostShortResponse(PostBase):
     author: Optional["UserResponse"] = None  # 作者信息
     category: Optional[CategoryResponse] = None
     tags: List[TagResponse] = []
+    cover_media: Optional["MediaFileResponse"] = None  # 封面图完整信息
 
     # 追踪信息
     git_hash: Optional[str] = None
@@ -232,7 +230,7 @@ class PostShortResponse(PostBase):
     def cover_thumbnail(self) -> Optional[str]:
         """获取缩略图 URL（列表页用 small 尺寸）"""
         if self.cover_media_id:
-            return f"/api/media/{self.cover_media_id}/thumbnail/small"
+            return f"{settings.API_PREFIX}/{self.cover_media_id}/thumbnail/medium"
         return None
 
 
@@ -282,7 +280,9 @@ class PostPreviewResponse(BaseModel):
     excerpt: str
 
 
-# 解析延迟引用（Pydantic v2）
+# 延迟导入避免循环依赖
+from app.media.schema import MediaFileResponse  # noqa: E402
 
+# 解析延迟引用（Pydantic v2）
 PostShortResponse.model_rebuild()
 PostDetailResponse.model_rebuild()

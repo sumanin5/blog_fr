@@ -5156,6 +5156,93 @@
           }
         }
       }
+    },
+    "/api/v1/ops/git/sync": {
+      "post": {
+        "tags": [
+          "git-ops"
+        ],
+        "summary": "手动触发 Git 同步",
+        "description": "手动触发 GitOps 同步。\n扫描 content/ 目录下的 MDX 文件，并更新数据库。",
+        "operationId": "triggerSync",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -6446,6 +6533,16 @@
             "title": "Tags",
             "default": []
           },
+          "cover_media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaFileResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "git_hash": {
             "anyOf": [
               {
@@ -6723,6 +6820,16 @@
             "type": "array",
             "title": "Tags",
             "default": []
+          },
+          "cover_media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaFileResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "git_hash": {
             "anyOf": [
@@ -7030,6 +7137,54 @@
         ],
         "title": "PostVersionResponse",
         "description": "文章版本响应"
+      },
+      "SyncStats": {
+        "properties": {
+          "added": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Added",
+            "default": []
+          },
+          "updated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Updated",
+            "default": []
+          },
+          "deleted": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted",
+            "default": []
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped",
+            "default": 0
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "SyncStats"
       },
       "TagMergeRequest": {
         "properties": {
