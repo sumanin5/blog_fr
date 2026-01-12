@@ -22,13 +22,16 @@ export const authKeys = {
  * 获取当前用户信息 (Real Implementation)
  */
 async function fetchCurrentUser(): Promise<UserResponse | null> {
+  // 检查本地存储中的访问令牌
   const token =
     typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   if (!token) return null;
 
+  // 尝试获取当前用户信息
   try {
     const response = await getCurrentUserInfo({ throwOnError: true });
     return response.data ?? null;
+    // 如果获取失败，则移除访问令牌
   } catch {
     if (typeof window !== "undefined") {
       localStorage.removeItem("access_token");
@@ -41,6 +44,7 @@ async function fetchCurrentUser(): Promise<UserResponse | null> {
  * 核心 Auth Hook
  */
 export function useAuth() {
+  // 获取 Query Client
   const queryClient = useQueryClient();
 
   // 1. 获取用户信息

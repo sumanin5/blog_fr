@@ -17,6 +17,7 @@ function makeQueryClient() {
   });
 }
 
+// 浏览器端的 QueryClient 实例，用于在客户端之间共享
 let browserQueryClient: QueryClient | undefined = undefined;
 
 function getQueryClient() {

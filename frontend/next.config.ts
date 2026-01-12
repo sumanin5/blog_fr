@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
   // 生产优化
   poweredByHeader: false,
   compress: true,
+  output: "standalone",
 };
 
 export default nextConfig;

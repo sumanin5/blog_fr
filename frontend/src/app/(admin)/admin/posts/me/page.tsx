@@ -10,11 +10,13 @@ import Link from "next/link";
 import { toast } from "sonner";
 
 export default function MyPostsPage() {
+  // 从服务器获取我的文章
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin", "posts", "me"],
     queryFn: () => getMyPosts({ throwOnError: true }),
   });
 
+  // 删除文章
   const deleteMutation = useMutation({
     mutationFn: (variables: { id: string; type: string }) =>
       deletePostByType({
@@ -35,6 +37,7 @@ export default function MyPostsPage() {
     },
   });
 
+  // 文章列表
   const posts = data?.data?.items || [];
 
   return (
