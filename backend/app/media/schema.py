@@ -59,6 +59,9 @@ class MediaFileUpload(BaseModel):
 class MediaFileUpdate(BaseModel):
     """更新媒体文件的请求模型（所有字段可选）"""
 
+    original_filename: Optional[str] = Field(
+        None, max_length=255, description="原始文件名"
+    )
     usage: Optional[FileUsage] = Field(None, description="文件用途")
     description: Optional[str] = Field(None, max_length=500, description="文件描述")
     alt_text: Optional[str] = Field(None, max_length=255, description="替代文本")
@@ -69,6 +72,7 @@ class MediaFileUpdate(BaseModel):
 class MediaFileQuery(BaseModel):
     """媒体文件查询参数"""
 
+    q: Optional[str] = Field(None, description="搜索关键词(文件名/描述)")
     media_type: Optional[MediaType] = Field(None, description="媒体类型过滤")
     usage: Optional[FileUsage] = Field(None, description="用途过滤")
     tags: Optional[list[str]] = Field(None, description="标签过滤")
@@ -94,6 +98,8 @@ class MediaFileResponse(MediaFileBase):
     width: Optional[int] = Field(None, description="宽度（像素）")
     height: Optional[int] = Field(None, description="高度（像素）")
     duration: Optional[float] = Field(None, description="时长（秒，视频用）")
+
+    is_public: bool = Field(False, description="是否公开")
 
     # 处理状态
     is_processing: bool = Field(False, description="是否正在处理中")

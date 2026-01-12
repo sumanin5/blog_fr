@@ -368,6 +368,12 @@ export type MediaFileResponse = {
      */
     duration?: number | null;
     /**
+     * Is Public
+     *
+     * 是否公开
+     */
+    is_public?: boolean;
+    /**
      * Is Processing
      *
      * 是否正在处理中
@@ -425,6 +431,12 @@ export type MediaFileResponse = {
  * 更新媒体文件的请求模型（所有字段可选）
  */
 export type MediaFileUpdate = {
+    /**
+     * Original Filename
+     *
+     * 原始文件名
+     */
+    original_filename?: string | null;
     /**
      * 文件用途
      */
@@ -1478,6 +1490,12 @@ export type MediaFileResponseWritable = {
      */
     duration?: number | null;
     /**
+     * Is Public
+     *
+     * 是否公开
+     */
+    is_public?: boolean;
+    /**
      * Is Processing
      *
      * 是否正在处理中
@@ -2389,6 +2407,12 @@ export type GetUserFilesData = {
     path?: never;
     query?: {
         /**
+         * Q
+         *
+         * 搜索关键词
+         */
+        q?: string | null;
+        /**
          * Media Type
          *
          * 媒体类型过滤
@@ -3014,6 +3038,12 @@ export type GetAllFilesAdminData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Q
+         *
+         * 搜索关键词
+         */
+        q?: string | null;
         /**
          * Media Type
          *

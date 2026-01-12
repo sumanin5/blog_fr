@@ -1208,6 +1208,24 @@
         ],
         "parameters": [
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "搜索关键词",
+              "title": "Q"
+            },
+            "description": "搜索关键词"
+          },
+          {
             "name": "media_type",
             "in": "query",
             "required": false,
@@ -2484,6 +2502,24 @@
           }
         ],
         "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "搜索关键词",
+              "title": "Q"
+            },
+            "description": "搜索关键词"
+          },
           {
             "name": "media_type",
             "in": "query",
@@ -5874,6 +5910,12 @@
             "title": "Duration",
             "description": "时长（秒，视频用）"
           },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "description": "是否公开",
+            "default": false
+          },
           "is_processing": {
             "type": "boolean",
             "title": "Is Processing",
@@ -5967,6 +6009,19 @@
       },
       "MediaFileUpdate": {
         "properties": {
+          "original_filename": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Filename",
+            "description": "原始文件名"
+          },
           "usage": {
             "anyOf": [
               {

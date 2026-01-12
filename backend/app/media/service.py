@@ -297,6 +297,7 @@ async def get_media_file_by_id(
 async def get_user_media_files(
     user_id: UUID,
     session: AsyncSession,
+    q: Optional[str] = None,
     media_type: Optional[MediaType] = None,
     usage: Optional[FileUsage] = None,
     limit: int = 50,
@@ -307,6 +308,7 @@ async def get_user_media_files(
     Args:
         user_id: 用户ID
         session: 数据库会话
+        q: 搜索关键词
         media_type: 媒体类型过滤
         usage: 用途过滤
         limit: 限制数量
@@ -318,6 +320,7 @@ async def get_user_media_files(
     return await crud.get_user_media_files(
         session=session,
         user_id=user_id,
+        q=q,
         media_type=media_type,
         usage=usage,
         limit=limit,

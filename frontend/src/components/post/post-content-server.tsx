@@ -12,12 +12,24 @@ import { InteractiveButton } from "@/components/mdx/interactive-button";
 import React from "react";
 import { createHeadingSlugger } from "@/lib/heading-slug";
 
+/**
+ * 简化的 DOM 节点类型（用于文本提取）
+ */
 interface SimpleNode {
   type: string;
   data?: string;
   children?: SimpleNode[];
 }
 
+/**
+ * 自定义组件的 props 类型
+ */
+interface ComponentProps {
+  message?: string;
+  text?: string;
+  children?: React.ReactNode;
+  [key: string]: unknown;
+}
 
 interface PostContentServerProps {
   html: string;
@@ -36,11 +48,15 @@ export function PostContentServer({
         // 0. 自定义组件 hydration
         if (domNode.attribs && domNode.attribs["data-component"]) {
           const componentType = domNode.attribs["data-component"];
-          const props = JSON.parse(domNode.attribs["data-props"] || "{}");
+          const props: ComponentProps = JSON.parse(
+            domNode.attribs["data-props"] || "{}"
+          );
 
           if (componentType === "interactive-button") {
             return (
-              <InteractiveButton text={props.text} message={props.message} />
+              <InteractiveButton message={props.message}>
+                {props.children || props.text || "点击我"}
+              </InteractiveButton>
             );
           }
 
@@ -71,14 +87,15 @@ export function PostContentServer({
           if (codeNode) {
             const codeClass = codeNode.attribs.class || "";
             let codeText = "";
-            const extractText = (node: SimpleNode) => {
+            const extractText = (node: SimpleNode): void => {
               if (node.type === "text") {
                 codeText += node.data || "";
               } else if (node.children) {
                 node.children.forEach(extractText);
               }
             };
-            (codeNode.children as any[]).forEach(extractText);
+            // 将 DOMNode[] 转换为 SimpleNode[] 进行处理
+            (codeNode.children as unknown as SimpleNode[]).forEach(extractText);
 
             return <CodeBlock className={codeClass} code={codeText} />;
           }
@@ -102,16 +119,23 @@ export function PostContentServer({
         // D. 标题添加 ID
         if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(domNode.name)) {
           let headerText = "";
-          const extractTextRecursive = (node: any) => {
-            if (node.type === "text") {
-              headerText += node.data || "";
-            } else if (node.children) {
-              node.children.forEach(extractTextRecursive);
+          // domNode.children 的实际类型是 ChildNode[]（DOM 标准类型）
+          // 使用 unknown 类型避免类型冲突
+          const extractTextRecursive = (node: unknown): void => {
+            const n = node as {
+              type?: string;
+              data?: string;
+              children?: unknown[];
+            };
+            if (n.type === "text" && n.data) {
+              headerText += n.data;
+            } else if (n.children && Array.isArray(n.children)) {
+              n.children.forEach(extractTextRecursive);
             }
           };
 
           if (domNode.children) {
-            domNode.children.forEach(extractTextRecursive);
+            (domNode.children as unknown[]).forEach(extractTextRecursive);
           }
 
           const id = domNode.attribs.id || slugger(headerText);

@@ -123,6 +123,7 @@ async def get_user_files(
     files = await service.get_user_media_files(
         user_id=current_user.id,
         session=session,
+        q=query_params.q,
         media_type=query_params.media_type,
         usage=query_params.usage,
         limit=query_params.limit,

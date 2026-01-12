@@ -111,6 +111,7 @@ async def check_file_owner(
 
 
 def get_media_query_params(
+    q: Annotated[str | None, Query(description="搜索关键词")] = None,
     media_type: Annotated[MediaType | None, Query(description="媒体类型过滤")] = None,
     usage: Annotated[FileUsage | None, Query(description="用途过滤")] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="限制数量")] = 50,
@@ -119,6 +120,7 @@ def get_media_query_params(
     """获取媒体文件查询参数
 
     Args:
+        q: 搜索关键词
         media_type: 媒体类型过滤
         usage: 用途过滤
         limit: 限制数量
@@ -128,7 +130,7 @@ def get_media_query_params(
         MediaFileQuery对象
     """
     return MediaFileQuery(
-        media_type=media_type, usage=usage, limit=limit, offset=offset
+        q=q, media_type=media_type, usage=usage, limit=limit, offset=offset
     )
 
 

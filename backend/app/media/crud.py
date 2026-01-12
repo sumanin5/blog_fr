@@ -11,7 +11,7 @@ from uuid import UUID
 
 from app.media.model import FileUsage, MediaFile, MediaType
 from app.media.schema import MediaFileUpdate
-from sqlmodel import and_, func, select
+from sqlmodel import and_, or_, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -168,6 +168,7 @@ async def get_user_public_files(
 async def get_user_media_files(
     session: AsyncSession,
     user_id: UUID,
+    q: Optional[str] = None,
     media_type: Optional[MediaType] = None,
     usage: Optional[FileUsage] = None,
     is_public: Optional[bool] = None,
@@ -179,6 +180,7 @@ async def get_user_media_files(
     Args:
         session: 异步数据库会话
         user_id: 用户ID
+        q: 搜索关键词
         media_type: 媒体类型过滤
         usage: 用途过滤
         is_public: 公开状态过滤
@@ -189,6 +191,14 @@ async def get_user_media_files(
         MediaFile对象列表
     """
     stmt = select(MediaFile).where(MediaFile.uploader_id == user_id)
+
+    if q:
+        stmt = stmt.where(
+            or_(
+                MediaFile.original_filename.ilike(f"%{q}%"),
+                MediaFile.description.ilike(f"%{q}%"),
+            )
+        )
 
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)
@@ -466,6 +476,7 @@ async def get_orphaned_files(
 
 async def get_all_media_files(
     session: AsyncSession,
+    q: Optional[str] = None,
     media_type: Optional[MediaType] = None,
     usage: Optional[FileUsage] = None,
     limit: int = 50,
@@ -475,6 +486,7 @@ async def get_all_media_files(
 
     Args:
         session: 异步数据库会话
+        q: 搜索关键词
         media_type: 媒体类型过滤
         usage: 用途过滤
         limit: 限制数量
@@ -484,6 +496,14 @@ async def get_all_media_files(
         MediaFile对象列表
     """
     stmt = select(MediaFile)
+
+    if q:
+        stmt = stmt.where(
+            or_(
+                MediaFile.original_filename.ilike(f"%{q}%"),
+                MediaFile.description.ilike(f"%{q}%"),
+            )
+        )
 
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)

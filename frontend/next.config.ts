@@ -26,6 +26,16 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   output: "standalone",
+
+  // API 代理配置
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:8000/api/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

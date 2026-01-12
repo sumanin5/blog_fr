@@ -193,6 +193,138 @@ function useAutoSave(postId: string, content: string, interval = 30000) {
 
 #### 后端任务
 
+- [ ] **目录结构自动分类** ⭐️⭐️⭐️ - **优先级：高**
+
+  **目标**：利用文件夹结构实现文章自动分类，无需手动配置 Frontmatter。
+
+  **目录结构设计**：
+  ```
+  content/
+  ├── articles/              # 顶层: PostType (article)
+  │   ├── tech/             # 二层: Category (技术)
+  │   │   ├── post1.mdx
+  │   │   └── post2.md
+  │   ├── life/             # 二层: Category (生活)
+  │   │   └── post3.mdx
+  │   └── uncategorized/    # 默认分类
+  │       └── post4.md
+  ├── ideas/                # 顶层: PostType (idea)
+  │   ├── thoughts/         # 二层: Category (想法)
+  │   │   └── idea1.md
+  │   └── quick-notes/
+  │       └── idea2.mdx
+  ```
+
+  **实现细节**：
+
+  - [ ] **MDXScanner 增强**:
+    - [ ] 解析文件路径，提取 `post_type` 和 `category` 信息
+    - [ ] 支持路径格式：`content/{post_type}/{category}/{filename}.mdx`
+    - [ ] 兼容平铺结构（`content/{filename}.mdx`）作为向后兼容
+
+  - [ ] **分类自动创建**:
+    - [ ] 检测新分类目录时，自动在数据库创建 Category 记录
+    - [ ] 使用文件夹名作为 `slug` 和初始 `name`
+    - [ ] 支持自定义分类元数据文件（可选 `.category.yaml`）
+
+  - [ ] **优先级规则**:
+    - [ ] Frontmatter 中的 `category` 字段优先级最高
+    - [ ] 如果 Frontmatter 未指定，使用文件夹路径自动推断
+    - [ ] 如果分类不存在，抛出警告或自动创建（可配置）
+
+  - [ ] **同步逻辑更新**:
+    - [ ] `GitOpsService` 支持路径解析
+    - [ ] 文件移动到新文件夹时，自动更新文章分类
+    - [ ] 记录文件路径变化日志
+
+  **技术实现**：
+
+  ```python
+  # backend/app/git_ops/scanner.py
+  from pathlib import Path
+  from enum import Enum
+
+  class PostType(str, Enum):
+      ARTICLE = "article"
+      IDEA = "idea"
+
+  def parse_file_path(file_path: Path, content_root: Path) -> dict:
+      """
+      解析文件路径，提取 post_type 和 category
+
+      示例：
+      - content/articles/tech/post1.mdx -> {type: "article", category: "tech"}
+      - content/ideas/thoughts/idea.md -> {type: "idea", category: "thoughts"}
+      - content/post.mdx -> {type: None, category: None}  # 向后兼容
+      """
+      relative_path = file_path.relative_to(content_root)
+      parts = relative_path.parts
+
+      if len(parts) >= 3:
+          # 标准结构: {post_type}/{category}/{filename}
+          post_type = parts[0].rstrip('s')  # articles -> article
+          category_slug = parts[1]
+          return {
+              "post_type": post_type if post_type in ["article", "idea"] else None,
+              "category_slug": category_slug,
+              "filename": parts[-1]
+          }
+      elif len(parts) == 2:
+          # 仅有类型: {post_type}/{filename}
+          post_type = parts[0].rstrip('s')
+          return {
+              "post_type": post_type if post_type in ["article", "idea"] else None,
+              "category_slug": "uncategorized",
+              "filename": parts[-1]
+          }
+      else:
+          # 平铺结构（向后兼容）
+          return {
+              "post_type": None,
+              "category_slug": None,
+              "filename": parts[-1]
+          }
+
+  # 集成到同步流程
+  async def sync_post_from_file(file_path: Path):
+      path_info = parse_file_path(file_path, content_root)
+      frontmatter = parse_frontmatter(file_path)
+
+      # Frontmatter 优先，路径推断为后备
+      post_type = frontmatter.get("type") or path_info["post_type"]
+      category_slug = frontmatter.get("category") or path_info["category_slug"]
+
+      # 如果分类不存在，自动创建
+      if category_slug:
+          category = await get_or_create_category(category_slug)
+  ```
+
+  **配置选项**（添加到 `settings.py`）：
+
+  ```python
+  # Git 同步配置
+  GIT_AUTO_CREATE_CATEGORIES: bool = True  # 是否自动创建分类
+  GIT_STRICT_STRUCTURE: bool = False       # 是否强制目录结构（不允许平铺）
+  GIT_DEFAULT_CATEGORY: str = "uncategorized"  # 默认分类
+  ```
+
+  **迁移策略**：
+
+  - [ ] 提供迁移脚本，将现有平铺文件移动到新结构
+  - [ ] 支持渐进式迁移（新旧结构共存）
+  - [ ] 文档说明推荐的目录组织方式
+
+  **优势**：
+  - ✅ 符合直觉的文件管理方式
+  - ✅ 减少 Frontmatter 手动配置
+  - ✅ 便于批量移动和重组文章
+  - ✅ Git 操作更清晰（文件夹即分类）
+
+  **实现难度**: **中等** (约 2-3 天)
+  - 路径解析：简单
+  - 自动创建分类：中等
+  - 向后兼容处理：需要仔细测试
+
 - [ ] **差异预览接口**:
 
   - [ ] 创建 `GET /api/v1/ops/git/preview` 接口（dry-run 模式）
@@ -673,7 +805,8 @@ class AnalyticsEvent(BaseModel):
 - 搜索功能
 - 仪表盘统计
 - SEO 工具
-- Git 同步增强
+- **Git 目录结构自动分类** ⭐️（新增重点）
+- Git 同步增强（差异预览、Webhook）
 - 站点基础集成（RSS, 社交分享）
 
 ### v1.2 - 社区功能
