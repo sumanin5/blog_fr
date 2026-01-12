@@ -3,7 +3,7 @@
 import React from "react";
 import { MDXRemote } from "next-mdx-remote";
 import { serialize } from "next-mdx-remote/serialize";
-import { mdxComponents } from "@/components/mdx/mdx-components";
+import { createMdxComponents } from "@/components/mdx/mdx-components";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
@@ -28,7 +28,9 @@ export function PostContentClient({
   mdx,
   className = "",
 }: PostContentClientProps) {
-  const [mdxSource, setMdxSource] = React.useState<any>(null);
+  const [mdxSource, setMdxSource] = React.useState<
+    import("next-mdx-remote").MDXRemoteSerializeResult | null
+  >(null);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -77,7 +79,7 @@ export function PostContentClient({
 
   return (
     <article className={articleClassName}>
-      <MDXRemote {...mdxSource} components={mdxComponents} />
+      <MDXRemote {...mdxSource} components={createMdxComponents()} />
     </article>
   );
 }

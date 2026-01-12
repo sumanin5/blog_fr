@@ -10,6 +10,7 @@ import { CodeBlock } from "@/components/mdx/code-block";
 import { KatexMath } from "@/components/mdx/katex-math";
 import { InteractiveButton } from "@/components/mdx/interactive-button";
 import React from "react";
+import { createHeadingSlugger } from "@/lib/heading-slug";
 
 interface SimpleNode {
   type: string;
@@ -17,9 +18,6 @@ interface SimpleNode {
   children?: SimpleNode[];
 }
 
-const generateId = (text: string) => {
-  return text.toLowerCase().replace(/\./g, "").replace(/\s+/g, "-");
-};
 
 interface PostContentServerProps {
   html: string;
@@ -30,6 +28,8 @@ export function PostContentServer({
   html,
   className = "",
 }: PostContentServerProps) {
+  const slugger = createHeadingSlugger();
+
   const options: HTMLReactParserOptions = {
     replace: (domNode) => {
       if (domNode instanceof Element) {
@@ -114,7 +114,7 @@ export function PostContentServer({
             domNode.children.forEach(extractTextRecursive);
           }
 
-          const id = domNode.attribs.id || generateId(headerText);
+          const id = domNode.attribs.id || slugger(headerText);
           return React.createElement(
             domNode.name,
             { id, className: "scroll-mt-24" },

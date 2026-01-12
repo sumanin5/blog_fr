@@ -15,7 +15,7 @@
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { PostContentServer } from "./post-content-server";
 import { PostContentClient } from "./post-content-client";
-import { mdxComponents } from "@/components/mdx/mdx-components";
+import { createMdxComponents } from "@/components/mdx/mdx-components";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -56,11 +56,11 @@ export async function PostContent({
       <article className={articleClassName}>
         <MDXRemote
           source={mdx}
-          components={mdxComponents}
+          components={createMdxComponents()}
           options={{
             mdxOptions: {
               remarkPlugins: [remarkGfm, remarkMath],
-              rehypePlugins: [rehypeKatex as any],
+              rehypePlugins: [rehypeKatex],
             },
           }}
         />
