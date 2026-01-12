@@ -8,7 +8,7 @@ import parse, {
 import { MermaidDiagram } from "@/components/mdx/mermaid-diagram";
 import { CodeBlock } from "@/components/mdx/code-block";
 import { KatexMath } from "@/components/mdx/katex-math";
-import { InteractiveButton } from "@/components/mdx/custom-components";
+import { InteractiveButton } from "@/components/mdx/interactive-button";
 import React from "react";
 
 interface SimpleNode {

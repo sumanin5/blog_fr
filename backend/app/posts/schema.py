@@ -101,7 +101,8 @@ class PostBase(BaseModel):
     cover_media_id: Optional[UUID] = None
     is_featured: bool = False
     allow_comments: bool = True
-    enable_jsx: bool = False  # 是否启用 JSX 组件（前端渲染）
+    enable_jsx: bool = False  # 是否启用 JSX 组件
+    use_server_rendering: bool = True  # 是否使用服务端渲染
 
     # SEO 字段
     meta_title: Optional[str] = ""
@@ -151,6 +152,7 @@ class PostUpdate(BaseModel):
     is_featured: Optional[bool] = None
     allow_comments: Optional[bool] = None
     enable_jsx: Optional[bool] = None
+    use_server_rendering: Optional[bool] = None
     content_mdx: Optional[str] = None
     excerpt: Optional[str] = None  # 允许用户更新摘要
     tags: Optional[List[str]] = None  # 允许用户更新标签
@@ -242,6 +244,7 @@ class PostDetailResponse(PostShortResponse):
     content_mdx: str
     content_html: str
     enable_jsx: bool = False
+    use_server_rendering: bool = True
     toc: list  # 目录数组，格式: [{"id": "...", "title": "...", "level": 1}, ...]
 
     # 追踪信息

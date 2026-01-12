@@ -3,7 +3,8 @@
 import React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { previewPost, PostPreviewResponse } from "@/shared/api/generated";
-import { PostContent } from "@/components/post/post-content";
+import { PostContentClient } from "@/components/post/post-content-client";
+import { PostContentServer } from "@/components/post/post-content-server";
 import { Loader2 } from "lucide-react";
 
 export default function PostPreviewPage() {
@@ -53,11 +54,7 @@ export default function PostPreviewPage() {
 
       {previewData && (
         <div className="mx-auto max-w-4xl">
-          <PostContent
-            html={previewData.content_html}
-            mdx={previewData.content_mdx}
-            enableJsx={previewData.enable_jsx}
-          />
+          <PostContentServer html={previewData.content_html} />
         </div>
       )}
     </div>

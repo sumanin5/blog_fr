@@ -13,7 +13,7 @@ interface PostDetailViewProps {
   post: PostDetailResponse;
 }
 
-export function PostDetailView({ post }: PostDetailViewProps) {
+export async function PostDetailView({ post }: PostDetailViewProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* 浮动目录按钮 */}
@@ -66,6 +66,7 @@ export function PostDetailView({ post }: PostDetailViewProps) {
             html={post.content_html}
             mdx={post.content_mdx}
             enableJsx={post.enable_jsx}
+            useServerRendering={post.use_server_rendering}
           />
         </div>
       </div>

@@ -84,6 +84,9 @@ class FrontmatterMapper:
             "enable_jsx": meta.get("enable_jsx", False)
             if "enable_jsx" in meta
             else False,
+            "use_server_rendering": meta.get("use_server_rendering", True)
+            if "use_server_rendering" in meta
+            else True,
             # SEO 字段
             "meta_title": meta.get("meta_title") or meta.get("seo_title") or "",
             "meta_description": meta.get("meta_description")

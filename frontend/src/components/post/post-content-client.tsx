@@ -3,30 +3,21 @@
 import React from "react";
 import { MDXRemote } from "next-mdx-remote";
 import { serialize } from "next-mdx-remote/serialize";
-import { MermaidDiagram } from "@/components/mdx/mermaid-diagram";
-import { CodeBlock } from "@/components/mdx/code-block";
+import { mdxComponents } from "@/components/mdx/mdx-components";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import "katex/dist/katex.min.css";
 
-const mdxComponents = {
-  pre: (props: any) => {
-    const children = props.children;
-    if (children?.type === "code") {
-      const code = children.props.children;
-      const className = children.props.className || "";
-      const lang = className.replace("language-", "");
-
-      if (lang === "mermaid") {
-        return <MermaidDiagram code={code} />;
-      }
-
-      return <CodeBlock code={code} className={className} />;
-    }
-    return <pre {...props} />;
-  },
-};
+/**
+ * 客户端 MDX 渲染组件
+ *
+ * 适用场景：
+ *   - 预览页面（需要实时编译）
+ *   - 在客户端组件中使用
+ *
+ * 注意：对于文章详情页，请使用 PostContent（服务端版本）以获得更好的性能
+ */
 
 interface PostContentClientProps {
   mdx: string;

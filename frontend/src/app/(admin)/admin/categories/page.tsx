@@ -135,7 +135,7 @@ export default function CategoriesPage() {
       slug: category.slug,
       description: category.description || "",
       sort_order: category.sort_order || 0,
-      is_active: category.is_active,
+      is_active: category.is_active ?? true,
     });
     setIsDialogOpen(true);
   };

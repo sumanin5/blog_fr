@@ -6261,6 +6261,11 @@
             "title": "Enable Jsx",
             "default": false
           },
+          "use_server_rendering": {
+            "type": "boolean",
+            "title": "Use Server Rendering",
+            "default": true
+          },
           "meta_title": {
             "anyOf": [
               {
@@ -6425,6 +6430,11 @@
             "type": "boolean",
             "title": "Enable Jsx",
             "default": false
+          },
+          "use_server_rendering": {
+            "type": "boolean",
+            "title": "Use Server Rendering",
+            "default": true
           },
           "meta_title": {
             "anyOf": [
@@ -6719,6 +6729,11 @@
             "title": "Enable Jsx",
             "default": false
           },
+          "use_server_rendering": {
+            "type": "boolean",
+            "title": "Use Server Rendering",
+            "default": true
+          },
           "meta_title": {
             "anyOf": [
               {
@@ -7004,6 +7019,17 @@
               }
             ],
             "title": "Enable Jsx"
+          },
+          "use_server_rendering": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Server Rendering"
           },
           "content_mdx": {
             "anyOf": [

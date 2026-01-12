@@ -129,7 +129,12 @@ class Post(Base, table=True):
     enable_jsx: bool = Field(
         default=False,
         sa_column=Column(Boolean, server_default="false", nullable=False),
-        description="是否启用 JSX 组件（true=前端渲染，false=后端渲染）",
+        description="是否启用 JSX 组件（true=支持交互式组件，false=纯 Markdown）",
+    )
+    use_server_rendering: bool = Field(
+        default=True,
+        sa_column=Column(Boolean, server_default="true", nullable=False),
+        description="是否使用服务端渲染 MDX（true=服务端，false=客户端）",
     )
 
     # 状态与属性

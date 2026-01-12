@@ -591,6 +591,10 @@ export type PostCreate = {
      */
     enable_jsx?: boolean;
     /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
+    /**
      * Meta Title
      */
     meta_title?: string | null;
@@ -666,6 +670,10 @@ export type PostDetailResponse = {
      * Enable Jsx
      */
     enable_jsx?: boolean;
+    /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
     /**
      * Meta Title
      */
@@ -826,6 +834,10 @@ export type PostShortResponse = {
      */
     enable_jsx?: boolean;
     /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
+    /**
      * Meta Title
      */
     meta_title?: string | null;
@@ -942,6 +954,10 @@ export type PostUpdate = {
      * Enable Jsx
      */
     enable_jsx?: boolean | null;
+    /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean | null;
     /**
      * Content Mdx
      */
@@ -1580,6 +1596,10 @@ export type PostDetailResponseWritable = {
      */
     enable_jsx?: boolean;
     /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
+    /**
      * Meta Title
      */
     meta_title?: string | null;
@@ -1700,6 +1720,10 @@ export type PostShortResponseWritable = {
      * Enable Jsx
      */
     enable_jsx?: boolean;
+    /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
     /**
      * Meta Title
      */
