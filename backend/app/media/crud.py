@@ -11,10 +11,14 @@ from uuid import UUID
 
 from app.media.model import FileUsage, MediaFile, MediaType
 from app.media.schema import MediaFileUpdate
-from sqlmodel import and_, or_, func, select
+from sqlmodel import and_, func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
+
+# 注意: 本文件中存在许多 type: ignore 注释，这是因为 Pylance 无法正确识别
+# SQLModel 的列（Column）对象的动态方法，如 .ilike(), .desc(), .is_() 等。
+# 这些方法在运行时是完全有效的，但静态类型检查器无法推断。
 
 
 # ========================================
@@ -49,7 +53,8 @@ async def get_media_file_by_path(
     """
     stmt = select(MediaFile).where(MediaFile.file_path == file_path)
     result = await session.execute(stmt)
-    return result.first()
+    media_file = result.scalars().first()
+    return media_file
 
 
 async def update_media_file(
@@ -114,7 +119,7 @@ async def get_public_media_files(
     Returns:
         公开的MediaFile对象列表
     """
-    stmt = select(MediaFile).where(MediaFile.is_public.is_(True))
+    stmt = select(MediaFile).where(MediaFile.is_public.is_(True))  # type: ignore
 
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)
@@ -122,7 +127,7 @@ async def get_public_media_files(
     if usage:
         stmt = stmt.where(MediaFile.usage == usage)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -148,13 +153,13 @@ async def get_user_public_files(
         用户公开的MediaFile对象列表
     """
     stmt = select(MediaFile).where(
-        and_(MediaFile.uploader_id == user_id, MediaFile.is_public.is_(True))
+        and_(MediaFile.uploader_id == user_id, MediaFile.is_public.is_(True))  # type: ignore
     )
 
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -195,8 +200,8 @@ async def get_user_media_files(
     if q:
         stmt = stmt.where(
             or_(
-                MediaFile.original_filename.ilike(f"%{q}%"),
-                MediaFile.description.ilike(f"%{q}%"),
+                MediaFile.original_filename.ilike(f"%{q}%"),  # type: ignore
+                MediaFile.description.ilike(f"%{q}%"),  # type: ignore
             )
         )
 
@@ -207,9 +212,9 @@ async def get_user_media_files(
         stmt = stmt.where(MediaFile.usage == usage)
 
     if is_public is not None:
-        stmt = stmt.where(MediaFile.is_public.is_(is_public))
+        stmt = stmt.where(MediaFile.is_public.is_(is_public))  # type: ignore
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -231,7 +236,7 @@ async def get_media_files_by_usage(
     stmt = (
         select(MediaFile)
         .where(MediaFile.usage == usage)
-        .order_by(MediaFile.created_at.desc())
+        .order_by(MediaFile.created_at.desc())  # type: ignore
         .limit(limit)
     )
 
@@ -262,12 +267,12 @@ async def get_media_files_by_tags(
 
     # 使用 JSON 操作符查询包含指定标签的文件
     for tag in tags:
-        stmt = stmt.where(MediaFile.tags.op("?")(tag))
+        stmt = stmt.where(MediaFile.tags.op("?")(tag))  # type: ignore
 
     if user_id:
         stmt = stmt.where(MediaFile.uploader_id == user_id)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -291,13 +296,14 @@ async def get_user_media_count(
     Returns:
         文件数量
     """
-    stmt = select(func.count(MediaFile.id)).where(MediaFile.uploader_id == user_id)
+    stmt = select(func.count(MediaFile.id)).where(MediaFile.uploader_id == user_id)  # type: ignore
 
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)
 
     result = await session.execute(stmt)
-    return result.one() or 0
+    count = result.scalar()
+    return count if count is not None else 0
 
 
 async def get_user_storage_usage(session: AsyncSession, user_id: UUID) -> int:
@@ -312,7 +318,8 @@ async def get_user_storage_usage(session: AsyncSession, user_id: UUID) -> int:
     """
     stmt = select(func.sum(MediaFile.file_size)).where(MediaFile.uploader_id == user_id)
     result = await session.execute(stmt)
-    return result.one() or 0
+    total = result.scalar()
+    return total if total is not None else 0
 
 
 async def get_media_stats_by_type(
@@ -328,7 +335,7 @@ async def get_media_stats_by_type(
         各类型文件数量字典
     """
     stmt = (
-        select(MediaFile.media_type, func.count(MediaFile.id))
+        select(MediaFile.media_type, func.count(MediaFile.id))  # type: ignore
         .where(MediaFile.uploader_id == user_id)
         .group_by(MediaFile.media_type)
     )
@@ -367,7 +374,7 @@ async def get_media_files_by_ids(
     Returns:
         MediaFile对象列表
     """
-    stmt = select(MediaFile).where(MediaFile.id.in_(file_ids))
+    stmt = select(MediaFile).where(MediaFile.id.in_(file_ids))  # type: ignore
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
@@ -423,9 +430,9 @@ async def search_media_files(
         MediaFile对象列表
     """
     stmt = select(MediaFile).where(
-        MediaFile.original_filename.ilike(f"%{query}%")
-        | MediaFile.description.ilike(f"%{query}%")
-        | MediaFile.alt_text.ilike(f"%{query}%")
+        MediaFile.original_filename.ilike(f"%{query}%")  # type: ignore
+        | MediaFile.description.ilike(f"%{query}%")  # type: ignore
+        | MediaFile.alt_text.ilike(f"%{query}%")  # type: ignore
     )
 
     if user_id:
@@ -434,7 +441,7 @@ async def search_media_files(
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -500,8 +507,8 @@ async def get_all_media_files(
     if q:
         stmt = stmt.where(
             or_(
-                MediaFile.original_filename.ilike(f"%{q}%"),
-                MediaFile.description.ilike(f"%{q}%"),
+                MediaFile.original_filename.ilike(f"%{q}%"),  # type: ignore
+                MediaFile.description.ilike(f"%{q}%"),  # type: ignore
             )
         )
 
@@ -511,7 +518,7 @@ async def get_all_media_files(
     if usage:
         stmt = stmt.where(MediaFile.usage == usage)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -543,7 +550,7 @@ async def get_recent_files(
     if user_id:
         stmt = stmt.where(MediaFile.uploader_id == user_id)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit)
+    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -567,7 +574,7 @@ async def get_popular_files(
     if user_id:
         stmt = stmt.where(MediaFile.uploader_id == user_id)
 
-    stmt = stmt.order_by(MediaFile.view_count.desc()).limit(limit)
+    stmt = stmt.order_by(MediaFile.view_count.desc()).limit(limit)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -626,11 +633,11 @@ async def get_media_files_by_criteria(
 
     # 公开状态过滤
     if is_public is not None:
-        stmt = stmt.where(MediaFile.is_public.is_(is_public))
+        stmt = stmt.where(MediaFile.is_public.is_(is_public))  # type: ignore
 
     # 处理状态过滤
     if is_processing is not None:
-        stmt = stmt.where(MediaFile.is_processing.is_(is_processing))
+        stmt = stmt.where(MediaFile.is_processing.is_(is_processing))  # type: ignore
 
     # 文件大小过滤
     if file_size_min is not None:
@@ -649,18 +656,18 @@ async def get_media_files_by_criteria(
     # 标签过滤
     if tags:
         for tag in tags:
-            stmt = stmt.where(MediaFile.tags.op("?")(tag))
+            stmt = stmt.where(MediaFile.tags.op("?")(tag))  # type: ignore
 
     # 搜索关键词过滤
     if search_query:
         search_pattern = f"%{search_query}%"
         stmt = stmt.where(
-            MediaFile.original_filename.ilike(search_pattern)
-            | MediaFile.description.ilike(search_pattern)
-            | MediaFile.alt_text.ilike(search_pattern)
+            MediaFile.original_filename.ilike(search_pattern)  # type: ignore
+            | MediaFile.description.ilike(search_pattern)  # type: ignore
+            | MediaFile.alt_text.ilike(search_pattern)  # type: ignore
         )
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
