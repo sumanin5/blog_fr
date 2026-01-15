@@ -59,3 +59,4 @@ thumbnails/
 # ==========================================
 # frontend_react_backup/
 content/
+*.obsidian/

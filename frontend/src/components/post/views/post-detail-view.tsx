@@ -1,6 +1,6 @@
-import { PostContent } from "@/components/post/post-content";
-import { PostMeta } from "@/components/post/post-meta";
-import { TableOfContents } from "@/components/mdx/table-of-contents";
+import { PostContent } from "@/components/post/content/post-content";
+import { PostMeta } from "@/components/post/components/post-meta";
+import { TableOfContents } from "@/components/mdx/utils/table-of-contents";
 import { PostDetailResponse } from "@/shared/api/generated/types.gen";
 
 interface TocItem {

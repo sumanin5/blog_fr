@@ -239,10 +239,16 @@ class PostShortResponse(PostBase):
 
 
 class PostDetailResponse(PostShortResponse):
-    """文章详情响应"""
+    """文章详情响应
 
-    content_mdx: str
-    content_html: str
+    优化说明：
+    - 根据 enable_jsx 字段，只返回需要的内容字段
+    - enable_jsx=False: 只返回 content_html（节省 50% 带宽）
+    - enable_jsx=True: 只返回 content_mdx（节省 50% 带宽）
+    """
+
+    content_mdx: Optional[str] = None
+    content_html: Optional[str] = None
     enable_jsx: bool = False
     use_server_rendering: bool = True
     toc: list  # 目录数组，格式: [{"id": "...", "title": "...", "level": 1}, ...]
@@ -255,6 +261,15 @@ class PostDetailResponse(PostShortResponse):
     versions: List[PostVersionResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+    def model_post_init(self, __context) -> None:
+        """初始化后处理：根据 enable_jsx 清空不需要的字段"""
+        if self.enable_jsx:
+            # 使用 MDX，清空 HTML
+            self.content_html = None
+        else:
+            # 使用 HTML，清空 MDX
+            self.content_mdx = None
 
     @property
     def cover_image(self) -> Optional[str]:

@@ -4,7 +4,7 @@ import {
   PageCategoryResponse,
   PagePostShortResponse,
 } from "@/shared/api/generated/types.gen";
-import { PostListView } from "@/components/post/post-list-view";
+import { PostListView } from "@/components/post/views/post-list-view";
 
 export const metadata: Metadata = {
   title: "博客文章 | Blog FR",

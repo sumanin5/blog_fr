@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PostDetailView } from "@/components/post/post-detail-view";
+import { cache } from "react";
+import { PostDetailView } from "@/components/post/views/post-detail-view";
 
 interface PageProps {
   params: Promise<{
@@ -11,31 +12,33 @@ interface PageProps {
 import { PostDetailResponse } from "@/shared/api/generated/types.gen";
 import { settings } from "@/config/settings";
 
-// 1. 获取数据的辅助函数
-async function getPost(slug: string): Promise<PostDetailResponse | null> {
-  try {
-    const url = `${settings.BACKEND_INTERNAL_URL}${settings.API_PREFIX}/posts/article/slug/${slug}`;
+// 1. 获取数据的辅助函数（使用 cache 包裹，自动去重）
+const getPost = cache(
+  async (slug: string): Promise<PostDetailResponse | null> => {
+    try {
+      const url = `${settings.BACKEND_INTERNAL_URL}${settings.API_PREFIX}/posts/article/slug/${slug}`;
 
-    const res = await fetch(url, {
-      next: {
-        revalidate: 3600, // 1小时缓存
-        tags: ["posts", `post-${slug}`],
-      },
-    });
+      const res = await fetch(url, {
+        next: {
+          revalidate: 3600, // 1小时缓存
+          tags: ["posts", `post-${slug}`],
+        },
+      });
 
-    if (!res.ok) {
-      if (res.status === 404) return null;
-      console.error(`[SSR] Fetch failed: ${res.status} ${res.statusText}`);
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        console.error(`[SSR] Fetch failed: ${res.status} ${res.statusText}`);
+        return null;
+      }
+
+      const data = (await res.json()) as PostDetailResponse;
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch post:", error);
       return null;
     }
-
-    const data = (await res.json()) as PostDetailResponse;
-    return data;
-  } catch (error) {
-    console.error("Failed to fetch post:", error);
-    return null;
   }
-}
+);
 
 // 2. 动态生成 SEO 元数据
 export async function generateMetadata({
