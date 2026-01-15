@@ -123,6 +123,15 @@ class GitOpsService:
         logger.info(
             f"Sync completed in {stats.duration:.2f}s: +{len(stats.added)} ~{len(stats.updated)} -{len(stats.deleted)}"
         )
+
+        # ✅ 同步完成后失效 Next.js 缓存（失败不影响同步结果）
+        if stats.added or stats.updated or stats.deleted:
+            try:
+                await self._revalidate_nextjs_cache()
+            except Exception as e:
+                # 缓存失效失败不应该中断同步流程，只记录警告
+                logger.warning(f"❌ Failed to revalidate Next.js cache: {e}")
+
         return stats
 
     async def _sync_single_file(
@@ -208,3 +217,45 @@ class GitOpsService:
         except Exception as e:
             # 写回失败不应该中断同步流程，只记录警告
             logger.warning(f"Failed to update slug in {file_path}: {e}")
+
+    async def _revalidate_nextjs_cache(self):
+        """失效 Next.js 缓存
+
+        在 Git 同步完成后调用，通知 Next.js 失效缓存，
+        确保用户立即看到最新的文章内容。
+
+        注意：调用方应该捕获异常，避免缓存失效失败影响主流程。
+        """
+        frontend_url = settings.FRONTEND_URL
+        revalidate_secret = settings.REVALIDATE_SECRET
+
+        if not frontend_url or not revalidate_secret:
+            logger.warning(
+                "⚠️ FRONTEND_URL or REVALIDATE_SECRET not configured, "
+                "skipping Next.js cache revalidation"
+            )
+            return
+
+        # 调用 Next.js API 失效缓存
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{frontend_url}/api/revalidate",
+                headers={
+                    "Authorization": f"Bearer {revalidate_secret}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "tags": ["posts", "posts-list", "categories"],
+                    "paths": ["/posts"],
+                },
+                timeout=10.0,
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"✅ Next.js cache revalidated successfully: {data}")
+            else:
+                logger.warning(
+                    f"❌ Failed to revalidate Next.js cache: "
+                    f"{response.status_code} {response.text}"
+                )

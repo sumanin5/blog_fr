@@ -116,11 +116,22 @@ export function PostContentServer({
           }
         }
 
-        // D. 标题添加 ID
+        // D. 标题添加 ID（如果后端已经添加了 ID，就使用后端的）
         if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(domNode.name)) {
+          // 优先使用后端生成的 ID
+          const id = domNode.attribs.id;
+
+          if (id) {
+            // 后端已经添加了 ID，直接使用
+            return React.createElement(
+              domNode.name,
+              { id, className: "scroll-mt-24" },
+              domToReact(domNode.children as DOMNode[], options)
+            );
+          }
+
+          // 后端没有 ID（旧数据），前端生成
           let headerText = "";
-          // domNode.children 的实际类型是 ChildNode[]（DOM 标准类型）
-          // 使用 unknown 类型避免类型冲突
           const extractTextRecursive = (node: unknown): void => {
             const n = node as {
               type?: string;
@@ -138,10 +149,10 @@ export function PostContentServer({
             (domNode.children as unknown[]).forEach(extractTextRecursive);
           }
 
-          const id = domNode.attribs.id || slugger(headerText);
+          const generatedId = slugger(headerText);
           return React.createElement(
             domNode.name,
-            { id, className: "scroll-mt-24" },
+            { id: generatedId, className: "scroll-mt-24" },
             domToReact(domNode.children as DOMNode[], options)
           );
         }

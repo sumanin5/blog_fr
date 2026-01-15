@@ -18,6 +18,9 @@ stdlib_logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+# 创建logger实例
+logger = stdlib_logging.getLogger(__name__)
+
 
 def setup_middleware(app: FastAPI) -> None:
     """
@@ -36,7 +39,9 @@ def setup_middleware(app: FastAPI) -> None:
     # 1. 错误处理中间件已移至 main.py 作为 exception handlers
 
     # 2. 文件上传大小限制中间件
-    setup_file_upload_middleware(app, max_size=50 * 1024 * 1024)  # 50MB
+    # 注意：这里设置的是所有文件类型的最大值，具体类型限制在 media/utils.py 中定义
+    setup_file_upload_middleware(app, max_size=150 * 1024 * 1024)  # 150MB
+    logger.info("文件上传中间件已设置：全局限制 150MB")
 
     # 3. 日志中间件
     app.add_middleware(LoggingMiddleware)

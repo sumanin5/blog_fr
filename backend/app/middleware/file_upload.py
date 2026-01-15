@@ -19,7 +19,7 @@ class FileSizeLimitMiddleware:
     def __init__(
         self,
         app: Callable,
-        max_upload_size: int = 50 * 1024 * 1024,  # 50MB
+        max_upload_size: int = 150 * 1024 * 1024,  # 150MB（匹配视频100MB需求）
     ):
         self.app = app
         self.max_upload_size = max_upload_size

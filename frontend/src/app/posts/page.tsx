@@ -28,7 +28,10 @@ async function getPosts(
     }
 
     const res = await fetch(url, {
-      cache: "no-store",
+      next: {
+        revalidate: 3600, // 1小时缓存
+        tags: ["posts", "posts-list"],
+      },
     });
 
     if (!res.ok) {
@@ -49,7 +52,12 @@ async function getPosts(
 async function getCategories(): Promise<PageCategoryResponse | null> {
   try {
     const url = `${settings.BACKEND_INTERNAL_URL}${settings.API_PREFIX}/posts/article/categories`;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, {
+      next: {
+        revalidate: 3600, // 1小时缓存
+        tags: ["categories"],
+      },
+    });
     if (!res.ok) return null;
     return (await res.json()) as PageCategoryResponse;
   } catch (error) {

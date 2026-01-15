@@ -105,6 +105,9 @@ class PostProcessor:
         # 自定义 fence 渲染规则（代码块）
         self._setup_custom_renderers()
 
+        # 自定义标题渲染规则（添加 ID）
+        self._setup_heading_renderer()
+
     def _setup_custom_renderers(self):
         """设置自定义渲染规则"""
         # 保存原始的 fence 渲染器
@@ -178,6 +181,37 @@ class PostProcessor:
             return content
 
         self.md.renderer.rules["html_inline"] = custom_html_inline
+
+    def _setup_heading_renderer(self):
+        """设置标题渲染规则，添加 ID"""
+        # 用于生成唯一 slug 的计数器
+        slug_counter = {}
+
+        def custom_heading_open(tokens, idx, options, env):
+            token = tokens[idx]
+
+            # 获取标题文本（从下一个 token）
+            if idx + 1 < len(tokens):
+                inline_token = tokens[idx + 1]
+                if inline_token.type == "inline" and inline_token.content:
+                    title = inline_token.content
+                    # 生成 slug（与 _generate_unique_slug 逻辑一致）
+                    slug = self._generate_unique_slug(title, slug_counter)
+                    # 添加 id 属性
+                    token.attrSet("id", slug)
+
+            # 手动渲染标签
+            tag = token.tag
+            attrs_list = []
+            if hasattr(token, "attrs") and token.attrs:
+                # token.attrs 是字典格式 {'id': 'value', 'class': 'value'}
+                for key, value in token.attrs.items():
+                    attrs_list.append(f'{key}="{value}"')
+
+            attrs_str = " " + " ".join(attrs_list) if attrs_list else ""
+            return f"<{tag}{attrs_str}>"
+
+        self.md.renderer.rules["heading_open"] = custom_heading_open
 
     def _is_jsx_syntax(self, content: str) -> bool:
         """检测是否是 JSX/TSX 语法"""

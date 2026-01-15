@@ -331,3 +331,277 @@ def test_generate_slug_lowercase():
     slug = generate_slug_with_random_suffix("HELLO WORLD ABC")
 
     assert slug == slug.lower(), f"Slug should be lowercase: {slug}"
+
+
+# ============================================================================
+# PostProcessor 测试
+# ============================================================================
+
+
+def test_post_processor_generate_toc():
+    """测试 TOC 生成"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+# 一级标题
+
+## 二级标题
+
+### 三级标题
+
+## 另一个二级标题
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    assert len(processor.toc) == 4
+    assert processor.toc[0]["title"] == "一级标题"
+    assert processor.toc[0]["level"] == 1
+    assert processor.toc[1]["title"] == "二级标题"
+    assert processor.toc[1]["level"] == 2
+
+
+def test_post_processor_toc_with_duplicate_titles():
+    """测试重复标题的 TOC 生成"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+## 介绍
+
+## 介绍
+
+## 介绍
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    assert len(processor.toc) == 3
+    # 第一个不加后缀
+    assert processor.toc[0]["id"] == "介绍"
+    # 第二个加 -1
+    assert processor.toc[1]["id"] == "介绍-1"
+    # 第三个加 -2
+    assert processor.toc[2]["id"] == "介绍-2"
+
+
+def test_post_processor_toc_ignores_code_blocks():
+    """测试 TOC 生成忽略代码块中的标题"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+## 真实标题
+
+```markdown
+## 代码块中的标题
+```
+
+## 另一个真实标题
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    assert len(processor.toc) == 2
+    assert processor.toc[0]["title"] == "真实标题"
+    assert processor.toc[1]["title"] == "另一个真实标题"
+
+
+def test_post_processor_heading_ids_in_html():
+    """测试 HTML 中的标题包含 ID"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+## 介绍
+
+## 性能对比
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    html = processor.content_html
+
+    # 检查 HTML 中是否包含 ID
+    assert 'id="介绍"' in html
+    assert 'id="性能对比"' in html
+
+
+def test_post_processor_heading_ids_match_toc():
+    """测试 HTML 中的标题 ID 与 TOC 一致"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+## 介绍
+
+## 介绍
+
+## 性能对比
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    html = processor.content_html
+    toc = processor.toc
+
+    # 检查每个 TOC 项的 ID 都在 HTML 中
+    for item in toc:
+        assert f'id="{item["id"]}"' in html, f"ID {item['id']} not found in HTML"
+
+
+def test_post_processor_heading_ids_with_special_chars():
+    """测试特殊字符标题的 ID 生成"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+## 1. 性能对比
+
+## 为什么选择服务端渲染？
+
+## Hello World
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    toc = processor.toc
+
+    # 检查 ID 生成规则
+    assert toc[0]["id"] == "1-性能对比"
+    assert toc[1]["id"] == "为什么选择服务端渲染"
+    assert toc[2]["id"] == "hello-world"
+
+
+def test_post_processor_reading_time():
+    """测试阅读时间计算"""
+    from app.posts.utils import PostProcessor
+
+    # 约 300 字的内容（应该是 1 分钟）
+    content = (
+        """---
+title: Test
+---
+
+"""
+        + "测试内容 " * 150
+    )
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    assert processor.reading_time >= 1
+
+
+def test_post_processor_excerpt_generation():
+    """测试摘要生成"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+这是第一段内容，应该被包含在摘要中。
+
+这是第二段内容。
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    assert "这是第一段内容" in processor.excerpt
+    assert len(processor.excerpt) <= 203  # 200 + "..."
+
+
+def test_post_processor_custom_components():
+    """测试自定义组件处理"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+:::interactive-button
+text: 点击我
+message: Hello!
+:::
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    html = processor.content_html
+
+    # 检查自定义组件是否被渲染
+    assert 'data-component="interactive-button"' in html
+    assert "点击我" in html
+
+
+def test_post_processor_math_formulas():
+    """测试数学公式处理"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+行内公式：$E = mc^2$
+
+块级公式：
+
+$$
+\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
+$$
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    html = processor.content_html
+
+    # 检查数学公式是否被包裹
+    assert 'class="math-inline"' in html
+    assert 'class="math-block"' in html
+
+
+def test_post_processor_mermaid_diagrams():
+    """测试 Mermaid 流程图处理"""
+    from app.posts.utils import PostProcessor
+
+    content = """---
+title: Test
+---
+
+```mermaid
+graph TD
+    A --> B
+```
+"""
+
+    processor = PostProcessor(content)
+    processor.process()
+
+    html = processor.content_html
+
+    # 检查 Mermaid 是否被正确包裹
+    assert 'class="mermaid"' in html
+    assert "graph TD" in html

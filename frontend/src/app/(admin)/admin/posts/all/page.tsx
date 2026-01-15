@@ -5,16 +5,28 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { listPostsByType, deletePostByType } from "@/shared/api/generated";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, ShieldAlert } from "lucide-react";
+import { RefreshCw, ShieldAlert, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function AllPostsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<"article" | "idea">(
     "article"
   );
+
+  // 权限检查：如果不是超级管理员，重定向
+  React.useEffect(() => {
+    if (!authLoading && user && user.role !== "superadmin") {
+      toast.error("权限不足", {
+        description: "该页面仅供超级管理员访问",
+      });
+      router.push("/admin/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin", "posts", "all", activeTab],
@@ -24,12 +36,13 @@ export default function AllPostsPage() {
         query: { status: null }, // Admins should see all statuses
         throwOnError: true,
       }),
+    enabled: user?.role === "superadmin", // 只有超级管理员才获取数据
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
       deletePostByType({
-        path: { post_type: activeTab, post_id: id }, // Use activeTab correctly
+        path: { post_type: activeTab, post_id: id },
         throwOnError: true,
       }),
     onSuccess: () => {
@@ -43,6 +56,16 @@ export default function AllPostsPage() {
     },
   });
 
+  // 加载中状态
+  if (authLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // 权限检查
   if (user?.role !== "superadmin") {
     return (
       <div className="flex h-[400px] flex-col items-center justify-center gap-4 text-center">
@@ -75,7 +98,7 @@ export default function AllPostsPage() {
           <RefreshCw
             className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
           />
-          全选刷新
+          刷新
         </Button>
       </div>
 

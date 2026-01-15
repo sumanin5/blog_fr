@@ -309,11 +309,12 @@ ALLOWED_EXTENSIONS = {
 }
 
 # 文件大小限制 (字节)
+# 注意：这些限制在业务逻辑层面生效，全局上传限制为 150MB（在 middleware 中定义）
 MAX_FILE_SIZES = {
-    "image": 10 * 1024 * 1024,  # 10MB
-    "video": 100 * 1024 * 1024,  # 100MB
-    "document": 20 * 1024 * 1024,  # 20MB
-    "other": 5 * 1024 * 1024,  # 5MB
+    "image": 10 * 1024 * 1024,  # 10MB - 普通图片（封面、截图等）
+    "video": 100 * 1024 * 1024,  # 100MB - 短视频、Demo视频
+    "document": 20 * 1024 * 1024,  # 20MB - PDF、Word文档等
+    "other": 5 * 1024 * 1024,  # 5MB - 其他文件
 }
 
 # 在 validate_file_extension 函数中添加黑名单

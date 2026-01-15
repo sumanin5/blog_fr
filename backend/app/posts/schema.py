@@ -234,7 +234,7 @@ class PostShortResponse(PostBase):
     def cover_thumbnail(self) -> Optional[str]:
         """获取缩略图 URL（列表页用 small 尺寸）"""
         if self.cover_media_id:
-            return f"{settings.API_PREFIX}/{self.cover_media_id}/thumbnail/medium"
+            return f"{settings.API_PREFIX}/media/{self.cover_media_id}/thumbnail/medium"
         return None
 
 
@@ -260,7 +260,7 @@ class PostDetailResponse(PostShortResponse):
     def cover_image(self) -> Optional[str]:
         """获取封面图 URL（详情页用 xlarge 尺寸）"""
         if self.cover_media_id:
-            return f"/api/media/{self.cover_media_id}/thumbnail/xlarge"
+            return f"{settings.API_PREFIX}/media/{self.cover_media_id}/thumbnail/xlarge"
         return None
 
 

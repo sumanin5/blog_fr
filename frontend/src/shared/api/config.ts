@@ -6,6 +6,17 @@ import { settings } from "@/config/settings";
  */
 client.setConfig({
   baseUrl: settings.NEXT_PUBLIC_API_URL,
+
+  /**
+   * 自定义 fetch 配置
+   * 禁用 Next.js 缓存，让 React Query 完全管理缓存
+   */
+  fetch: async (input, init) => {
+    return fetch(input, {
+      ...init,
+      cache: "no-store", // 禁用 Next.js 数据缓存
+    });
+  },
 });
 
 /**

@@ -17,7 +17,10 @@ async function getPost(slug: string): Promise<PostDetailResponse | null> {
     const url = `${settings.BACKEND_INTERNAL_URL}${settings.API_PREFIX}/posts/article/slug/${slug}`;
 
     const res = await fetch(url, {
-      cache: "no-store",
+      next: {
+        revalidate: 3600, // 1小时缓存
+        tags: ["posts", `post-${slug}`],
+      },
     });
 
     if (!res.ok) {

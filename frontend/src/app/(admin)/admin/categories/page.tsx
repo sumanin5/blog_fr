@@ -27,11 +27,13 @@ import {
   Edit2,
   ChevronRight,
   ShieldAlert,
+  Loader2,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -45,9 +47,20 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export default function CategoriesPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = React.useState<PostType>("article");
+
+  // 权限检查：如果不是超级管理员，重定向
+  React.useEffect(() => {
+    if (!authLoading && user && user.role !== "superadmin") {
+      toast.error("权限不足", {
+        description: "分类运维功能仅对超级管理员开放",
+      });
+      router.push("/admin/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -70,6 +83,7 @@ export default function CategoriesPage() {
         path: { post_type: activeTab },
         throwOnError: true,
       }),
+    enabled: user?.role === "superadmin", // 只有超级管理员才获取数据
   });
 
   const createMutation = useMutation({
@@ -148,6 +162,15 @@ export default function CategoriesPage() {
       createMutation.mutate(formData);
     }
   };
+
+  // 加载中状态
+  if (authLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (user?.role !== "superadmin") {
     return (

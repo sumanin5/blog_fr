@@ -66,6 +66,17 @@ class Settings(BaseSettings):
     CONTENT_DIR: str = Field(default="/content", description="Git 内容仓库根目录")
 
     # ==========================================
+    # Next.js 缓存失效配置
+    # ==========================================
+    FRONTEND_URL: str = Field(
+        default="http://localhost:3000", description="前端 Next.js 应用的 URL"
+    )
+    REVALIDATE_SECRET: str = Field(
+        default="changethis-please-use-openssl-rand-hex-32",
+        description="Next.js 缓存失效 API 的密钥",
+    )
+
+    # ==========================================
     # 媒体文件配置
     # ==========================================
     MEDIA_ROOT: str = Field(default="media", description="媒体文件存储根目录")
