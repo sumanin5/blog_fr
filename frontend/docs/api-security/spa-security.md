@@ -238,3 +238,69 @@ graph TD
     style Simple fill:#9f9,stroke:#333,stroke-width:2px
     style Note1 fill:#9f9,stroke:#333,stroke-width:2px
 ```
+
+## 🎯 慢验证的核心思想
+
+```mermaid
+graph LR
+    subgraph "正常用户"
+        U1[发送请求] --> U2[立即响应<br/>100ms]
+    end
+
+    subgraph "攻击者"
+        A1[暴力攻击<br/>1000次/秒] --> A2[每次等待 1 秒<br/>总耗时 1000 秒]
+    end
+
+    style U2 fill:#9f9,stroke:#333,stroke-width:2px
+    style A2 fill:#f99,stroke:#333,stroke-width:2px
+```
+
+## 🛡️ 防重放的多层防护
+
+```mermaid
+graph TB
+    Request[收到请求] --> Layer1{第1层：速率限制}
+
+    Layer1 -->|超过限制| Slow[慢速响应<br/>延迟 5 秒]
+    Layer1 -->|正常| Layer2{第2层：时间戳}
+
+    Layer2 -->|过期| Reject1[拒绝]
+    Layer2 -->|有效| Layer3{第3层：Nonce}
+
+    Layer3 -->|重复| Reject2[拒绝]
+    Layer3 -->|唯一| Layer4{第4层：签名}
+
+    Layer4 -->|错误| Reject3[拒绝]
+    Layer4 -->|正确| Accept[通过]
+
+    Slow --> Reject1
+
+    style Slow fill:#ff9,stroke:#333,stroke-width:2px
+    style Accept fill:#9f9,stroke:#333,stroke-width:2px
+    style Reject1 fill:#f99,stroke:#333,stroke-width:2px
+    style Reject2 fill:#f99,stroke:#333,stroke-width:2px
+    style Reject3 fill:#f99,stroke:#333,stroke-width:2px
+```
+
+## 完整的方案
+
+```mermaid
+graph TB
+    subgraph "方案 A：仅 Nonce"
+        A1[Nonce 验证]
+        A1 --> A2[✅ 防重放<br/>❌ 不防暴力攻击]
+    end
+
+    subgraph "方案 B：Nonce + 速率限制"
+        B1[速率限制] --> B2[Nonce 验证]
+        B2 --> B3[✅ 防重放<br/>✅ 防暴力攻击]
+    end
+
+    subgraph "方案 C：Nonce + 慢验证"
+        C1[慢速响应] --> C2[Nonce 验证]
+        C2 --> C3[✅ 防重放<br/>✅ 防暴力攻击<br/>✅ 不完全拒绝]
+    end
+
+    style B3 fill:#9f9,stroke:#333,stroke-width:2px
+    style C3 fill:#9f9,stroke:#333,stroke-width:2px
+```

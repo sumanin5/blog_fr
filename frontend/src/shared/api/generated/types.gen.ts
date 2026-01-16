@@ -650,6 +650,11 @@ export type PostCreate = {
  * PostDetailResponse
  *
  * 文章详情响应
+ *
+ * 优化说明：
+ * - 根据 enable_jsx 字段，只返回需要的内容字段
+ * - enable_jsx=False: 返回 content_ast（AST 渲染，最快）
+ * - enable_jsx=True: 返回 content_mdx（MDX 渲染，支持 JSX）
  */
 export type PostDetailResponse = {
     /**
@@ -756,11 +761,13 @@ export type PostDetailResponse = {
     /**
      * Content Mdx
      */
-    content_mdx: string;
+    content_mdx?: string | null;
     /**
-     * Content Html
+     * Content Ast
      */
-    content_html: string;
+    content_ast?: {
+        [key: string]: unknown;
+    } | null;
     /**
      * Toc
      */
@@ -792,9 +799,11 @@ export type PostPreviewRequest = {
  */
 export type PostPreviewResponse = {
     /**
-     * Content Html
+     * Content Ast
      */
-    content_html: string;
+    content_ast: {
+        [key: string]: unknown;
+    };
     /**
      * Toc
      */
@@ -1581,6 +1590,11 @@ export type PagePostShortResponseWritable = {
  * PostDetailResponse
  *
  * 文章详情响应
+ *
+ * 优化说明：
+ * - 根据 enable_jsx 字段，只返回需要的内容字段
+ * - enable_jsx=False: 返回 content_ast（AST 渲染，最快）
+ * - enable_jsx=True: 返回 content_mdx（MDX 渲染，支持 JSX）
  */
 export type PostDetailResponseWritable = {
     /**
@@ -1687,11 +1701,13 @@ export type PostDetailResponseWritable = {
     /**
      * Content Mdx
      */
-    content_mdx: string;
+    content_mdx?: string | null;
     /**
-     * Content Html
+     * Content Ast
      */
-    content_html: string;
+    content_ast?: {
+        [key: string]: unknown;
+    } | null;
     /**
      * Toc
      */

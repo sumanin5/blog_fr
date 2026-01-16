@@ -6641,12 +6641,27 @@
             "title": "Source Path"
           },
           "content_mdx": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Content Mdx"
           },
-          "content_html": {
-            "type": "string",
-            "title": "Content Html"
+          "content_ast": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Ast"
           },
           "toc": {
             "items": {},
@@ -6674,12 +6689,10 @@
           "created_at",
           "updated_at",
           "author_id",
-          "content_mdx",
-          "content_html",
           "toc"
         ],
         "title": "PostDetailResponse",
-        "description": "文章详情响应"
+        "description": "文章详情响应\n\n优化说明：\n- 根据 enable_jsx 字段，只返回需要的内容字段\n- enable_jsx=False: 返回 content_ast（AST 渲染，最快）\n- enable_jsx=True: 返回 content_mdx（MDX 渲染，支持 JSX）"
       },
       "PostPreviewRequest": {
         "properties": {
@@ -6698,9 +6711,10 @@
       },
       "PostPreviewResponse": {
         "properties": {
-          "content_html": {
-            "type": "string",
-            "title": "Content Html"
+          "content_ast": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Content Ast"
           },
           "toc": {
             "items": {},
@@ -6718,7 +6732,7 @@
         },
         "type": "object",
         "required": [
-          "content_html",
+          "content_ast",
           "toc",
           "reading_time",
           "excerpt"

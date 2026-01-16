@@ -10,6 +10,18 @@ const nextConfig: NextConfig = {
         port: "8000",
         pathname: "/media/**",
       },
+      {
+        protocol: "https",
+        hostname: "www.ministryoftesting.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
 

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from app.core.base import Base
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import (
     JSON,
     TEXT,
@@ -123,8 +124,15 @@ class Post(Base, table=True):
     content_mdx: str = Field(
         sa_column=Column(TEXT), description="正文(MDX - 支持 Markdown + JSX)"
     )
-    content_html: str = Field(
-        sa_column=Column(TEXT), description="正文预览(HTML)，用于 SEO 和摘要"
+    content_html: Optional[str] = Field(
+        default=None,
+        sa_column=Column(TEXT),
+        description="正文预览(HTML)，已废弃，保留用于向后兼容",
+    )
+    content_ast: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB),
+        description="AST 结构化内容（JSONB），用于高性能渲染",
     )
     enable_jsx: bool = Field(
         default=False,

@@ -30,12 +30,14 @@ import { createHeadingSlugger } from "@/lib/heading-slug";
  * 这是必要的复杂度，不是代码写得不好。
  */
 
+// 解析code代码块和标题的type
 interface SimpleNode {
   type: string;
   data?: string;
   children?: SimpleNode[];
 }
 
+// 自定义组件
 interface ComponentProps {
   message?: string;
   text?: string;
@@ -136,7 +138,7 @@ export function HtmlRenderer({ html, articleClassName }: HtmlRendererProps) {
           );
         }
 
-        // 前端生成 ID
+        // 前端生成 ID, 如果后端没有id
 
         let headerText = "";
         const extractTextRecursive = (node: unknown): void => {

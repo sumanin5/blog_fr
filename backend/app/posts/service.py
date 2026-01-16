@@ -235,7 +235,7 @@ async def create_post(
         slug=slug,
         author_id=author_id,
         content_mdx=processor.content_mdx,
-        content_html=processor.content_html,
+        content_ast=processor.content_ast,
         toc=processor.toc,
         reading_time=processor.reading_time,
         published_at=datetime.now() if post_in.status == PostStatus.PUBLISHED else None,
@@ -316,7 +316,7 @@ async def update_post(
     if "content_mdx" in update_data:
         processor = PostProcessor(update_data["content_mdx"]).process()
         db_post.content_mdx = processor.content_mdx
-        db_post.content_html = processor.content_html
+        db_post.content_ast = processor.content_ast
         db_post.toc = processor.toc
         db_post.reading_time = processor.reading_time
         # 即使 MDX 里没写摘要，如果正文变了且 db 里摘要是自动生成的，也重刷一下

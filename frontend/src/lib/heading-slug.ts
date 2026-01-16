@@ -34,14 +34,16 @@ export function createHeadingSlugger(): HeadingSlugger {
 }
 
 export function extractTextFromReactNode(node: unknown): string {
-  if (node == null) return "";
+  if (node == null) return ""; // 递归终点
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(extractTextFromReactNode).join("");
 
   if (typeof node === "object" && node !== null && "props" in node) {
     const props = (node as { props?: unknown }).props;
     if (props && typeof props === "object" && "children" in props) {
-      return extractTextFromReactNode((props as { children?: unknown }).children);
+      return extractTextFromReactNode(
+        (props as { children?: unknown }).children
+      );
     }
   }
 

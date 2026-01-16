@@ -20,7 +20,8 @@ const getPost = cache(
 
       const res = await fetch(url, {
         next: {
-          revalidate: 3600, // 1小时缓存
+          // 开发环境禁用缓存，生产环境 1 小时缓存
+          revalidate: process.env.NODE_ENV === "development" ? 0 : 3600,
           tags: ["posts", `post-${slug}`],
         },
       });

@@ -243,12 +243,12 @@ class PostDetailResponse(PostShortResponse):
 
     优化说明：
     - 根据 enable_jsx 字段，只返回需要的内容字段
-    - enable_jsx=False: 只返回 content_html（节省 50% 带宽）
-    - enable_jsx=True: 只返回 content_mdx（节省 50% 带宽）
+    - enable_jsx=False: 返回 content_ast（AST 渲染，最快）
+    - enable_jsx=True: 返回 content_mdx（MDX 渲染，支持 JSX）
     """
 
     content_mdx: Optional[str] = None
-    content_html: Optional[str] = None
+    content_ast: Optional[dict] = None  # AST 结构（JSON）
     enable_jsx: bool = False
     use_server_rendering: bool = True
     toc: list  # 目录数组，格式: [{"id": "...", "title": "...", "level": 1}, ...]
@@ -265,10 +265,10 @@ class PostDetailResponse(PostShortResponse):
     def model_post_init(self, __context) -> None:
         """初始化后处理：根据 enable_jsx 清空不需要的字段"""
         if self.enable_jsx:
-            # 使用 MDX，清空 HTML
-            self.content_html = None
+            # 使用 MDX，清空 AST
+            self.content_ast = None
         else:
-            # 使用 HTML，清空 MDX
+            # 使用 AST，清空 MDX
             self.content_mdx = None
 
     @property
@@ -295,7 +295,7 @@ class PostPreviewRequest(BaseModel):
 class PostPreviewResponse(BaseModel):
     """文章预览响应"""
 
-    content_html: str
+    content_ast: dict
     toc: list
     reading_time: int
     excerpt: str

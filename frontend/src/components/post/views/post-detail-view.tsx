@@ -63,8 +63,8 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
         {/* 文章内容 */}
         <div className="w-full min-w-0">
           <PostContent
-            html={post.content_html}
-            mdx={post.content_mdx}
+            mdx={post.content_mdx || undefined}
+            ast={post.content_ast}
             enableJsx={post.enable_jsx}
             useServerRendering={post.use_server_rendering}
           />
