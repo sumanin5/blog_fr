@@ -1,41 +1,42 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-// import { useTheme } from "next-themes";
+import { useTheme } from "next-themes";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CopyButton } from "../utils/copy-button";
 
+/**
+ * Mermaid 流程图组件
+ *
+ * 职责：
+ * 1. 接收 Mermaid 源码字符串
+ * 2. 动态加载 Mermaid 库（按需加载，优化性能）
+ * 3. 将源码渲染为 SVG
+ * 4. 处理加载状态和错误
+ */
 export const MermaidDiagram = ({ code }: { code: string }) => {
-  // const { theme, resolvedTheme } = useTheme();
-  // State for the rendered SVG content
+  const { resolvedTheme } = useTheme();
   const [svgContent, setSvgContent] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Unique ID for mermaid to render into (phantom)
   const chartId = useMemo(
     () => `mermaid-${Math.random().toString(36).slice(2, 9)}`,
-    []
+    [resolvedTheme]
   );
 
   useEffect(() => {
     let isMounted = true;
+    if (!resolvedTheme) return;
 
-    // Determine the actual theme for mermaid
-    const mermaidTheme = "dark";
-    // resolvedTheme === "dark"
-    // ||
-    // (theme === "system" &&
-    //   window.matchMedia("(prefers-color-scheme: dark)").matches)
-    //   ? "dark"
-    //   : "default";
+    const mermaidTheme = resolvedTheme === "light" ? "neutral" : "dark";
 
     const render = async () => {
       if (!isMounted) return;
       setIsLoading(true);
       setError(null);
 
-      // Pre-check for empty content
       if (!code.trim()) {
         setIsLoading(false);
         return;
@@ -44,10 +45,8 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
       try {
         const mermaid = (await import("mermaid")).default;
 
-        // Use standard initialization
         mermaid.initialize({
           startOnLoad: false,
-          // Use 'base' theme for better customization or stick to pre-defined
           theme: mermaidTheme,
           securityLevel: "loose",
           flowchart: { useMaxWidth: true, htmlLabels: true },
@@ -55,8 +54,6 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
           gantt: { useMaxWidth: false },
         });
 
-        // The render API returns an object { svg: string }
-        // It renders into a hidden div in the DOM temporarily
         const { svg } = await mermaid.render(chartId, code);
 
         if (isMounted) {
@@ -64,27 +61,22 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
         }
       } catch (e) {
         if (isMounted) {
-          console.error("Mermaid Render Error:", e);
-          setError(e instanceof Error ? e.message : "Mermaid syntax error");
+          console.error("Mermaid 渲染错误:", e);
+          setError(e instanceof Error ? e.message : "Mermaid 语法错误");
         }
       } finally {
         if (isMounted) setIsLoading(false);
       }
     };
 
-    // Debounce slightly to avoid rapid re-renders during theme switch
-    const timeout = setTimeout(render, 100);
+    render();
 
     return () => {
       isMounted = false;
-      clearTimeout(timeout);
     };
-  }, [code, chartId]);
-  //, theme, resolvedTheme # 监听主题的变化
+  }, [code, chartId, resolvedTheme]);
 
-  // --- Render States ---
-
-  // 1. Error State
+  // 错误状态：显示错误提示
   if (error) {
     return (
       <Alert variant="destructive" className="my-4">
@@ -95,38 +87,49 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
             {error}
           </pre>
           <div className="mt-2 text-xs opacity-70">
-            Code: {code.slice(0, 50)}...
+            代码: {code.slice(0, 50)}...
           </div>
         </AlertDescription>
       </Alert>
     );
   }
 
-  // 2. Normal / Loading State
+  // 正常状态：显示加载中或渲染完成的图表
   return (
-    <div className="relative my-6 w-full flex flex-col items-center justify-center rounded-xl border border-slate-700 bg-slate-700 p-4 shadow-sm transition-colors">
+    <div className="relative my-6 w-full flex flex-col items-center justify-center rounded-xl border border-border bg-muted p-4 shadow-sm transition-colors">
+      {/* 加载中的动画 */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-700/50 backdrop-blur-sm z-10 transition-opacity">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/50 backdrop-blur-sm z-10">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       )}
 
-      {/* Rendered SVG Container */}
+      {/* 渲染的 SVG 容器 */}
       <div
         className={`w-full overflow-x-auto flex justify-center transition-opacity duration-300 ${
-          isLoading ? "opacity-0" : "opacity-100"
+          isLoading ? "opacity-0 pointer-events-none" : "opacity-100"
         }`}
         dangerouslySetInnerHTML={{ __html: svgContent }}
       />
 
-      {/* Source Code Toggle (Optional enhancement) */}
+      {/* 可折叠的源码查看器 */}
       <details className="mt-4 w-full">
         <summary className="text-xs text-muted-foreground cursor-pointer hover:underline text-center">
-          查看源码
+          查看Mermaid源码
         </summary>
-        <pre className="mt-2 p-2 bg-slate-800 rounded text-xs overflow-x-auto text-slate-300">
-          {code}
-        </pre>
+        <div className="relative my-4 group rounded-lg border bg-muted/50">
+          <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 rounded-t-lg">
+            <span className="text-xs font-medium text-muted-foreground uppercase">
+              Mermaid
+            </span>
+            <CopyButton code={code} />
+          </div>
+          <div className="overflow-x-auto p-4 pt-2">
+            <pre className="m-0 p-0 bg-transparent text-xs text-muted-foreground whitespace-pre-wrap">
+              {code}
+            </pre>
+          </div>
+        </div>
       </details>
     </div>
   );
