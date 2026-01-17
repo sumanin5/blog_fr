@@ -508,9 +508,14 @@ export const deletePostByType = <ThrowOnError extends boolean = false>(options: 
  * - 已发布文章：任何人可访问（包括未登录）
  * - 草稿文章：只有作者或超级管理员可访问
  *
+ * 查询参数：
+ * - include_mdx: 是否包含原始 MDX 内容（用于编辑页面）
+ * - False（默认）: 返回 AST（节省带宽）
+ * - True: 返回 MDX（用于编辑）
+ *
  * 示例：
  * - GET /posts/article/{uuid}
- * - GET /posts/idea/{uuid}
+ * - GET /posts/article/{uuid}?include_mdx=true
  *
  * 注意：使用 :uuid 路径转换器确保与 slug 路由不冲突
  */

@@ -13,8 +13,6 @@ import React from "react";
 import { CodeBlock } from "../components/code-block";
 import { InteractiveButton } from "../components/interactive-button";
 
-type ComponentProps = Record<string, unknown>;
-
 type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {
   id?: string;
   children?: React.ReactNode;
@@ -34,7 +32,7 @@ function extractText(node: React.ReactNode): string {
   if (typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(extractText).join("");
   if (React.isValidElement(node)) {
-    const element = node as React.ReactElement<any>;
+    const element = node as React.ReactElement<{ children?: React.ReactNode }>;
     if (element.props?.children) {
       return extractText(element.props.children);
     }
@@ -43,11 +41,48 @@ function extractText(node: React.ReactNode): string {
 }
 
 /**
+ * 转换 HTML style 字符串为 React style 对象
+ */
+function parseStyleString(styleStr: string): React.CSSProperties {
+  const style: Record<string, string> = {};
+  styleStr.split(";").forEach((rule) => {
+    const [key, value] = rule.split(":").map((s) => s.trim());
+    if (key && value) {
+      // 转换 kebab-case 为 camelCase
+      const camelKey = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+      style[camelKey] = value;
+    }
+  });
+  return style as React.CSSProperties;
+}
+
+/**
+ * 创建支持 HTML style 属性的 HTML 元素组件
+ */
+function createHtmlElement(tag: string) {
+  return function HtmlElement(
+    props: React.HTMLAttributes<HTMLElement> & {
+      style?: string | React.CSSProperties;
+    }
+  ) {
+    const { style, ...rest } = props;
+
+    // 如果 style 是字符串，转换为对象
+    const styleObj =
+      typeof style === "string" ? parseStyleString(style) : style;
+
+    return React.createElement(tag, { ...rest, style: styleObj });
+  };
+}
+
+/**
  * 创建 MDX 组件映射
  *
  * @param toc - 后端生成的目录数组
  */
-export function createMdxComponents(toc: TocItem[] = []): Record<string, any> {
+export function createMdxComponents(
+  toc: TocItem[] = []
+): Record<string, React.ComponentType> {
   // 创建标题组件工厂
   const createHeading = (tag: string, level: number) => {
     return function Heading(props: HeadingProps) {
@@ -86,7 +121,14 @@ export function createMdxComponents(toc: TocItem[] = []): Record<string, any> {
     h5: createHeading("h5", 5),
     h6: createHeading("h6", 6),
 
+    // HTML 元素：支持字符串格式的 style 属性
+    div: createHtmlElement("div"),
+    span: createHtmlElement("span"),
+    p: createHtmlElement("p"),
+    section: createHtmlElement("section"),
+    article: createHtmlElement("article"),
+
     // 自定义组件
-    InteractiveButton: InteractiveButton as any,
+    InteractiveButton: InteractiveButton as React.ComponentType,
   };
 }

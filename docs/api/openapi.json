@@ -4166,7 +4166,7 @@
           "posts"
         ],
         "summary": "通过ID获取文章详情",
-        "description": "根据 UUID 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n示例：\n- GET /posts/article/{uuid}\n- GET /posts/idea/{uuid}\n\n注意：使用 :uuid 路径转换器确保与 slug 路由不冲突",
+        "description": "根据 UUID 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n查询参数：\n- include_mdx: 是否包含原始 MDX 内容（用于编辑页面）\n  - False（默认）: 返回 AST（节省带宽）\n  - True: 返回 MDX（用于编辑）\n\n示例：\n- GET /posts/article/{uuid}\n- GET /posts/article/{uuid}?include_mdx=true\n\n注意：使用 :uuid 路径转换器确保与 slug 路由不冲突",
         "operationId": "getPostById",
         "security": [
           {
@@ -4193,6 +4193,18 @@
               "format": "uuid",
               "title": "Post Id"
             }
+          },
+          {
+            "name": "include_mdx",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否包含原始 MDX 内容（用于编辑）",
+              "default": false,
+              "title": "Include Mdx"
+            },
+            "description": "是否包含原始 MDX 内容（用于编辑）"
           }
         ],
         "responses": {
@@ -6600,14 +6612,6 @@
               }
             ]
           },
-          "tags": {
-            "items": {
-              "$ref": "#/components/schemas/TagResponse"
-            },
-            "type": "array",
-            "title": "Tags",
-            "default": []
-          },
           "cover_media": {
             "anyOf": [
               {
@@ -6617,6 +6621,14 @@
                 "type": "null"
               }
             ]
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/TagResponse"
+            },
+            "type": "array",
+            "title": "Tags",
+            "default": []
           },
           "git_hash": {
             "anyOf": [
@@ -6912,14 +6924,6 @@
               }
             ]
           },
-          "tags": {
-            "items": {
-              "$ref": "#/components/schemas/TagResponse"
-            },
-            "type": "array",
-            "title": "Tags",
-            "default": []
-          },
           "cover_media": {
             "anyOf": [
               {
@@ -6929,6 +6933,14 @@
                 "type": "null"
               }
             ]
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/TagResponse"
+            },
+            "type": "array",
+            "title": "Tags",
+            "default": []
           },
           "git_hash": {
             "anyOf": [

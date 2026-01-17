@@ -745,11 +745,11 @@ export type PostDetailResponse = {
     author_id: string;
     author?: UserResponse | null;
     category?: CategoryResponse | null;
+    cover_media?: MediaFileResponse | null;
     /**
      * Tags
      */
     tags?: Array<TagResponse>;
-    cover_media?: MediaFileResponse | null;
     /**
      * Git Hash
      */
@@ -912,11 +912,11 @@ export type PostShortResponse = {
     author_id: string;
     author?: UserResponse | null;
     category?: CategoryResponse | null;
+    cover_media?: MediaFileResponse | null;
     /**
      * Tags
      */
     tags?: Array<TagResponse>;
-    cover_media?: MediaFileResponse | null;
     /**
      * Git Hash
      */
@@ -1685,11 +1685,11 @@ export type PostDetailResponseWritable = {
     author_id: string;
     author?: UserResponse | null;
     category?: CategoryResponse | null;
+    cover_media?: MediaFileResponseWritable | null;
     /**
      * Tags
      */
     tags?: Array<TagResponse>;
-    cover_media?: MediaFileResponseWritable | null;
     /**
      * Git Hash
      */
@@ -1812,11 +1812,11 @@ export type PostShortResponseWritable = {
     author_id: string;
     author?: UserResponse | null;
     category?: CategoryResponse | null;
+    cover_media?: MediaFileResponseWritable | null;
     /**
      * Tags
      */
     tags?: Array<TagResponse>;
-    cover_media?: MediaFileResponseWritable | null;
     /**
      * Git Hash
      */
@@ -3872,7 +3872,14 @@ export type GetPostByIdData = {
          */
         post_id: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Include Mdx
+         *
+         * 是否包含原始 MDX 内容（用于编辑）
+         */
+        include_mdx?: boolean;
+    };
     url: '/api/v1/posts/{post_type}/{post_id}';
 };
 

@@ -40,7 +40,7 @@ from app.users.dependencies import (
     get_optional_current_user,
 )
 from app.users.model import User
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi_pagination import Page, Params
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -251,7 +251,8 @@ async def list_tags_by_type(
 async def get_post_by_id(
     post_type: Annotated[PostType, Path(description="板块类型")],
     post_id: UUID,
-    session: Annotated[AsyncSession, Depends(get_async_session)],
+    include_mdx: bool = Query(False, description="是否包含原始 MDX 内容（用于编辑）"),
+    session: Annotated[AsyncSession, Depends(get_async_session)] = None,
     current_user: Annotated[Optional[User], Depends(get_optional_current_user)] = None,
 ):
     """根据 UUID 获取文章详情并增加浏览量
@@ -260,14 +261,34 @@ async def get_post_by_id(
     - 已发布文章：任何人可访问（包括未登录）
     - 草稿文章：只有作者或超级管理员可访问
 
+    查询参数：
+    - include_mdx: 是否包含原始 MDX 内容（用于编辑页面）
+      - False（默认）: 返回 AST（节省带宽）
+      - True: 返回 MDX（用于编辑）
+
     示例：
     - GET /posts/article/{uuid}
-    - GET /posts/idea/{uuid}
+    - GET /posts/article/{uuid}?include_mdx=true
 
     注意：使用 :uuid 路径转换器确保与 slug 路由不冲突
     """
     post = await service.get_post_detail(session, post_id, post_type, current_user)
-    return PostDetailResponse.model_validate(post)
+    response = PostDetailResponse.model_validate(post)
+
+    # 根据 include_mdx 参数手动清空不需要的字段
+    if include_mdx:
+        # 编辑模式：返回 MDX，清空 AST
+        response.content_ast = None
+    else:
+        # 查看模式：根据 enable_jsx 决定
+        if response.enable_jsx:
+            # 使用 MDX，清空 AST
+            response.content_ast = None
+        else:
+            # 使用 AST，清空 MDX
+            response.content_mdx = None
+
+    return response
 
 
 @router.get(

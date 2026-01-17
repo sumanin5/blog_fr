@@ -36,10 +36,6 @@ async def test_get_post_by_id(
     assert data["id"] == str(test_post.id)
     assert data["title"] == test_post.title
     assert data["slug"] == test_post.slug
-
-    # 验证包含完整内容
-    assert data["content_mdx"] is not None
-    assert data["content_html"] is not None
     assert data["toc"] is not None
 
 
@@ -225,3 +221,80 @@ async def test_get_draft_post_as_superadmin(
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["status"] == "draft"
+
+
+# ============================================================
+# include_mdx 参数测试
+# ============================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.posts
+async def test_get_post_without_include_mdx(
+    async_client: AsyncClient,
+    test_post,
+    api_urls: APIConfig,
+):
+    """测试默认不包含 MDX（返回 AST）"""
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+
+    # 根据 enable_jsx 判断
+    if not data.get("enable_jsx"):
+        # AST 模式：应该有 content_ast，没有 content_mdx
+        assert data.get("content_ast") is not None
+        assert data.get("content_mdx") is None
+    else:
+        # MDX 模式：应该有 content_mdx，没有 content_ast
+        assert data.get("content_mdx") is not None
+        assert data.get("content_ast") is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.posts
+async def test_get_post_with_include_mdx_true(
+    async_client: AsyncClient,
+    test_post,
+    api_urls: APIConfig,
+):
+    """测试 include_mdx=true 时返回 MDX"""
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}?include_mdx=true"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+
+    # 编辑模式：应该有 content_mdx，没有 content_ast
+    assert data.get("content_mdx") is not None
+    assert data.get("content_ast") is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.posts
+async def test_get_post_with_include_mdx_false(
+    async_client: AsyncClient,
+    test_post,
+    api_urls: APIConfig,
+):
+    """测试 include_mdx=false 时返回 AST"""
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}?include_mdx=false"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+
+    # 查看模式：根据 enable_jsx 判断
+    if not data.get("enable_jsx"):
+        # AST 模式：应该有 content_ast，没有 content_mdx
+        assert data.get("content_ast") is not None
+        assert data.get("content_mdx") is None
+    else:
+        # MDX 模式：应该有 content_mdx，没有 content_ast
+        assert data.get("content_mdx") is not None
+        assert data.get("content_ast") is None

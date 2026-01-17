@@ -121,31 +121,31 @@
 
 ---
 
-### 2. 封面上传集成 (Cover Upload) - **优先级：高** ⭐️⭐️
+### 2. 封面上传集成 (Cover Upload) - **已完成 ✅**
 
 **目标**：将媒体管理功能集成到文章编辑器，实现封面上传。
 
-**实现步骤**：
+**已完成功能**：
 
 #### 前端任务
 
-- [ ] **编辑器封面上传**:
-  - [ ] 在文章编辑器侧边栏添加封面上传组件
-  - [ ] 支持拖拽上传和点击上传
-  - [ ] 实时预览上传的封面图
-  - [ ] 支持替换和删除封面
-  - [ ] 对接 `/api/v1/media/upload` 接口
-  - [ ] 上传成功后自动关联 `cover_media_id`
+- [x] **编辑器封面上传**:
+  - [x] 在文章编辑器侧边栏添加封面上传组件 (`CoverSelect`)
+  - [x] 支持拖拽上传和点击上传
+  - [x] 实时预览上传的封面图
+  - [x] 支持替换和删除封面
+  - [x] 对接 `/api/v1/media/upload` 接口
+  - [x] 上传成功后自动关联 `cover_media_id`
 
-- [ ] **媒体库选择器**:
-  - [ ] 创建媒体库弹窗组件
-  - [ ] 支持从已上传的媒体文件中选择封面
-  - [ ] 支持搜索和筛选（按类型、标签、日期）
-  - [ ] 支持分页加载
+- [x] **媒体库选择器**:
+  - [x] 创建媒体库弹窗组件 (`MediaLibraryDialog`)
+  - [x] 支持从已上传的媒体文件中选择封面
+  - [x] 支持搜索和筛选（按类型、标签、日期）
+  - [x] 支持分页加载
 
 - [ ] **Git 同步封面支持**:
-  - [ ] 在 Frontmatter 中支持 `cover` 字段（本地路径或 URL）
-  - [ ] 同步时自动上传本地图片到媒体库
+  - [x] 在 Frontmatter 中支持 `cover` 字段（本地路径或 URL）
+  - [x] 同步时自动上传本地图片到媒体库
   - [ ] 或者支持外部 URL 直接引用
 
 ---
@@ -427,9 +427,54 @@ async def github_webhook(
 
 ---
 
+### 5. 基础 SEO 与内容分发 (Basic SEO & Distribution) - **优先级：高** ⭐️⭐️⭐️
+*(原 v1.1 内容提前)*
+
+**目标**：确保博客内容能被搜索引擎收录和 RSS 阅读器订阅，这是博客的基础设施。
+
+**实现步骤**：
+
+- [ ] **Sitemap 生成**:
+  - [ ] 创建 `/sitemap.xml` 路由
+  - [ ] 动态根据文章数据生成 XML
+  - [ ] 包含文章、分类、标签页面的链接
+  - [ ] 自动提交到 Google Search Console (可选)
+
+- [ ] **RSS/Atom Feed**:
+  - [ ] 创建 `/feed.xml` 和 `/atom.xml` 路由
+  - [ ] 生成标准 RSS 2.0 和 Atom 1.0 格式
+  - [ ] 包含全文输出（可选配置）
+
+- [ ] **SEO 元数据完善**:
+  - [ ] 完善 Server Component 的 `generateMetadata`
+  - [ ] 自动生成 JSON-LD 结构化数据 (Article Schema)
+  - [ ] 优化 Open Graph 图片生成 (og:image)
+
+---
+
+### 6. 基础搜索 (Basic Search) - **优先级：高** ⭐️⭐️
+*(原 v1.1 内容提前)*
+
+**目标**：提供基于数据库的基础全文搜索，满足 v1.0 需求。
+*注：暂不通过向量/AI实现，优先使用 PostgreSQL 原生能力。*
+
+**实现步骤**：
+
+- [ ] **后端全文检索**:
+  - [ ] 使用 PostgreSQL `SearchVector` 对标题和内容建立索引
+  - [ ] 实现 `/api/v1/posts/search` 接口
+  - [ ] 支持关键词高亮 (Headline)
+
+- [ ] **前端搜索交互**:
+  - [ ] 集成 CMD+K 全局搜索框 (Command Palette)
+  - [ ] 实现搜索结果下拉预览
+  - [ ] 独立的搜索结果页
+
+---
+
 ## 🔮 长期愿景 (Future / Long-term)
 
-### 1. 搜索增强 (Search Enhancement) ⭐️⭐️⭐️
+### 1. 数据分析平台 (Analytics Platform) ⭐️⭐️
 
 **目标**：提供强大的全文搜索和智能推荐功能。
 
@@ -524,7 +569,7 @@ async def github_webhook(
 
 ---
 
-### 4. 多语言支持 (i18n) ⭐️⭐️
+### 3. 多语言支持 (i18n) ⭐️⭐️
 
 **目标**：支持多语言内容管理和展示。
 
@@ -558,7 +603,7 @@ async def github_webhook(
 
 ---
 
-### 5. 评论系统 (Comment System) ⭐️⭐️
+### 4. 评论系统 (Comment System) ⭐️⭐️
 
 **目标**：增强用户互动，建立社区氛围。
 
@@ -590,7 +635,7 @@ async def github_webhook(
 
 ---
 
-### 6. 性能优化 (Performance Optimization) ⭐️
+### 5. 性能优化 (Performance Optimization) ⭐️
 
 **优化方向**：
 
@@ -613,7 +658,7 @@ async def github_webhook(
 
 ---
 
-### 7. 站点集成 (Site Integration) ⭐️⭐️
+### 6. 站点集成 (Site Integration) ⭐️⭐️
 
 **目标**：集成第三方服务，扩展博客功能，提升用户体验。
 
@@ -684,7 +729,7 @@ interface IntegrationConfig {
 
 ---
 
-### 8. 数据分析平台 (Analytics Platform) ⭐️⭐️⭐️
+### 7. 仪表盘统计 (Dashboard Analytics) ⭐️⭐️
 
 **目标**：构建完整的数据分析体系，为内容创作提供数据驱动的决策支持。
 
@@ -788,7 +833,7 @@ class AnalyticsEvent(BaseModel):
 
 ---
 
-### 9. 安全增强 (Security Enhancement) ⭐️⭐️
+### 8. 安全增强 (Security Enhancement) ⭐️⭐️
 
 **安全措施**：
 
@@ -829,20 +874,14 @@ class AnalyticsEvent(BaseModel):
 
 - ✅ Git 同步核心
 - ✅ 文章管理和编辑
-- ✅ 分类和标签管理
-- 🚧 媒体集成
+- ✅ 媒体管理 (Media)
+- 🚧 封面上传集成
 - 🚧 自动保存
+- 🚧 Git 同步增强 (目录分类)
+- 🚧 基础 SEO (Sitemap/RSS)
+- 🚧 基础搜索 (PostgreSQL)
 
-### v1.1 - 用户体验提升
-
-- 搜索功能
-- 仪表盘统计
-- SEO 工具
-- **Git 目录结构自动分类** ⭐️（新增重点）
-- Git 同步增强（差异预览、Webhook）
-- 站点基础集成（RSS, 社交分享）
-
-### v1.2 - 社区功能
+### v1.1 - 社区与数据
 
 - 评论系统
 - 用户互动

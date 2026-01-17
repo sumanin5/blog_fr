@@ -7,21 +7,38 @@ import {
   Settings as SettingsIcon,
   FileText,
   ChevronLeft,
-  Layout,
 } from "lucide-react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MdxClientRenderer } from "@/components/post/content/renderers/mdx-client-renderer";
+
+import { CoverSelect } from "@/components/admin/media/cover-select";
+import type { MediaFileResponse } from "@/hooks/use-media";
+
+import "@uiw/react-md-editor/markdown-editor.css";
+
+// 动态导入编辑器（避免 SSR 问题）
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
+  ssr: false,
+});
 
 interface PostEditorProps {
   initialData?: {
     title: string;
     slug: string;
     contentMdx: string;
+    coverMedia?: MediaFileResponse | null;
   };
-  onSave: (data: { title: string; slug: string; contentMdx: string }) => void;
+  onSave: (data: {
+    title: string;
+    slug: string;
+    contentMdx: string;
+    cover_media_id?: string | null;
+  }) => void;
   isSaving?: boolean;
 }
 
@@ -31,34 +48,41 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
   const [contentMdx, setContentMdx] = React.useState(
     initialData?.contentMdx || ""
   );
+  const [cover, setCover] = React.useState<MediaFileResponse | null>(
+    initialData?.coverMedia || null
+  );
   const [activeTab, setActiveTab] = React.useState("edit");
-  const iframeRef = React.useRef<HTMLIFrameElement>(null);
-  const [previewReady, setPreviewReady] = React.useState(false);
 
-  // 监听预览页面的就绪消息
+  // 当 initialData 改变时，更新编辑器内容
   React.useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === "PREVIEW_READY") {
-        setPreviewReady(true);
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  // 当 MDX 内容改变或切换到预览标签时，通知预览 iframe
-  React.useEffect(() => {
-    if (activeTab === "preview" && previewReady && iframeRef.current) {
-      iframeRef.current.contentWindow?.postMessage(
-        {
-          type: "MDX_PREVIEW",
-          content: contentMdx,
-        },
-        "*"
-      );
+    console.log("编辑器收到 initialData:", initialData);
+    if (initialData) {
+      setTitle(initialData.title);
+      setSlug(initialData.slug);
+      setContentMdx(initialData.contentMdx);
+      setCover(initialData.coverMedia || null);
     }
-  }, [contentMdx, activeTab, previewReady]);
+  }, [initialData]);
+
+  // 检测主题
+  const [theme, setTheme] = React.useState<"light" | "dark">("light");
+  React.useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "dark" : "light");
+
+    // 监听主题变化
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains("dark");
+      setTheme(isDark ? "dark" : "light");
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="flex h-[calc(100vh-6rem)] flex-col gap-4">
@@ -81,7 +105,14 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
           </Button>
           <Button
             size="sm"
-            onClick={() => onSave({ title, slug, contentMdx })}
+            onClick={() =>
+              onSave({
+                title,
+                slug,
+                contentMdx,
+                cover_media_id: cover?.id || null,
+              })
+            }
             disabled={isSaving}
           >
             <Save className="mr-2 h-4 w-4" /> 发布文章
@@ -118,24 +149,35 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
             </TabsList>
 
             <TabsContent value="edit" className="flex-1 mt-4 overflow-hidden">
-              <textarea
-                value={contentMdx}
-                onChange={(e) => setContentMdx(e.target.value)}
-                placeholder="使用 Markdown 开始你的创作..."
-                className="h-full w-full resize-none rounded-md border bg-muted/20 p-4 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+              <div className="h-full" data-color-mode={theme}>
+                <MDEditor
+                  value={contentMdx}
+                  onChange={(val) => setContentMdx(val || "")}
+                  height="100%"
+                  preview="edit"
+                  hideToolbar={false}
+                  enableScroll={true}
+                  visibleDragbar={false}
+                  textareaProps={{
+                    placeholder: "使用 Markdown 开始你的创作...",
+                  }}
+                />
+              </div>
             </TabsContent>
 
             <TabsContent
               value="preview"
-              className="flex-1 mt-4 border rounded-md overflow-hidden bg-white dark:bg-slate-950"
+              className="flex-1 mt-4 border rounded-md overflow-auto bg-background"
             >
-              <iframe
-                ref={iframeRef}
-                src="/posts/preview"
-                className="h-full w-full border-0"
-                title="MDX Preview"
-              />
+              <div className="p-4 md:p-8">
+                <div className="mx-auto max-w-4xl">
+                  <MdxClientRenderer
+                    mdx={contentMdx}
+                    toc={[]}
+                    articleClassName="prose prose-slate dark:prose-invert max-w-none"
+                  />
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
@@ -174,10 +216,7 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
 
             <div className="space-y-2">
               <Label className="text-xs">封面图片</Label>
-              <div className="flex aspect-video items-center justify-center rounded-md border-2 border-dashed border-muted text-muted-foreground hover:border-primary/50 hover:bg-muted/50 cursor-pointer transition-all">
-                <Layout className="size-6 mr-2 opacity-20" />
-                <span className="text-xs">点击上传封面</span>
-              </div>
+              <CoverSelect currentCover={cover} onCoverChange={setCover} />
             </div>
           </div>
         </div>

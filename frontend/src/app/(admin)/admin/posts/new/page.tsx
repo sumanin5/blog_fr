@@ -11,7 +11,12 @@ export default function NewPostPage() {
   const router = useRouter();
 
   const mutation = useMutation({
-    mutationFn: (data: { title: string; slug: string; contentMdx: string }) =>
+    mutationFn: (data: {
+      title: string;
+      slug: string;
+      contentMdx: string;
+      cover_media_id?: string | null;
+    }) =>
       createPostByType({
         path: { post_type: "article" as PostType },
         body: {
@@ -20,6 +25,7 @@ export default function NewPostPage() {
           content_mdx: data.contentMdx,
           post_type: "article" as PostType,
           status: "draft",
+          cover_media_id: data.cover_media_id,
         },
         throwOnError: true,
       }),

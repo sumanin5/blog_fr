@@ -23,15 +23,43 @@ interface MdxServerRendererProps {
   articleClassName: string;
 }
 
+/**
+ * 将 HTML style 字符串转换为 JSX 对象格式
+ */
+function convertHtmlStyleToJsx(mdx: string): string {
+  return mdx.replace(/style="([^"]*)"/g, (match, styleStr) => {
+    // 将 CSS 字符串转换为 JSX 对象格式
+    const styles = styleStr
+      .split(";")
+      .filter((s: string) => s.trim())
+      .map((s: string) => {
+        const [key, value] = s.split(":").map((p: string) => p.trim());
+        if (!key || !value) return "";
+        // 转换 kebab-case 为 camelCase
+        const camelKey = key.replace(/-([a-z])/g, (g: string) =>
+          g[1].toUpperCase()
+        );
+        return `${camelKey}: '${value}'`;
+      })
+      .filter(Boolean)
+      .join(", ");
+
+    return `style={{ ${styles} }}`;
+  });
+}
+
 export async function MdxServerRenderer({
   mdx,
   toc,
   articleClassName,
 }: MdxServerRendererProps) {
+  // 预处理：转换 HTML style 为 JSX 格式
+  const processedMdx = convertHtmlStyleToJsx(mdx);
+
   return (
     <article className={articleClassName}>
       <MDXRemote
-        source={mdx}
+        source={processedMdx}
         components={createMdxComponents(toc)}
         options={{
           mdxOptions: {

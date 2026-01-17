@@ -165,7 +165,17 @@ async def test_post(
         slug="test-post",
         excerpt="这是测试文章的摘要",
         content_mdx="# 测试\n\n这是内容",
-        content_html="<h1>测试</h1><p>这是内容</p>",
+        content_ast={
+            "type": "root",
+            "children": [
+                {
+                    "type": "heading",
+                    "level": 1,
+                    "children": [{"type": "text", "value": "测试"}],
+                }
+            ],
+        },
+        toc=[{"id": "ce-shi", "title": "测试", "level": 1}],
         post_type=PostType.ARTICLE,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
@@ -188,7 +198,17 @@ async def draft_post(
         slug="draft-post",
         excerpt="草稿摘要",
         content_mdx="# 草稿\n\n草稿内容",
-        content_html="<h1>草稿</h1><p>草稿内容</p>",
+        content_ast={
+            "type": "root",
+            "children": [
+                {
+                    "type": "heading",
+                    "level": 1,
+                    "children": [{"type": "text", "value": "草稿"}],
+                }
+            ],
+        },
+        toc=[{"id": "cao-gao", "title": "草稿", "level": 1}],
         post_type=PostType.ARTICLE,
         status=PostStatus.DRAFT,
         author_id=normal_user.id,
@@ -332,10 +352,10 @@ def assert_post_list_item(data: dict):
 def assert_post_detail(data: dict):
     """断言文章详情格式（包含正文）"""
     assert_post_response(data)
-    # 详情查询应该包含正文
-    assert "content_mdx" in data
-    assert "content_html" in data
+    # 详情查询应该包含正文（content_mdx 或 content_ast，取决于 enable_jsx）
     assert "toc" in data
+    # 至少有一个内容字段
+    assert data.get("content_mdx") is not None or data.get("content_ast") is not None
 
 
 def assert_category_response(data: dict):

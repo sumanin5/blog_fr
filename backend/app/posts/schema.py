@@ -9,6 +9,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.core.config import settings
+from app.media.schema import MediaFileResponse
 from app.posts.model import PostStatus, PostType
 from app.users.schema import UserResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -221,6 +222,7 @@ class PostShortResponse(PostBase):
     # 关联对象（需要预加载）
     author: Optional["UserResponse"] = None  # 作者信息
     category: Optional[CategoryResponse] = None
+    cover_media: Optional[MediaFileResponse] = None  # 封面对象
     tags: List[TagResponse] = []
     cover_media: Optional["MediaFileResponse"] = None  # 封面图完整信息
 
@@ -263,13 +265,13 @@ class PostDetailResponse(PostShortResponse):
     model_config = ConfigDict(from_attributes=True)
 
     def model_post_init(self, __context) -> None:
-        """初始化后处理：根据 enable_jsx 清空不需要的字段"""
-        if self.enable_jsx:
-            # 使用 MDX，清空 AST
-            self.content_ast = None
-        else:
-            # 使用 AST，清空 MDX
-            self.content_mdx = None
+        """初始化后处理：根据 enable_jsx 清空不需要的字段
+
+        注意：这个方法在 model_validate 时自动调用
+        但路由层会在之后重新设置字段，所以这里不做任何操作
+        """
+        # 不做任何操作，让路由层完全控制字段清空逻辑
+        pass
 
     @property
     def cover_image(self) -> Optional[str]:

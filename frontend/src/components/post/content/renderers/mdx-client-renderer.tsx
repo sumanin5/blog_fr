@@ -39,7 +39,32 @@ export function MdxClientRenderer({
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    serialize(mdx, {
+    console.log("MDX 内容预览:", mdx.substring(0, 500));
+
+    // 预处理：将 HTML style 属性转换为 JSX 格式
+    const processedMdx = mdx.replace(/style="([^"]*)"/g, (match, styleStr) => {
+      // 将 CSS 字符串转换为 JSX 对象格式
+      const styles = styleStr
+        .split(";")
+        .filter((s: string) => s.trim())
+        .map((s: string) => {
+          const [key, value] = s.split(":").map((p: string) => p.trim());
+          if (!key || !value) return "";
+          // 转换 kebab-case 为 camelCase
+          const camelKey = key.replace(/-([a-z])/g, (g: string) =>
+            g[1].toUpperCase()
+          );
+          return `${camelKey}: '${value}'`;
+        })
+        .filter(Boolean)
+        .join(", ");
+
+      return `style={{ ${styles} }}`;
+    });
+
+    console.log("处理后的 MDX:", processedMdx.substring(0, 500));
+
+    serialize(processedMdx, {
       mdxOptions: {
         remarkPlugins: [remarkGfm, remarkMath],
         rehypePlugins: [rehypeKatex],

@@ -24,14 +24,15 @@ export default function EditPostPage({ params }: PageProps) {
     params.then((p) => setPostId(p.id));
   }, [params]);
 
-  // 获取文章数据
+  // 获取文章数据（编辑模式：需要原始 MDX）
   const { data, isLoading, error } = useQuery({
-    queryKey: ["admin", "post", postId],
+    queryKey: ["admin", "post", postId, "edit"],
     queryFn: async () => {
       // 先尝试作为 article 获取
       try {
         const result = await getPostById({
           path: { post_type: "article", post_id: postId },
+          query: { include_mdx: true }, // 编辑模式：要求返回 MDX
           throwOnError: true,
         });
         return result.data;
@@ -39,6 +40,7 @@ export default function EditPostPage({ params }: PageProps) {
         // 如果失败，尝试作为 idea 获取
         const result = await getPostById({
           path: { post_type: "idea", post_id: postId },
+          query: { include_mdx: true }, // 编辑模式：要求返回 MDX
           throwOnError: true,
         });
         return result.data;
@@ -53,6 +55,7 @@ export default function EditPostPage({ params }: PageProps) {
       title: string;
       slug: string;
       contentMdx: string;
+      cover_media_id?: string | null;
     }) => {
       if (!data) throw new Error("文章数据未加载");
 
@@ -65,6 +68,7 @@ export default function EditPostPage({ params }: PageProps) {
           title: formData.title,
           slug: formData.slug,
           content_mdx: formData.contentMdx,
+          cover_media_id: formData.cover_media_id,
         },
         throwOnError: true,
       });
@@ -88,12 +92,14 @@ export default function EditPostPage({ params }: PageProps) {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">正在加载文章...</p>
+          <p className="text-xs text-muted-foreground">postId: {postId}</p>
         </div>
       </div>
     );
   }
 
   if (error || !data) {
+    console.error("加载失败:", error, "data:", data);
     return (
       <div className="flex h-[400px] items-center justify-center">
         <div className="text-center">
@@ -101,10 +107,15 @@ export default function EditPostPage({ params }: PageProps) {
           <p className="mt-2 text-muted-foreground">
             {error?.message || "文章不存在或无权访问"}
           </p>
+          <p className="mt-4 text-xs text-muted-foreground">postId: {postId}</p>
         </div>
       </div>
     );
   }
+
+  console.log("编辑页面数据:", data);
+  console.log("content_mdx:", data.content_mdx);
+  console.log("所有字段:", Object.keys(data));
 
   return (
     <PostEditor
@@ -112,6 +123,7 @@ export default function EditPostPage({ params }: PageProps) {
         title: data.title,
         slug: data.slug,
         contentMdx: data.content_mdx || "",
+        coverMedia: data.cover_media,
       }}
       onSave={(formData) => updateMutation.mutate(formData)}
       isSaving={updateMutation.isPending}
