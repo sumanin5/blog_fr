@@ -19,18 +19,20 @@ import "katex/dist/katex.min.css";
 
 interface MdxServerRendererProps {
   mdx: string;
+  toc: Array<{ id: string; title: string; level: number }>;
   articleClassName: string;
 }
 
 export async function MdxServerRenderer({
   mdx,
+  toc,
   articleClassName,
 }: MdxServerRendererProps) {
   return (
     <article className={articleClassName}>
       <MDXRemote
         source={mdx}
-        components={createMdxComponents()}
+        components={createMdxComponents(toc)}
         options={{
           mdxOptions: {
             remarkPlugins: [remarkGfm, remarkMath],

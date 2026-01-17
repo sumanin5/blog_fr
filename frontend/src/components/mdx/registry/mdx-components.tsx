@@ -12,82 +12,81 @@
 import React from "react";
 import { CodeBlock } from "../components/code-block";
 import { InteractiveButton } from "../components/interactive-button";
-import {
-  createHeadingSlugger,
-  extractTextFromReactNode,
-} from "@/lib/heading-slug";
 
 type ComponentProps = Record<string, unknown>;
 
 type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {
   id?: string;
+  children?: React.ReactNode;
 };
 
-/**
- * 创建带 ID 和锚点的标题组件
- */
-function createHeadingComponent(
-  tag: string,
-  slugger: (title: string) => string
-) {
-  return function Heading(props: HeadingProps) {
-    const text = extractTextFromReactNode(props.children);
-    const id = props.id || slugger(text);
+interface TocItem {
+  id: string;
+  title: string;
+  level: number;
+}
 
-    return React.createElement(
-      tag,
-      {
-        ...props,
-        id,
-        className: ["scroll-mt-24", props.className].filter(Boolean).join(" "),
-      },
-      props.children
-    );
-  };
+/**
+ * 从 React 节点中提取纯文本
+ */
+function extractText(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (React.isValidElement(node)) {
+    const element = node as React.ReactElement<any>;
+    if (element.props?.children) {
+      return extractText(element.props.children);
+    }
+  }
+  return "";
 }
 
 /**
  * 创建 MDX 组件映射
  *
- * 每次调用都创建新实例，避免 slug 计数在不同文章之间串联
+ * @param toc - 后端生成的目录数组
  */
-export function createMdxComponents(): Record<
-  string,
-  React.ComponentType<ComponentProps>
-> {
-  const slugger = createHeadingSlugger();
+export function createMdxComponents(toc: TocItem[] = []): Record<string, any> {
+  // 创建标题组件工厂
+  const createHeading = (tag: string, level: number) => {
+    return function Heading(props: HeadingProps) {
+      // 提取标题文本
+      const text = extractText(props.children);
+
+      // 从 toc 中查找匹配的 ID
+      const tocItem = toc.find(
+        (item) => item.level === level && item.title === text
+      );
+      const id = props.id || tocItem?.id || "";
+
+      return React.createElement(
+        tag,
+        {
+          ...props,
+          id,
+          className: ["scroll-mt-24", props.className]
+            .filter(Boolean)
+            .join(" "),
+        },
+        props.children
+      );
+    };
+  };
 
   return {
     // 代码块：直接映射到 CodeBlock（内部处理 Mermaid 判断）
-    pre: CodeBlock as React.ComponentType<ComponentProps>,
+    pre: CodeBlock,
 
-    // 标题：添加 ID 和锚点
-    h1: createHeadingComponent(
-      "h1",
-      slugger
-    ) as React.ComponentType<ComponentProps>,
-    h2: createHeadingComponent(
-      "h2",
-      slugger
-    ) as React.ComponentType<ComponentProps>,
-    h3: createHeadingComponent(
-      "h3",
-      slugger
-    ) as React.ComponentType<ComponentProps>,
-    h4: createHeadingComponent(
-      "h4",
-      slugger
-    ) as React.ComponentType<ComponentProps>,
-    h5: createHeadingComponent(
-      "h5",
-      slugger
-    ) as React.ComponentType<ComponentProps>,
-    h6: createHeadingComponent(
-      "h6",
-      slugger
-    ) as React.ComponentType<ComponentProps>,
+    // 标题：从 toc 中匹配 ID
+    h1: createHeading("h1", 1),
+    h2: createHeading("h2", 2),
+    h3: createHeading("h3", 3),
+    h4: createHeading("h4", 4),
+    h5: createHeading("h5", 5),
+    h6: createHeading("h6", 6),
 
     // 自定义组件
-    InteractiveButton: InteractiveButton as React.ComponentType<ComponentProps>,
+    InteractiveButton: InteractiveButton as any,
   };
 }

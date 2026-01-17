@@ -17,6 +17,7 @@ import { getArticleClassName } from "./post-content-styles";
 interface PostContentProps {
   mdx?: string;
   ast?: Record<string, unknown> | null;
+  toc?: Array<{ id: string; title: string; level: number }>;
   enableJsx?: boolean;
   useServerRendering?: boolean;
   className?: string;
@@ -30,6 +31,7 @@ interface PostContentProps {
 export async function PostContent({
   mdx,
   ast,
+  toc = [],
   enableJsx = false,
   useServerRendering = true,
   className = "",
@@ -43,12 +45,24 @@ export async function PostContent({
 
   // 优先级 2：MDX 服务端渲染（最灵活，支持任意 JSX）
   if (enableJsx && useServerRendering && mdx) {
-    return <MdxServerRenderer mdx={mdx} articleClassName={articleClassName} />;
+    return (
+      <MdxServerRenderer
+        mdx={mdx}
+        toc={toc}
+        articleClassName={articleClassName}
+      />
+    );
   }
 
   // 优先级 3：MDX 客户端渲染（灵活但慢）
   if (enableJsx && !useServerRendering && mdx) {
-    return <MdxClientRenderer mdx={mdx} articleClassName={articleClassName} />;
+    return (
+      <MdxClientRenderer
+        mdx={mdx}
+        toc={toc}
+        articleClassName={articleClassName}
+      />
+    );
   }
 
   return <div>无内容</div>;

@@ -65,6 +65,9 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
           <PostContent
             mdx={post.content_mdx || undefined}
             ast={post.content_ast}
+            toc={
+              post.toc as Array<{ id: string; title: string; level: number }>
+            }
             enableJsx={post.enable_jsx}
             useServerRendering={post.use_server_rendering}
           />

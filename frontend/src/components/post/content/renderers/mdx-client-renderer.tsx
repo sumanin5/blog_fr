@@ -24,11 +24,13 @@ import "katex/dist/katex.min.css";
 
 interface MdxClientRendererProps {
   mdx: string;
+  toc: Array<{ id: string; title: string; level: number }>;
   articleClassName: string;
 }
 
 export function MdxClientRenderer({
   mdx,
+  toc,
   articleClassName,
 }: MdxClientRendererProps) {
   const [mdxSource, setMdxSource] = React.useState<
@@ -72,7 +74,7 @@ export function MdxClientRenderer({
 
   return (
     <article className={articleClassName}>
-      <MDXRemote {...mdxSource} components={createMdxComponents()} />
+      <MDXRemote {...mdxSource} components={createMdxComponents(toc)} />
     </article>
   );
 }

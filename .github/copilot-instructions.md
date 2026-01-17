@@ -142,9 +142,9 @@ const { data } = useQuery({
 
 ## 🌍 Language & Localization
 
-- **Git Commit Messages**: All Git-related text generation (commit messages, branch names, PR descriptions) MUST use **Simplified Chinese**.
-- **AI Responses**: Default language for explanations, comments, and task summaries is **Simplified Chinese** unless the user explicitly switches to another language.
-- **Commit Pattern**: `[模块名] 描述性文字` (e.g., `[posts] 修复文章详情页渲染异常`).
+- **Git Commit Messages**: MUST generate commit messages in **Simplified Chinese ONLY**. English is strictly forbidden for any git-related text generation.
+- **AI Responses**: Default language for all interactions, explanations, and code comments is **Simplified Chinese**.
+- **Commit Pattern**: `[模块名] 描述性文字` (例如: `[posts] 修复详情页布局`).
 
 ## 🐛 Debugging Tips
 
