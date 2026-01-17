@@ -1,60 +1,35 @@
 "use client";
 
 import React from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { listPostsByType, deletePostByType } from "@/shared/api/generated";
+import { useAllPosts, useDeletePost } from "@/shared/hooks/use-posts";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, ShieldAlert, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { PostType } from "@/shared/api/generated";
 
 export default function AllPostsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState<"article" | "idea">(
-    "article"
-  );
+  const [activeTab, setActiveTab] = React.useState<PostType>("article");
 
   // 权限检查：如果不是超级管理员，重定向
   React.useEffect(() => {
     if (!authLoading && user && user.role !== "superadmin") {
-      toast.error("权限不足", {
-        description: "该页面仅供超级管理员访问",
-      });
       router.push("/admin/dashboard");
     }
   }, [user, authLoading, router]);
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["admin", "posts", "all", activeTab],
-    queryFn: () =>
-      listPostsByType({
-        path: { post_type: activeTab },
-        query: { status: null }, // Admins should see all statuses
-        throwOnError: true,
-      }),
-    enabled: user?.role === "superadmin", // 只有超级管理员才获取数据
-  });
+  const {
+    data: posts = [],
+    isLoading,
+    refetch,
+    isFetching,
+  } = useAllPosts(activeTab, user?.role === "superadmin");
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      deletePostByType({
-        path: { post_type: activeTab, post_id: id },
-        throwOnError: true,
-      }),
-    onSuccess: () => {
-      toast.success("文章已删除");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error("删除失败", {
-        description: error.message,
-      });
-    },
-  });
+  const deleteMutation = useDeletePost();
 
   // 加载中状态
   if (authLoading) {
@@ -77,8 +52,6 @@ export default function AllPostsPage() {
       </div>
     );
   }
-
-  const posts = data?.data?.items || [];
 
   return (
     <div className="space-y-6">
@@ -117,7 +90,12 @@ export default function AllPostsPage() {
             posts={posts}
             isLoading={isLoading}
             showAuthor={true}
-            onDelete={(post) => deleteMutation.mutate(post.id)}
+            onDelete={(post) =>
+              deleteMutation.mutate({
+                id: post.id,
+                type: post.post_type as PostType,
+              })
+            }
           />
         </div>
       </Tabs>

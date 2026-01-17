@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { useState } from "react";
 import {
   Save,
   Eye,
@@ -10,11 +10,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import { CategorySelect } from "./category-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MdxClientRenderer } from "@/components/post/content/renderers/mdx-client-renderer";
+import { PostType } from "@/shared/api/generated";
 
 import { CoverSelect } from "@/components/admin/media/cover-select";
 import type { MediaFileResponse } from "@/hooks/use-media";
@@ -27,62 +30,41 @@ const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
 });
 
 interface PostEditorProps {
-  initialData?: {
+  initialData: {
     title: string;
     slug: string;
     contentMdx: string;
     coverMedia?: MediaFileResponse | null;
+    categoryId?: string | null;
   };
+  postType?: "article" | "idea";
   onSave: (data: {
     title: string;
     slug: string;
     contentMdx: string;
     cover_media_id?: string | null;
+    category_id?: string | null;
   }) => void;
   isSaving?: boolean;
 }
 
-export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
-  const [title, setTitle] = React.useState(initialData?.title || "");
-  const [slug, setSlug] = React.useState(initialData?.slug || "");
-  const [contentMdx, setContentMdx] = React.useState(
-    initialData?.contentMdx || ""
+export function PostEditor({
+  initialData,
+  postType = "article",
+  onSave,
+  isSaving,
+}: PostEditorProps) {
+  const { theme } = useTheme();
+  const [title, setTitle] = useState(initialData.title);
+  const [slug, setSlug] = useState(initialData.slug);
+  const [contentMdx, setContentMdx] = useState(initialData.contentMdx);
+  const [cover, setCover] = useState<MediaFileResponse | null>(
+    initialData.coverMedia || null
   );
-  const [cover, setCover] = React.useState<MediaFileResponse | null>(
-    initialData?.coverMedia || null
+  const [category, setCategory] = useState<string>(
+    initialData.categoryId || "none"
   );
-  const [activeTab, setActiveTab] = React.useState("edit");
-
-  // 当 initialData 改变时，更新编辑器内容
-  React.useEffect(() => {
-    console.log("编辑器收到 initialData:", initialData);
-    if (initialData) {
-      setTitle(initialData.title);
-      setSlug(initialData.slug);
-      setContentMdx(initialData.contentMdx);
-      setCover(initialData.coverMedia || null);
-    }
-  }, [initialData]);
-
-  // 检测主题
-  const [theme, setTheme] = React.useState<"light" | "dark">("light");
-  React.useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    setTheme(isDark ? "dark" : "light");
-
-    // 监听主题变化
-    const observer = new MutationObserver(() => {
-      const isDark = document.documentElement.classList.contains("dark");
-      setTheme(isDark ? "dark" : "light");
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
+  const [activeTab, setActiveTab] = useState("edit");
 
   return (
     <div className="flex h-[calc(100vh-6rem)] flex-col gap-4">
@@ -90,7 +72,7 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/posts/me">
+            <Link href={`/admin/posts/${postType}/me`}>
               <ChevronLeft className="mr-2 h-4 w-4" /> 返回
             </Link>
           </Button>
@@ -111,6 +93,7 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
                 slug,
                 contentMdx,
                 cover_media_id: cover?.id || null,
+                category_id: category === "none" ? null : category,
               })
             }
             disabled={isSaving}
@@ -207,11 +190,12 @@ export function PostEditor({ initialData, onSave, isSaving }: PostEditorProps) {
 
             <div className="space-y-2">
               <Label className="text-xs">所属分类</Label>
-              <select className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                <option value="">选择分类...</option>
-                <option value="tech">技术</option>
-                <option value="life">生活</option>
-              </select>
+              <CategorySelect
+                postType={postType as PostType}
+                value={category}
+                onValueChange={setCategory}
+                className="h-8 text-xs"
+              />
             </div>
 
             <div className="space-y-2">
