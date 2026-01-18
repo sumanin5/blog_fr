@@ -94,3 +94,37 @@ def mock_category() -> MagicMock:
     category.slug = "test-category"
     category.post_type = "article"
     return category
+
+
+@pytest.fixture
+def mock_tag() -> MagicMock:
+    """提供 mock 的标签对象"""
+    tag = MagicMock()
+    tag.id = uuid4()
+    tag.name = "Test Tag"
+    tag.slug = "test-tag"
+    return tag
+
+
+@pytest.fixture
+def mock_scanned_post() -> MagicMock:
+    """提供 mock 的扫描文章对象"""
+    scanned = MagicMock()
+    scanned.file_path = "posts/test.mdx"
+    scanned.content = "# Test\n\nContent here"
+    scanned.frontmatter = {
+        "title": "Test Post",
+        "author": "testuser",
+        "tags": ["python", "django"],
+    }
+    scanned.derived_post_type = "article"
+    scanned.derived_category_slug = "tech"
+    return scanned
+
+
+@pytest.fixture
+def mock_sync_stats() -> MagicMock:
+    """提供 mock 的同步统计对象"""
+    from app.git_ops.schema import SyncStats
+
+    return SyncStats()

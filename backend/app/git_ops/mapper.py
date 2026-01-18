@@ -6,7 +6,7 @@ Git 同步的映射器模块
 
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from app.git_ops.exceptions import GitOpsSyncError
@@ -16,6 +16,7 @@ from app.git_ops.resolvers import (
     StatusResolver,
 )
 from app.git_ops.scanner import ScannedPost
+from app.posts.model import Post
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,34 @@ class FrontmatterMapper:
         self.post_type_resolver = PostTypeResolver()
         self.status_resolver = StatusResolver()
         self.date_resolver = DateResolver()
+
+    async def match_post(
+        self, scanned: ScannedPost, existing_posts: list
+    ) -> tuple[Optional[Post], bool]:
+        """匹配文件到对应的 Post
+
+        Args:
+            scanned: 扫描到的文件
+            existing_posts: 数据库中的所有 Post
+
+        Returns:
+            (matched_post, is_move) - 匹配到的 Post 和是否是移动操作
+        """
+        # 构建索引
+        existing_map = {p.source_path: p for p in existing_posts if p.source_path}
+        existing_by_slug = {p.slug: p for p in existing_posts}
+
+        # 1. 先按 source_path 匹配
+        if scanned.file_path in existing_map:
+            return existing_map[scanned.file_path], False
+
+        # 2. 再按 slug 匹配（检测移动）
+        fm_slug = scanned.frontmatter.get("slug")
+        if fm_slug and fm_slug in existing_by_slug:
+            return existing_by_slug[fm_slug], True
+
+        # 3. 都没找到 → 新增
+        return None, False
 
     async def map_to_post(
         self, scanned: ScannedPost, dry_run: bool = False
@@ -90,7 +119,12 @@ class FrontmatterMapper:
             # 没有 cover_media_id，查询 cover 字段
             cover_path = meta.get("cover") or meta.get("image")
             if cover_path:
-                cover_media_id = await resolve_cover_media_id(self.session, cover_path)
+                cover_media_id = await resolve_cover_media_id(
+                    self.session,
+                    cover_path,
+                    mdx_file_path=scanned.file_path,
+                    content_dir=Path(settings.CONTENT_DIR),
+                )
 
         # ========== 解析文章类型 ==========
         post_type = await self.post_type_resolver.resolve(
@@ -99,7 +133,10 @@ class FrontmatterMapper:
         )
 
         # ========== 解析分类 ID ==========
-        # 优先使用回签的 category_id，如果没有则查询 category 字段
+        # 优先级：
+        # 1. 回签的 category_id (UUID) - 具有最高权威，忽略路径和字符串
+        # 2. 物理目录推断的 derived_category_slug - Git-First 核心逻辑
+        # 3. Frontmatter 中的 category 字段 - 平铺结构或手动覆盖的兜底
         category_id = None
         if meta.get("category_id"):
             try:
@@ -110,11 +147,11 @@ class FrontmatterMapper:
                     detail="category_id must be a valid UUID",
                 )
         else:
-            # 没有 category_id，查询 category 字段
+            # 强化路径优先原则
             category_slug = (
-                meta.get("category")
+                scanned.derived_category_slug
+                or meta.get("category")
                 or meta.get("category_slug")
-                or scanned.derived_category_slug
             )
             category_id = await resolve_category_id(
                 self.session,
@@ -164,11 +201,18 @@ class FrontmatterMapper:
 
         # 解析标签（如果有）
         tags = meta.get("tags", [])
+        tag_ids = []
         if tags:
             # 确保是列表格式
             if isinstance(tags, str):
                 # 支持逗号分隔的字符串: "tag1, tag2, tag3"
                 tags = [t.strip() for t in tags.split(",")]
+
+            # 查询或创建标签，获取 ID 列表
+            from app.git_ops.utils import resolve_tag_ids
+
+            tag_ids = await resolve_tag_ids(self.session, tags)
+            result["tag_ids"] = tag_ids
             result["tags"] = tags
 
         return result

@@ -175,6 +175,17 @@ async def get_user_by_email(session: AsyncSession, email: str) -> Optional[User]
         raise
 
 
+async def get_superuser(session: AsyncSession) -> Optional[User]:
+    """获取系统中的第一个超级管理员"""
+    try:
+        stmt = select(User).where(User.role == UserRole.SUPERADMIN).limit(1)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+    except Exception as e:
+        logger.error(f"Error fetching superuser: {e}")
+        return None
+
+
 # 理论上是应该使用分页逻辑，但是对于当前的小项目暂时不用考虑分页问题
 async def get_user_by_roles(
     session: AsyncSession, role: UserRole

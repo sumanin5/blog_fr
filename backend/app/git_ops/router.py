@@ -59,3 +59,28 @@ async def github_webhook(
     logger.info("Valid webhook received, triggering background sync...")
     background_tasks.add_task(run_background_sync)
     return {"status": "triggered"}
+
+
+@router.post(
+    "/posts/{post_id}/resync-metadata",
+    summary="重新同步文章元数据",
+)
+async def resync_post_metadata(
+    post_id: str,
+    current_user: Annotated[User, Depends(get_current_adminuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """
+    重新同步单个文章的元数据。
+
+    场景：
+    - 用户在 frontmatter 中改了 author/cover/category 名字
+    - 需要重新查询数据库并更新 ID
+    - 自动回签新的 ID 到 frontmatter
+
+    权限：仅管理员可用
+    """
+    from uuid import UUID
+
+    service = GitOpsService(session)
+    return await service.resync_metadata(UUID(post_id), current_user)

@@ -23,21 +23,15 @@ class PostTypeResolver:
         """解析文章类型
 
         优先级：
-        1. Frontmatter 中的 type/post_type
-        2. 路径推断出的 derived_type
+        1. 路径推断出的 derived_type (Git-First 权威路径)
+        2. Frontmatter 中的 type/post_type (向下兼容或平铺结构覆盖)
         3. 默认为 ARTICLE
 
         Args:
             meta_type: frontmatter 中的 type 字段值
             derived_type: 从路径推断出的类型
-
-        Returns:
-            PostType 枚举值
-
-        Raises:
-            GitOpsSyncError: 如果类型值无效
         """
-        post_type_value = meta_type or derived_type
+        post_type_value = derived_type or meta_type
 
         if not post_type_value:
             return PostType.ARTICLE

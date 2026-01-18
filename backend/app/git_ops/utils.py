@@ -256,43 +256,113 @@ async def resolve_author_id(session, author_value: str) -> UUID:
     )
 
 
-async def resolve_cover_media_id(session, cover_value: str) -> Optional[UUID]:
-    """根据文件路径或文件名查询媒体库 ID
+async def resolve_cover_media_id(
+    session, cover_value: str, mdx_file_path: str = None, content_dir: Path = None
+) -> Optional[UUID]:
+    """根据文件路径、文件名或外部 URL 查询/注入媒体库 ID
+
+    逻辑：
+    1. 如果是 UUID 格式，直接尝试查询
+    2. 如果是 http(s):// 开头，说明是外部 URL（暂不支持自动下载，仅记录）
+    3. 如果是本地相对路径 (如 ./img.png)，尝试自动上传到媒体库
+    4. 兜底：尝试在媒体库中搜索同名文件
 
     Args:
         session: 数据库会话
-        cover_value: 文件路径或文件名
+        cover_value: 封面路径值 (Frontmatter 中的内容)
+        mdx_file_path: 当前 MDX 文件的相对路径 (用于解析本地相对路径)
+        content_dir: Git 内容根目录
 
     Returns:
         媒体文件 ID 或 None
     """
     from app.media import crud as media_crud
     from app.media import service as media_service
+    from app.users import crud as user_crud
 
     if not cover_value:
         return None
 
-    # 1. 尝试精确路径匹配
+    # 1. 尝试作为 UUID 解析
+    try:
+        media_id = UUID(cover_value)
+        media = await media_crud.get_media_file(session, media_id)
+        if media:
+            return media.id
+    except ValueError:
+        pass
+
+    # 2. 检查是否是外部 URL (TODO: 增强 Media 模型以支持外部链接)
+    if cover_value.startswith(("http://", "https://")):
+        logger.warning(
+            f"Detected external cover URL: {cover_value}. External URLs are not fully supported as Media entities yet."
+        )
+        # 目前 Media 表主要存储文件，暂不处理引用，返回 None 以保持安全
+        return None
+
+    # 3. 尝试本地文件自动上传 (核心 Git-First 逻辑)
+    # 如果是以 ./ 开头，或者 mdx_file_path 存在且它不包含 http，我们尝试定位物理文件
+    if mdx_file_path and content_dir:
+        # 计算图片的绝对路径
+        mdx_dir = (content_dir / mdx_file_path).parent
+        img_abs_path = (mdx_dir / cover_value).resolve()
+
+        # 确保图片在 content_dir 范围内 (防止路径穿越)
+        if (
+            img_abs_path.exists()
+            and img_abs_path.is_file()
+            and str(img_abs_path).startswith(str(content_dir))
+        ):
+            # 检查数据库里是否已经“上传”过这个原始路径
+            # 我们用原始文件名做一次简单匹配，或者未来可以增加一个字段存储 git_source_path
+            filename = img_abs_path.name
+            media = await media_crud.get_media_file_by_path(
+                session, filename
+            )  # 简单策略：按文件名
+
+            if not media:
+                logger.info(
+                    f"🚀 Found local cover image: {cover_value}, attempting auto-upload..."
+                )
+                try:
+                    # 获取一个超级管理员作为上传者
+                    admin = await user_crud.get_superuser(session)
+                    if not admin:
+                        raise Exception("No superadmin found for auto-ingestion")
+
+                    # 读取并上传
+                    import asyncio
+
+                    file_content = await asyncio.to_thread(img_abs_path.read_bytes)
+                    media = await media_service.create_media_file(
+                        file_content=file_content,
+                        filename=filename,
+                        uploader_id=admin.id,
+                        session=session,
+                        usage="post_cover",
+                        is_public=True,
+                        description=f"Auto-uploaded from git: {mdx_file_path}",
+                    )
+                    logger.info(f"✅ Auto-uploaded cover: {filename} -> {media.id}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to auto-upload cover {cover_value}: {e}")
+                    # 失败了不中断流程
+
+            if media:
+                return media.id
+
+    # 4. 兜底策略：尝试精确路径匹配 (针对已存在的 Media 记录)
     media = await media_crud.get_media_file_by_path(session, cover_value)
     if media:
         logger.info(f"通过路径匹配到封面: {cover_value}")
         return media.id
 
-    # 2. 尝试文件名模糊搜索
+    # 5. 尝试文件名模糊搜索缓存
     filename = Path(cover_value).name
-    results = await media_service.search_media_files(session, query=filename, limit=10)
+    results = await media_service.search_media_files(session, query=filename, limit=1)
 
     if results:
-        # 优先返回精确文件名匹配的
-        for media in results:
-            if media.original_filename == filename:
-                logger.info(f"通过文件名匹配到封面: {filename} -> {media.file_path}")
-                return media.id
-
-        # 如果没有精确匹配，返回第一个搜索结果
-        logger.warning(
-            f"文件名 '{filename}' 有多个匹配，使用第一个: {results[0].file_path}"
-        )
+        logger.info(f"通过文件名模糊匹配到封面: {filename} -> {results[0].file_path}")
         return results[0].id
 
     logger.warning(f"未找到封面图: {cover_value}")
@@ -371,3 +441,154 @@ async def resolve_category_id(
     await session.commit()
     await session.refresh(default_cat)
     return default_cat.id
+
+
+async def resolve_tag_ids(session, tag_names: list) -> list[UUID]:
+    """根据标签名称查询或创建标签，返回标签 ID 列表
+
+    Args:
+        session: 数据库会话
+        tag_names: 标签名称列表
+
+    Returns:
+        标签 ID 列表
+    """
+    from app.posts import crud as posts_crud
+    from slugify import slugify as python_slugify
+
+    if not tag_names:
+        return []
+
+    tag_ids = []
+
+    for tag_name in tag_names:
+        tag_name = tag_name.strip()
+        if not tag_name:
+            continue
+
+        # 使用 get_or_create_tag 获取或创建标签
+        tag_slug = python_slugify(tag_name)
+        tag = await posts_crud.get_or_create_tag(session, tag_name, tag_slug)
+        logger.info(f"标签已处理: {tag_name} -> {tag.id}")
+        tag_ids.append(tag.id)
+
+    return tag_ids
+
+
+async def handle_post_update(
+    session,
+    matched_post,
+    scanned,
+    file_path: str,
+    is_move: bool,
+    mapper,
+    operating_user,
+    content_dir,
+    stats,
+    processed_post_ids: set,
+    force_write: bool = False,
+):
+    """处理文章更新或移动"""
+    from app.posts import service as post_service
+    from app.posts.schema import PostUpdate
+
+    update_dict = await mapper.map_to_post(scanned)
+    update_dict.pop("slug", None)
+    update_dict.pop("tag_ids", None)
+
+    if is_move:
+        update_dict["source_path"] = file_path
+
+    post_in = PostUpdate(**update_dict)
+    updated_post = await post_service.update_post(
+        session, matched_post.id, post_in, current_user=operating_user
+    )
+    await session.refresh(updated_post)
+
+    # 如果 force_write 为 True，则传入 old_post=None，强制写入所有字段
+    old_post_arg = None if force_write else matched_post
+    await write_post_ids_to_frontmatter(
+        content_dir, file_path, updated_post, old_post_arg, stats
+    )
+
+    processed_post_ids.add(matched_post.id)
+    stats.updated.append(file_path)
+
+    return updated_post
+
+
+async def handle_post_create(
+    session,
+    scanned,
+    file_path: str,
+    mapper,
+    operating_user,
+    content_dir,
+    stats,
+    processed_post_ids: set,
+):
+    """处理文章创建"""
+    from app.posts import service as post_service
+    from app.posts.schema import PostCreate
+    from app.posts.utils import generate_slug_with_random_suffix
+
+    create_dict = await mapper.map_to_post(scanned)
+    create_dict["source_path"] = file_path
+
+    if not create_dict.get("slug"):
+        create_dict["slug"] = generate_slug_with_random_suffix(Path(file_path).stem)
+
+    create_dict.pop("tag_ids", None)
+
+    post_in = PostCreate(**create_dict)
+    created_post = await post_service.create_post(
+        session, post_in, author_id=create_dict["author_id"]
+    )
+
+    await write_post_ids_to_frontmatter(
+        content_dir, file_path, created_post, None, stats
+    )
+
+    processed_post_ids.add(created_post.id)
+    stats.added.append(file_path)
+
+    return created_post
+
+
+async def validate_post_for_resync(session, content_dir, post_id):
+    """验证 Post 是否可以 resync
+
+    Args:
+        session: 数据库会话
+        content_dir: 内容目录
+        post_id: 文章 ID
+
+    Returns:
+        Post 对象
+
+    Raises:
+        GitOpsSyncError: 如果验证失败
+    """
+    from app.posts import crud as posts_crud
+
+    post = await posts_crud.get_post_by_id(session, post_id)
+    if not post:
+        raise GitOpsSyncError(
+            f"Post not found: {post_id}",
+            detail="Cannot resync metadata for non-existent post",
+        )
+
+    if not post.source_path:
+        raise GitOpsSyncError(
+            f"Post {post_id} has no source_path",
+            detail="Only posts synced from Git can resync metadata",
+        )
+
+    file_path = content_dir / post.source_path
+    if not file_path.exists():
+        raise GitOpsSyncError(
+            f"Source file not found: {post.source_path}",
+            detail="The MDX file may have been deleted or moved",
+        )
+
+    return post

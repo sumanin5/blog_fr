@@ -566,3 +566,96 @@ async def test_resolve_cover_media_id_empty_value(mock_session):
 
     result = await resolve_cover_media_id(mock_session, None)
     assert result is None
+
+
+# ========================================
+# resolve_tag_ids 测试
+# ========================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.git_ops
+async def test_resolve_tag_ids_existing(session):
+    """测试解析已存在的标签"""
+    from app.git_ops.utils import resolve_tag_ids
+    from app.posts.model import Tag
+
+    # 创建测试标签
+    tag = Tag(name="Python", slug="python")
+    session.add(tag)
+    await session.commit()
+    await session.refresh(tag)
+
+    result = await resolve_tag_ids(session, ["Python"])
+    assert len(result) == 1
+    assert result[0] == tag.id
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.git_ops
+async def test_resolve_tag_ids_auto_create(session):
+    """测试自动创建不存在的标签"""
+    from app.git_ops.utils import resolve_tag_ids
+    from app.posts import crud as posts_crud
+
+    result = await resolve_tag_ids(session, ["NewTag"])
+    assert len(result) == 1
+    assert result[0] is not None
+
+    # 验证标签已创建
+    tag = await posts_crud.get_tag_by_slug(session, "newtag")
+    assert tag is not None
+    assert tag.name == "NewTag"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.git_ops
+async def test_resolve_tag_ids_multiple(session):
+    """测试解析多个标签"""
+    from app.git_ops.utils import resolve_tag_ids
+    from app.posts.model import Tag
+
+    # 创建测试标签
+    tag1 = Tag(name="Python", slug="python")
+    tag2 = Tag(name="Django", slug="django")
+    session.add(tag1)
+    session.add(tag2)
+    await session.commit()
+    await session.refresh(tag1)
+    await session.refresh(tag2)
+
+    result = await resolve_tag_ids(session, ["Python", "Django", "NewTag"])
+    assert len(result) == 3
+    assert tag1.id in result
+    assert tag2.id in result
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.git_ops
+async def test_resolve_tag_ids_empty_list(session):
+    """测试空标签列表"""
+    from app.git_ops.utils import resolve_tag_ids
+
+    result = await resolve_tag_ids(session, [])
+    assert result == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.git_ops
+async def test_resolve_tag_ids_whitespace_handling(session):
+    """测试标签名称的空格处理"""
+    from app.git_ops.utils import resolve_tag_ids
+
+    result = await resolve_tag_ids(session, ["  Python  ", "Django"])
+    assert len(result) == 2
+
+    # 验证标签名称被正确处理（去除空格）
+    from app.posts import crud as posts_crud
+
+    tag = await posts_crud.get_tag_by_slug(session, "python")
+    assert tag is not None

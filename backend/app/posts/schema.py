@@ -149,6 +149,7 @@ class PostUpdate(BaseModel):
     post_type: Optional[PostType] = None
     status: Optional[PostStatus] = None
     category_id: Optional[UUID] = None
+    author_id: Optional[UUID] = None
     cover_media_id: Optional[UUID] = None
     is_featured: Optional[bool] = None
     allow_comments: Optional[bool] = None

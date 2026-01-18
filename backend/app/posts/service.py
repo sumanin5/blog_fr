@@ -293,6 +293,11 @@ async def update_post(
 
     update_data = post_in.model_dump(exclude_unset=True)
 
+    # 安全检查：禁止普通用户修改作者
+    if "author_id" in update_data and not current_user.is_superadmin:
+        if update_data["author_id"] != db_post.author_id:
+            raise InsufficientPermissionsError("仅管理员可以修改文章作者")
+
     # 0. 在更新前保存当前版本作为快照
     await save_post_version(
         session, db_post, commit_message=update_data.get("commit_message")
