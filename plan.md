@@ -53,6 +53,41 @@
   - [x] 实现孤立标签清理接口对接。
 - [x] **删除确认**: 为全站删除操作引入 `AlertDialog` 确认流程。
 
+### 7. 项目标准化与 AI 增强 (Standardization & AI Enrichment) ⭐️⭐️⭐️
+
+- [x] **管理后台架构重构 (Admin Refactor)**:
+  - [x] **动态路由映射**: 实现了 `/admin/posts/[type]/...` 统一路由，支持文章与想法的平滑切换。
+  - [x] **数据逻辑集中化**: 封装统一的 `shared/hooks/use-posts.ts`，基于 TanStack Query 统一管理 CRUD。
+- [x] **GitHub Agent Skills 体系构建**:
+  - [x] **项目特有技能**: 创建了 `.github/skills/` 涵盖 `mdx-management`, `ui-development`, `frontend-data-flow` 等 6 大模块。
+  - [x] **系统级技能集成**: 在 `~/.claude/skills/` 部署了通用的 `python-uv-web` 和 `nextjs-pnpm` 标准。
+- [x] **开发环境配置**: 优化 `.vscode/settings.json` 以适配 Tailwind 4.0、pytest 及 cva/cn 智能提示。
+
+---
+
+## 🚀 核心架构升级 (Architectural Evolution) - **重点关注** ⭐️⭐️⭐️
+
+### 1. 统一数据流架构: "Git-First" 双向同步
+**设计目标**：确立 `content/` 目录为 Single Source of Truth。无论是在线编辑还是本地编辑，最终都汇聚于此。
+
+**数据流向**：
+1. **在线编辑加载 (Load)**: `在线编辑器` -> `后端读取物理磁盘 (content/目录)` -> `解析 MDX & Frontmatter` -> `返回前端编辑器`。*（注：不经过数据库，确保实时获取磁盘最新内容）*
+2. **在线编辑保存 (Save)**: `在线编辑器 (Web)` -> `MDX 序列化` -> `物理磁盘 (content/目录)` -> `触发自动化 Git 同步 (Auto Sync)` -> `更新数据库 (DB)`。
+3. **本地编辑流 (Local)**: `本地 IDE (VS Code)` -> `物理磁盘 (content/目录)` -> `手动/Webhook 触发 Git 同步` -> `更新数据库 (DB)`。
+
+**关键任务**：
+- [ ] **物理磁盘读取器 (Disk Loader)**:
+  - [ ] 创建按路径读取 MDX 文件的专用 API，支持实时解析 Frontmatter 为编辑器表单数据。
+  - [ ] 处理文件锁定或并发编辑冲突（可选）。
+- [ ] **物理磁盘反向写入 (Reverse Write)**:
+  - [ ] 实现 `Post` 模型到 `MDX+Frontmatter` 的序列化器。
+  - [ ] 改造 `POST/PATCH` 接口：在存入 DB 的同时，根据路径规则更新/创建物理文件。
+  - [ ] 处理文件重命名 (Rename) 导致的物理路径变更。
+- [ ] **结构化元数据编辑器 (Structured Metadata Sidebar)**:
+  - [ ] **UI 开发**: 替换现有的手写 YAML 模式，改为右侧边栏表单。
+  - [ ] **组件集成**: 集成 `CategorySelect`, `TagCombobox` 及媒体库封面选择。
+  - [ ] **实时序列化**: 确保表单修改能即时反馈到生成的 MDX 文件头中。
+
 ---
 
 ## 🚀 即将进行 (In Progress / Short-term)
@@ -150,83 +185,15 @@
 
 ---
 
-### 3. 自动保存功能 (Auto-save) - **优先级：高** ⭐️⭐️
+### 3. Git 同步增强 (Git Sync Enhancement) - **优先级：最高** ⭐️⭐️⭐️
 
-**目标**：防止内容丢失，提升编辑体验。
-
-**实现步骤**：
-
-#### 后端任务
-
-- [ ] **草稿自动保存接口**:
-  - [ ] 创建 `POST /api/v1/posts/draft/autosave` 接口
-  - [ ] 支持部分字段更新（title, content_mdx, excerpt）
-  - [ ] 返回保存时间戳和版本号
-  - [ ] 添加防抖机制，避免频繁写入数据库
-
-#### 前端任务
-
-- [ ] **自动保存逻辑**:
-
-  - [ ] 使用 `useDebounce` hook 监听编辑器内容变化
-  - [ ] 内容变化后 3 秒自动触发保存
-  - [ ] 或者每 30 秒定时保存
-  - [ ] 显示保存状态："已保存" / "保存中..." / "保存失败"
-
-- [ ] **本地备份**:
-
-  - [ ] 使用 `localStorage` 存储草稿内容
-  - [ ] 页面加载时检查是否有未保存的本地草稿
-  - [ ] 提示用户恢复本地草稿或使用服务器版本
-
-- [ ] **版本历史**:
-  - [ ] 在编辑器中添加"版本历史"按钮
-  - [ ] 展示最近 10 个自动保存的版本
-  - [ ] 支持预览和恢复历史版本
-
-**技术细节**：
-
-```typescript
-// 自动保存 Hook
-function useAutoSave(postId: string, content: string, interval = 30000) {
-  const debouncedContent = useDebounce(content, 3000);
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">(
-    "saved"
-  );
-
-  useEffect(() => {
-    // 自动保存逻辑
-    const save = async () => {
-      setSaveStatus("saving");
-      try {
-        await autosavePost(postId, { content_mdx: debouncedContent });
-        setSaveStatus("saved");
-        localStorage.setItem(`draft-${postId}`, debouncedContent);
-      } catch (error) {
-        setSaveStatus("error");
-      }
-    };
-
-    if (debouncedContent) {
-      save();
-    }
-  }, [debouncedContent, postId]);
-
-  return { saveStatus };
-}
-```
-
----
-
-### 4. Git 同步增强 (Git Sync Enhancement) - **优先级：中** ⭐️
-
-**目标**：提升 Git 同步的可控性和可见性。
+**目标**：利用文件夹结构实现文章自动分类，并作为“反向写入磁盘”的基础。
 
 **实现步骤**：
 
 #### 后端任务
 
-- [ ] **目录结构自动分类** ⭐️⭐️⭐️ - **优先级：高**
+- [x] **目录结构自动分类** ⭐️⭐️⭐️ - **优先级：高**
 
   **目标**：利用文件夹结构实现文章自动分类，无需手动配置 Frontmatter。
 
@@ -250,10 +217,63 @@ function useAutoSave(postId: string, content: string, interval = 30000) {
 
   **实现细节**：
 
-  - [ ] **MDXScanner 增强**:
-    - [ ] 解析文件路径，提取 `post_type` 和 `category` 信息
-    - [ ] 支持路径格式：`content/{post_type}/{category}/{filename}.mdx`
-    - [ ] 兼容平铺结构（`content/{filename}.mdx`）作为向后兼容
+  - [x] **MDXScanner 增强**:
+    - [x] 解析文件路径，提取 `post_type` 和 `category` 信息。
+    - [x] 支持路径格式：`content/{post_type}/{category}/{filename}.mdx`。
+    - [x] 兼容并逐步迁移平铺结构。
+
+- [x] **差异预览接口**:
+  - [x] 创建 `GET /api/v1/ops/git/preview` 接口（dry-run 模式）。
+  - [x] 分析磁盘与数据库差异并返回变更预览。
+
+- [x] **GitHub Webhook 支持**:
+  - [x] 创建 `POST /api/v1/ops/git/webhook` 接口。
+  - [x] 验证 GitHub webhook 签名（HMAC-SHA256）。
+  - [x] 接收 `push` 事件后触发后台同步任务。
+
+#### 前端任务
+
+- [ ] **差异预览页面**:
+  - [ ] 在 Git 同步中心展示“即将执行的变更”。
+  - [ ] 用户二次确认后执行物理更新。
+
+---
+
+### 4. 结构化元数据编辑器 (Metadata Sidebar) - **优先级：高** ⭐️⭐️
+
+**目标**：将 YAML 手写模式替换为结构化表单，确保元数据与磁盘文件的强一致性。
+
+**实现步骤**：
+
+- [ ] **侧边栏 UI 搭建**:
+  - [ ] 使用 `shadcn/ui` 构建右侧设置面板。
+  - [ ] 集成 `CategorySelect`, `TagCombobox` 及 `CoverSelect`。
+
+- [ ] **双向绑定与序列化**:
+  - [ ] 实时将表单状态序列化为 Frontmatter 字符串。
+  - [ ] 后端实现“磁盘加载” API，将物理文件解析为表单数据。
+
+---
+
+### 5. 自动保存功能 (Auto-save) - **优先级：中** ⭐️⭐️
+
+**目标**：在磁盘写入机制完成后，实现自动化的“保存到磁盘 -> 异步同步数据库”。
+
+**实现步骤**：
+
+#### 后端任务
+
+- [ ] **草稿自动保存接口**:
+  - [ ] 创建 `POST /api/v1/posts/draft/autosave` 接口。
+  - [ ] 支持将内容实时持久化到 `content/` 对应物理目录。
+  - [ ] 添加防抖机制，避免频繁写入。
+
+#### 前端任务
+
+- [ ] **自动保存逻辑**:
+  - [ ] 使用 `useDebounce` hook 监听编辑器内容变化。
+  - [ ] 内容变化后 3 秒自动保存至磁盘并触发后台同步。
+  - [ ] 显示实时保存状态。
 
   - [ ] **分类自动创建**:
     - [ ] 检测新分类目录时，自动在数据库创建 Category 记录
@@ -312,127 +332,28 @@ function useAutoSave(postId: string, content: string, interval = 30000) {
           }
       else:
           # 平铺结构（向后兼容）
-          return {
-              "post_type": None,
-              "category_slug": None,
-              "filename": parts[-1]
-          }
+---
 
-  # 集成到同步流程
-  async def sync_post_from_file(file_path: Path):
-      path_info = parse_file_path(file_path, content_root)
-      frontmatter = parse_frontmatter(file_path)
+## 🎨 v1.1 / v2.0 计划 (Enhanced Features)
 
-      # Frontmatter 优先，路径推断为后备
-      post_type = frontmatter.get("type") or path_info["post_type"]
-      category_slug = frontmatter.get("category") or path_info["category_slug"]
+### 1. 基础 SEO 与内容分发 (Basic SEO & Distribution) ⭐️⭐️
+**目标**：Sitemap, RSS/Atom Feed, SEO 元数据完善。
 
-      # 如果分类不存在，自动创建
-      if category_slug:
-          category = await get_or_create_category(category_slug)
-  ```
+### 2. 基础搜索 (Basic Search) ⭐️⭐️
+**目标**：基于 PostgreSQL 的全文检索。
 
-  **配置选项**（添加到 `settings.py`）：
+### 3. 多语言支持 (i18n) ⭐️
+**目标**：支持中英文内容切换。
 
-  ```python
-  # Git 同步配置
-  GIT_AUTO_CREATE_CATEGORIES: bool = True  # 是否自动创建分类
-  GIT_STRICT_STRUCTURE: bool = False       # 是否强制目录结构（不允许平铺）
-  GIT_DEFAULT_CATEGORY: str = "uncategorized"  # 默认分类
-  ```
+### 4. 评论系统与社交互动 ⭐️
+**目标**：集成 Waline/Giscus，实现统计与展示。
 
-  **迁移策略**：
-
-  - [ ] 提供迁移脚本，将现有平铺文件移动到新结构
-  - [ ] 支持渐进式迁移（新旧结构共存）
-  - [ ] 文档说明推荐的目录组织方式
-
-  **优势**：
-  - ✅ 符合直觉的文件管理方式
-  - ✅ 减少 Frontmatter 手动配置
-  - ✅ 便于批量移动和重组文章
-  - ✅ Git 操作更清晰（文件夹即分类）
-
-  **实现难度**: **中等** (约 2-3 天)
-  - 路径解析：简单
-  - 自动创建分类：中等
-  - 向后兼容处理：需要仔细测试
-
-- [ ] **差异预览接口**:
-
-  - [ ] 创建 `GET /api/v1/ops/git/preview` 接口（dry-run 模式）
-  - [ ] 返回将要执行的操作列表：
-    ```json
-    {
-      "to_create": [{ "file": "new-post.md", "title": "新文章" }],
-      "to_update": [
-        {
-          "file": "old-post.md",
-          "title": "旧文章",
-          "changes": ["title", "content"]
-        }
-      ],
-      "to_delete": [{ "file": "deleted.md", "title": "已删除" }]
-    }
-    ```
-  - [ ] 不实际执行同步，仅分析差异
-
-- [ ] **GitHub Webhook 支持**:
-  - [ ] 创建 `POST /api/v1/ops/git/webhook` 接口
-  - [ ] 验证 GitHub webhook 签名（HMAC-SHA256）
-  - [ ] 接收 `push` 事件后触发后台同步任务
-  - [ ] 支持配置 webhook secret
-
-#### 前端任务
-
-- [ ] **差异预览页面**:
-
-  - [ ] 在 Git 同步中心添加"预览变更"按钮
-  - [ ] 展示差异对比界面（新增/更新/删除）
-  - [ ] 支持展开查看具体变更内容
-  - [ ] 用户确认后再执行实际同步
-
-- [ ] **Webhook 配置界面**:
-  - [ ] 在设置页面添加 Webhook 配置
-  - [ ] 显示 Webhook URL 和 Secret
-  - [ ] 提供 GitHub 配置指南
-  - [ ] 显示最近的 Webhook 触发记录
-
-**技术细节**：
-
-```python
-# GitHub Webhook 验证
-def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool:
-    expected = hmac.new(
-        secret.encode(),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(f"sha256={expected}", signature)
-
-# Webhook 路由
-@router.post("/webhook")
-async def github_webhook(
-    request: Request,
-    x_hub_signature_256: str = Header(...),
-    background_tasks: BackgroundTasks
-):
-    payload = await request.body()
-    if not verify_github_signature(payload, x_hub_signature_256, settings.WEBHOOK_SECRET):
-        raise HTTPException(401, "Invalid signature")
-
-    background_tasks.add_task(sync_from_git)
-    return {"status": "triggered"}
-```
+### 5. 安全性工程 (Security) ⭐️
+**目标**：漏洞扫描、限流、审计日志。
 
 ---
 
-### 5. 基础 SEO 与内容分发 (Basic SEO & Distribution) - **优先级：高** ⭐️⭐️⭐️
-*(原 v1.1 内容提前)*
-
-**目标**：确保博客内容能被搜索引擎收录和 RSS 阅读器订阅，这是博客的基础设施。
-
-**实现步骤**：
+## 🔮 长期愿景 (Future / Long-term)
 
 - [ ] **Sitemap 生成**:
   - [ ] 创建 `/sitemap.xml` 路由
@@ -569,291 +490,32 @@ async def github_webhook(
 
 ---
 
-### 3. 多语言支持 (i18n) ⭐️⭐️
+## 🎨 v1.1 / v2.0 计划 (Enhanced Features)
 
-**目标**：支持多语言内容管理和展示。
+### 1. 基础 SEO 与内容分发 (Basic SEO & Distribution) ⭐️⭐️
+**目标**：Sitemap, RSS/Atom Feed, SEO 元数据完善。
 
-**实现方案**：
+### 2. 基础搜索 (Basic Search) ⭐️⭐️
+**目标**：基于 PostgreSQL 的全文检索。
 
-#### 后端任务
+### 3. 多语言支持 (i18n) ⭐️
+**目标**：支持中英文内容切换。
 
-- [ ] **数据模型扩展**:
+### 4. 评论系统与社交互动 ⭐️
+**目标**：集成 Waline/Giscus，实现统计与展示。
 
-  - [ ] 为 Post 添加 `language` 字段（zh-CN, en-US, ja-JP）
-  - [ ] 添加 `translation_group_id` 关联翻译版本
-  - [ ] 支持每种语言独立的 slug
-
-- [ ] **API 增强**:
-  - [ ] 支持按语言筛选文章
-  - [ ] 返回文章的可用翻译列表
-  - [ ] 支持语言回退（zh-CN → zh → en）
-
-#### 前端任务
-
-- [ ] **语言切换**:
-
-  - [ ] 在导航栏添加语言选择器
-  - [ ] 使用 next-intl 或 i18next
-  - [ ] 支持 URL 路由（/zh/posts, /en/posts）
-
-- [ ] **翻译管理**:
-  - [ ] 在编辑器中添加"添加翻译"功能
-  - [ ] 显示文章的所有翻译版本
-  - [ ] 支持翻译状态（未翻译/翻译中/已完成）
+### 5. 安全性工程 (Security) ⭐️
+**目标**：漏洞扫描、限流、审计日志。
 
 ---
 
-### 4. 评论系统 (Comment System) ⭐️⭐️
+## 🔮 长期愿景 (Future / Long-term)
 
-**目标**：增强用户互动，建立社区氛围。
+### 1. 数据分析与仪表盘 (Analytics & Dashboard) ⭐️⭐️
+**目标**：提供数据洞察，帮助作者了解内容表现，包括浏览量、热点内容、搜索分析等。
 
-**功能列表**：
-
-- [ ] **基础评论**:
-
-  - [ ] 支持 Markdown 格式评论
-  - [ ] 支持回复和嵌套评论
-  - [ ] 支持点赞和举报
-  - [ ] 支持匿名评论（可配置）
-
-- [ ] **评论审核**:
-
-  - [ ] 后台评论管理界面
-  - [ ] 支持批量审核/删除
-  - [ ] 垃圾评论过滤（Akismet）
-  - [ ] 敏感词过滤
-
-- [ ] **通知系统**:
-  - [ ] 新评论邮件通知
-  - [ ] @提及通知
-  - [ ] 站内消息通知
-
-**技术选型**：
-
-- 自建评论系统（完全控制）
-- 或集成第三方（Disqus, Giscus, Utterances）
-
----
-
-### 5. 性能优化 (Performance Optimization) ⭐️
-
-**优化方向**：
-
-- [ ] **缓存策略**:
-
-  - [ ] Redis 缓存热门文章
-  - [ ] CDN 加速静态资源
-  - [ ] 浏览器缓存优化
-
-- [ ] **数据库优化**:
-
-  - [ ] 添加必要的索引
-  - [ ] 查询优化（N+1 问题）
-  - [ ] 数据库连接池调优
-
-- [ ] **前端优化**:
-  - [ ] 图片懒加载和响应式图片
-  - [ ] 代码分割和按需加载
-  - [ ] 使用 Next.js ISR（增量静态再生成）
-
----
-
-### 6. 站点集成 (Site Integration) ⭐️⭐️
-
-**目标**：集成第三方服务，扩展博客功能，提升用户体验。
-
-**集成模块**：
-
-- [ ] **分析服务集成**:
-
-  - [ ] Google Analytics 4 / Umami / Plausible
-  - [ ] 配置界面（管理后台设置页）
-  - [ ] 隐私友好模式（GDPR 合规）
-  - [ ] 事件追踪（文章浏览、搜索、分享）
-
-- [ ] **社交媒体集成**:
-
-  - [ ] 社交分享按钮（Twitter, Facebook, LinkedIn, 微信）
-  - [ ] 社交嵌入内容（Twitter Embed, YouTube Embed）
-  - [ ] Open Graph 和 Twitter Card 优化
-  - [ ] 社交登录（OAuth2 - GitHub, Google, Twitter）
-
-- [ ] **内容分发**:
-
-  - [ ] RSS Feed 自动生成（/feed.xml）
-  - [ ] Atom Feed 支持
-  - [ ] Newsletter 订阅集成（Mailchimp, ConvertKit, SendGrid）
-  - [ ] Email 通知（新文章发布、评论回复）
-
-- [ ] **CDN 和性能**:
-
-  - [ ] Cloudflare / AWS CloudFront 集成
-  - [ ] 图片 CDN（七牛云、阿里云 OSS）
-  - [ ] 静态资源优化和缓存策略
-
-- [ ] **第三方工具**:
-
-  - [ ] Disqus / Giscus / Utterances 评论集成
-  - [ ] 代码块集成（CodeSandbox, StackBlitz Embed）
-  - [ ] 音乐/视频播放器（Spotify, Bilibili, YouTube）
-  - [ ] 地图服务（Google Maps, 高德地图）
-
-- [ ] **Webhook 和自动化**:
-  - [ ] GitHub Webhook（自动同步 Git 仓库）
-  - [ ] 自定义 Webhook（文章发布时触发）
-  - [ ] Zapier / Make.com 集成
-  - [ ] CI/CD Pipeline 集成
-
-**技术实现**：
-
-```typescript
-// 集成配置管理
-interface IntegrationConfig {
-  analytics: {
-    provider: "ga4" | "umami" | "plausible";
-    trackingId: string;
-    enabled: boolean;
-  };
-  newsletter: {
-    provider: "mailchimp" | "convertkit" | "sendgrid";
-    apiKey: string;
-    listId: string;
-  };
-  cdn: {
-    provider: "cloudflare" | "aws" | "qiniu";
-    domain: string;
-    enabled: boolean;
-  };
-}
-```
-
----
-
-### 7. 仪表盘统计 (Dashboard Analytics) ⭐️⭐️
-
-**目标**：构建完整的数据分析体系，为内容创作提供数据驱动的决策支持。
-
-**核心功能**：
-
-- [ ] **实时数据采集**:
-
-  - [ ] 前端埋点 SDK（页面浏览、点击、停留时长）
-  - [ ] 后端事件记录（API 调用、用户行为）
-  - [ ] 使用 Redis Streams 或 Kafka 作为消息队列
-  - [ ] 批量写入 ClickHouse / TimescaleDB（时序数据库）
-
-- [ ] **用户行为分析**:
-
-  - [ ] 用户旅程追踪（从进入到离开的完整路径）
-  - [ ] 漏斗分析（首页 → 列表页 → 详情页 → 评论/分享）
-  - [ ] 会话分析（平均会话时长、跳出率、回访率）
-  - [ ] 热力图（点击热力图、滚动深度）
-  - [ ] 用户细分（新访客/回访者、地域、设备类型）
-
-- [ ] **内容表现分析**:
-
-  - [ ] 文章阅读指标（浏览量、独立访客、阅读完成率）
-  - [ ] 内容互动指标（评论数、点赞数、分享数）
-  - [ ] 趋势分析（热门文章趋势、阅读量变化）
-  - [ ] 分类/标签表现对比
-  - [ ] 内容推荐效果评估
-
-- [ ] **搜索分析**:
-
-  - [ ] 搜索关键词统计（热门搜索、无结果搜索）
-  - [ ] 搜索转化率（搜索 → 点击 → 阅读）
-  - [ ] 搜索建议优化
-
-- [ ] **性能监控**:
-
-  - [ ] Core Web Vitals（LCP, FID, CLS）
-  - [ ] API 响应时间监控
-  - [ ] 错误率追踪（前端异常、后端 5xx）
-  - [ ] 资源加载性能
-
-- [ ] **高级分析**:
-
-  - [ ] A/B 测试平台（标题、封面、布局测试）
-  - [ ] 转化率优化（CRO - Conversion Rate Optimization）
-  - [ ] 用户留存分析（N 日留存率）
-  - [ ] RFM 模型（Recency, Frequency, Monetary）
-
-**数据可视化**：
-
-- [ ] **仪表盘设计**:
-
-  - [ ] 概览大屏（实时在线、今日 PV/UV、热门文章）
-  - [ ] 自定义报表生成器
-  - [ ] 数据导出（CSV, Excel, PDF）
-  - [ ] 定时邮件报告
-
-- [ ] **图表组件**:
-  - [ ] 时间序列图（趋势分析）
-  - [ ] 饼图和柱状图（分类对比）
-  - [ ] 地图可视化（访客地域分布）
-  - [ ] 桑基图（流量来源分析）
-
-**技术架构**：
-
-```python
-# 后端数据采集接口
-@router.post("/api/v1/analytics/track")
-async def track_event(event: AnalyticsEvent, background_tasks: BackgroundTasks):
-    """
-    事件类型：
-    - page_view: 页面浏览
-    - click: 点击事件
-    - search: 搜索行为
-    - share: 分享行为
-    - read_progress: 阅读进度（25%, 50%, 75%, 100%）
-    """
-    background_tasks.add_task(save_to_analytics_db, event)
-    return {"status": "tracked"}
-
-# 数据模型
-class AnalyticsEvent(BaseModel):
-    event_type: str
-    user_id: UUID | None
-    session_id: str
-    post_id: UUID | None
-    url: str
-    referrer: str | None
-    user_agent: str
-    ip_address: str
-    timestamp: datetime
-    metadata: dict  # 自定义数据
-```
-
-**隐私保护**：
-
-- [ ] IP 地址匿名化（仅保留前 3 段）
-- [ ] 用户同意机制（Cookie Banner）
-- [ ] GDPR 合规（数据删除请求）
-- [ ] 数据保留策略（自动清理 90 天前数据）
-
----
-
-### 8. 安全增强 (Security Enhancement) ⭐️⭐️
-
-**安全措施**：
-
-- [ ] **认证增强**:
-
-  - [ ] 支持 OAuth2（GitHub, Google）
-  - [ ] 双因素认证（2FA）
-  - [ ] 登录日志和异常检测
-
-- [ ] **权限细化**:
-
-  - [ ] 基于角色的访问控制（RBAC）
-  - [ ] 文章协作权限（编辑/查看）
-  - [ ] API 访问限流
-
-- [ ] **内容安全**:
-  - [ ] XSS 防护（内容过滤）
-  - [ ] CSRF 防护
-  - [ ] SQL 注入防护
-  - [ ] 文件上传安全检查
+### 2. 多媒介支持 ⭐️
+**目标**：集成音乐、视频播放器，优化媒体 CDN 分发。
 
 ---
 
@@ -871,39 +533,23 @@ class AnalyticsEvent(BaseModel):
 ## 🎯 里程碑 (Milestones)
 
 ### v1.0 - 核心功能完善（当前）
-
 - ✅ Git 同步核心
 - ✅ 文章管理和编辑
 - ✅ 媒体管理 (Media)
-- 🚧 封面上传集成
-- 🚧 自动保存
+- ✅ 后台架构动态路由重构 & TanStack Query 统一化
+- ✅ Agent Skills 知识库构建 (项目级 + 系统级)
+- 🚧 核心架构升级: "Git-First" 双向反向写入系统
 - 🚧 Git 同步增强 (目录分类)
+- 🚧 结构化元数据编辑器 (Sidebar)
+- 🚧 自动保存
 - 🚧 基础 SEO (Sitemap/RSS)
 - 🚧 基础搜索 (PostgreSQL)
 
-### v1.1 - 社区与数据
-
+### v1.1 / v2.0 - 增强与扩展
 - 评论系统
-- 用户互动
-- 通知系统
-- Newsletter 订阅
-
-### v1.3 - 数据驱动
-
-- 数据分析平台核心
-- 用户行为追踪
-- 内容表现分析
-- 性能监控
-
-### v2.0 - 国际化和扩展
-
-- 多语言支持
-- 插件系统
-- 主题定制
-- API 开放平台
-- 完整站点集成生态
+- 多语言支持 (i18n)
+- 安全性增强
+- 数据分析平台
 
 ---
-
 _上次更新: 2026-01-12_
-_下次审查: 2026-01-19_

@@ -5,15 +5,18 @@ Git 同步的映射器模块
 """
 
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+from uuid import UUID
 
 from app.git_ops.exceptions import GitOpsSyncError
-from app.git_ops.resolvers import AuthorResolver, CoverResolver
+from app.git_ops.resolvers import (
+    DateResolver,
+    PostTypeResolver,
+    StatusResolver,
+)
 from app.git_ops.scanner import ScannedPost
-from app.posts.model import PostStatus
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +26,18 @@ class FrontmatterMapper:
 
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.author_resolver = AuthorResolver(session)
-        self.cover_resolver = CoverResolver(session)
+        self.post_type_resolver = PostTypeResolver()
+        self.status_resolver = StatusResolver()
+        self.date_resolver = DateResolver()
 
-    async def map_to_post(self, scanned: ScannedPost) -> Dict[str, Any]:
+    async def map_to_post(
+        self, scanned: ScannedPost, dry_run: bool = False
+    ) -> Dict[str, Any]:
         """将 Frontmatter 转换为 Post 模型字段
 
         Args:
             scanned: 扫描到的文章数据
+            dry_run: 是否为 dry-run 模式 (不创建关联数据)
 
         Returns:
             Post 模型字段的字典
@@ -38,27 +45,84 @@ class FrontmatterMapper:
         Raises:
             GitOpsSyncError: 如果必填字段缺失或无效
         """
+        from app.core.config import settings
+        from app.git_ops.utils import (
+            resolve_author_id,
+            resolve_category_id,
+            resolve_cover_media_id,
+        )
+
         meta = scanned.frontmatter
 
-        # 解析作者（必填）
-        author_value = meta.get("author")
-        if not author_value:
-            raise GitOpsSyncError(
-                f"Missing required field 'author' in {scanned.file_path}",
-                detail="Every post must specify an author in frontmatter",
-            )
+        # ========== 解析作者 ID ==========
+        # 优先使用回签的 author_id，如果没有则查询 author 字段
+        author_id = None
+        if meta.get("author_id"):
+            try:
+                author_id = UUID(meta.get("author_id"))
+            except ValueError:
+                raise GitOpsSyncError(
+                    f"Invalid author_id format in {scanned.file_path}",
+                    detail="author_id must be a valid UUID",
+                )
+        else:
+            # 没有 author_id，查询 author 字段
+            author_value = meta.get("author")
+            if not author_value:
+                raise GitOpsSyncError(
+                    f"Missing required field 'author' or 'author_id' in {scanned.file_path}",
+                    detail="Every post must specify an author",
+                )
+            author_id = await resolve_author_id(self.session, author_value)
 
-        # 查询作者（如果不存在会抛出 GitOpsSyncError）
-        author_id = await self.author_resolver.resolve(author_value)
-
-        # 解析封面图
-        cover_path = meta.get("cover") or meta.get("image")
+        # ========== 解析封面图 ID ==========
+        # 优先使用回签的 cover_media_id，如果没有则查询 cover 字段
         cover_media_id = None
-        if cover_path:
-            cover_media_id = await self.cover_resolver.resolve(cover_path)
+        if meta.get("cover_media_id"):
+            try:
+                cover_media_id = UUID(meta.get("cover_media_id"))
+            except ValueError:
+                raise GitOpsSyncError(
+                    f"Invalid cover_media_id format in {scanned.file_path}",
+                    detail="cover_media_id must be a valid UUID",
+                )
+        else:
+            # 没有 cover_media_id，查询 cover 字段
+            cover_path = meta.get("cover") or meta.get("image")
+            if cover_path:
+                cover_media_id = await resolve_cover_media_id(self.session, cover_path)
 
-        # 解析文章类型
-        post_type = self._resolve_post_type(meta)
+        # ========== 解析文章类型 ==========
+        post_type = await self.post_type_resolver.resolve(
+            meta_type=meta.get("type") or meta.get("post_type"),
+            derived_type=scanned.derived_post_type,
+        )
+
+        # ========== 解析分类 ID ==========
+        # 优先使用回签的 category_id，如果没有则查询 category 字段
+        category_id = None
+        if meta.get("category_id"):
+            try:
+                category_id = UUID(meta.get("category_id"))
+            except ValueError:
+                raise GitOpsSyncError(
+                    f"Invalid category_id format in {scanned.file_path}",
+                    detail="category_id must be a valid UUID",
+                )
+        else:
+            # 没有 category_id，查询 category 字段
+            category_slug = (
+                meta.get("category")
+                or meta.get("category_slug")
+                or scanned.derived_category_slug
+            )
+            category_id = await resolve_category_id(
+                self.session,
+                category_slug,
+                post_type,
+                auto_create=settings.GIT_AUTO_CREATE_CATEGORIES,
+                default_slug=settings.GIT_DEFAULT_CATEGORY,
+            )
 
         # 构建基础字段映射
         result = {
@@ -69,10 +133,13 @@ class FrontmatterMapper:
             or meta.get("description")
             or "",
             "content_mdx": scanned.content,
-            "status": self._resolve_status(meta),
-            "published_at": self._resolve_date(meta),
+            "status": await self.status_resolver.resolve(meta),
+            "published_at": await self.date_resolver.resolve(
+                meta, await self.status_resolver.resolve(meta)
+            ),
             "cover_media_id": cover_media_id,
             "author_id": author_id,
+            "category_id": category_id,
             "post_type": post_type,
             # 布尔字段（注意：False 值需要特殊处理）
             "is_featured": meta.get("featured", False)
@@ -105,96 +172,3 @@ class FrontmatterMapper:
             result["tags"] = tags
 
         return result
-
-    def _resolve_post_type(self, meta: Dict[str, Any]) -> str:
-        """解析文章类型
-
-        支持的类型：
-        - article (默认)
-        - idea
-        """
-        from app.posts.model import PostType
-
-        post_type = meta.get("type") or meta.get("post_type")
-        if not post_type:
-            return PostType.ARTICLE
-
-        # 标准化类型名称（转为小写）
-        post_type = post_type.lower()
-
-        # 验证类型是否有效（比较枚举的值）
-        if post_type == PostType.ARTICLE:
-            return PostType.ARTICLE
-        elif post_type == PostType.IDEA:
-            return PostType.IDEA
-
-        logger.warning(f"Invalid post_type '{post_type}', defaulting to ARTICLE")
-        return PostType.ARTICLE
-
-    def _resolve_status(self, meta: Dict[str, Any]) -> str:
-        """解析文章状态
-
-        优先级：
-        1. status 字段（直接指定状态）
-        2. published 字段（布尔值，向后兼容）
-        3. 默认为 PUBLISHED（Git 文件通常是已发布内容）
-        """
-        status = meta.get("status")
-        if status:
-            # 验证状态值是否有效
-            if status.upper() in [PostStatus.DRAFT, PostStatus.PUBLISHED]:
-                return status.upper()
-            logger.warning(f"Invalid status '{status}', defaulting to PUBLISHED")
-
-        # 向后兼容：published 布尔字段
-        published = meta.get("published")
-        if published is False:
-            return PostStatus.DRAFT
-        if published is True:
-            return PostStatus.PUBLISHED
-
-        # 默认为已发布（Git 文件通常是已发布内容）
-        return PostStatus.PUBLISHED
-
-    def _resolve_date(self, meta: Dict[str, Any]) -> Optional[datetime]:
-        """解析发布日期
-
-        优先级：
-        1. date 字段
-        2. published_at 字段
-        3. 如果都没有且状态为 PUBLISHED，使用当前时间
-        4. 如果状态为 DRAFT，返回 None
-
-        支持的日期格式：
-        - ISO 8601: "2024-01-15T10:30:00"
-        - 日期字符串: "2024-01-15"
-        - datetime 对象（YAML 自动解析）
-        """
-        date_value = meta.get("date") or meta.get("published_at")
-
-        # 如果已经是 datetime 对象（YAML 解析器可能自动转换）
-        if isinstance(date_value, datetime):
-            return date_value
-
-        # 如果是字符串，尝试解析
-        if isinstance(date_value, str):
-            try:
-                # 尝试 ISO 格式解析
-                return datetime.fromisoformat(date_value.replace("Z", "+00:00"))
-            except ValueError:
-                try:
-                    # 尝试只有日期的格式 (YYYY-MM-DD)
-                    return datetime.strptime(date_value, "%Y-%m-%d")
-                except ValueError:
-                    logger.warning(
-                        f"Failed to parse date '{date_value}', using current time"
-                    )
-
-        # 如果没有指定日期
-        # - 已发布状态：使用当前时间
-        # - 草稿状态：返回 None
-        status = self._resolve_status(meta)
-        if status == PostStatus.PUBLISHED:
-            return datetime.now()
-
-        return None

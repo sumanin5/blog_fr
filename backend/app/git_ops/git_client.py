@@ -3,11 +3,9 @@ import logging
 from pathlib import Path
 from typing import List, Tuple
 
+from app.git_ops.exceptions import GitError, NotGitRepositoryError
+
 logger = logging.getLogger(__name__)
-
-
-class GitError(Exception):
-    pass
 
 
 class GitClient:
@@ -19,27 +17,22 @@ class GitClient:
     async def run(self, *args: str) -> Tuple[int, str, str]:
         """运行 git 命令 (非阻塞)"""
         cmd = ["git"] + list(args)
-        try:
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                cwd=self.repo_path,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, stderr = await process.communicate()
-            return process.returncode, stdout.decode().strip(), stderr.decode().strip()
-        except FileNotFoundError:
-            raise GitError("git command not found. Please install git.")
-        except Exception as e:
-            raise GitError(f"Error executing git command: {e}")
+        process = await asyncio.create_subprocess_exec(
+            *cmd,  # 执行命令
+            cwd=self.repo_path,  # 执行命令的位置
+            stdout=asyncio.subprocess.PIPE,  # 捕获标准输出
+            stderr=asyncio.subprocess.PIPE,  # 捕获标准错误
+        )
+        # 异步启动子进程
+        stdout, stderr = await process.communicate()
+        return (process.returncode, stdout.decode().strip(), stderr.decode().strip())
 
     async def pull(self) -> str:
         """执行 git pull"""
         code, out, err = await self.run("pull")
-        if code != 0:
-            # 常见错误处理
+        if code != 0:  # 如果失败
             if "not a git repository" in err.lower():
-                raise GitError("Not a git repository")
+                raise NotGitRepositoryError()
             raise GitError(f"Git pull failed: {err}")
         return out
 

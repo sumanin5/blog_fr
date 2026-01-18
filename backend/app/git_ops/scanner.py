@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import frontmatter
+from app.posts.model import PostType
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,12 @@ class ScannedPost(BaseModel):
     frontmatter: Dict[str, Any] = Field(default_factory=dict)
     content: str = Field(description="正文内容")
     updated_at: float = Field(description="文件系统修改时间戳")
+    derived_post_type: Optional[str] = Field(
+        default=None, description="从路径推断的文章类型"
+    )
+    derived_category_slug: Optional[str] = Field(
+        default=None, description="从路径推断的分类Slug"
+    )
 
 
 class MDXScanner:
@@ -32,8 +39,54 @@ class MDXScanner:
             content = content.encode("utf-8")
         return hashlib.sha256(content).hexdigest()
 
+    def _parse_path_info(self, rel_path: str) -> Dict[str, Optional[str]]:
+        """
+        解析文件路径，提取 post_type 和 category
+
+        规则：
+        - {post_type_plural}/{category_slug}/{filename} -> {type, category}
+        - {post_type_plural}/{filename} -> {type, category=None}
+        - {filename} -> {type=None, category=None}
+
+        映射：
+        - 动态支持 PostType 枚举中的值及其复数形式(加s)
+        - 例如: articles -> article, ideas -> idea
+        """
+        path = Path(rel_path)
+        parts = path.parts
+
+        # 动态构建映射：支持单数和复数(简单+s)
+        type_mapping = {}
+        for t in PostType:
+            val = t.value
+            type_mapping[val] = val  # 支持单数目录 "article"
+            type_mapping[f"{val}s"] = val  # 支持复数目录 "articles"
+
+        if len(parts) >= 3:
+            # content/articles/tech/post.mdx -> parts=('articles', 'tech', 'post.mdx')
+            # 假设 rel_path 是相对于 content_root 的
+            dir_type = parts[0]
+            category_slug = parts[1]
+            post_type = type_mapping.get(dir_type)
+            return {
+                "post_type": post_type,  # 如果不是 articles/ideas，则为 None
+                "category_slug": category_slug,
+            }
+
+        elif len(parts) == 2:
+            # content/articles/post.mdx -> parts=('articles', 'post.mdx')
+            dir_type = parts[0]
+            post_type = type_mapping.get(dir_type)
+            return {
+                "post_type": post_type,
+                "category_slug": None,  # 可能需要 default_category，但这里只返回解析结果
+            }
+
+        return {"post_type": None, "category_slug": None}
+
     async def scan_file(self, rel_path: str) -> Optional[ScannedPost]:
         """解析单个文件"""
+
         full_path = self.content_root / rel_path
         if not full_path.exists():
             return None
@@ -61,6 +114,9 @@ class MDXScanner:
             meta_str = json.dumps(post.metadata, sort_keys=True, default=str)
             meta_hash = self._calc_hash(meta_str)
 
+            # 4. 路径解析
+            path_info = self._parse_path_info(rel_path)
+
             return ScannedPost(
                 file_path=str(rel_path),
                 content_hash=content_hash,
@@ -68,6 +124,8 @@ class MDXScanner:
                 frontmatter=post.metadata,
                 content=post.content,
                 updated_at=full_path.stat().st_mtime,
+                derived_post_type=path_info["post_type"],
+                derived_category_slug=path_info["category_slug"],
             )
         except Exception as e:
             logger.error(f"Error scanning {rel_path}: {e}")
