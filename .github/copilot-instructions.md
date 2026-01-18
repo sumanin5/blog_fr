@@ -171,4 +171,17 @@ const { data } = useQuery({
 
 ---
 
+## 🧠 Agent Skills
+
+项目已将核心领域知识模块化，在执行特定任务前，请务必参考以下技能手册：
+
+- **[Project Conventions](.github/skills/project-conventions/SKILL.md)**: 全局技术栈（uv, pnpm, Next.js, shadcn）与代码架构准则。
+- **[Project Workflow](.github/skills/project-workflow/SKILL.md)**: 本地与 Docker 环境启动、初始化流程及日常开发循环。
+- **[Task Automation](.github/skills/task-automation/SKILL.md)**: 数据库迁移、API SDK 生成、Git 内容同步等脚本的使用说明。
+- **[Frontend Data Flow](.github/skills/frontend-data-flow/SKILL.md)**: TanStack Query 模型、Query Keys 定义及前端请求最佳实践。
+- **[MDX Management](.github/skills/mdx-management/SKILL.md)**: MDX 渲染架构、自定义组件扩展及 Frontmatter 处理。
+- **[UI Development](.github/skills/ui-development/SKILL.md)**: shadcn/ui 集成规范、Tailwind 4.0 样式标准及动画原则。
+
+---
+
 **Package Managers**: Backend → `uv` ([pyproject.toml](../backend/pyproject.toml)), Frontend → `pnpm` ([package.json](../frontend/package.json))

@@ -48,7 +48,7 @@ async def test_create_post_draft(
     assert data["title"] == "草稿文章"
     assert data["status"] == "draft"
     assert data["slug"] is not None  # 自动生成 slug
-    assert data["content_html"] is not None  # 自动生成 HTML
+    assert data["content_ast"] is not None  # 自动生成 AST
     assert data["toc"] is not None  # 自动生成目录
 
 

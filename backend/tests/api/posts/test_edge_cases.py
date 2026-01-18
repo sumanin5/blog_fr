@@ -673,10 +673,10 @@ async def test_preview_with_empty_content(
         headers=normal_user_token_headers,
     )
 
-    # 应该返回空的HTML
+    # 应该返回空的AST
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert "content_html" in data
+    assert "content_ast" in data
 
 
 @pytest.mark.asyncio
@@ -707,7 +707,7 @@ async def test_preview_with_math_equations(
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     # 应该包含处理后的数学公式
-    assert "content_html" in data
+    assert "content_ast" in data
 
 
 @pytest.mark.asyncio
@@ -739,5 +739,5 @@ async def test_preview_with_code_blocks(
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert "content_html" in data
-    # 应该包含代码块的HTML
+    assert "content_ast" in data
+    # 应该包含代码块的AST

@@ -60,6 +60,8 @@ markers = [
     "users: mark test as a users module test",
     "permissions: mark test as a permissions related test",
     "media: mark test as a media module test",
+    "posts: mark test as a posts module test",
+    "git_ops: mark test as a git_ops module test",
 
 ]
 

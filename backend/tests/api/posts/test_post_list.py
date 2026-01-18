@@ -169,7 +169,7 @@ async def test_get_posts_list_performance(
     # 验证列表项不包含大字段
     for post in data["items"]:
         assert "content_mdx" not in post
-        assert "content_html" not in post
+        assert "content_ast" not in post
         assert "toc" not in post
 
 

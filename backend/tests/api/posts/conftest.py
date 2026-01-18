@@ -231,7 +231,7 @@ async def admin_post(
         slug="admin-post",
         excerpt="管理员的文章",
         content_mdx="# 管理员\n\n内容",
-        content_html="<h1>管理员</h1><p>内容</p>",
+        content_ast={"type": "root", "children": []},
         post_type=PostType.ARTICLE,
         status=PostStatus.PUBLISHED,
         author_id=admin_user.id,
@@ -260,7 +260,7 @@ async def multiple_posts(
             slug=f"post-{i}",
             excerpt=f"摘要 {i}",
             content_mdx=f"# 标题 {i}\n\n内容",
-            content_html=f"<h1>标题 {i}</h1><p>内容</p>",
+            content_ast={"type": "root", "children": []},
             post_type=PostType.ARTICLE,
             status=PostStatus.PUBLISHED,
             author_id=normal_user.id,
@@ -275,7 +275,7 @@ async def multiple_posts(
         slug="admin-post-list",
         excerpt="管理员的文章",
         content_mdx="# 管理员\n\n内容",
-        content_html="<h1>管理员</h1><p>内容</p>",
+        content_ast={"type": "root", "children": []},
         post_type=PostType.ARTICLE,
         status=PostStatus.PUBLISHED,
         author_id=admin_user.id,
@@ -303,7 +303,7 @@ async def post_with_tags(
         slug="post-with-tags",
         excerpt="这篇文章有标签",
         content_mdx="# 标题\n\n内容",
-        content_html="<h1>标题</h1><p>内容</p>",
+        content_ast={"type": "root", "children": []},
         post_type=PostType.ARTICLE,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
@@ -345,7 +345,7 @@ def assert_post_list_item(data: dict):
     assert "excerpt" in data
     # 列表查询不应该包含正文
     assert "content_mdx" not in data
-    assert "content_html" not in data
+    assert "content_ast" not in data
     assert "toc" not in data
 
 

@@ -50,8 +50,7 @@ async def test_preview_post(
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert "content_html" in data
-    assert "<h1>Hello Preview</h1>" in data["content_html"]
+    assert "content_ast" in data
 
 
 @pytest.mark.asyncio

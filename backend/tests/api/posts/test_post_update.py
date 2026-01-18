@@ -66,7 +66,7 @@ async def test_update_post_content(
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["content_mdx"] == "# 新标题\n\n新内容"
-    assert data["content_html"] is not None  # 应该自动更新 HTML
+    assert data["content_ast"] is not None  # 应该自动更新 AST
 
 
 @pytest.mark.asyncio
