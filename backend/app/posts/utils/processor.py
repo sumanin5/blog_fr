@@ -21,8 +21,10 @@ from .markdown_renderer import setup_markdown_renderer
 class PostProcessor:
     """MDX 文章处理器"""
 
-    def __init__(self, raw_content: str):
+    def __init__(self, raw_content: str, mdx_path: str = None, session=None):
         self.raw_content = raw_content
+        self.mdx_path = mdx_path
+        self.session = session
         self.metadata: Dict[str, Any] = {}
         self.content_mdx: str = ""
         self.content_ast: Dict[str, Any] = {}  # AST 结构
@@ -51,12 +53,16 @@ class PostProcessor:
         """检测整个文档是否包含 JSX/TSX 组件"""
         return self._is_jsx_syntax(self.content_mdx)
 
-    def process(self) -> "PostProcessor":
+    async def process(self) -> "PostProcessor":
         """执行完整处理流水线"""
         # 1. 拆分 Frontmatter 和正文
         post_data = frontmatter.loads(self.raw_content)
         self.metadata = post_data.metadata
         self.content_mdx = post_data.content
+
+        # 1.5 处理正文中的本地图片并上传 (仅在提供 session 和 mdx_path 时)
+        if self.session and self.mdx_path:
+            self.content_mdx = await self._process_images(self.content_mdx)
 
         # 2. 生成目录（在处理前，基于原始 Markdown）
         self.toc = generate_toc(self.content_mdx)
@@ -121,3 +127,80 @@ class PostProcessor:
             r"=\{[^}]+\}",  # 任何属性={...}
         ]
         return any(re.search(pattern, content) for pattern in jsx_patterns)
+
+    async def _process_images(self, content: str) -> str:
+        """解析并替换正文中的本地图片"""
+        import asyncio
+        from pathlib import Path
+
+        from app.core.config import settings
+        from app.media import service as media_service
+        from app.users import crud as user_crud
+
+        # 匹配 Markdown 图片: ![alt](path)
+        img_pattern = r"!\[(.*?)\]\((.*?)\)"
+
+        # 记录已处理的图片映射，避免同一篇文章重复处理同路径
+        processed_map = {}
+
+        matches = re.findall(img_pattern, content)
+        if not matches:
+            return content
+
+        for alt, img_path in matches:
+            # 过滤网络链接
+            if img_path.startswith(("http://", "https://", "/media/")):
+                continue
+
+            # 如果已经处理过这个路径，直接替换
+            if img_path in processed_map:
+                content = content.replace(
+                    f"({img_path})", f"({processed_map[img_path]})"
+                )
+                continue
+
+            try:
+                # 定位物理文件
+                content_root = Path(settings.CONTENT_DIR)
+                mdx_abs_path = content_root / self.mdx_path
+                img_abs_path = (mdx_abs_path.parent / img_path).resolve()
+
+                # 安全检查：确保文件在内容根目录下且存在
+                if (
+                    img_abs_path.exists()
+                    and img_abs_path.is_file()
+                    and str(img_abs_path).startswith(str(content_root))
+                ):
+                    admin = await user_crud.get_superuser(self.session)
+                    if not admin:
+                        continue
+
+                    # 读取内容
+                    file_bytes = await asyncio.to_thread(img_abs_path.read_bytes)
+
+                    # 使用 media_service 自动去重上传
+                    media = await media_service.create_media_file(
+                        file_content=file_bytes,
+                        filename=img_abs_path.name,
+                        uploader_id=admin.id,
+                        session=self.session,
+                        usage="attachment",
+                        is_public=True,
+                        description=f"Auto-ingested from post: {self.mdx_path}",
+                    )
+
+                    # 生成服务器 URL（这里我们不使用 ID 方案，直接用 file_path 方案保证预览一致性）
+                    new_url = f"{settings.MEDIA_URL}{media.file_path}"
+                    processed_map[img_path] = new_url
+
+                    # 替换正文中的链
+                    content = content.replace(f"({img_path})", f"({new_url})")
+
+            except Exception as e:
+                import logging
+
+                logging.getLogger(__name__).error(
+                    f"Failed to process inline image {img_path}: {e}"
+                )
+
+        return content

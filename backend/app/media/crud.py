@@ -57,6 +57,15 @@ async def get_media_file_by_path(
     return media_file
 
 
+async def get_media_file_by_hash(
+    session: AsyncSession, content_hash: str
+) -> Optional[MediaFile]:
+    """根据内容哈希获取媒体文件 (用于去重)"""
+    stmt = select(MediaFile).where(MediaFile.content_hash == content_hash)
+    result = await session.execute(stmt)
+    return result.scalars().first()
+
+
 async def update_media_file(
     session: AsyncSession, media_file: MediaFile, update_data: MediaFileUpdate
 ) -> MediaFile:

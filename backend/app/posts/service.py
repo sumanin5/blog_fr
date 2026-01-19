@@ -37,6 +37,53 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 logger = logging.getLogger(__name__)
 
 
+async def _sync_to_disk(
+    session: AsyncSession, post_id: UUID, old_source_path: str = None
+):
+    """
+    辅助函数：将文章同步写入到物理磁盘（反向同步）
+    """
+    try:
+        from app.git_ops.writer import FileWriter
+
+        # 重新查询以确保加载所有关系（Tags, Category）
+        # 使用 select IN 预加载（虽然 crud.get_post_by_id 应该已经做了，但再次确保）
+        post = await crud.get_post_by_id(session, post_id)
+        if not post:
+            return
+
+        writer = FileWriter()
+
+        # 准备数据
+        tag_names = [t.name for t in post.tags]
+        category_slug = post.category.slug if post.category else "uncategorized"
+
+        # 构造一个临时的 old_post 对象用于传递 source_path
+        # 只需要 source_path 字段
+        old_post_stub = None
+        if old_source_path:
+            old_post_stub = type("PostStub", (), {"source_path": old_source_path})()
+
+        # 执行写入
+        relative_path = await writer.write_post(
+            post, old_post=old_post_stub, category_slug=category_slug, tags=tag_names
+        )
+
+        # 如果计算出的路径与当前数据库记录不一致，更新数据库
+        if post.source_path != relative_path:
+            logger.info(
+                f"Updating source_path for post {post.id}: {post.source_path} -> {relative_path}"
+            )
+            post.source_path = relative_path
+            session.add(post)
+            await session.commit()
+            await session.refresh(post)
+
+    except Exception as e:
+        logger.error(f"Failed to sync post {post_id} to disk: {e}")
+        # 不抛出异常，以免阻断 API 响应
+
+
 async def generate_unique_slug(
     session: AsyncSession, title: str, post_id: Optional[UUID] = None
 ) -> str:
@@ -166,6 +213,15 @@ async def delete_post(session: AsyncSession, post_id: UUID, current_user: User) 
     if not current_user.is_superadmin and post.author_id != current_user.id:
         raise InsufficientPermissionsError("只能删除自己的文章")
 
+    # 尝试删除物理文件 (Git-First 反向同步)
+    try:
+        from app.git_ops.writer import FileWriter
+
+        writer = FileWriter()
+        await writer.delete_post(post)
+    except Exception as e:
+        logger.error(f"Failed to delete physical file for post {post.id}: {e}")
+
     await session.delete(post)
     await session.commit()
     logger.info(f"文章已删除: {post.id} by user {current_user.id}")
@@ -176,21 +232,17 @@ async def create_post(
     post_in: PostCreate,
     author_id: UUID,
     preserve_slug: bool = False,
+    source_path: str = None,
 ) -> Post:
     """
     创建文章流水线
-    1. 校验分类与板块匹配性
-    2. 解析 MDX (Frontmatter, TOC, MathML, Reading Time)
-    3. 如果 Frontmatter 中有元数据，优先覆盖请求数据
-    4. 生成唯一 Slug
-    5. 保存核心数据
-    6. 自动同步标签
-
+    ... (保持注释一致)
     Args:
         session: 数据库会话
         post_in: 文章创建数据
         author_id: 作者ID
         preserve_slug: 是否保留原始 slug（Git 同步时使用）
+        source_path: Git 源代码文件相对路径 (用于解析正文图片)
     """
     # 1. 校验分类与板块逻辑隔离
     if post_in.category_id:
@@ -203,7 +255,10 @@ async def create_post(
             )
 
     # 2. 解析 MDX 内容
-    processor = PostProcessor(post_in.content_mdx).process()
+    processor = PostProcessor(
+        post_in.content_mdx, mdx_path=source_path, session=session
+    )
+    await processor.process()
 
     # 3. 合并元数据与请求数据
     metadata = processor.metadata
@@ -251,6 +306,12 @@ async def create_post(
     if "keywords" in metadata:
         db_post.meta_keywords = metadata["keywords"]
 
+    # 渲染模式配置 (从 Frontmatter 读取)
+    if "enable_jsx" in metadata:
+        db_post.enable_jsx = bool(metadata["enable_jsx"])
+    if "use_server_rendering" in metadata:
+        db_post.use_server_rendering = bool(metadata["use_server_rendering"])
+
     session.add(db_post)
     await session.flush()  # 拿到 ID 以便处理标签
 
@@ -263,12 +324,23 @@ async def create_post(
     await session.commit()
     # 使用 CRUD 层重新查询（带关联预加载），避免懒加载问题
     db_post = await crud.get_post_by_id(session, db_post.id)
+
+    # 7. 反向同步：如果不是从 Git 同步（即 source_path 为 None），则写入磁盘
+    if source_path is None:
+        await _sync_to_disk(session, db_post.id)
+        # _sync_to_disk 可能提交了事务，导致对象过期，重新加载以确保关系可用
+        db_post = await crud.get_post_by_id(session, db_post.id)
+
     logger.info(f"文章创建成功: {db_post.title} (ID: {db_post.id})")
     return db_post
 
 
 async def update_post(
-    session: AsyncSession, post_id: UUID, post_in: PostUpdate, current_user: User
+    session: AsyncSession,
+    post_id: UUID,
+    post_in: PostUpdate,
+    current_user: User,
+    source_path: str = None,
 ) -> Post:
     """更新文章（带细粒度权限检查）
 
@@ -277,10 +349,7 @@ async def update_post(
         post_id: 文章ID
         post_in: 更新数据
         current_user: 当前用户
-
-    Raises:
-        PostNotFoundError: 文章不存在
-        InsufficientPermissionsError: 权限不足（非作者且非超级管理员）
+        source_path: Git 源代码文件相对路径 (用于解析正文图片)
     """
 
     db_post = await crud.get_post_by_id(session, post_id)
@@ -290,6 +359,38 @@ async def update_post(
     # 细粒度权限检查：超级管理员可以修改任何文章，普通用户只能修改自己的
     if not current_user.is_superadmin and db_post.author_id != current_user.id:
         raise InsufficientPermissionsError("只能修改自己的文章")
+
+    # 捕获旧的路径，用于重命名检测
+    old_source_path = db_post.source_path
+
+    # 如果有正文更新，需要处理图片并同步派生字段
+    if post_in.content_mdx is not None:
+        processor = PostProcessor(
+            post_in.content_mdx, mdx_path=source_path, session=session
+        )
+        await processor.process()
+
+        # 更新处理后的正文及派生字段
+        db_post.content_mdx = processor.content_mdx
+        db_post.content_ast = processor.content_ast
+        db_post.toc = processor.toc
+        db_post.reading_time = processor.reading_time
+        # 即使 MDX 里没写摘要，如果正文变了也尝试重刷一下
+        db_post.excerpt = processor.excerpt or processor.metadata.get(
+            "excerpt", db_post.excerpt
+        )
+
+        # 同步 MDX 中的标签（如果存在）
+        if "tags" in processor.metadata:
+            await sync_post_tags(session, db_post, processor.metadata["tags"])
+
+        # 同步渲染配置 (从 Frontmatter 读取)
+        if "enable_jsx" in processor.metadata:
+            db_post.enable_jsx = bool(processor.metadata["enable_jsx"])
+        if "use_server_rendering" in processor.metadata:
+            db_post.use_server_rendering = bool(
+                processor.metadata["use_server_rendering"]
+            )
 
     update_data = post_in.model_dump(exclude_unset=True)
 
@@ -317,21 +418,8 @@ async def update_post(
                     f"分类 '{category.name}' (类型:{category.post_type}) 与文章类型 '{new_post_type}' 不匹配"
                 )
 
-    # 2. 如果更新了内容，重新解析 MDX
-    if "content_mdx" in update_data:
-        processor = PostProcessor(update_data["content_mdx"]).process()
-        db_post.content_mdx = processor.content_mdx
-        db_post.content_ast = processor.content_ast
-        db_post.toc = processor.toc
-        db_post.reading_time = processor.reading_time
-        # 即使 MDX 里没写摘要，如果正文变了且 db 里摘要是自动生成的，也重刷一下
-        db_post.excerpt = processor.excerpt or processor.metadata.get(
-            "excerpt", db_post.excerpt
-        )
-
-        # 同步标签
-        if "tags" in processor.metadata:
-            await sync_post_tags(session, db_post, processor.metadata["tags"])
+    # 2. 如果更新了内容，重新解析 MDX (逻辑已在上方合并处理)
+    pass
 
     # 3. 处理发布时间
     if update_data.get("status") == PostStatus.PUBLISHED and not db_post.published_at:
@@ -352,6 +440,13 @@ async def update_post(
     await session.refresh(db_post, attribute_names=["category", "tags"])
     # 使用 CRUD 层重新查询（带关联预加载），确保所有字段（包括 author 等）都已加载
     db_post = await crud.get_post_by_id(session, db_post.id)
+
+    # 6. 反向同步：如果不是从 Git 同步（即 source_path 为 None），则写入磁盘
+    if source_path is None:
+        await _sync_to_disk(session, db_post.id, old_source_path=old_source_path)
+        # _sync_to_disk 可能提交了事务，导致对象过期，重新加载以确保关系可用
+        db_post = await crud.get_post_by_id(session, db_post.id)
+
     logger.info(f"文章更新成功: {db_post.title}")
     return db_post
 

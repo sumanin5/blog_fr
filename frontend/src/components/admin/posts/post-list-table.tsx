@@ -180,35 +180,21 @@ export function PostListTable({
                           <Eye className="mr-2 h-4 w-4" /> 查看原文
                         </Link>
                       </DropdownMenuItem>
-                      {post.source_path ? (
-                        <DropdownMenuItem disabled>
-                          <Lock className="mr-2 h-4 w-4 opacity-50" />
-                          Git托管(不可编辑)
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/admin/posts/${post.post_type}/edit/${post.id}`}
-                            className="flex items-center"
-                          >
-                            <Edit className="mr-2 h-4 w-4" /> 编辑修改
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      {post.source_path ? (
-                        <DropdownMenuItem disabled>
-                          <Lock className="mr-2 h-4 w-4 opacity-50" />
-                          Git托管(不可删除)
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem
-                          onClick={() => setDeletingPost(post)}
-                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/admin/posts/${post.post_type}/edit/${post.id}`}
+                          className="flex items-center"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" /> 删除文章
-                        </DropdownMenuItem>
-                      )}
+                          <Edit className="mr-2 h-4 w-4" /> 编辑修改
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => setDeletingPost(post)}
+                        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> 删除文章
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

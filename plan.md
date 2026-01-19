@@ -4,6 +4,10 @@
 
 ## ✅ 已完成功能 (Completed)
 
+### 0. 架构核心理念 (Core Philosophy) ⭐️⭐️⭐️
+- [x] **Git 为唯一真理来源**: 确立 `content/` 目录下的 MDX 文件为系统的绝对权威，数据库仅作为高性能索引和缓存。
+- [x] **Web UI 作为 Git 客户端**: 网页端的编辑/删除操作本质上是模拟本地 Git 操作（修改文件 + Commit/Push），保持物理与逻辑的高度统一。
+
 ### 1. 管理后台基础架构 (Admin Foundation)
 
 - [x] **侧边栏 (Admin Sidebar)**: 基于 Shadcn/UI 构建，自适应导航，支持超级管理员/普通用户角色权限识别。
@@ -68,14 +72,17 @@
 ## 🚀 核心架构升级 (Architectural Evolution) - **重点关注** ⭐️⭐️⭐️
 
 ### 1. 统一数据流架构: "Git-First" 双向同步
-**设计目标**：确立 `content/` 目录为 Single Source of Truth。无论是在线编辑还是本地编辑，最终都汇聚于此。
+**设计目标**：确立 `content/` 目录为 Single Source of Truth。无论是在线编辑还是本地编辑，最终都汇聚于此。满足“代码公开、内容私有”的安全性需求。
 
 **数据流向**：
 1. **在线编辑加载 (Load)**: `在线编辑器` -> `后端读取物理磁盘 (content/目录)` -> `解析 MDX & Frontmatter` -> `返回前端编辑器`。*（注：不经过数据库，确保实时获取磁盘最新内容）*
-2. **在线编辑保存 (Save)**: `在线编辑器 (Web)` -> `MDX 序列化` -> `物理磁盘 (content/目录)` -> `触发自动化 Git 同步 (Auto Sync)` -> `更新数据库 (DB)`。
+2. **在线编辑保存 (Save)**: `在线编辑器 (Web)` -> `MDX 序列化` -> `物理磁盘 (content/目录)` -> `触发自动化 Git 提交 (Commit/Push)` -> `触发数据库同步`。
 3. **本地编辑流 (Local)**: `本地 IDE (VS Code)` -> `物理磁盘 (content/目录)` -> `手动/Webhook 触发 Git 同步` -> `更新数据库 (DB)`。
 
 **关键任务**：
+- [ ] **“代码与内容分离”方案实现 (Privacy & Decoupling)**:
+  - [ ] **Git Submodule 策略**: 将 `content/` 独立为私有仓库，通过 Submodule 或运行时挂载方式接入代码框架。
+  - [ ] **安全部署流水线**: 优化 GitHub Actions，确保在公开展示框架的同时，私密内容（文章、图片）仅在生产环境（阿里云）通过凭证拉取，不进入公开镜像。
 - [ ] **物理磁盘读取器 (Disk Loader)**:
   - [ ] 创建按路径读取 MDX 文件的专用 API，支持实时解析 Frontmatter 为编辑器表单数据。
   - [ ] 处理文件锁定或并发编辑冲突（可选）。

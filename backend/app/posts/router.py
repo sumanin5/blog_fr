@@ -17,6 +17,7 @@ from typing import Annotated, List, Optional
 from uuid import UUID
 
 from app.core.db import get_async_session
+from app.git_ops.service import run_background_commit
 from app.posts import crud, service, utils
 from app.posts.dependencies import PostFilterParams
 from app.posts.model import PostStatus, PostType
@@ -40,7 +41,7 @@ from app.users.dependencies import (
     get_optional_current_user,
 )
 from app.users.model import User
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, status
 from fastapi_pagination import Page, Params
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -68,7 +69,7 @@ async def get_post_types():
 @router.post("/preview", response_model=PostPreviewResponse, summary="文章实时预览")
 async def preview_post(request: PostPreviewRequest):
     """预览 MDX 内容（转换 Markdown -> HTML）"""
-    return utils.PostProcessor(request.content_mdx).process()
+    return await utils.PostProcessor(request.content_mdx).process()
 
 
 # ========================================
@@ -403,6 +404,7 @@ async def create_post_by_type(
     post_in: PostCreate,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    background_tasks: BackgroundTasks,
 ):
     """创建新文章（需要登录）
 
@@ -412,7 +414,12 @@ async def create_post_by_type(
     """
     # 确保 post_type 匹配
     post_in.post_type = post_type
-    return await service.create_post(session, post_in, current_user.id)
+    post = await service.create_post(session, post_in, current_user.id)
+
+    # 触发自动提交
+    background_tasks.add_task(run_background_commit, f"Create post: {post.title}")
+
+    return post
 
 
 @router.patch(
@@ -424,6 +431,7 @@ async def update_post_by_type(
     post_in: PostUpdate,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    background_tasks: BackgroundTasks,
 ):
     """更新文章（需要是作者或超级管理员）
 
@@ -431,7 +439,12 @@ async def update_post_by_type(
     - PATCH /posts/article/{post_id}
     - PATCH /posts/idea/{post_id}
     """
-    return await service.update_post(session, post_id, post_in, current_user)
+    post = await service.update_post(session, post_id, post_in, current_user)
+
+    # 触发自动提交
+    background_tasks.add_task(run_background_commit, f"Update post: {post.title}")
+
+    return post
 
 
 @router.delete(
@@ -442,6 +455,7 @@ async def delete_post_by_type(
     post_id: UUID,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    background_tasks: BackgroundTasks,
 ):
     """删除文章（需要是作者或超级管理员）
 
@@ -450,6 +464,10 @@ async def delete_post_by_type(
     - DELETE /posts/idea/{post_id}
     """
     await service.delete_post(session, post_id, current_user)
+
+    # 触发自动提交
+    background_tasks.add_task(run_background_commit, f"Delete post: {post_id}")
+
     return None
 
 

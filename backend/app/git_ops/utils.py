@@ -334,12 +334,14 @@ async def resolve_cover_media_id(
                     import asyncio
 
                     file_content = await asyncio.to_thread(img_abs_path.read_bytes)
+                    from app.media.model import FileUsage
+
                     media = await media_service.create_media_file(
                         file_content=file_content,
                         filename=filename,
                         uploader_id=admin.id,
                         session=session,
-                        usage="post_cover",
+                        usage=FileUsage.COVER,
                         is_public=True,
                         description=f"Auto-uploaded from git: {mdx_file_path}",
                     )
@@ -501,7 +503,11 @@ async def handle_post_update(
 
     post_in = PostUpdate(**update_dict)
     updated_post = await post_service.update_post(
-        session, matched_post.id, post_in, current_user=operating_user
+        session,
+        matched_post.id,
+        post_in,
+        current_user=operating_user,
+        source_path=file_path,
     )
     await session.refresh(updated_post)
 
@@ -542,7 +548,10 @@ async def handle_post_create(
 
     post_in = PostCreate(**create_dict)
     created_post = await post_service.create_post(
-        session, post_in, author_id=create_dict["author_id"]
+        session,
+        post_in,
+        author_id=create_dict["author_id"],
+        source_path=file_path,
     )
 
     await write_post_ids_to_frontmatter(

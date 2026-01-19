@@ -73,3 +73,26 @@ class GitClient:
             path = line[3:].strip()
             results.append((status_code, path))
         return results
+
+    async def add(self, paths: List[str]):
+        """执行 git add"""
+        if not paths:
+            return
+        code, out, err = await self.run("add", *paths)
+        if code != 0:
+            raise GitError(f"Git add failed: {err}")
+
+    async def commit(self, message: str):
+        """执行 git commit"""
+        code, out, err = await self.run("commit", "-m", message)
+        if code != 0:
+            # 如果是 nothing to commit，忽略错误
+            if "nothing to commit" in out.lower() or "nothing to commit" in err.lower():
+                return
+            raise GitError(f"Git commit failed: {err}")
+
+    async def push(self):
+        """执行 git push"""
+        code, out, err = await self.run("push")
+        if code != 0:
+            raise GitError(f"Git push failed: {err}")

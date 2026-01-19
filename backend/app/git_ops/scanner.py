@@ -66,8 +66,8 @@ class MDXScanner:
             # content/articles/tech/post.mdx -> parts=('articles', 'tech', 'post.mdx')
             # 假设 rel_path 是相对于 content_root 的
             dir_type = parts[0]
-            category_slug = parts[1]
-            post_type = type_mapping.get(dir_type)
+            category_slug = parts[1].lower()  # 分类 Slug 统一小写
+            post_type = type_mapping.get(dir_type.lower())
             return {
                 "post_type": post_type,  # 如果不是 articles/ideas，则为 None
                 "category_slug": category_slug,
@@ -76,7 +76,7 @@ class MDXScanner:
         elif len(parts) == 2:
             # content/articles/post.mdx -> parts=('articles', 'post.mdx')
             dir_type = parts[0]
-            post_type = type_mapping.get(dir_type)
+            post_type = type_mapping.get(dir_type.lower())
             return {
                 "post_type": post_type,
                 "category_slug": None,  # 可能需要 default_category，但这里只返回解析结果
@@ -129,7 +129,7 @@ class MDXScanner:
             )
         except Exception as e:
             logger.error(f"Error scanning {rel_path}: {e}")
-            return None
+            raise ScanError(rel_path, str(e))
 
     async def scan_all(self, glob_patterns: List[str] = None) -> List[ScannedPost]:
         """扫描所有匹配的文件

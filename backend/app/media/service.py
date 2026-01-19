@@ -68,6 +68,16 @@ async def create_media_file(
     """
     if len(file_content) == 0:
         raise UnsupportedFileTypeError("不能上传空文件")
+
+    # 0. 计算哈希并检查重复
+    import hashlib
+
+    content_hash = hashlib.sha256(file_content).hexdigest()
+    existing_media = await crud.get_media_file_by_hash(session, content_hash)
+    if existing_media:
+        logger.info(f"文件已存在 (Hash 命中): {filename} -> {existing_media.file_path}")
+        return existing_media
+
     # 1. 验证文件
     mime_type = get_mime_type(filename)
     media_type = detect_media_type_from_mime(mime_type)
@@ -95,6 +105,7 @@ async def create_media_file(
         is_public=is_public,
         description=description,
         alt_text=alt_text,
+        content_hash=content_hash,
     )
 
     # 4. 生成缩略图（如果是图片）

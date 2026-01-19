@@ -73,6 +73,12 @@ export function useCreatePost(postType: PostType) {
       contentMdx: string;
       cover_media_id?: string | null;
       category_id?: string | null;
+      status?: any; // PostStatus
+      tags?: string[];
+      is_featured?: boolean;
+      enable_jsx?: boolean;
+      use_server_rendering?: boolean;
+      excerpt?: string | null;
     }) =>
       createPostByType({
         path: { post_type: postType },
@@ -81,9 +87,14 @@ export function useCreatePost(postType: PostType) {
           slug: data.slug || undefined,
           content_mdx: data.contentMdx,
           post_type: postType,
-          status: "draft",
+          status: data.status || "draft",
           cover_media_id: data.cover_media_id,
           category_id: data.category_id,
+          tags: data.tags,
+          is_featured: data.is_featured,
+          enable_jsx: data.enable_jsx,
+          use_server_rendering: data.use_server_rendering,
+          excerpt: data.excerpt,
         },
       }),
     onSuccess: () => {
@@ -110,6 +121,12 @@ export function useUpdatePost(id: string, postType: PostType) {
       contentMdx: string;
       cover_media_id?: string | null;
       category_id?: string | null;
+      status?: any;
+      tags?: string[];
+      is_featured?: boolean;
+      enable_jsx?: boolean;
+      use_server_rendering?: boolean;
+      excerpt?: string | null;
     }) =>
       updatePostByType({
         path: { post_id: id, post_type: postType },
@@ -119,6 +136,12 @@ export function useUpdatePost(id: string, postType: PostType) {
           content_mdx: data.contentMdx,
           cover_media_id: data.cover_media_id,
           category_id: data.category_id,
+          status: data.status,
+          tags: data.tags,
+          is_featured: data.is_featured,
+          enable_jsx: data.enable_jsx,
+          use_server_rendering: data.use_server_rendering,
+          excerpt: data.excerpt,
         },
       }),
     onSuccess: () => {

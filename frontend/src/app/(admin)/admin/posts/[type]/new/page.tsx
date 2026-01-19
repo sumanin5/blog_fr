@@ -1,37 +1,37 @@
-"use client";
-
 import React from "react";
-import { useRouter, useParams } from "next/navigation";
-import { useCreatePost } from "@/shared/hooks/use-posts";
-import { PostEditor } from "@/components/admin/posts/post-editor";
-import { PostType } from "@/shared/api/generated";
+// 确保 API 客户端已在服务端配置
+import "@/shared/api/config";
+import {
+  listCategoriesByType,
+  listTagsByType,
+  PostType,
+} from "@/shared/api/generated";
+import { CreateView } from "./create-view";
 
-export default function NewPostByTypePage() {
-  const router = useRouter();
-  const params = useParams();
-  const postType = (params?.type as PostType) || "article";
+interface PageProps {
+  params: Promise<{
+    type: string;
+  }>;
+}
 
-  const mutation = useCreatePost(postType);
+export default async function NewPostByTypePage({ params }: PageProps) {
+  const { type } = await params;
+  const postType = (type as PostType) || "article";
 
-  // 成功后跳转逻辑
-  React.useEffect(() => {
-    if (mutation.isSuccess) {
-      router.push(`/admin/posts/${postType}/me`);
-    }
-  }, [mutation.isSuccess, router, postType]);
+  // 并行获取分类和标签
+  const [categoriesRes, tagsRes] = await Promise.all([
+    listCategoriesByType({
+      path: { post_type: postType },
+      query: { size: 100, include_inactive: true },
+    }).catch(() => ({ data: null })),
+    listTagsByType({
+      path: { post_type: postType },
+      query: { size: 100 },
+    }).catch(() => ({ data: null })),
+  ]);
 
-  return (
-    <div className="h-full">
-      <PostEditor
-        postType={postType as "article" | "idea"}
-        initialData={{
-          title: "",
-          slug: "",
-          contentMdx: "",
-        }}
-        onSave={(data) => mutation.mutate(data)}
-        isSaving={mutation.isPending}
-      />
-    </div>
-  );
+  const categories = categoriesRes.data?.items || [];
+  const tags = tagsRes.data?.items || [];
+
+  return <CreateView postType={postType} categories={categories} tags={tags} />;
 }

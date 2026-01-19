@@ -3,9 +3,15 @@ import { settings } from "@/config/settings";
 
 /**
  * 初始化 API 客户端
+ * 根据环境自动选择 Base URL
  */
+const baseUrl =
+  typeof window === "undefined"
+    ? settings.BACKEND_INTERNAL_URL
+    : settings.NEXT_PUBLIC_API_URL;
+
 client.setConfig({
-  baseUrl: settings.NEXT_PUBLIC_API_URL,
+  baseUrl: baseUrl,
 
   /**
    * 自定义 fetch 配置

@@ -82,6 +82,11 @@ class MediaFile(Base, table=True):
     # 处理状态
     is_processing: bool = Field(default=False, description="是否正在处理中")
 
+    # 哈希校验 (用于去重)
+    content_hash: Optional[str] = Field(
+        default=None, max_length=64, index=True, description="文件内容 SHA256"
+    )
+
     # 是否共享
     is_public: bool = Field(default=False, description="是否共享")
 

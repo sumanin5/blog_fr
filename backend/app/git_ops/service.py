@@ -317,3 +317,25 @@ async def run_background_sync():
         logger.error(f"Configuration error during sync: {e}")
     except Exception as e:
         logger.exception(f"Unexpected error during background sync: {e}")
+
+
+async def run_background_commit(message: str = "Auto-save from Admin"):
+    """
+    后台任务：执行 Git Add/Commit/Push
+    """
+    try:
+        content_dir = Path(settings.CONTENT_DIR)
+        if not content_dir.exists():
+            return
+
+        client = GitClient(content_dir)
+
+        # 只提交 content 目录下的变更，防止提交其他意外文件
+        # 但 GitClient 的 cwd 是 content_dir，所以 add . 就是 add content_dir
+        logger.info("Starting background auto-commit...")
+        await client.add(["."])
+        await client.commit(message)
+        await client.push()
+        logger.info("Background auto-commit finished successfully.")
+    except Exception as e:
+        logger.error(f"Background auto-commit failed: {e}")

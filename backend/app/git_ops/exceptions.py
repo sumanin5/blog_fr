@@ -65,3 +65,14 @@ class NotGitRepositoryError(GitError):
 
     def __init__(self):
         super().__init__("Not a git repository")
+
+
+class ScanError(GitOpsError):
+    """文件扫描失败"""
+
+    def __init__(self, file_path: str, message: str):
+        super().__init__(
+            message=f"Scan error in {file_path}: {message}",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code="SCAN_ERROR",
+        )

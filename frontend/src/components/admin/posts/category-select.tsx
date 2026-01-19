@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { useCategories } from "@/shared/hooks/use-categories";
-import { PostType } from "@/shared/api/generated";
+import { PostType, CategoryResponse } from "@/shared/api/generated";
 import {
   Select,
   SelectContent,
@@ -16,6 +15,8 @@ interface CategorySelectProps {
   postType: PostType;
   value?: string;
   onValueChange: (value: string) => void;
+  categories: CategoryResponse[];
+  isLoading?: boolean;
   className?: string;
 }
 
@@ -23,10 +24,10 @@ export function CategorySelect({
   postType,
   value,
   onValueChange,
+  categories,
+  isLoading = false,
   className,
 }: CategorySelectProps) {
-  const { data: categories = [], isLoading } = useCategories(postType);
-
   // 确保如果当前值不在列表中，且不是 "none"，则显示占位或处理
   // 这里简化处理，直接透传
 
