@@ -3,9 +3,9 @@ from typing import Annotated
 
 from app.core.config import settings
 from app.core.db import get_async_session
+from app.git_ops.components import verify_github_signature
 from app.git_ops.schema import PreviewResult, SyncStats
 from app.git_ops.service import GitOpsService, run_background_sync
-from app.git_ops.components import verify_github_signature
 from app.users.dependencies import get_current_adminuser
 from app.users.model import User
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Request
@@ -30,7 +30,7 @@ async def trigger_sync(
 
 @router.get("/preview", response_model=PreviewResult, summary="预览 Git 同步变更")
 async def preview_sync(
-    current_user: Annotated[User, Depends(get_current_adminuser)],
+    _: Annotated[User, Depends(get_current_adminuser)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """
@@ -38,7 +38,7 @@ async def preview_sync(
     不会修改数据库。
     """
     service = GitOpsService(session)
-    return await service.preview_sync(default_user=current_user)
+    return await service.preview_sync()
 
 
 @router.post("/webhook", summary="GitHub Webhook 接收入口")
@@ -64,6 +64,7 @@ async def github_webhook(
 @router.post(
     "/posts/{post_id}/resync-metadata",
     summary="重新同步文章元数据",
+    deprecated=True,
 )
 async def resync_post_metadata(
     post_id: str,
@@ -73,10 +74,16 @@ async def resync_post_metadata(
     """
     重新同步单个文章的元数据。
 
+    ⚠️ 已废弃：此端点将在实现增量同步后被移除。
+
     场景：
     - 用户在 frontmatter 中改了 author/cover/category 名字
     - 需要重新查询数据库并更新 ID
     - 自动回签新的 ID 到 frontmatter
+
+    替代方案：
+    - 使用 POST /sync 进行全量同步
+    - 未来：使用增量同步（自动检测变化的文件）
 
     权限：仅管理员可用
     """

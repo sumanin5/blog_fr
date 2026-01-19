@@ -4,8 +4,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import frontmatter
 from app.core.config import settings
-from app.git_ops.exceptions import GitOpsSyncError
-from app.git_ops.field_definitions import FIELD_DEFINITIONS
 from app.git_ops.components.resolvers import (
     DateResolver,
     PostTypeResolver,
@@ -16,6 +14,8 @@ from app.git_ops.components.resolvers import (
     resolve_tag_ids,
 )
 from app.git_ops.components.scanner import ScannedPost
+from app.git_ops.exceptions import GitOpsSyncError
+from app.git_ops.field_definitions import FIELD_DEFINITIONS
 from app.posts.model import Post
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -81,10 +81,7 @@ class PostSerializer:
             if field.parse_fn and value is not None:
                 try:
                     value = field.parse_fn(value)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to parse field {field.frontmatter_key} for {scanned.file_path}: {e}"
-                    )
+                except Exception:
                     if field.model_attr in [
                         "author_id",
                         "category_id",

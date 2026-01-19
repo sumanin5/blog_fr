@@ -71,8 +71,14 @@ Content.
     assert "valid-post.mdx" in data["added"][0]
 
     assert len(data["errors"]) == 2  # 两个错误
-    assert any("Missing required field 'author'" in err for err in data["errors"])
-    assert any("Author not found" in err for err in data["errors"])
+
+    def get_msg(err):
+        return err.get("message", "") if isinstance(err, dict) else str(err)
+
+    assert any(
+        "Missing required field 'author'" in get_msg(err) for err in data["errors"]
+    )
+    assert any("Author not found" in get_msg(err) for err in data["errors"])
 
 
 @pytest.mark.asyncio

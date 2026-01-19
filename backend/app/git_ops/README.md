@@ -28,7 +28,6 @@ git_ops/
 ├── exceptions.py         # 自定义异常类
 ├── field_definitions.py  # Frontmatter 字段定义
 ├── git_client.py         # Git 操作客户端
-├── mapper.py             # Frontmatter 字段映射 (即将废弃，部分功能移至 components)
 ├── router.py             # FastAPI 路由定义
 ├── schema.py             # 数据模型 (Pydantic)
 ├── service.py            # 同步业务逻辑编排

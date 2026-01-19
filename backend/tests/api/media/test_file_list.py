@@ -86,7 +86,7 @@ async def test_get_user_files_isolation(
 ):
     """测试用户只能看到自己的文件"""
     # 普通用户上传一个文件
-    files = {"file": ("user_file.jpg", sample_image_data, "image/jpeg")}
+    files = {"file": ("user_file.jpg", sample_image_data + b"user", "image/jpeg")}
     data = {"usage": "general", "description": "普通用户的文件"}
 
     await async_client.post(
@@ -97,7 +97,7 @@ async def test_get_user_files_isolation(
     )
 
     # 管理员用户上传一个文件
-    files = {"file": ("admin_file.jpg", sample_image_data, "image/jpeg")}
+    files = {"file": ("admin_file.jpg", sample_image_data + b"admin", "image/jpeg")}
     data = {"usage": "general", "description": "管理员的文件"}
 
     await async_client.post(
@@ -226,7 +226,7 @@ async def test_get_user_files_pagination_default(
     """测试默认分页参数"""
     # 上传3个文件
     for i in range(3):
-        files = {"file": (f"file_{i}.jpg", sample_image_data, "image/jpeg")}
+        files = {"file": (f"file_{i}.jpg", sample_image_data + str(i).encode(), "image/jpeg")}
         data = {"usage": "general", "description": f"文件 {i}"}
 
         await async_client.post(
@@ -259,7 +259,7 @@ async def test_get_user_files_pagination_custom(
     """测试自定义分页参数"""
     # 上传5个文件
     for i in range(5):
-        files = {"file": (f"page_file_{i}.jpg", sample_image_data, "image/jpeg")}
+        files = {"file": (f"page_file_{i}.jpg", sample_image_data + str(i).encode(), "image/jpeg")}
         data = {"usage": "general", "description": f"分页文件 {i}"}
 
         await async_client.post(
@@ -375,7 +375,7 @@ async def test_get_user_files_filter_by_usage(
     usages = ["general", "avatar", "cover"]
 
     for usage in usages:
-        files = {"file": (f"{usage}.jpg", sample_image_data, "image/jpeg")}
+        files = {"file": (f"{usage}.jpg", sample_image_data + usage.encode(), "image/jpeg")}
         data = {"usage": usage, "description": f"{usage}文件"}
 
         await async_client.post(
@@ -431,7 +431,7 @@ async def test_get_user_files_combined_filters(
     ]
 
     for filename, usage, description in test_files:
-        files = {"file": (filename, sample_image_data, "image/jpeg")}
+        files = {"file": (filename, sample_image_data + filename.encode(), "image/jpeg")}
         data = {"usage": usage, "description": description}
 
         await async_client.post(
@@ -554,7 +554,7 @@ async def test_get_user_files_sorting_by_creation_time(
     filenames = ["first.jpg", "second.jpg", "third.jpg"]
 
     for filename in filenames:
-        files = {"file": (filename, sample_image_data, "image/jpeg")}
+        files = {"file": (filename, sample_image_data + filename.encode(), "image/jpeg")}
         data = {"usage": "general", "description": f"文件 {filename}"}
 
         await async_client.post(

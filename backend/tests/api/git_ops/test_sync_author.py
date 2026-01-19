@@ -89,7 +89,12 @@ Content here.
     # 应该有错误
     assert len(data["added"]) == 0
     assert len(data["errors"]) == 1
-    assert "Missing required field 'author'" in data["errors"][0]
+    error_msg = (
+        data["errors"][0]["message"]
+        if isinstance(data["errors"][0], dict)
+        else data["errors"][0]
+    )
+    assert "Missing required field 'author'" in error_msg
 
     # 验证文章未创建
     session.expire_all()
@@ -133,7 +138,12 @@ Content here.
     # 应该有错误
     assert len(data["added"]) == 0
     assert len(data["errors"]) == 1
-    assert "Author not found" in data["errors"][0]
+    error_msg = (
+        data["errors"][0]["message"]
+        if isinstance(data["errors"][0], dict)
+        else data["errors"][0]
+    )
+    assert "Author not found" in error_msg
 
     # 验证文章未创建
     session.expire_all()

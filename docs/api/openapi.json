@@ -7609,11 +7609,60 @@
             "type": "array",
             "title": "To Delete",
             "default": []
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/SyncError"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
           }
         },
         "type": "object",
         "title": "PreviewResult",
         "description": "Git 同步预览结果"
+      },
+      "SyncError": {
+        "properties": {
+          "context": {
+            "type": "string",
+            "title": "Context"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "context",
+          "code",
+          "message"
+        ],
+        "title": "SyncError",
+        "description": "同步过程中的错误记录 (对齐核心 ErrorDetail 结构)"
       },
       "SyncStats": {
         "properties": {
@@ -7648,7 +7697,7 @@
           },
           "errors": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SyncError"
             },
             "type": "array",
             "title": "Errors",

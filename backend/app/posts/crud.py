@@ -355,6 +355,13 @@ async def merge_tags(
     return target_tag
 
 
+async def get_posts_with_source_path(session: AsyncSession) -> list[Post]:
+    """获取所有有 source_path 的文章（用于 Git 同步）"""
+    stmt = select(Post).where(Post.source_path.isnot(None))
+    result = await session.exec(stmt)
+    return list(result.all())
+
+
 # ============================================================================
 # PostVersion 功能暂时禁用 - 参考 service.py 中的说明
 # ============================================================================

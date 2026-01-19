@@ -2,9 +2,20 @@
 GitOps 模块的数据模型和 Schema
 """
 
-from typing import List
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class SyncError(BaseModel):
+    """同步过程中的错误记录 (对齐核心 ErrorDetail 结构)"""
+
+    context: str  # 错误发生的上下文 (如文件路径或操作名)
+    code: str  # 错误代码 (GITOPS_SYNC_ERROR, etc.)
+    message: str  # 错误简述
+    details: Optional[Dict[str, Any]] = None
+    timestamp: datetime = Field(default_factory=datetime.now)
 
 
 class SyncStats(BaseModel):
@@ -15,7 +26,7 @@ class SyncStats(BaseModel):
     updated: List[str] = []
     deleted: List[str] = []
     skipped: int = 0
-    errors: List[str] = []
+    errors: List[SyncError] = []
     duration: float = 0.0
 
 
@@ -33,3 +44,4 @@ class PreviewResult(BaseModel):
     to_create: List[PreviewChange] = []
     to_update: List[PreviewChange] = []
     to_delete: List[PreviewChange] = []
+    errors: List[SyncError] = []

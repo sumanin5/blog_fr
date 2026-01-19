@@ -1091,6 +1091,40 @@ export type PreviewResult = {
      * To Delete
      */
     to_delete?: Array<PreviewChange>;
+    /**
+     * Errors
+     */
+    errors?: Array<SyncError>;
+};
+
+/**
+ * SyncError
+ *
+ * 同步过程中的错误记录 (对齐核心 ErrorDetail 结构)
+ */
+export type SyncError = {
+    /**
+     * Context
+     */
+    context: string;
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Message
+     */
+    message: string;
+    /**
+     * Details
+     */
+    details?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Timestamp
+     */
+    timestamp?: string;
 };
 
 /**
@@ -1119,7 +1153,7 @@ export type SyncStats = {
     /**
      * Errors
      */
-    errors?: Array<string>;
+    errors?: Array<SyncError>;
     /**
      * Duration
      */

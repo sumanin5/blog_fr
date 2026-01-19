@@ -1,3 +1,4 @@
+import pytest
 """
 文章工具函数单元测试
 
@@ -23,7 +24,8 @@ from app.users.model import User  # noqa: F401
 # ============================================================================
 
 
-def test_build_posts_query_no_filters():
+@pytest.mark.asyncio
+async def test_build_posts_query_no_filters():
     """测试不带任何过滤条件的查询"""
     query = build_posts_query()
 
@@ -33,7 +35,8 @@ def test_build_posts_query_no_filters():
     assert "posts_post.status" in str(query)
 
 
-def test_build_posts_query_with_post_type():
+@pytest.mark.asyncio
+async def test_build_posts_query_with_post_type():
     """测试按文章类型过滤"""
     query = build_posts_query(post_type=PostType.ARTICLE)
 
@@ -41,7 +44,8 @@ def test_build_posts_query_with_post_type():
     assert "posts_post.post_type" in query_str
 
 
-def test_build_posts_query_with_status():
+@pytest.mark.asyncio
+async def test_build_posts_query_with_status():
     """测试按状态过滤"""
     query = build_posts_query(status=PostStatus.DRAFT)
 
@@ -49,7 +53,8 @@ def test_build_posts_query_with_status():
     assert "posts_post.status" in query_str
 
 
-def test_build_posts_query_with_category():
+@pytest.mark.asyncio
+async def test_build_posts_query_with_category():
     """测试按分类过滤"""
     category_id = uuid4()
     query = build_posts_query(category_id=category_id)
@@ -58,7 +63,8 @@ def test_build_posts_query_with_category():
     assert "posts_post.category_id" in query_str
 
 
-def test_build_posts_query_with_tag():
+@pytest.mark.asyncio
+async def test_build_posts_query_with_tag():
     """测试按标签过滤"""
     tag_id = uuid4()
     query = build_posts_query(tag_id=tag_id)
@@ -68,7 +74,8 @@ def test_build_posts_query_with_tag():
     assert "posts_tag" in query_str or "JOIN" in query_str
 
 
-def test_build_posts_query_with_author():
+@pytest.mark.asyncio
+async def test_build_posts_query_with_author():
     """测试按作者过滤"""
     author_id = uuid4()
     query = build_posts_query(author_id=author_id)
@@ -77,7 +84,8 @@ def test_build_posts_query_with_author():
     assert "posts_post.author_id" in query_str
 
 
-def test_build_posts_query_with_featured():
+@pytest.mark.asyncio
+async def test_build_posts_query_with_featured():
     """测试按推荐状态过滤"""
     query = build_posts_query(is_featured=True)
 
@@ -85,7 +93,8 @@ def test_build_posts_query_with_featured():
     assert "posts_post.is_featured" in query_str
 
 
-def test_build_posts_query_with_search():
+@pytest.mark.asyncio
+async def test_build_posts_query_with_search():
     """测试搜索功能"""
     query = build_posts_query(search_query="测试")
 
@@ -94,7 +103,8 @@ def test_build_posts_query_with_search():
     assert "LIKE" in query_str.upper() or "ILIKE" in query_str.upper()
 
 
-def test_build_posts_query_with_multiple_filters():
+@pytest.mark.asyncio
+async def test_build_posts_query_with_multiple_filters():
     """测试多个过滤条件组合"""
     query = build_posts_query(
         post_type=PostType.ARTICLE,
@@ -109,7 +119,8 @@ def test_build_posts_query_with_multiple_filters():
     assert "posts_post.is_featured" in query_str
 
 
-def test_build_posts_query_includes_relationships():
+@pytest.mark.asyncio
+async def test_build_posts_query_includes_relationships():
     """测试查询包含关联数据加载"""
     query = build_posts_query()
 
@@ -119,7 +130,8 @@ def test_build_posts_query_includes_relationships():
     assert query is not None
 
 
-def test_build_posts_query_ordering():
+@pytest.mark.asyncio
+async def test_build_posts_query_ordering():
     """测试查询排序"""
     query = build_posts_query()
 
@@ -132,7 +144,8 @@ def test_build_posts_query_ordering():
 # ============================================================================
 
 
-def test_build_categories_query_article_type():
+@pytest.mark.asyncio
+async def test_build_categories_query_article_type():
     """测试构建文章分类查询"""
     query = build_categories_query(PostType.ARTICLE)
 
@@ -141,7 +154,8 @@ def test_build_categories_query_article_type():
     assert "posts_category.post_type" in query_str
 
 
-def test_build_categories_query_idea_type():
+@pytest.mark.asyncio
+async def test_build_categories_query_idea_type():
     """测试构建想法分类查询"""
     query = build_categories_query(PostType.IDEA)
 
@@ -150,7 +164,8 @@ def test_build_categories_query_idea_type():
     assert "posts_category.post_type" in query_str
 
 
-def test_build_categories_query_filters_active():
+@pytest.mark.asyncio
+async def test_build_categories_query_filters_active():
     """测试查询只包含激活的分类"""
     query = build_categories_query(PostType.ARTICLE)
 
@@ -158,7 +173,8 @@ def test_build_categories_query_filters_active():
     assert "posts_category.is_active" in query_str
 
 
-def test_build_categories_query_ordering():
+@pytest.mark.asyncio
+async def test_build_categories_query_ordering():
     """测试分类查询排序"""
     query = build_categories_query(PostType.ARTICLE)
 
@@ -167,7 +183,8 @@ def test_build_categories_query_ordering():
     assert "ORDER BY" in query_str or "order_by" in str(query)
 
 
-def test_build_categories_query_includes_relationships():
+@pytest.mark.asyncio
+async def test_build_categories_query_includes_relationships():
     """测试分类查询包含关联数据"""
     query = build_categories_query(PostType.ARTICLE)
 
@@ -180,7 +197,8 @@ def test_build_categories_query_includes_relationships():
 # ============================================================================
 
 
-def test_build_tags_query_article_type():
+@pytest.mark.asyncio
+async def test_build_tags_query_article_type():
     """测试构建文章标签查询"""
     query = build_tags_query(PostType.ARTICLE)
 
@@ -189,7 +207,8 @@ def test_build_tags_query_article_type():
     assert "posts_post.post_type" in query_str
 
 
-def test_build_tags_query_idea_type():
+@pytest.mark.asyncio
+async def test_build_tags_query_idea_type():
     """测试构建想法标签查询"""
     query = build_tags_query(PostType.IDEA)
 
@@ -198,7 +217,8 @@ def test_build_tags_query_idea_type():
     assert "posts_post.post_type" in query_str
 
 
-def test_build_tags_query_joins_posts():
+@pytest.mark.asyncio
+async def test_build_tags_query_joins_posts():
     """测试标签查询关联文章表"""
     query = build_tags_query(PostType.ARTICLE)
 
@@ -207,7 +227,8 @@ def test_build_tags_query_joins_posts():
     assert "posts_post" in query_str or "JOIN" in query_str
 
 
-def test_build_tags_query_distinct():
+@pytest.mark.asyncio
+async def test_build_tags_query_distinct():
     """测试标签查询去重"""
     query = build_tags_query(PostType.ARTICLE)
 
@@ -216,7 +237,8 @@ def test_build_tags_query_distinct():
     assert "DISTINCT" in query_str.upper()
 
 
-def test_build_tags_query_ordering():
+@pytest.mark.asyncio
+async def test_build_tags_query_ordering():
     """测试标签查询排序"""
     query = build_tags_query(PostType.ARTICLE)
 
@@ -229,7 +251,8 @@ def test_build_tags_query_ordering():
 # ============================================================================
 
 
-def test_generate_slug_basic():
+@pytest.mark.asyncio
+async def test_generate_slug_basic():
     """测试基础 slug 生成"""
     slug = generate_slug_with_random_suffix("Hello World")
 
@@ -248,7 +271,8 @@ def test_generate_slug_basic():
     )
 
 
-def test_generate_slug_chinese():
+@pytest.mark.asyncio
+async def test_generate_slug_chinese():
     """测试中文标题的 slug 生成"""
     slug = generate_slug_with_random_suffix("我的第一篇文章")
 
@@ -258,7 +282,8 @@ def test_generate_slug_chinese():
     assert re.match(r"^[a-z0-9]+$", suffix)
 
 
-def test_generate_slug_empty_title():
+@pytest.mark.asyncio
+async def test_generate_slug_empty_title():
     """测试空标题时使用默认值"""
     slug = generate_slug_with_random_suffix("")
 
@@ -269,7 +294,8 @@ def test_generate_slug_empty_title():
     assert len(suffix) == 6
 
 
-def test_generate_slug_special_characters():
+@pytest.mark.asyncio
+async def test_generate_slug_special_characters():
     """测试特殊字符的处理"""
     slug = generate_slug_with_random_suffix("Hello & World! @#$%")
 
@@ -279,7 +305,8 @@ def test_generate_slug_special_characters():
     assert re.match(r"^[a-z0-9-]*$", slug), f"Slug contains invalid characters: {slug}"
 
 
-def test_generate_slug_custom_random_length():
+@pytest.mark.asyncio
+async def test_generate_slug_custom_random_length():
     """测试自定义随机后缀长度"""
     slug = generate_slug_with_random_suffix("Test", random_length=8)
 
@@ -287,7 +314,8 @@ def test_generate_slug_custom_random_length():
     assert len(suffix) == 8, f"Expected suffix length 8, got {len(suffix)}"
 
 
-def test_generate_slug_uniqueness():
+@pytest.mark.asyncio
+async def test_generate_slug_uniqueness():
     """测试随机性：多次调用应该生成不同的 slug"""
     title = "Test Article"
     slugs = [generate_slug_with_random_suffix(title) for _ in range(100)]
@@ -301,7 +329,8 @@ def test_generate_slug_uniqueness():
     assert len(set(base_parts)) == 1, "Base slug should be the same"
 
 
-def test_generate_slug_consistency_with_same_title():
+@pytest.mark.asyncio
+async def test_generate_slug_consistency_with_same_title():
     """测试相同标题的 base slug 部分一致"""
     slug1 = generate_slug_with_random_suffix("My First Post")
     slug2 = generate_slug_with_random_suffix("My First Post")
@@ -316,7 +345,8 @@ def test_generate_slug_consistency_with_same_title():
     assert slug1 != slug2, "Complete slugs should be different due to random suffix"
 
 
-def test_generate_slug_no_double_hyphen():
+@pytest.mark.asyncio
+async def test_generate_slug_no_double_hyphen():
     """测试不应该产生连续的连字符"""
     slug = generate_slug_with_random_suffix("A---B")
 
@@ -326,7 +356,8 @@ def test_generate_slug_no_double_hyphen():
     )
 
 
-def test_generate_slug_lowercase():
+@pytest.mark.asyncio
+async def test_generate_slug_lowercase():
     """测试 slug 应该全小写"""
     slug = generate_slug_with_random_suffix("HELLO WORLD ABC")
 
@@ -338,7 +369,8 @@ def test_generate_slug_lowercase():
 # ============================================================================
 
 
-def test_post_processor_generate_toc():
+@pytest.mark.asyncio
+async def test_post_processor_generate_toc():
     """测试 TOC 生成"""
     from app.posts.utils import PostProcessor
 
@@ -356,7 +388,7 @@ title: Test
 """
 
     processor = PostProcessor(content)
-    processor.process()
+    await processor.process()
 
     assert len(processor.toc) == 4
     assert processor.toc[0]["title"] == "一级标题"
@@ -365,7 +397,8 @@ title: Test
     assert processor.toc[1]["level"] == 2
 
 
-def test_post_processor_toc_with_duplicate_titles():
+@pytest.mark.asyncio
+async def test_post_processor_toc_with_duplicate_titles():
     """测试重复标题的 TOC 生成"""
     from app.posts.utils import PostProcessor
 
@@ -381,7 +414,7 @@ title: Test
 """
 
     processor = PostProcessor(content)
-    processor.process()
+    await processor.process()
 
     assert len(processor.toc) == 3
     # 第一个不加后缀
@@ -392,7 +425,8 @@ title: Test
     assert processor.toc[2]["id"] == "介绍-2"
 
 
-def test_post_processor_toc_ignores_code_blocks():
+@pytest.mark.asyncio
+async def test_post_processor_toc_ignores_code_blocks():
     """测试 TOC 生成忽略代码块中的标题"""
     from app.posts.utils import PostProcessor
 
@@ -410,14 +444,15 @@ title: Test
 """
 
     processor = PostProcessor(content)
-    processor.process()
+    await processor.process()
 
     assert len(processor.toc) == 2
     assert processor.toc[0]["title"] == "真实标题"
     assert processor.toc[1]["title"] == "另一个真实标题"
 
 
-def test_post_processor_heading_ids_with_special_chars():
+@pytest.mark.asyncio
+async def test_post_processor_heading_ids_with_special_chars():
     """测试特殊字符标题的 ID 生成"""
     from app.posts.utils import PostProcessor
 
@@ -433,7 +468,7 @@ title: Test
 """
 
     processor = PostProcessor(content)
-    processor.process()
+    await processor.process()
 
     toc = processor.toc
 
@@ -443,7 +478,8 @@ title: Test
     assert toc[2]["id"] == "hello-world"
 
 
-def test_post_processor_reading_time():
+@pytest.mark.asyncio
+async def test_post_processor_reading_time():
     """测试阅读时间计算"""
     from app.posts.utils import PostProcessor
 
@@ -458,12 +494,13 @@ title: Test
     )
 
     processor = PostProcessor(content)
-    processor.process()
+    await processor.process()
 
     assert processor.reading_time >= 1
 
 
-def test_post_processor_excerpt_generation():
+@pytest.mark.asyncio
+async def test_post_processor_excerpt_generation():
     """测试摘要生成"""
     from app.posts.utils import PostProcessor
 
@@ -477,7 +514,7 @@ title: Test
 """
 
     processor = PostProcessor(content)
-    processor.process()
+    await processor.process()
 
     assert "这是第一段内容" in processor.excerpt
     assert len(processor.excerpt) <= 203  # 200 + "..."

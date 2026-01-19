@@ -11,30 +11,27 @@ async def update_frontmatter_metadata(
     """将元数据写回到 MDX 文件的 frontmatter"""
     full_path = content_dir / file_path
 
-    try:
-        # 读取文件
-        with open(full_path, "r", encoding="utf-8") as f:
-            post = frontmatter.load(f)
-
-        # 更新所有元数据
-        for key, value in metadata.items():
-            if value is not None:
-                post.metadata[key] = str(value)
-            else:
-                post.metadata.pop(key, None)
-
-        # 写回文件
-        with open(full_path, "w", encoding="utf-8") as f:
-            f.write(frontmatter.dumps(post))
-
-        logger.info(f"Updated frontmatter metadata: {file_path} -> {metadata}")
-        return True
-    except Exception as e:
-        error_msg = f"Failed to update frontmatter: {str(e)}"
-        logger.warning(f"{file_path}: {error_msg}")
-        if stats and hasattr(stats, "errors"):
-            stats.errors.append(f"{file_path}: {error_msg}")
+    if not full_path.exists():
+        logger.warning(f"File not found for metadata update: {file_path}")
         return False
+
+    # 读取文件
+    with open(full_path, "r", encoding="utf-8") as f:
+        post = frontmatter.load(f)
+
+    # 更新所有元数据
+    for key, value in metadata.items():
+        if value is not None:
+            post.metadata[key] = str(value)
+        else:
+            post.metadata.pop(key, None)
+
+    # 写回文件
+    with open(full_path, "w", encoding="utf-8") as f:
+        f.write(frontmatter.dumps(post))
+
+    logger.info(f"Updated frontmatter metadata: {file_path} -> {metadata}")
+    return True
 
 
 async def write_post_ids_to_frontmatter(

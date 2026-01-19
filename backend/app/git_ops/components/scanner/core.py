@@ -56,7 +56,6 @@ class MDXScanner:
                 derived_category_slug=path_info["category_slug"],
             )
         except Exception as e:
-            logger.error(f"Error scanning {rel_path}: {e}")
             raise ScanError(rel_path, str(e))
 
     async def scan_all(self, glob_patterns: List[str] = None) -> List[ScannedPost]:

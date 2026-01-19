@@ -310,7 +310,13 @@ async def test_delete_file_filesystem_cleanup(
     file_paths = []
 
     for i in range(3):
-        files = {"file": (f"cleanup_test_{i}.jpg", sample_image_data, "image/jpeg")}
+        files = {
+            "file": (
+                f"cleanup_test_{i}.jpg",
+                sample_image_data + str(i).encode(),
+                "image/jpeg",
+            )
+        }
         data = {"usage": "general", "description": f"清理测试文件 {i}"}
 
         upload_response = await async_client.post(

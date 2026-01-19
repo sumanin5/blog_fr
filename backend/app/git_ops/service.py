@@ -1,29 +1,32 @@
 import logging
 import time
 from pathlib import Path
-from typing import Dict, List
 
 from app.core.config import settings
-
-# git_ops的工具类
-from app.git_ops.container import GitOpsContainer
-from app.git_ops.exceptions import GitOpsConfigurationError, GitOpsSyncError
-from app.git_ops.git_client import GitClient, GitError
-from app.git_ops.schema import PreviewChange, PreviewResult, SyncStats
 from app.git_ops.components import (
     handle_post_create,
     handle_post_update,
     revalidate_nextjs_cache,
     validate_post_for_resync,
 )
+from app.git_ops.components.comparator import PostComparator
+
+# git_ops的工具类
+from app.git_ops.container import GitOpsContainer
+from app.git_ops.exceptions import (
+    GitOpsConfigurationError,
+    collect_errors,
+)
+from app.git_ops.git_client import GitClient
+from app.git_ops.schema import PreviewChange, PreviewResult, SyncStats
+from app.posts import crud as post_crud
 
 # 业务板块
 from app.posts import service as post_service
 from app.posts.model import Post
-from app.users.model import User, UserRole
+from app.users.model import User
 
 # 数据库
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -46,24 +49,16 @@ class GitOpsService:
         logger.info("Starting GitOps sync...")
 
         # 0. 确定操作用户
-        operating_user = default_user
-        if not operating_user:
-            stmt = select(User).where(User.role == UserRole.SUPERADMIN).limit(1)
-            result = await self.session.exec(stmt)
-            operating_user = result.first()
-            if not operating_user:
-                raise GitOpsConfigurationError(
-                    "No user provided and no superuser found. Cannot assign author to git-synced posts."
-                )
+        operating_user = await self._get_operating_user(default_user)
 
-        # 0.5 Git Pull
-        try:
-            logger.info("Attempting git pull...")
-            pull_output = await self.git_client.pull()
-            logger.info(f"Git pull result: {pull_output}")
-        except GitError as e:
-            logger.warning(f"Git pull failed: {e}")
-            # 继续执行本地扫描，不中断
+        # 0.5 Git Pull (Best effort)
+        if (self.content_dir / ".git").exists():
+            async with collect_errors(stats, "Git Pull"):
+                logger.info("Attempting git pull...")
+                pull_output = await self.git_client.pull()
+                logger.info(f"Git pull result: {pull_output}")
+        else:
+            logger.info("Skip git pull: repository not initialized.")
 
         # 1. 扫描文件系统
         scanned_posts = await self.scanner.scan_all()
@@ -71,16 +66,14 @@ class GitOpsService:
         logger.info(f"Scanned {len(scanned_posts)} files.")
 
         # 2. 获取数据库现状
-        stmt = select(Post).where(Post.source_path.isnot(None))
-        result = await self.session.exec(stmt)
-        existing_posts = result.all()
+        existing_posts = await post_crud.get_posts_with_source_path(self.session)
 
         # 记录本次处理过的 Post ID
         processed_post_ids = set()
 
         # 3. 处理每个文件
         for file_path, scanned in scanned_map.items():
-            try:
+            async with collect_errors(stats, f"Syncing {file_path}"):
                 matched_post, is_move = await self.serializer.match_post(
                     scanned, existing_posts
                 )
@@ -111,27 +104,15 @@ class GitOpsService:
                         processed_post_ids,
                     )
 
-            except GitOpsSyncError as e:
-                # 业务逻辑错误（如必填字段缺失），记录并跳过
-                logger.error(f"Sync error for {file_path}: {e.message}")
-                stats.errors.append(f"{file_path}: {e.message}")
-            except Exception as e:
-                # 未知错误，记录并跳过
-                logger.exception(f"Unexpected error syncing {file_path}")
-                stats.errors.append(f"{file_path}: {str(e)}")
-
         # 4. 处理删除
         for post in existing_posts:
             if post.id not in processed_post_ids:
-                logger.info(f"Deleting post: {post.source_path} (slug={post.slug})")
-                try:
+                async with collect_errors(stats, f"Deleting {post.source_path}"):
+                    logger.info(f"Deleting post: {post.source_path} (slug={post.slug})")
                     await post_service.delete_post(
                         self.session, post.id, current_user=operating_user
                     )
                     stats.deleted.append(post.source_path)
-                except Exception as e:
-                    logger.error(f"Failed to delete post {post.source_path}: {e}")
-                    stats.errors.append(f"Delete failed {post.source_path}: {e}")
 
         stats.duration = time.time() - start_time
         logger.info(
@@ -140,41 +121,28 @@ class GitOpsService:
 
         # 5. 刷新缓存 (Best effort)
         if stats.added or stats.updated or stats.deleted:
-            try:
-                await revalidate_nextjs_cache(
-                    settings.FRONTEND_URL, settings.REVALIDATE_SECRET
-                )
-            except Exception as e:
-                logger.warning(f"Failed to revalidate Next.js cache: {e}")
+            # revalidate_nextjs_cache 内部已经处理了异常
+            await revalidate_nextjs_cache(
+                settings.FRONTEND_URL, settings.REVALIDATE_SECRET
+            )
 
         return stats
 
-    async def preview_sync(self, default_user: User = None) -> PreviewResult:
+    async def preview_sync(self) -> PreviewResult:
         """执行同步预览 (Dry Run)"""
         result = PreviewResult()
-
-        # 0. 确定操作用户
-        operating_user = default_user
-        if not operating_user:
-            stmt = select(User).where(User.role == UserRole.SUPERADMIN).limit(1)
-            res = await self.session.exec(stmt)
-            operating_user = res.first()
-            if not operating_user:
-                logger.warning("No operating user found for preview.")
 
         # 1. 扫描文件系统
         scanned_posts = await self.scanner.scan_all()
         scanned_map = {p.file_path: p for p in scanned_posts}
 
         # 2. 获取数据库现状
-        stmt = select(Post).where(Post.source_path.isnot(None))
-        db_res = await self.session.exec(stmt)
-        existing_posts = db_res.all()
+        existing_posts = await post_crud.get_posts_with_source_path(self.session)
         processed_post_ids = set()
 
         # 3. 对比差异
         for file_path, scanned in scanned_map.items():
-            try:
+            async with collect_errors(result, f"Previewing {file_path}"):
                 matched_post, is_move = await self.serializer.match_post(
                     scanned, existing_posts
                 )
@@ -186,18 +154,7 @@ class GitOpsService:
                         scanned, dry_run=True
                     )
 
-                    # 计算字段差异
-                    changes = []
-                    if matched_post.title != new_data.get("title"):
-                        changes.append("title")
-                    if matched_post.content_mdx != new_data.get("content_mdx"):
-                        changes.append("content")
-                    if matched_post.excerpt != new_data.get("excerpt"):
-                        changes.append("excerpt")
-                    if str(matched_post.category_id) != str(
-                        new_data.get("category_id")
-                    ):
-                        changes.append("category")
+                    changes = PostComparator.compare(matched_post, new_data)
 
                     if changes:
                         result.to_update.append(
@@ -220,9 +177,6 @@ class GitOpsService:
                         )
                     )
 
-            except Exception as e:
-                logger.error(f"Preview error for {file_path}: {e}")
-
         # 4. 删除检测
         for post in existing_posts:
             if post.id not in processed_post_ids:
@@ -234,12 +188,20 @@ class GitOpsService:
 
         return result
 
-    async def resync_metadata(self, post_id, current_user: User) -> dict:
-        """重新同步单个文章的元数据"""
-        post = await validate_post_for_resync(self.session, self.content_dir, post_id)
-        scanned = await self.scanner.scan_file(post.source_path)
+    async def _sync_single_file(
+        self, post: Post, current_user: User, force_write: bool = False
+    ) -> Post:
+        """同步单个文件的通用方法
 
-        # 构造上下文调用 handle_post_update (强制写入)
+        Args:
+            post: 要同步的 Post 对象
+            current_user: 操作用户
+            force_write: 是否强制写回 frontmatter
+
+        Returns:
+            更新后的 Post 对象
+        """
+        scanned = await self.scanner.scan_file(post.source_path)
         stats = SyncStats()
         processed_ids = set()
 
@@ -254,7 +216,24 @@ class GitOpsService:
             content_dir=self.content_dir,
             stats=stats,
             processed_post_ids=processed_ids,
-            force_write=True,
+            force_write=force_write,
+        )
+
+        return updated_post
+
+    async def resync_metadata(self, post_id, current_user: User) -> dict:
+        """重新同步单个文章的元数据
+
+        ⚠️ 废弃通知：此方法将在实现增量同步后被移除。
+
+        增量同步实现后，用户可以直接调用 /sync 端点，系统会自动检测
+        有变化的文件并进行同步，无需手动指定单个文章 ID。
+
+        当前保留此方法作为临时方案，用于快速修复单个文章的元数据。
+        """
+        post = await validate_post_for_resync(self.session, self.content_dir, post_id)
+        updated_post = await self._sync_single_file(
+            post, current_user, force_write=True
         )
 
         logger.info(f"Metadata resynced successfully for post {post_id}")
@@ -276,13 +255,24 @@ class GitOpsService:
             },
         }
 
+    async def _get_operating_user(self, default_user: User = None) -> User:
+        """获取操作用户，如果没有提供则查找 superadmin"""
+        if default_user:
+            return default_user
+
+        from app.users import crud
+
+        operating_user = await crud.get_superuser(self.session)
+        if not operating_user:
+            raise GitOpsConfigurationError(
+                "No user provided and no superuser found. Cannot assign author to git-synced posts."
+            )
+        return operating_user
+
 
 async def run_background_sync():
     """
     后台任务：运行 Git 同步。
-
-    这个函数被 BackgroundTasks 调用，用于异步执行 Git 同步。
-    它会自动查找 Superuser 作为默认作者。
     """
     from app.core.db import AsyncSessionLocal
 
@@ -298,12 +288,10 @@ async def run_background_sync():
             )
             if stats.errors:
                 logger.warning(
-                    f"Sync completed with {len(stats.errors)} errors: {stats.errors}"
+                    f"Background sync finished with {len(stats.errors)} errors"
                 )
-    except GitOpsConfigurationError as e:
-        logger.error(f"Configuration error during sync: {e}")
     except Exception as e:
-        logger.exception(f"Unexpected error during background sync: {e}")
+        logger.exception(f"Fatal error in background sync: {e}")
 
 
 async def run_background_commit(message: str = "Auto-save from Admin"):
@@ -317,8 +305,6 @@ async def run_background_commit(message: str = "Auto-save from Admin"):
 
         client = GitClient(content_dir)
 
-        # 只提交 content 目录下的变更，防止提交其他意外文件
-        # 但 GitClient 的 cwd 是 content_dir，所以 add . 就是 add content_dir
         logger.info("Starting background auto-commit...")
         await client.add(["."])
         await client.commit(message)
