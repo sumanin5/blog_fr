@@ -3,7 +3,6 @@ import React from "react";
 import "@/shared/api/config";
 import {
   listCategoriesByType,
-  listTagsByType,
   getPostById,
   PostType,
 } from "@/shared/api/generated";
@@ -21,8 +20,8 @@ export default async function EditPostPage({ params }: PageProps) {
   const { type, id } = await params;
   const postType = (type as PostType) || "article";
 
-  // 并行获取文章详情、分类列表和标签列表
-  const [postRes, categoriesRes, tagsRes] = await Promise.all([
+  // 并行获取文章详情、分类列表
+  const [postRes, categoriesRes] = await Promise.all([
     getPostById({
       path: { post_type: postType, post_id: id },
       query: { include_mdx: true },
@@ -30,10 +29,6 @@ export default async function EditPostPage({ params }: PageProps) {
     listCategoriesByType({
       path: { post_type: postType },
       query: { size: 100, include_inactive: true },
-    }).catch(() => ({ data: null })),
-    listTagsByType({
-      path: { post_type: postType },
-      query: { size: 100 },
     }).catch(() => ({ data: null })),
   ]);
 
@@ -44,14 +39,6 @@ export default async function EditPostPage({ params }: PageProps) {
 
   const post = postRes.data;
   const categories = categoriesRes.data?.items || [];
-  const tags = tagsRes.data?.items || [];
 
-  return (
-    <EditView
-      post={post}
-      postType={postType}
-      categories={categories}
-      tags={tags}
-    />
-  );
+  return <EditView post={post} postType={postType} categories={categories} />;
 }

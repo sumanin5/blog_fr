@@ -15,10 +15,9 @@ interface EditViewProps {
   post: PostDetailResponse;
   postType: PostType;
   categories: CategoryResponse[];
-  tags: TagResponse[];
 }
 
-export function EditView({ post, postType, categories, tags }: EditViewProps) {
+export function EditView({ post, postType, categories }: EditViewProps) {
   const router = useRouter();
   const mutation = useUpdatePost(post.id, postType);
 
@@ -47,7 +46,6 @@ export function EditView({ post, postType, categories, tags }: EditViewProps) {
           isFeatured: post.is_featured,
         }}
         categories={categories}
-        tags={tags}
         onSave={(updated) => mutation.mutate(updated)}
         isSaving={mutation.isPending}
       />

@@ -18,7 +18,7 @@ from app.posts.exceptions import (
     SlugConflictError,
     TagNotFoundError,
 )
-from app.posts.model import Category, Post, PostStatus, PostType, PostVersion, Tag
+from app.posts.model import Category, Post, PostStatus, PostType, Tag
 from app.posts.schema import (
     CategoryCreate,
     CategoryUpdate,
@@ -44,7 +44,7 @@ async def _sync_to_disk(
     辅助函数：将文章同步写入到物理磁盘（反向同步）
     """
     try:
-        from app.git_ops.writer import FileWriter
+        from app.git_ops.components.writer import FileWriter
 
         # 重新查询以确保加载所有关系（Tags, Category）
         # 使用 select IN 预加载（虽然 crud.get_post_by_id 应该已经做了，但再次确保）
@@ -52,7 +52,7 @@ async def _sync_to_disk(
         if not post:
             return
 
-        writer = FileWriter()
+        writer = FileWriter(session=session)
 
         # 准备数据
         tag_names = [t.name for t in post.tags]
@@ -103,22 +103,39 @@ async def generate_unique_slug(
     return generate_slug_with_random_suffix(title)
 
 
-async def save_post_version(
-    session: AsyncSession, post: Post, commit_message: Optional[str] = None
-):
-    """为文章创建一个历史版本快照"""
-    max_version = await crud.get_max_post_version(session, post.id)
+# ============================================================================
+# PostVersion 功能暂时禁用
+# ============================================================================
+# 原因：当前采用 Git-First 架构，Git 已经管理了完整的版本历史
+# PostVersion 会造成数据重复和维护成本增加
+#
+# 如果未来需要以下功能，可以重新启用：
+# - 快速数据库级别的版本回滚（不需要 Git 操作）
+# - 审计日志（记录谁在什么时候改了什么）
+# - 版本对比 API
+#
+# 重新启用步骤：
+# 1. 取消注释下面的函数
+# 2. 在 update_post() 中取消注释调用
+# 3. 在 crud.py 中确保 get_max_post_version() 可用
+# ============================================================================
 
-    version = PostVersion(
-        post_id=post.id,
-        version_num=max_version + 1,
-        title=post.title,
-        content_mdx=post.content_mdx,
-        git_hash=post.git_hash,
-        commit_message=commit_message or f"Auto-snapshot (v{max_version + 1})",
-    )
-    session.add(version)
-    logger.debug(f"已保存文章版本快照: {post.title} v{version.version_num}")
+# async def save_post_version(
+#     session: AsyncSession, post: Post, commit_message: Optional[str] = None
+# ):
+#     """为文章创建一个历史版本快照"""
+#     max_version = await crud.get_max_post_version(session, post.id)
+#
+#     version = PostVersion(
+#         post_id=post.id,
+#         version_num=max_version + 1,
+#         title=post.title,
+#         content_mdx=post.content_mdx,
+#         git_hash=post.git_hash,
+#         commit_message=commit_message or f"Auto-snapshot (v{max_version + 1})",
+#     )
+#     session.add(version)
+#     logger.debug(f"已保存文章版本快照: {post.title} v{version.version_num}")
 
 
 async def get_post_detail(
@@ -215,9 +232,9 @@ async def delete_post(session: AsyncSession, post_id: UUID, current_user: User) 
 
     # 尝试删除物理文件 (Git-First 反向同步)
     try:
-        from app.git_ops.writer import FileWriter
+        from app.git_ops.components.writer import FileWriter
 
-        writer = FileWriter()
+        writer = FileWriter(session=session)
         await writer.delete_post(post)
     except Exception as e:
         logger.error(f"Failed to delete physical file for post {post.id}: {e}")
@@ -400,9 +417,12 @@ async def update_post(
             raise InsufficientPermissionsError("仅管理员可以修改文章作者")
 
     # 0. 在更新前保存当前版本作为快照
-    await save_post_version(
-        session, db_post, commit_message=update_data.get("commit_message")
-    )
+    # TODO: PostVersion 功能暂时禁用，因为当前采用 Git-First 架构
+    # Git 已经管理了完整的版本历史，PostVersion 会造成数据重复
+    # 如果未来需要数据库级别的版本管理（如快速回滚、审计日志），可以重新启用
+    # await save_post_version(
+    #     session, db_post, commit_message=update_data.get("commit_message")
+    # )
 
     # 1. 校验分类与板块逻辑隔离 (如果更新了分类或板块)
     new_category_id = update_data.get("category_id", db_post.category_id)

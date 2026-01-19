@@ -53,6 +53,18 @@ class GitError(GitOpsError):
         )
 
 
+class FileOpsError(GitOpsError):
+    """文件系统操作失败"""
+
+    def __init__(self, message: str, path: str = ""):
+        super().__init__(
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            error_code="FILE_OPERATION_ERROR",
+            details={"path": path} if path else None,
+        )
+
+
 class GitNotFoundError(GitError):
     """Git 命令未找到"""
 

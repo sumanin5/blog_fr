@@ -960,6 +960,10 @@ export type PostUpdate = {
      */
     category_id?: string | null;
     /**
+     * Author Id
+     */
+    author_id?: string | null;
+    /**
      * Cover Media Id
      */
     cover_media_id?: string | null;
@@ -1050,7 +1054,50 @@ export type PostVersionResponse = {
 };
 
 /**
+ * PreviewChange
+ *
+ * 预览中的单个变更
+ */
+export type PreviewChange = {
+    /**
+     * File
+     */
+    file: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Changes
+     */
+    changes?: Array<string>;
+};
+
+/**
+ * PreviewResult
+ *
+ * Git 同步预览结果
+ */
+export type PreviewResult = {
+    /**
+     * To Create
+     */
+    to_create?: Array<PreviewChange>;
+    /**
+     * To Update
+     */
+    to_update?: Array<PreviewChange>;
+    /**
+     * To Delete
+     */
+    to_delete?: Array<PreviewChange>;
+};
+
+/**
  * SyncStats
+ *
+ * Git 同步统计信息
+ * 包含增删改查的四套路径，错误处理和耗时
  */
 export type SyncStats = {
     /**
@@ -4397,3 +4444,145 @@ export type TriggerSyncResponses = {
 };
 
 export type TriggerSyncResponse = TriggerSyncResponses[keyof TriggerSyncResponses];
+
+export type PreviewSyncData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ops/git/preview';
+};
+
+export type PreviewSyncErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type PreviewSyncError = PreviewSyncErrors[keyof PreviewSyncErrors];
+
+export type PreviewSyncResponses = {
+    /**
+     * Successful Response
+     */
+    200: PreviewResult;
+};
+
+export type PreviewSyncResponse = PreviewSyncResponses[keyof PreviewSyncResponses];
+
+export type GithubWebhookData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Hub-Signature-256
+         */
+        'x-hub-signature-256'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/ops/git/webhook';
+};
+
+export type GithubWebhookErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GithubWebhookError = GithubWebhookErrors[keyof GithubWebhookErrors];
+
+export type GithubWebhookResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type ResyncPostMetadataData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/ops/git/posts/{post_id}/resync-metadata';
+};
+
+export type ResyncPostMetadataErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ResyncPostMetadataError = ResyncPostMetadataErrors[keyof ResyncPostMetadataErrors];
+
+export type ResyncPostMetadataResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};

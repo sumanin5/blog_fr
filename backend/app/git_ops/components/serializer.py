@@ -1,37 +1,29 @@
-"""
-Git 同步的映射器模块
-
-负责将 MDX frontmatter 映射为 Post 模型字段
-"""
-
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+import frontmatter
+from app.core.config import settings
 from app.git_ops.exceptions import GitOpsSyncError
-from app.git_ops.scanner import ScannedPost
+from app.git_ops.field_definitions import FIELD_DEFINITIONS
 from app.git_ops.components.resolvers import (
     DateResolver,
     PostTypeResolver,
     StatusResolver,
+    resolve_author_id,
+    resolve_category_id,
+    resolve_cover_media_id,
+    resolve_tag_ids,
 )
+from app.git_ops.components.scanner import ScannedPost
 from app.posts.model import Post
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 
 
-from app.git_ops.field_definitions import FIELD_DEFINITIONS
-from app.git_ops.components import (
-    resolve_author_id,
-    resolve_category_id,
-    resolve_cover_media_id,
-    resolve_tag_ids,
-)
-
-
-class FrontmatterMapper:
-    """Frontmatter 映射器"""
+class PostSerializer:
+    """Post 和 Frontmatter 的双向序列化器"""
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -41,16 +33,8 @@ class FrontmatterMapper:
 
     async def match_post(
         self, scanned: ScannedPost, existing_posts: list
-    ) -> tuple[Optional[Post], bool]:
-        """匹配文件到对应的 Post
-
-        Args:
-            scanned: 扫描到的文件
-            existing_posts: 数据库中的所有 Post
-
-        Returns:
-            (matched_post, is_move) - 匹配到的 Post 和是否是移动操作
-        """
+    ) -> Tuple[Optional[Post], bool]:
+        """匹配文件到对应的 Post (Mapper 功能)"""
         # 构建索引
         existing_map = {p.source_path: p for p in existing_posts if p.source_path}
         existing_by_slug = {p.slug: p for p in existing_posts}
@@ -67,34 +51,19 @@ class FrontmatterMapper:
         # 3. 都没找到 → 新增
         return None, False
 
-    async def map_to_post(
+    async def from_frontmatter(
         self, scanned: ScannedPost, dry_run: bool = False
     ) -> Dict[str, Any]:
-        """将 Frontmatter 转换为 Post 模型字段
-
-        Args:
-            scanned: 扫描到的文章数据
-            dry_run: 是否为 dry-run 模式 (不创建关联数据)
-
-        Returns:
-            Post 模型字段的字典
-
-        Raises:
-            GitOpsSyncError: 如果必填字段缺失或无效
-        """
-        from app.core.config import settings
-
+        """Frontmatter → Post 字典 (Mapper 功能)"""
         meta = scanned.frontmatter
         result = {}
 
-        # 1. 处理所有定义良好的字段
+        # 1. 处理所有定义良好的字段 (Unified Schema)
         for field in FIELD_DEFINITIONS:
-            # 获取 Frontmatter 中的值 (支持别名处理，这里暂时只用主 key)
             value = meta.get(field.frontmatter_key)
 
-            # 如果没有值，尝试其他可能的 key (fallback)
+            # Fallback 逻辑
             if value is None:
-                # 这里的 fallback 逻辑可以扩展到 FieldDefinition 中，但现在先在这里处理一些常见的
                 if field.frontmatter_key == "excerpt":
                     value = meta.get("summary") or meta.get("description")
                 elif field.frontmatter_key == "meta_title":
@@ -104,11 +73,11 @@ class FrontmatterMapper:
                 elif field.frontmatter_key == "meta_keywords":
                     value = meta.get("keywords")
 
-            # 如果仍然为 None，使用默认值
+            # 默认值
             if value is None:
                 value = field.default
 
-            # 类型转换 (deserialize / parse)
+            # 类型转换 (parse_fn)
             if field.parse_fn and value is not None:
                 try:
                     value = field.parse_fn(value)
@@ -116,7 +85,6 @@ class FrontmatterMapper:
                     logger.warning(
                         f"Failed to parse field {field.frontmatter_key} for {scanned.file_path}: {e}"
                     )
-                    # 对于 UUID 等关键字段，可能需要抛出错误
                     if field.model_attr in [
                         "author_id",
                         "category_id",
@@ -126,14 +94,12 @@ class FrontmatterMapper:
                             f"Invalid format for field {field.frontmatter_key}"
                         )
 
-            # 放入结果
             if value is not None:
                 result[field.model_attr] = value
 
-        # 2. 覆盖/补充特殊字段 (Resolver 逻辑)
+        # 2. 复杂逻辑处理 (Resolvers)
 
-        # ========== 解析作者 ID ==========
-        # 如果 frontmatter 里没有 ID，但有作者名，则解析
+        # Author (Required)
         if not result.get("author_id"):
             author_value = meta.get("author")
             if author_value:
@@ -146,7 +112,7 @@ class FrontmatterMapper:
                     detail="Every post must specify an author",
                 )
 
-        # ========== 解析封面图 ID ==========
+        # Cover (Optional)
         if not result.get("cover_media_id"):
             cover_path = meta.get("cover") or meta.get("image")
             if cover_path:
@@ -157,13 +123,13 @@ class FrontmatterMapper:
                     content_dir=Path(settings.CONTENT_DIR),
                 )
 
-        # ========== 解析文章类型 ==========
+        # Post Type
         result["post_type"] = await self.post_type_resolver.resolve(
             meta_type=meta.get("type") or meta.get("post_type"),
             derived_type=scanned.derived_post_type,
         )
 
-        # ========== 解析分类 ID ==========
+        # Category
         if not result.get("category_id"):
             category_slug = (
                 scanned.derived_category_slug
@@ -174,27 +140,75 @@ class FrontmatterMapper:
                 self.session,
                 category_slug,
                 result["post_type"],
-                auto_create=settings.GIT_AUTO_CREATE_CATEGORIES,
+                auto_create=settings.GIT_AUTO_CREATE_CATEGORIES
+                if not dry_run
+                else False,
                 default_slug=settings.GIT_DEFAULT_CATEGORY,
             )
 
-        # ========== 状态与创建时间 ==========
+        # Status & Date
         result["status"] = await self.status_resolver.resolve(meta)
         result["published_at"] = await self.date_resolver.resolve(
             meta, result["status"]
         )
 
-        # ========== MDX Content ==========
+        # Content & Title Fallback
         result["content_mdx"] = scanned.content
         if not result.get("title"):
             result["title"] = Path(scanned.file_path).stem
 
-        # ========== 标签解析 ==========
+        # Tags
         tags = meta.get("tags")
         if tags is not None:
             if isinstance(tags, str):
                 tags = [t.strip() for t in tags.split(",")]
-            result["tag_ids"] = await resolve_tag_ids(self.session, tags)
+            result["tag_ids"] = await resolve_tag_ids(
+                self.session, tags, auto_create=not dry_run
+            )
             result["tags"] = tags
 
         return result
+
+    def to_frontmatter(
+        self,
+        post: Post,
+        tags: Optional[List[str]] = None,
+        category_slug: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Post 对象 → Frontmatter 字典 (Dumper 功能)"""
+        metadata = {}
+
+        # 1. 自动处理所有定义好的字段 (Unified Schema)
+        for field in FIELD_DEFINITIONS:
+            # 从模型获取值
+            value = getattr(post, field.model_attr, None)
+
+            # 检查是否应该跳过默认值
+            if field.skip_if_default and value == field.default:
+                continue
+
+            # 执行转换 (serialize_fn)
+            if field.serialize_fn and value is not None:
+                value = field.serialize_fn(value)
+
+            # 放入结果 (如果不为 None)
+            if value is not None:
+                metadata[field.frontmatter_key] = value
+
+        # 2. 处理动态传入或特殊覆盖参数
+        if tags is not None:
+            metadata["tags"] = tags
+
+        logger.debug(f"Generated metadata: {metadata}")
+        return metadata
+
+    def dump_to_string(
+        self,
+        post: Post,
+        tags: Optional[List[str]] = None,
+        category_slug: Optional[str] = None,
+    ) -> str:
+        """Post 对象 → MDX 字符串 (Dumper 功能)"""
+        metadata = self.to_frontmatter(post, tags, category_slug)
+        post_obj = frontmatter.Post(post.content_mdx or "", **metadata)
+        return frontmatter.dumps(post_obj)

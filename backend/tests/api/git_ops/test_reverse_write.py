@@ -62,9 +62,10 @@ async def test_create_post_generates_file(
         assert actual_slug.startswith("my-new-post")
 
         # 验证文件是否生成
-        # 路径规则: content/article/uncategorized/{slug}.mdx (因为没选分类)
+        # 路径规则: content/article/uncategorized/{title}.md (默认 enable_jsx=False)
+        # 注意：PathCalculator 使用 title 作为文件名，且扩展名默认为 md
         expected_path = (
-            mock_git_content_dir / "article" / "uncategorized" / f"{actual_slug}.mdx"
+            mock_git_content_dir / "article" / "uncategorized" / "My New Post.md"
         )
         assert expected_path.exists()
 
@@ -103,9 +104,7 @@ async def test_update_post_updates_file(
     post_id = data["id"]
     actual_slug = data["slug"]
 
-    file_path = (
-        mock_git_content_dir / "article" / "uncategorized" / f"{actual_slug}.mdx"
-    )
+    file_path = mock_git_content_dir / "article" / "uncategorized" / "Old Title.md"
     assert "Original Content" in file_path.read_text(encoding="utf-8")
 
     # 2. 调用 Update API
@@ -120,7 +119,14 @@ async def test_update_post_updates_file(
         assert response.status_code == 200
 
         # 3. 验证文件内容变化
-        new_content = file_path.read_text(encoding="utf-8")
+        # 更新标题会导致文件重命名
+        new_file_path = (
+            mock_git_content_dir / "article" / "uncategorized" / "New Title.md"
+        )
+        assert new_file_path.exists()
+        assert not file_path.exists()
+
+        new_content = new_file_path.read_text(encoding="utf-8")
         assert "title: New Title" in new_content
         assert "Updated Content" in new_content
 
@@ -148,12 +154,10 @@ async def test_rename_post_moves_file(
     post_id = data["id"]
     actual_first_slug = data["slug"]
 
-    old_path = (
-        mock_git_content_dir / "article" / "uncategorized" / f"{actual_first_slug}.mdx"
-    )
+    old_path = mock_git_content_dir / "article" / "uncategorized" / "Move Test.md"
     assert old_path.exists()
 
-    # 2. 更新 Slug
+    # 2. 更新 Slug (Slug 变更不再影响文件名，因为文件名基于 Title)
     with patch("app.posts.router.run_background_commit") as mock_bg_commit:
         response = await async_client.patch(
             f"/api/v1/posts/article/{post_id}",
@@ -162,21 +166,10 @@ async def test_rename_post_moves_file(
         )
         assert response.status_code == 200
 
-        # 获取新的 slug (也会被添加随机后缀)
-        new_data = response.json()
-        actual_new_slug = new_data["slug"]
-
-        # 3. 验证旧文件消失，新文件出现
-        new_path = (
-            mock_git_content_dir
-            / "article"
-            / "uncategorized"
-            / f"{actual_new_slug}.mdx"
-        )
-
-        assert not old_path.exists()  # 旧文件应被删除
-        assert new_path.exists()  # 新文件应存在
-        assert f"slug: {actual_new_slug}" in new_path.read_text(encoding="utf-8")
+        # 验证文件仍然存在（文件名没变）但内容更新了 slug
+        assert old_path.exists()
+        content = old_path.read_text(encoding="utf-8")
+        assert "slug: new-slug" in content
 
 
 @pytest.mark.asyncio
@@ -200,9 +193,7 @@ async def test_delete_post_removes_file(
     post_id = data["id"]
     actual_slug = data["slug"]
 
-    file_path = (
-        mock_git_content_dir / "article" / "uncategorized" / f"{actual_slug}.mdx"
-    )
+    file_path = mock_git_content_dir / "article" / "uncategorized" / "Delete Test.md"
     assert file_path.exists()
 
     # 2. 删除文章

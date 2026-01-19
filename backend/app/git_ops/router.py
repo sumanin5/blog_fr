@@ -5,7 +5,7 @@ from app.core.config import settings
 from app.core.db import get_async_session
 from app.git_ops.schema import PreviewResult, SyncStats
 from app.git_ops.service import GitOpsService, run_background_sync
-from app.git_ops.utils import verify_github_signature
+from app.git_ops.components import verify_github_signature
 from app.users.dependencies import get_current_adminuser
 from app.users.model import User
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Request

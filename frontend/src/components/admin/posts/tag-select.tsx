@@ -1,104 +1,87 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { X, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { TagResponse } from "@/shared/api/generated";
 
 interface TagSelectProps {
-  availableTags: TagResponse[];
   selectedTags: string[]; // tag names
   onValueChange: (tags: string[]) => void;
   className?: string;
 }
 
 export function TagSelect({
-  availableTags,
   selectedTags,
   onValueChange,
   className,
 }: TagSelectProps) {
-  const handleToggle = (tagName: string) => {
-    if (selectedTags.includes(tagName)) {
-      onValueChange(selectedTags.filter((t) => t !== tagName));
-    } else {
-      onValueChange([...selectedTags, tagName]);
+  const [inputValue, setInputValue] = React.useState("");
+
+  const addTag = (tag: string) => {
+    const trimmedTag = tag.trim();
+    if (trimmedTag && !selectedTags.includes(trimmedTag)) {
+      onValueChange([...selectedTags, trimmedTag]);
+    }
+    setInputValue("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(inputValue);
+    } else if (
+      e.key === "Backspace" &&
+      !inputValue &&
+      selectedTags.length > 0
+    ) {
+      onValueChange(selectedTags.slice(0, -1));
     }
   };
 
-  const handleRemove = (e: React.MouseEvent, tagName: string) => {
-    e.stopPropagation();
+  const handleRemove = (tagName: string) => {
     onValueChange(selectedTags.filter((t) => t !== tagName));
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className={`w-full justify-between h-auto min-h-10 py-2 ${className}`}
-          >
-            <span className="truncate text-left text-xs font-normal">
-              {selectedTags.length > 0
-                ? `${selectedTags.length} 个标签已选择`
-                : "选择标签..."}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-[200px]" align="start">
-          <DropdownMenuLabel>标签列表</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <ScrollArea className="h-[200px]">
-            {availableTags.length === 0 ? (
-              <div className="p-2 text-xs text-muted-foreground text-center">
-                暂无可用标签
-              </div>
-            ) : (
-              availableTags.map((tag) => (
-                <DropdownMenuCheckboxItem
-                  key={tag.id}
-                  checked={selectedTags.includes(tag.name)}
-                  onCheckedChange={() => handleToggle(tag.name)}
-                >
-                  {tag.name}
-                </DropdownMenuCheckboxItem>
-              ))
-            )}
-          </ScrollArea>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <div className={`flex flex-col gap-2 ${className}`}>
+      <div className="relative">
+        <Input
+          placeholder="输入标签并回车添加..."
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => addTag(inputValue)}
+          className="pr-10"
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <Plus className="h-4 w-4" />
+        </div>
+      </div>
 
-      {/* Selected Tags Display */}
-      {selectedTags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1">
-          {selectedTags.map((tag) => (
+      <div className="flex flex-wrap gap-1.5 min-h-[1.5rem]">
+        {selectedTags.length > 0 ? (
+          selectedTags.map((tag) => (
             <Badge
               key={tag}
               variant="secondary"
-              className="px-1 text-[10px] h-5 flex items-center gap-1"
+              className="px-2 py-0.5 text-xs flex items-center gap-1 transition-all hover:bg-secondary/80"
             >
               {tag}
-              <X
-                className="h-3 w-3 cursor-pointer hover:text-destructive"
-                onClick={(e) => handleRemove(e, tag)}
-              />
+              <button
+                type="button"
+                onClick={() => handleRemove(tag)}
+                className="hover:text-destructive transition-colors rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
-          ))}
-        </div>
-      )}
+          ))
+        ) : (
+          <span className="text-xs text-muted-foreground py-1">暂无标签</span>
+        )}
+      </div>
     </div>
   );
 }

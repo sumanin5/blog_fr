@@ -5291,6 +5291,280 @@
           }
         ]
       }
+    },
+    "/api/v1/ops/git/preview": {
+      "get": {
+        "tags": [
+          "git-ops"
+        ],
+        "summary": "预览 Git 同步变更",
+        "description": "预览即将发生的变更 (Dry Run)。\n不会修改数据库。",
+        "operationId": "previewSync",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/ops/git/webhook": {
+      "post": {
+        "tags": [
+          "git-ops"
+        ],
+        "summary": "GitHub Webhook 接收入口",
+        "description": "接收 GitHub Webhook Push 事件，触发后台同步。\n需配置 WEBHOOK_SECRET。",
+        "operationId": "githubWebhook",
+        "parameters": [
+          {
+            "name": "x-hub-signature-256",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "X-Hub-Signature-256"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ops/git/posts/{post_id}/resync-metadata": {
+      "post": {
+        "tags": [
+          "git-ops"
+        ],
+        "summary": "重新同步文章元数据",
+        "description": "重新同步单个文章的元数据。\n\n场景：\n- 用户在 frontmatter 中改了 author/cover/category 名字\n- 需要重新查询数据库并更新 ID\n- 自动回签新的 ID 到 frontmatter\n\n权限：仅管理员可用",
+        "operationId": "resyncPostMetadata",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Post Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7056,6 +7330,18 @@
             ],
             "title": "Category Id"
           },
+          "author_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Id"
+          },
           "cover_media_id": {
             "anyOf": [
               {
@@ -7271,6 +7557,64 @@
         "title": "PostVersionResponse",
         "description": "文章版本响应"
       },
+      "PreviewChange": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "changes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "title"
+        ],
+        "title": "PreviewChange",
+        "description": "预览中的单个变更"
+      },
+      "PreviewResult": {
+        "properties": {
+          "to_create": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewChange"
+            },
+            "type": "array",
+            "title": "To Create",
+            "default": []
+          },
+          "to_update": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewChange"
+            },
+            "type": "array",
+            "title": "To Update",
+            "default": []
+          },
+          "to_delete": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewChange"
+            },
+            "type": "array",
+            "title": "To Delete",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "PreviewResult",
+        "description": "Git 同步预览结果"
+      },
       "SyncStats": {
         "properties": {
           "added": {
@@ -7317,7 +7661,8 @@
           }
         },
         "type": "object",
-        "title": "SyncStats"
+        "title": "SyncStats",
+        "description": "Git 同步统计信息\n包含增删改查的四套路径，错误处理和耗时"
       },
       "TagMergeRequest": {
         "properties": {

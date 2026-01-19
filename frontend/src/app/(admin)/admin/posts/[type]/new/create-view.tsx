@@ -13,10 +13,9 @@ import {
 interface CreateViewProps {
   postType: PostType;
   categories: CategoryResponse[];
-  tags: TagResponse[];
 }
 
-export function CreateView({ postType, categories, tags }: CreateViewProps) {
+export function CreateView({ postType, categories }: CreateViewProps) {
   const router = useRouter();
   const mutation = useCreatePost(postType);
 
@@ -37,7 +36,6 @@ export function CreateView({ postType, categories, tags }: CreateViewProps) {
           contentMdx: "",
         }}
         categories={categories}
-        tags={tags}
         onSave={(data) => mutation.mutate(data)}
         isSaving={mutation.isPending}
       />

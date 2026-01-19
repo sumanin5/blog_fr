@@ -6,16 +6,15 @@ from typing import Dict, List
 from app.core.config import settings
 
 # git_ops的工具类
-from app.git_ops.error_handler import handle_sync_error, safe_operation
+from app.git_ops.container import GitOpsContainer
 from app.git_ops.exceptions import GitOpsConfigurationError, GitOpsSyncError
 from app.git_ops.git_client import GitClient, GitError
-from app.git_ops.mapper import FrontmatterMapper
-from app.git_ops.scanner import MDXScanner, ScannedPost
 from app.git_ops.schema import PreviewChange, PreviewResult, SyncStats
-from app.git_ops.utils import (
+from app.git_ops.components import (
     handle_post_create,
     handle_post_update,
     revalidate_nextjs_cache,
+    validate_post_for_resync,
 )
 
 # 业务板块
@@ -33,21 +32,11 @@ logger = logging.getLogger(__name__)
 class GitOpsService:
     def __init__(self, session: AsyncSession):
         self.session = session
-
-        if not hasattr(settings, "CONTENT_DIR"):
-            raise GitOpsConfigurationError("settings.CONTENT_DIR not configured")
-
-        self.content_dir = Path(settings.CONTENT_DIR)
-
-        # ✅ 初始化时就检查目录是否存在
-        if not self.content_dir.exists():
-            raise GitOpsConfigurationError(
-                f"Content directory not found: {self.content_dir}"
-            )
-
-        self.scanner = MDXScanner(self.content_dir)
-        self.mapper = FrontmatterMapper(session)
-        self.git_client = GitClient(self.content_dir)
+        self.container = GitOpsContainer(session)
+        self.content_dir = self.container.content_dir
+        self.scanner = self.container.scanner
+        self.serializer = self.container.serializer
+        self.git_client = self.container.git_client
 
     async def sync_all(self, default_user: User = None) -> SyncStats:
         """执行全量同步（扫描本地文件 -> 更新数据库）"""
@@ -73,13 +62,12 @@ class GitOpsService:
             pull_output = await self.git_client.pull()
             logger.info(f"Git pull result: {pull_output}")
         except GitError as e:
-            handle_sync_error(
-                stats, error_msg=f"Git pull failed: {str(e)}", is_critical=False
-            )
+            logger.warning(f"Git pull failed: {e}")
+            # 继续执行本地扫描，不中断
 
         # 1. 扫描文件系统
-        scanned_posts: List[ScannedPost] = await self.scanner.scan_all()
-        scanned_map: Dict[str, ScannedPost] = {p.file_path: p for p in scanned_posts}
+        scanned_posts = await self.scanner.scan_all()
+        scanned_map = {p.file_path: p for p in scanned_posts}
         logger.info(f"Scanned {len(scanned_posts)} files.")
 
         # 2. 获取数据库现状
@@ -93,19 +81,19 @@ class GitOpsService:
         # 3. 处理每个文件
         for file_path, scanned in scanned_map.items():
             try:
-                matched_post, is_move = await self.mapper.match_post(
+                matched_post, is_move = await self.serializer.match_post(
                     scanned, existing_posts
                 )
 
                 if matched_post:
-                    """如果已经存在，则是更新的逻辑"""
+                    # 如果已经存在，则是更新的逻辑
                     await handle_post_update(
                         self.session,
                         matched_post,
                         scanned,
                         file_path,
                         is_move,
-                        self.mapper,
+                        self.serializer,
                         operating_user,
                         self.content_dir,
                         stats,
@@ -116,7 +104,7 @@ class GitOpsService:
                         self.session,
                         scanned,
                         file_path,
-                        self.mapper,
+                        self.serializer,
                         operating_user,
                         self.content_dir,
                         stats,
@@ -124,43 +112,40 @@ class GitOpsService:
                     )
 
             except GitOpsSyncError as e:
-                handle_sync_error(
-                    stats, file_path=file_path, error_msg=e.message, is_critical=True
-                )
+                # 业务逻辑错误（如必填字段缺失），记录并跳过
+                logger.error(f"Sync error for {file_path}: {e.message}")
+                stats.errors.append(f"{file_path}: {e.message}")
             except Exception as e:
-                handle_sync_error(stats, file_path=file_path, error=e, is_critical=True)
+                # 未知错误，记录并跳过
+                logger.exception(f"Unexpected error syncing {file_path}")
+                stats.errors.append(f"{file_path}: {str(e)}")
 
         # 4. 处理删除
         for post in existing_posts:
             if post.id not in processed_post_ids:
                 logger.info(f"Deleting post: {post.source_path} (slug={post.slug})")
-                success = await safe_operation(
-                    lambda: post_service.delete_post(
+                try:
+                    await post_service.delete_post(
                         self.session, post.id, current_user=operating_user
-                    ),
-                    stats,
-                    operation_name="Delete post",
-                    file_path=post.source_path,
-                    is_critical=False,
-                )
-                if success:
+                    )
                     stats.deleted.append(post.source_path)
+                except Exception as e:
+                    logger.error(f"Failed to delete post {post.source_path}: {e}")
+                    stats.errors.append(f"Delete failed {post.source_path}: {e}")
 
         stats.duration = time.time() - start_time
         logger.info(
             f"Sync completed in {stats.duration:.2f}s: +{len(stats.added)} ~{len(stats.updated)} -{len(stats.deleted)}"
         )
 
-        # 如果有任何的更新操作的话，就使nextjs的缓存失效
+        # 5. 刷新缓存 (Best effort)
         if stats.added or stats.updated or stats.deleted:
-            await safe_operation(
-                lambda: revalidate_nextjs_cache(
+            try:
+                await revalidate_nextjs_cache(
                     settings.FRONTEND_URL, settings.REVALIDATE_SECRET
-                ),
-                stats,
-                operation_name="Revalidate Next.js cache",
-                is_critical=False,
-            )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to revalidate Next.js cache: {e}")
 
         return stats
 
@@ -178,8 +163,8 @@ class GitOpsService:
                 logger.warning("No operating user found for preview.")
 
         # 1. 扫描文件系统
-        scanned_posts: List[ScannedPost] = await self.scanner.scan_all()
-        scanned_map: Dict[str, ScannedPost] = {p.file_path: p for p in scanned_posts}
+        scanned_posts = await self.scanner.scan_all()
+        scanned_map = {p.file_path: p for p in scanned_posts}
 
         # 2. 获取数据库现状
         stmt = select(Post).where(Post.source_path.isnot(None))
@@ -190,14 +175,16 @@ class GitOpsService:
         # 3. 对比差异
         for file_path, scanned in scanned_map.items():
             try:
-                matched_post, is_move = await self.mapper.match_post(
+                matched_post, is_move = await self.serializer.match_post(
                     scanned, existing_posts
                 )
 
                 if matched_post:
                     # === UPDATE ===
                     processed_post_ids.add(matched_post.id)
-                    new_data = await self.mapper.map_to_post(scanned, dry_run=True)
+                    new_data = await self.serializer.from_frontmatter(
+                        scanned, dry_run=True
+                    )
 
                     # 计算字段差异
                     changes = []
@@ -222,7 +209,9 @@ class GitOpsService:
                         )
                 else:
                     # === CREATE ===
-                    new_data = await self.mapper.map_to_post(scanned, dry_run=True)
+                    new_data = await self.serializer.from_frontmatter(
+                        scanned, dry_run=True
+                    )
                     result.to_create.append(
                         PreviewChange(
                             file=file_path,
@@ -247,8 +236,6 @@ class GitOpsService:
 
     async def resync_metadata(self, post_id, current_user: User) -> dict:
         """重新同步单个文章的元数据"""
-        from app.git_ops.utils import handle_post_update, validate_post_for_resync
-
         post = await validate_post_for_resync(self.session, self.content_dir, post_id)
         scanned = await self.scanner.scan_file(post.source_path)
 
@@ -262,7 +249,7 @@ class GitOpsService:
             scanned=scanned,
             file_path=post.source_path,
             is_move=False,
-            mapper=self.mapper,
+            serializer=self.serializer,
             operating_user=current_user,
             content_dir=self.content_dir,
             stats=stats,

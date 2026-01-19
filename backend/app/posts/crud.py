@@ -8,7 +8,7 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-from app.posts.model import Category, Post, PostType, PostVersion, Tag
+from app.posts.model import Category, Post, PostType, Tag
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import selectinload
@@ -355,12 +355,13 @@ async def merge_tags(
     return target_tag
 
 
-# 获取最大版本号
-# crud.py - 纯数据库操作
-async def get_max_post_version(session, post_id: UUID) -> int:
-    """获取最大版本号"""
-    stmt = select(func.max(PostVersion.version_num)).where(
-        PostVersion.post_id == post_id
-    )
-    result = await session.exec(stmt)
-    return result.one() or 0
+# ============================================================================
+# PostVersion 功能暂时禁用 - 参考 service.py 中的说明
+# ============================================================================
+# async def get_max_post_version(session, post_id: UUID) -> int:
+#     """获取最大版本号"""
+#     stmt = select(func.max(PostVersion.version_num)).where(
+#         PostVersion.post_id == post_id
+#     )
+#     result = await session.exec(stmt)
+#     return result.one() or 0

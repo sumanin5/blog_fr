@@ -67,7 +67,6 @@ interface PostEditorProps {
   };
   postType?: "article" | "idea";
   categories: CategoryResponse[];
-  tags?: TagResponse[];
   onSave: (data: {
     title: string;
     slug: string;
@@ -88,7 +87,6 @@ export function PostEditor({
   initialData,
   postType = "article",
   categories,
-  tags: availableTags = [],
   onSave,
   isSaving,
 }: PostEditorProps) {
@@ -294,7 +292,6 @@ export function PostEditor({
             <div className="space-y-2">
               <Label className="text-xs">文章标签</Label>
               <TagSelect
-                availableTags={availableTags}
                 selectedTags={selectedTags}
                 onValueChange={setSelectedTags}
               />
