@@ -1,21 +1,17 @@
 import logging
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import frontmatter
-from app.core.config import settings
 from app.git_ops.components.metadata import Frontmatter
-from app.git_ops.components.resolvers import (
-    DateResolver,
-    PostTypeResolver,
-    StatusResolver,
-    resolve_author_id,
-    resolve_category_id,
-    resolve_cover_media_id,
-    resolve_tag_ids,
+from app.git_ops.components.processors import (
+    AuthorProcessor,
+    CategoryProcessor,
+    ContentProcessor,
+    CoverProcessor,
+    PostTypeProcessor,
+    TagsProcessor,
 )
 from app.git_ops.components.scanner import ScannedPost
-from app.git_ops.exceptions import GitOpsSyncError
 from app.posts.model import Post
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -27,9 +23,15 @@ class PostSerializer:
 
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.post_type_resolver = PostTypeResolver()
-        self.status_resolver = StatusResolver()
-        self.date_resolver = DateResolver()
+        # 初始化 processor pipeline
+        self.processors = [
+            ContentProcessor(),  # 1. 先处理内容和 title
+            PostTypeProcessor(),  # 2. 确定 post_type
+            AuthorProcessor(),  # 3. 解析 author
+            CoverProcessor(),  # 4. 解析 cover
+            CategoryProcessor(),  # 5. 解析 category（依赖 post_type）
+            TagsProcessor(),  # 6. 解析 tags
+        ]
 
     async def match_post(
         self, scanned: ScannedPost, existing_posts: list
@@ -57,87 +59,15 @@ class PostSerializer:
         """Frontmatter → Post 字典 (Mapper 功能)"""
         meta = scanned.frontmatter
 
-        # 0. Pydantic 验证 + 映射
+        # 0. Pydantic 验证 + 基础映射
         validated = Frontmatter(**meta)
 
-        # 1. 转成 dict（自动用 model_attr 名字）
+        # 1. 转成 dict（Pydantic 已处理类型转换）
         result = validated.model_dump(exclude_none=True)
 
-        # 1.5 处理字段别名 (summary → excerpt)
-        if not result.get("excerpt"):
-            summary = meta.get("summary")
-            if summary:
-                result["excerpt"] = summary
-
-        # 2. 复杂逻辑处理 (Resolvers)
-
-        # Author (Required)
-        if not result.get("author_id"):
-            author_value = meta.get("author")
-            if author_value:
-                result["author_id"] = await resolve_author_id(
-                    self.session, author_value
-                )
-            else:
-                raise GitOpsSyncError(
-                    f"Missing required field 'author' or 'author_id' in {scanned.file_path}",
-                    detail="Every post must specify an author",
-                )
-
-        # Cover (Optional)
-        if not result.get("cover_media_id"):
-            cover_path = meta.get("cover") or meta.get("image")
-            if cover_path:
-                result["cover_media_id"] = await resolve_cover_media_id(
-                    self.session,
-                    cover_path,
-                    mdx_file_path=scanned.file_path,
-                    content_dir=Path(settings.CONTENT_DIR),
-                )
-
-        # Post Type
-        result["post_type"] = await self.post_type_resolver.resolve(
-            meta_type=meta.get("type") or meta.get("post_type"),
-            derived_type=scanned.derived_post_type,
-        )
-
-        # Category
-        if not result.get("category_id"):
-            category_slug = (
-                scanned.derived_category_slug
-                or meta.get("category")
-                or meta.get("category_slug")
-            )
-            result["category_id"] = await resolve_category_id(
-                self.session,
-                category_slug,
-                result["post_type"],
-                auto_create=settings.GIT_AUTO_CREATE_CATEGORIES
-                if not dry_run
-                else False,
-                default_slug=settings.GIT_DEFAULT_CATEGORY,
-            )
-
-        # Status & Date
-        result["status"] = await self.status_resolver.resolve(meta)
-        result["published_at"] = await self.date_resolver.resolve(
-            meta, result["status"]
-        )
-
-        # Content & Title Fallback
-        result["content_mdx"] = scanned.content
-        if not result.get("title"):
-            result["title"] = Path(scanned.file_path).stem
-
-        # Tags
-        tags = meta.get("tags")
-        if tags is not None:
-            if isinstance(tags, str):
-                tags = [t.strip() for t in tags.split(",")]
-            result["tag_ids"] = await resolve_tag_ids(
-                self.session, tags, auto_create=not dry_run
-            )
-            result["tags"] = tags
+        # 2. 执行 processor pipeline
+        for processor in self.processors:
+            await processor.process(result, meta, scanned, self.session, dry_run)
 
         return result
 

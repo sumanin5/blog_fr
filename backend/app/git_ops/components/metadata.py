@@ -22,6 +22,7 @@ class Frontmatter(BaseModel):
     slug: Optional[str] = None
     published_at: Optional[datetime] = Field(None, alias="date")
     status: Optional[str] = None
+    post_type: Optional[str] = None
     author_id: Optional[UUID] = None
     cover_media_id: Optional[UUID] = None
     category_id: Optional[UUID] = None
@@ -32,7 +33,7 @@ class Frontmatter(BaseModel):
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
     meta_keywords: Optional[str] = None
-    excerpt: Optional[str] = None
+    excerpt: Optional[str] = Field(None, alias="summary")
     tags: Optional[List[str]] = None
 
     model_config = ConfigDict(
@@ -48,6 +49,34 @@ class Frontmatter(BaseModel):
         if isinstance(v, str):
             return [t.strip() for t in v.split(",") if t.strip()]
         return v
+
+    @field_validator("post_type", mode="before")
+    @classmethod
+    def normalize_post_type(cls, v: Any) -> Optional[str]:
+        """转换 post_type 为小写"""
+        if v is None:
+            return None
+        return str(v).lower()
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, v: Any) -> Optional[str]:
+        """验证 status 值"""
+        from app.posts.model import PostStatus
+
+        if v is None:
+            return None
+
+        # 如果是 enum，转换为字符串
+        if isinstance(v, PostStatus):
+            return v.value
+
+        # 转换为小写并验证
+        status_str = str(v).lower()
+        valid = [PostStatus.DRAFT.value, PostStatus.PUBLISHED.value]
+        if status_str not in valid:
+            raise ValueError(f"Invalid status. Must be one of: {valid}")
+        return status_str
 
     # --- 序列化器 (用于写入 MDX) ---
 

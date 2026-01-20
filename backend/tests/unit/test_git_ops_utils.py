@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
-from app.git_ops.exceptions import WebhookSignatureError
 from app.git_ops.components import verify_github_signature
+from app.git_ops.exceptions import WebhookSignatureError
 
 # ========================================
 # GitHub Webhook 签名验证测试
@@ -106,8 +106,8 @@ def test_verify_github_signature_timing_attack_protection():
 @pytest.mark.git_ops
 async def test_update_frontmatter_metadata(tmp_path):
     """测试更新 frontmatter 元数据"""
-    from app.git_ops.schema import SyncStats
     from app.git_ops.components import update_frontmatter_metadata
+    from app.git_ops.schema import SyncStats
 
     # 创建测试文件
     test_file = tmp_path / "test.mdx"
@@ -146,8 +146,8 @@ Content here.
 @pytest.mark.git_ops
 async def test_update_frontmatter_metadata_remove_field(tmp_path):
     """测试删除 frontmatter 字段"""
-    from app.git_ops.schema import SyncStats
     from app.git_ops.components import update_frontmatter_metadata
+    from app.git_ops.schema import SyncStats
 
     test_file = tmp_path / "test.mdx"
     test_file.write_text(
@@ -179,8 +179,8 @@ Content.
 @pytest.mark.git_ops
 async def test_update_frontmatter_metadata_nonexistent_file(tmp_path):
     """测试更新不存在的文件"""
-    from app.git_ops.schema import SyncStats
     from app.git_ops.components import update_frontmatter_metadata
+    from app.git_ops.schema import SyncStats
 
     stats = SyncStats()
 
@@ -193,146 +193,11 @@ async def test_update_frontmatter_metadata_nonexistent_file(tmp_path):
 
 
 # ========================================
-# resolve_author_id 测试
+# Resolver 测试已移除
 # ========================================
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_author_id_by_username(session):
-    """测试通过用户名解析作者 ID"""
-    from app.git_ops.components import resolve_author_id
-    from app.users.model import User, UserRole
-
-    # 创建测试用户
-    test_user = User(
-        username="testuser",
-        email="test@example.com",
-        hashed_password="hashed",
-        role=UserRole.USER,
-    )
-    session.add(test_user)
-    await session.commit()
-    await session.refresh(test_user)
-
-    result = await resolve_author_id(session, test_user.username)
-    assert result == test_user.id
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_author_id_by_uuid(session):
-    """测试通过 UUID 解析作者 ID"""
-    from app.git_ops.components import resolve_author_id
-    from app.users.model import User, UserRole
-
-    # 创建测试用户
-    test_user = User(
-        username="testuser2",
-        email="test2@example.com",
-        hashed_password="hashed",
-        role=UserRole.USER,
-    )
-    session.add(test_user)
-    await session.commit()
-    await session.refresh(test_user)
-
-    result = await resolve_author_id(session, str(test_user.id))
-    assert result == test_user.id
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_author_id_not_found(session):
-    """测试作者不存在"""
-    from app.git_ops.exceptions import GitOpsSyncError
-    from app.git_ops.components import resolve_author_id
-
-    with pytest.raises(GitOpsSyncError) as exc_info:
-        await resolve_author_id(session, "nonexistent_user")
-    assert "Author not found" in str(exc_info.value)
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_author_id_empty_value(session):
-    """测试空值"""
-    from app.git_ops.exceptions import GitOpsSyncError
-    from app.git_ops.components import resolve_author_id
-
-    with pytest.raises(GitOpsSyncError) as exc_info:
-        await resolve_author_id(session, "")
-    assert "empty" in str(exc_info.value).lower()
-
-
-# ========================================
-# resolve_category_id 测试
-# ========================================
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_category_id_existing(session):
-    """测试解析已存在的分类"""
-    from app.git_ops.components import resolve_category_id
-    from app.posts.model import Category
-
-    # 创建测试分类
-    category = Category(
-        name="Tech",
-        slug="tech",
-        post_type="article",
-    )
-    session.add(category)
-    await session.commit()
-    await session.refresh(category)
-
-    result = await resolve_category_id(session, "tech", "article")
-    assert result == category.id
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_category_id_auto_create(session):
-    """测试自动创建不存在的分类"""
-    from app.git_ops.components import resolve_category_id
-    from app.posts import crud as posts_crud
-
-    result = await resolve_category_id(
-        session, "new-category", "article", auto_create=True
-    )
-    assert result is not None
-
-    # 验证分类已创建
-    category = await posts_crud.get_category_by_slug_and_type(
-        session, "new-category", "article"
-    )
-    assert category is not None
-    assert category.name == "New Category"  # slug 转 title case
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_category_id_default_fallback(session):
-    """测试回退到默认分类"""
-    from app.git_ops.components import resolve_category_id
-
-    # 不自动创建，且分类不存在，应该尝试创建默认分类
-    result = await resolve_category_id(
-        session,
-        None,
-        "article",
-        auto_create=False,
-        default_slug="uncategorized",
-    )
-    assert result is not None
+# 注意：resolve_author_id, resolve_category_id, resolve_cover_media_id, resolve_tag_ids
+# 这些函数已经被重构为 Processor 模式，不再作为独立函数导出。
+# 这些功能现在通过集成测试覆盖（tests/api/git_ops/）。
 
 
 # ========================================
@@ -345,8 +210,8 @@ async def test_resolve_category_id_default_fallback(session):
 @pytest.mark.git_ops
 async def test_write_post_ids_to_frontmatter_create(tmp_path, mock_post):
     """测试创建文章时写回 ID"""
-    from app.git_ops.schema import SyncStats
     from app.git_ops.components import write_post_ids_to_frontmatter
+    from app.git_ops.schema import SyncStats
 
     # 创建测试文件
     test_file = tmp_path / "test.mdx"
@@ -379,8 +244,8 @@ Content
 @pytest.mark.git_ops
 async def test_write_post_ids_to_frontmatter_no_change(tmp_path, mock_post):
     """测试更新时无变化则不写回"""
-    from app.git_ops.schema import SyncStats
     from app.git_ops.components import write_post_ids_to_frontmatter
+    from app.git_ops.schema import SyncStats
 
     test_file = tmp_path / "test.mdx"
     test_file.write_text(
@@ -485,177 +350,3 @@ async def test_revalidate_nextjs_cache_network_error():
         result = await revalidate_nextjs_cache("http://localhost:3000", "test-secret")
 
         assert result is False
-
-
-# ========================================
-# resolve_cover_media_id 测试
-# ========================================
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_cover_media_id_by_path(mock_session, mock_media_file):
-    """测试通过文件路径解析封面图 ID"""
-    from app.git_ops.components import resolve_cover_media_id
-
-    with patch(
-        "app.media.crud.get_media_file_by_path",
-        new=AsyncMock(return_value=mock_media_file),
-    ):
-        result = await resolve_cover_media_id(mock_session, "uploads/test.jpg")
-        assert result == mock_media_file.id
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_cover_media_id_by_filename(mock_session, mock_media_file):
-    """测试通过文件名解析封面图 ID"""
-    from app.git_ops.components import resolve_cover_media_id
-
-    # 设置媒体文件属性
-    mock_media_file.original_filename = "cover.jpg"
-    mock_media_file.file_path = "uploads/2024/cover.jpg"
-
-    # Mock 路径查询失败（返回 None）
-    with (
-        patch(
-            "app.media.crud.get_media_file_by_path",
-            new=AsyncMock(return_value=None),
-        ),
-        patch(
-            "app.media.service.search_media_files",
-            new=AsyncMock(return_value=[mock_media_file]),
-        ),
-    ):
-        result = await resolve_cover_media_id(mock_session, "some/path/cover.jpg")
-        assert result == mock_media_file.id
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_cover_media_id_not_found(mock_session):
-    """测试找不到封面图"""
-    from app.git_ops.components import resolve_cover_media_id
-
-    with (
-        patch(
-            "app.media.crud.get_media_file_by_path",
-            new=AsyncMock(return_value=None),
-        ),
-        patch(
-            "app.media.service.search_media_files",
-            new=AsyncMock(return_value=[]),
-        ),
-    ):
-        result = await resolve_cover_media_id(mock_session, "nonexistent.jpg")
-        assert result is None
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_cover_media_id_empty_value(mock_session):
-    """测试空值"""
-    from app.git_ops.components import resolve_cover_media_id
-
-    result = await resolve_cover_media_id(mock_session, "")
-    assert result is None
-
-    result = await resolve_cover_media_id(mock_session, None)
-    assert result is None
-
-
-# ========================================
-# resolve_tag_ids 测试
-# ========================================
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_tag_ids_existing(session):
-    """测试解析已存在的标签"""
-    from app.git_ops.components import resolve_tag_ids
-    from app.posts.model import Tag
-
-    # 创建测试标签
-    tag = Tag(name="Python", slug="python")
-    session.add(tag)
-    await session.commit()
-    await session.refresh(tag)
-
-    result = await resolve_tag_ids(session, ["Python"])
-    assert len(result) == 1
-    assert result[0] == tag.id
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_tag_ids_auto_create(session):
-    """测试自动创建不存在的标签"""
-    from app.git_ops.components import resolve_tag_ids
-    from app.posts import crud as posts_crud
-
-    result = await resolve_tag_ids(session, ["NewTag"])
-    assert len(result) == 1
-    assert result[0] is not None
-
-    # 验证标签已创建
-    tag = await posts_crud.get_tag_by_slug(session, "newtag")
-    assert tag is not None
-    assert tag.name == "NewTag"
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_tag_ids_multiple(session):
-    """测试解析多个标签"""
-    from app.git_ops.components import resolve_tag_ids
-    from app.posts.model import Tag
-
-    # 创建测试标签
-    tag1 = Tag(name="Python", slug="python")
-    tag2 = Tag(name="Django", slug="django")
-    session.add(tag1)
-    session.add(tag2)
-    await session.commit()
-    await session.refresh(tag1)
-    await session.refresh(tag2)
-
-    result = await resolve_tag_ids(session, ["Python", "Django", "NewTag"])
-    assert len(result) == 3
-    assert tag1.id in result
-    assert tag2.id in result
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_tag_ids_empty_list(session):
-    """测试空标签列表"""
-    from app.git_ops.components import resolve_tag_ids
-
-    result = await resolve_tag_ids(session, [])
-    assert result == []
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_resolve_tag_ids_whitespace_handling(session):
-    """测试标签名称的空格处理"""
-    from app.git_ops.components import resolve_tag_ids
-
-    result = await resolve_tag_ids(session, ["  Python  ", "Django"])
-    assert len(result) == 2
-
-    # 验证标签名称被正确处理（去除空格）
-    from app.posts import crud as posts_crud
-
-    tag = await posts_crud.get_tag_by_slug(session, "python")
-    assert tag is not None
