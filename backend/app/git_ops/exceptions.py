@@ -76,12 +76,12 @@ class NotGitRepositoryError(GitError):
 class FileOpsError(GitOpsError):
     """文件系统操作失败"""
 
-    def __init__(self, message: str, path: str = ""):
+    def __init__(self, message: str, path: str = "", detail: str = ""):
         super().__init__(
-            message=message,
+            message=f"{message} (path={path})" if path else message,
             status_code=500,
             error_code="FILE_OPERATION_ERROR",
-            details={"path": path} if path else None,
+            details={"path": str(path), "info": detail} if (path or detail) else None,
         )
 
 
