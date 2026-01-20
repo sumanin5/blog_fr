@@ -211,7 +211,7 @@ async def test_sync_with_featured_flag(
 title: "Featured Post"
 slug: "featured-post"
 author: "{superadmin_user.username}"
-featured: true
+is_featured: true
 allow_comments: false
 ---
 
@@ -262,7 +262,7 @@ excerpt: "This is a custom excerpt"
 tags:
   - Complete
   - Metadata
-featured: true
+is_featured: true
 allow_comments: true
 meta_title: "Complete Post SEO Title"
 meta_description: "Complete post SEO description"

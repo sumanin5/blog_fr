@@ -96,6 +96,18 @@ class ScanError(GitOpsError):
         )
 
 
+class FrontmatterValidationError(GitOpsError):
+    """Frontmatter 字段验证失败"""
+
+    def __init__(self, field_name: str, value: str, reason: str):
+        super().__init__(
+            message=f"Invalid value for field '{field_name}': {reason}",
+            status_code=400,
+            error_code="FRONTMATTER_VALIDATION_ERROR",
+            details={"field": field_name, "value": value, "reason": reason},
+        )
+
+
 class ErrorCollector(Protocol):
     errors: List[SyncError]
 

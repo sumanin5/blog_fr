@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from app.git_ops.components.frontmatter import write_post_ids_to_frontmatter
+from app.git_ops.components.writer.file_operator import write_post_ids_to_frontmatter
 
 logger = logging.getLogger(__name__)
 

@@ -57,5 +57,7 @@ thumbnails/
 # ==========================================
 # 备份目录
 # ==========================================
-# frontend_react_backup/
+/frontend_react_backup/
 /content/
+/backend/htmlcov/
+/backend/test-report.html

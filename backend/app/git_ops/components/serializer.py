@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import frontmatter
 from app.core.config import settings
+from app.git_ops.components.metadata import Frontmatter
 from app.git_ops.components.resolvers import (
     DateResolver,
     PostTypeResolver,
@@ -15,7 +16,6 @@ from app.git_ops.components.resolvers import (
 )
 from app.git_ops.components.scanner import ScannedPost
 from app.git_ops.exceptions import GitOpsSyncError
-from app.git_ops.field_definitions import FIELD_DEFINITIONS
 from app.posts.model import Post
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -56,43 +56,18 @@ class PostSerializer:
     ) -> Dict[str, Any]:
         """Frontmatter → Post 字典 (Mapper 功能)"""
         meta = scanned.frontmatter
-        result = {}
 
-        # 1. 处理所有定义良好的字段 (Unified Schema)
-        for field in FIELD_DEFINITIONS:
-            value = meta.get(field.frontmatter_key)
+        # 0. Pydantic 验证 + 映射
+        validated = Frontmatter(**meta)
 
-            # Fallback 逻辑
-            if value is None:
-                if field.frontmatter_key == "excerpt":
-                    value = meta.get("summary") or meta.get("description")
-                elif field.frontmatter_key == "meta_title":
-                    value = meta.get("seo_title")
-                elif field.frontmatter_key == "meta_description":
-                    value = meta.get("seo_description")
-                elif field.frontmatter_key == "meta_keywords":
-                    value = meta.get("keywords")
+        # 1. 转成 dict（自动用 model_attr 名字）
+        result = validated.model_dump(exclude_none=True)
 
-            # 默认值
-            if value is None:
-                value = field.default
-
-            # 类型转换 (parse_fn)
-            if field.parse_fn and value is not None:
-                try:
-                    value = field.parse_fn(value)
-                except Exception:
-                    if field.model_attr in [
-                        "author_id",
-                        "category_id",
-                        "cover_media_id",
-                    ]:
-                        raise GitOpsSyncError(
-                            f"Invalid format for field {field.frontmatter_key}"
-                        )
-
-            if value is not None:
-                result[field.model_attr] = value
+        # 1.5 处理字段别名 (summary → excerpt)
+        if not result.get("excerpt"):
+            summary = meta.get("summary")
+            if summary:
+                result["excerpt"] = summary
 
         # 2. 复杂逻辑处理 (Resolvers)
 
@@ -173,28 +148,8 @@ class PostSerializer:
         category_slug: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Post 对象 → Frontmatter 字典 (Dumper 功能)"""
-        metadata = {}
-
-        # 1. 自动处理所有定义好的字段 (Unified Schema)
-        for field in FIELD_DEFINITIONS:
-            # 从模型获取值
-            value = getattr(post, field.model_attr, None)
-
-            # 检查是否应该跳过默认值
-            if field.skip_if_default and value == field.default:
-                continue
-
-            # 执行转换 (serialize_fn)
-            if field.serialize_fn and value is not None:
-                value = field.serialize_fn(value)
-
-            # 放入结果 (如果不为 None)
-            if value is not None:
-                metadata[field.frontmatter_key] = value
-
-        # 2. 处理动态传入或特殊覆盖参数
-        if tags is not None:
-            metadata["tags"] = tags
+        # 直接使用统一映射逻辑
+        metadata = Frontmatter.to_dict(post, tags=tags)
 
         logger.debug(f"Generated metadata: {metadata}")
         return metadata
