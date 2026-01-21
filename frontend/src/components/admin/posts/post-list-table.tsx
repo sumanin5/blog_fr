@@ -182,7 +182,7 @@ export function PostListTable({
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link
-                          href={`/admin/posts/${post.post_type}/edit/${post.id}`}
+                          href={`/admin/posts/${post.id}/edit`}
                           className="flex items-center"
                         >
                           <Edit className="mr-2 h-4 w-4" /> 编辑修改

@@ -9,6 +9,8 @@ import {
   type UserRegister,
   type UserResponse,
 } from "@/shared/api";
+import Cookies from "js-cookie";
+import { toast } from "sonner";
 
 /**
  * Auth 相关的查询键
@@ -22,22 +24,12 @@ export const authKeys = {
  * 获取当前用户信息 (Real Implementation)
  */
 async function fetchCurrentUser(): Promise<UserResponse | null> {
-  // 检查本地存储中的访问令牌
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  // 优先检查 Cookies 中的访问令牌
+  const token = Cookies.get("access_token");
   if (!token) return null;
 
-  // 尝试获取当前用户信息
-  try {
-    const response = await getCurrentUserInfo({ throwOnError: true });
-    return response.data ?? null;
-    // 如果获取失败，则移除访问令牌
-  } catch {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
-    }
-    return null;
-  }
+  const response = await getCurrentUserInfo({ throwOnError: true });
+  return response.data ?? null;
 }
 
 /**
@@ -69,12 +61,22 @@ export function useAuth() {
       });
       if (response.data?.access_token) {
         localStorage.setItem("access_token", response.data.access_token);
+        Cookies.set("access_token", response.data.access_token, {
+          expires: 7, // 7 天后过期
+          path: "/", // 全站生效
+          sameSite: "lax",
+        });
         return response.data;
       }
-      throw new Error("Login failed: No token received");
+      throw new Error("登录异常：服务器未返回有效的身份凭证");
     },
     onSuccess: () => {
+      toast.success("欢迎回来！");
       queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+    },
+    onError: (error) => {
+      // error.message 已经自动变成了后端给的“用户不存在”或“密码错误”
+      toast.error(error.message);
     },
   });
 
@@ -86,11 +88,18 @@ export function useAuth() {
         throwOnError: true,
       });
     },
+    onSuccess: () => {
+      toast.success("注册成功！请使用您的新账号登录。");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
 
   // 4. 登出
   const logout = async () => {
     localStorage.removeItem("access_token");
+    Cookies.remove("access_token");
     queryClient.setQueryData(authKeys.currentUser(), null);
     queryClient.removeQueries({ queryKey: authKeys.all });
   };

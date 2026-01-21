@@ -45,3 +45,18 @@ class PreviewResult(BaseModel):
     to_update: List[PreviewChange] = []
     to_delete: List[PreviewChange] = []
     errors: List[SyncError] = []
+
+
+class ResyncMetadataResponse(BaseModel):
+    """重新同步元数据结果"""
+
+    status: str
+    post_id: str
+    source_path: str
+    updated_fields: Dict[str, Any]
+
+
+class WebhookResponse(BaseModel):
+    """Webhook 响应"""
+
+    status: str

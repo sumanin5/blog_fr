@@ -4,11 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useCreatePost } from "@/shared/hooks/use-posts";
 import { PostEditor } from "@/components/admin/posts/post-editor";
-import {
-  CategoryResponse,
-  PostType,
-  TagResponse,
-} from "@/shared/api/generated";
+import { CategoryResponse, PostType } from "@/shared/api/generated";
 
 interface CreateViewProps {
   postType: PostType;
@@ -19,12 +15,11 @@ export function CreateView({ postType, categories }: CreateViewProps) {
   const router = useRouter();
   const mutation = useCreatePost(postType);
 
-  // 成功后跳转逻辑
   React.useEffect(() => {
     if (mutation.isSuccess) {
-      router.push(`/admin/posts/${postType}/me`);
+      router.push("/admin/posts");
     }
-  }, [mutation.isSuccess, router, postType]);
+  }, [mutation.isSuccess, router]);
 
   return (
     <div className="h-full">

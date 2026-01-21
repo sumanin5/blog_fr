@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 
@@ -30,6 +30,8 @@ interface LoginFormProps {
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   async function loginAction(
     _prevState: LoginState | null,
@@ -62,7 +64,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       return {
         success: true,
         message: "登录成功！正在跳转...",
-        redirectTo: "/",
+        redirectTo: callbackUrl,
       };
     } catch (err: unknown) {
       const errorMessage =

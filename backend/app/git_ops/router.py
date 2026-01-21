@@ -4,7 +4,12 @@ from typing import Annotated
 from app.core.config import settings
 from app.core.db import get_async_session
 from app.git_ops.components import verify_github_signature
-from app.git_ops.schema import PreviewResult, SyncStats
+from app.git_ops.schema import (
+    PreviewResult,
+    ResyncMetadataResponse,
+    SyncStats,
+    WebhookResponse,
+)
 from app.git_ops.service import GitOpsService, run_background_sync
 from app.users.dependencies import get_current_adminuser
 from app.users.model import User
@@ -41,7 +46,9 @@ async def preview_sync(
     return await service.preview_sync()
 
 
-@router.post("/webhook", summary="GitHub Webhook 接收入口")
+@router.post(
+    "/webhook", response_model=WebhookResponse, summary="GitHub Webhook 接收入口"
+)
 async def github_webhook(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -63,6 +70,7 @@ async def github_webhook(
 
 @router.post(
     "/posts/{post_id}/resync-metadata",
+    response_model=ResyncMetadataResponse,
     summary="重新同步文章元数据",
     deprecated=True,
 )

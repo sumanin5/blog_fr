@@ -2673,8 +2673,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/components/schemas/PostTypeResponse"
                   },
                   "type": "array",
                   "title": "Response Getposttypes"
@@ -2971,7 +2970,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/TagCleanupResponse"
+                }
               }
             }
           },
@@ -4632,9 +4633,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Likepost"
+                  "$ref": "#/components/schemas/PostLikeResponse"
                 }
               }
             }
@@ -4726,9 +4725,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Unlikepost"
+                  "$ref": "#/components/schemas/PostLikeResponse"
                 }
               }
             }
@@ -4822,9 +4819,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Bookmarkpost"
+                  "$ref": "#/components/schemas/PostBookmarkResponse"
                 }
               }
             }
@@ -4916,9 +4911,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Unbookmarkpost"
+                  "$ref": "#/components/schemas/PostBookmarkResponse"
                 }
               }
             }
@@ -5403,7 +5396,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookResponse"
+                }
               }
             }
           },
@@ -5476,8 +5471,9 @@
           "git-ops"
         ],
         "summary": "重新同步文章元数据",
-        "description": "重新同步单个文章的元数据。\n\n场景：\n- 用户在 frontmatter 中改了 author/cover/category 名字\n- 需要重新查询数据库并更新 ID\n- 自动回签新的 ID 到 frontmatter\n\n权限：仅管理员可用",
+        "description": "重新同步单个文章的元数据。\n\n⚠️ 已废弃：此端点将在实现增量同步后被移除。\n\n场景：\n- 用户在 frontmatter 中改了 author/cover/category 名字\n- 需要重新查询数据库并更新 ID\n- 自动回签新的 ID 到 frontmatter\n\n替代方案：\n- 使用 POST /sync 进行全量同步\n- 未来：使用增量同步（自动检测变化的文件）\n\n权限：仅管理员可用",
         "operationId": "resyncPostMetadata",
+        "deprecated": true,
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -5499,7 +5495,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ResyncMetadataResponse"
+                }
               }
             }
           },
@@ -6537,6 +6535,20 @@
         ],
         "title": "Page[TagResponse]"
       },
+      "PostBookmarkResponse": {
+        "properties": {
+          "bookmark_count": {
+            "type": "integer",
+            "title": "Bookmark Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bookmark_count"
+        ],
+        "title": "PostBookmarkResponse",
+        "description": "收藏响应"
+      },
       "PostCreate": {
         "properties": {
           "title": {
@@ -6562,86 +6574,6 @@
           "status": {
             "$ref": "#/components/schemas/PostStatus",
             "default": "draft"
-          },
-          "category_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category Id"
-          },
-          "cover_media_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cover Media Id"
-          },
-          "is_featured": {
-            "type": "boolean",
-            "title": "Is Featured",
-            "default": false
-          },
-          "allow_comments": {
-            "type": "boolean",
-            "title": "Allow Comments",
-            "default": true
-          },
-          "enable_jsx": {
-            "type": "boolean",
-            "title": "Enable Jsx",
-            "default": false
-          },
-          "use_server_rendering": {
-            "type": "boolean",
-            "title": "Use Server Rendering",
-            "default": true
-          },
-          "meta_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Title",
-            "default": ""
-          },
-          "meta_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Description",
-            "default": ""
-          },
-          "meta_keywords": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Keywords",
-            "default": ""
           },
           "content_mdx": {
             "type": "string",
@@ -6733,86 +6665,6 @@
             "$ref": "#/components/schemas/PostStatus",
             "default": "draft"
           },
-          "category_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category Id"
-          },
-          "cover_media_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cover Media Id"
-          },
-          "is_featured": {
-            "type": "boolean",
-            "title": "Is Featured",
-            "default": false
-          },
-          "allow_comments": {
-            "type": "boolean",
-            "title": "Allow Comments",
-            "default": true
-          },
-          "enable_jsx": {
-            "type": "boolean",
-            "title": "Enable Jsx",
-            "default": false
-          },
-          "use_server_rendering": {
-            "type": "boolean",
-            "title": "Use Server Rendering",
-            "default": true
-          },
-          "meta_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Title",
-            "default": ""
-          },
-          "meta_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Description",
-            "default": ""
-          },
-          "meta_keywords": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Keywords",
-            "default": ""
-          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -6865,6 +6717,18 @@
             "type": "string",
             "format": "uuid",
             "title": "Author Id"
+          },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
           },
           "author": {
             "anyOf": [
@@ -6949,6 +6813,16 @@
             ],
             "title": "Content Ast"
           },
+          "enable_jsx": {
+            "type": "boolean",
+            "title": "Enable Jsx",
+            "default": false
+          },
+          "use_server_rendering": {
+            "type": "boolean",
+            "title": "Use Server Rendering",
+            "default": true
+          },
           "toc": {
             "items": {},
             "type": "array",
@@ -6979,6 +6853,20 @@
         ],
         "title": "PostDetailResponse",
         "description": "文章详情响应\n\n优化说明：\n- 根据 enable_jsx 字段，只返回需要的内容字段\n- enable_jsx=False: 返回 content_ast（AST 渲染，最快）\n- enable_jsx=True: 返回 content_mdx（MDX 渲染，支持 JSX）"
+      },
+      "PostLikeResponse": {
+        "properties": {
+          "like_count": {
+            "type": "integer",
+            "title": "Like Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "like_count"
+        ],
+        "title": "PostLikeResponse",
+        "description": "点赞响应"
       },
       "PostPreviewRequest": {
         "properties": {
@@ -7045,86 +6933,6 @@
             "$ref": "#/components/schemas/PostStatus",
             "default": "draft"
           },
-          "category_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category Id"
-          },
-          "cover_media_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cover Media Id"
-          },
-          "is_featured": {
-            "type": "boolean",
-            "title": "Is Featured",
-            "default": false
-          },
-          "allow_comments": {
-            "type": "boolean",
-            "title": "Allow Comments",
-            "default": true
-          },
-          "enable_jsx": {
-            "type": "boolean",
-            "title": "Enable Jsx",
-            "default": false
-          },
-          "use_server_rendering": {
-            "type": "boolean",
-            "title": "Use Server Rendering",
-            "default": true
-          },
-          "meta_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Title",
-            "default": ""
-          },
-          "meta_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Description",
-            "default": ""
-          },
-          "meta_keywords": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Keywords",
-            "default": ""
-          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -7177,6 +6985,18 @@
             "type": "string",
             "format": "uuid",
             "title": "Author Id"
+          },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
           },
           "author": {
             "anyOf": [
@@ -7273,6 +7093,105 @@
         ],
         "title": "PostType",
         "description": "内容类型枚举"
+      },
+      "PostTypeResponse": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
+          },
+          "is_featured": {
+            "type": "boolean",
+            "title": "Is Featured",
+            "default": false
+          },
+          "allow_comments": {
+            "type": "boolean",
+            "title": "Allow Comments",
+            "default": true
+          },
+          "enable_jsx": {
+            "type": "boolean",
+            "title": "Enable Jsx",
+            "default": false
+          },
+          "use_server_rendering": {
+            "type": "boolean",
+            "title": "Use Server Rendering",
+            "default": true
+          },
+          "meta_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Title",
+            "default": ""
+          },
+          "meta_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Description",
+            "default": ""
+          },
+          "meta_keywords": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Keywords",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "PostTypeResponse",
+        "description": "文章类型响应架构"
       },
       "PostUpdate": {
         "properties": {
@@ -7623,6 +7542,36 @@
         "title": "PreviewResult",
         "description": "Git 同步预览结果"
       },
+      "ResyncMetadataResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "post_id": {
+            "type": "string",
+            "title": "Post Id"
+          },
+          "source_path": {
+            "type": "string",
+            "title": "Source Path"
+          },
+          "updated_fields": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Updated Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "post_id",
+          "source_path",
+          "updated_fields"
+        ],
+        "title": "ResyncMetadataResponse",
+        "description": "重新同步元数据结果"
+      },
       "SyncError": {
         "properties": {
           "context": {
@@ -7712,6 +7661,33 @@
         "type": "object",
         "title": "SyncStats",
         "description": "Git 同步统计信息\n包含增删改查的四套路径，错误处理和耗时"
+      },
+      "TagCleanupResponse": {
+        "properties": {
+          "deleted_count": {
+            "type": "integer",
+            "title": "Deleted Count"
+          },
+          "deleted_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted Tags"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted_count",
+          "deleted_tags",
+          "message"
+        ],
+        "title": "TagCleanupResponse",
+        "description": "标签清理结果响应"
       },
       "TagMergeRequest": {
         "properties": {
@@ -8252,6 +8228,20 @@
         "type": "object",
         "title": "UserUpdate",
         "description": "更新用户的请求模型（所有字段可选）"
+      },
+      "WebhookResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "WebhookResponse",
+        "description": "Webhook 响应"
       }
     },
     "securitySchemes": {

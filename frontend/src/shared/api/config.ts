@@ -1,5 +1,17 @@
 import { client } from "./generated/client.gen";
 import { settings } from "@/config/settings";
+import Cookies from "js-cookie";
+
+// 定义错误处理接口
+interface ApiErrorResponse {
+  error: {
+    code: string;
+    message: string;
+    details?: any;
+    request_id?: string;
+    timestamp?: string;
+  };
+}
 
 /**
  * 初始化 API 客户端
@@ -30,7 +42,7 @@ client.setConfig({
  */
 client.interceptors.request.use((request) => {
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("access_token");
+    const token = Cookies.get("access_token");
     if (token) {
       request.headers.set("Authorization", `Bearer ${token}`);
     }
@@ -41,14 +53,51 @@ client.interceptors.request.use((request) => {
 /**
  * 响应拦截器：处理 Token 失效
  */
+/**
+ * 响应拦截器：只处理“状态同步”相关的副作用
+ */
 client.interceptors.response.use((response) => {
+  // 专门处理 401 清理 Token
   if (response.status === 401) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("access_token");
-      // 注意：这里不直接跳转，由 hooks 处理
+      Cookies.remove("access_token");
     }
   }
   return response;
 });
 
+/**
+ * 错误拦截器：专门处理“翻译人话”！
+ */
+client.interceptors.error.use((error: any, response) => {
+  // 只有符合我们后端 ApiErrorResponse 格式的才处理
+  if (error?.error) {
+    let finalMessage = error.error.message;
+
+    // 处理 422 校验错误：把后端返回的字段错误数组拼成一句话
+    if (
+      error.error.code === "VALIDATION_ERROR" &&
+      error.error.details?.validation_errors
+    ) {
+      const details = error.error.details.validation_errors
+        .map((err: any) => `${err.field}: ${err.message}`)
+        .join("; ");
+      finalMessage = `校验失败: ${details}`;
+    }
+
+    // 构造带“人话”的 Error 对象
+    const customError = new Error(finalMessage);
+
+    // 把后端给的 code 也挂载上去，万一前端需要对特定 code 做逻辑（比如弹窗、刷新等）
+    (customError as any).code = error.error.code;
+    (customError as any).status = response?.status;
+
+    // 这一抛出去，TanStack Query 的 onError 接到的就是 customError
+    throw customError;
+  }
+
+  // 如果不符合后端格式（比如网络断了），就原样抛出原始错误
+  return error;
+});
 export { client };

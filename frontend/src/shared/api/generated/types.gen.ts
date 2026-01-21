@@ -569,6 +569,18 @@ export type PageTagResponse = {
 };
 
 /**
+ * PostBookmarkResponse
+ *
+ * 收藏响应
+ */
+export type PostBookmarkResponse = {
+    /**
+     * Bookmark Count
+     */
+    bookmark_count: number;
+};
+
+/**
  * PostCreate
  */
 export type PostCreate = {
@@ -582,42 +594,6 @@ export type PostCreate = {
     slug?: string | null;
     post_type?: PostType;
     status?: PostStatus;
-    /**
-     * Category Id
-     */
-    category_id?: string | null;
-    /**
-     * Cover Media Id
-     */
-    cover_media_id?: string | null;
-    /**
-     * Is Featured
-     */
-    is_featured?: boolean;
-    /**
-     * Allow Comments
-     */
-    allow_comments?: boolean;
-    /**
-     * Enable Jsx
-     */
-    enable_jsx?: boolean;
-    /**
-     * Use Server Rendering
-     */
-    use_server_rendering?: boolean;
-    /**
-     * Meta Title
-     */
-    meta_title?: string | null;
-    /**
-     * Meta Description
-     */
-    meta_description?: string | null;
-    /**
-     * Meta Keywords
-     */
-    meta_keywords?: string | null;
     /**
      * Content Mdx
      *
@@ -668,42 +644,6 @@ export type PostDetailResponse = {
     post_type?: PostType;
     status?: PostStatus;
     /**
-     * Category Id
-     */
-    category_id?: string | null;
-    /**
-     * Cover Media Id
-     */
-    cover_media_id?: string | null;
-    /**
-     * Is Featured
-     */
-    is_featured?: boolean;
-    /**
-     * Allow Comments
-     */
-    allow_comments?: boolean;
-    /**
-     * Enable Jsx
-     */
-    enable_jsx?: boolean;
-    /**
-     * Use Server Rendering
-     */
-    use_server_rendering?: boolean;
-    /**
-     * Meta Title
-     */
-    meta_title?: string | null;
-    /**
-     * Meta Description
-     */
-    meta_description?: string | null;
-    /**
-     * Meta Keywords
-     */
-    meta_keywords?: string | null;
-    /**
      * Id
      */
     id: string;
@@ -743,6 +683,10 @@ export type PostDetailResponse = {
      * Author Id
      */
     author_id: string;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
     author?: UserResponse | null;
     category?: CategoryResponse | null;
     cover_media?: MediaFileResponse | null;
@@ -769,6 +713,14 @@ export type PostDetailResponse = {
         [key: string]: unknown;
     } | null;
     /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
+    /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
+    /**
      * Toc
      */
     toc: Array<unknown>;
@@ -776,6 +728,18 @@ export type PostDetailResponse = {
      * Versions
      */
     versions?: Array<PostVersionResponse>;
+};
+
+/**
+ * PostLikeResponse
+ *
+ * 点赞响应
+ */
+export type PostLikeResponse = {
+    /**
+     * Like Count
+     */
+    like_count: number;
 };
 
 /**
@@ -835,42 +799,6 @@ export type PostShortResponse = {
     post_type?: PostType;
     status?: PostStatus;
     /**
-     * Category Id
-     */
-    category_id?: string | null;
-    /**
-     * Cover Media Id
-     */
-    cover_media_id?: string | null;
-    /**
-     * Is Featured
-     */
-    is_featured?: boolean;
-    /**
-     * Allow Comments
-     */
-    allow_comments?: boolean;
-    /**
-     * Enable Jsx
-     */
-    enable_jsx?: boolean;
-    /**
-     * Use Server Rendering
-     */
-    use_server_rendering?: boolean;
-    /**
-     * Meta Title
-     */
-    meta_title?: string | null;
-    /**
-     * Meta Description
-     */
-    meta_description?: string | null;
-    /**
-     * Meta Keywords
-     */
-    meta_keywords?: string | null;
-    /**
      * Id
      */
     id: string;
@@ -910,6 +838,10 @@ export type PostShortResponse = {
      * Author Id
      */
     author_id: string;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
     author?: UserResponse | null;
     category?: CategoryResponse | null;
     cover_media?: MediaFileResponse | null;
@@ -940,6 +872,58 @@ export type PostStatus = 'draft' | 'published' | 'archived';
  * 内容类型枚举
  */
 export type PostType = 'article' | 'idea';
+
+/**
+ * PostTypeResponse
+ *
+ * 文章类型响应架构
+ */
+export type PostTypeResponse = {
+    /**
+     * Value
+     */
+    value: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
+    /**
+     * Allow Comments
+     */
+    allow_comments?: boolean;
+    /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
+    /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
+    /**
+     * Meta Title
+     */
+    meta_title?: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description?: string | null;
+    /**
+     * Meta Keywords
+     */
+    meta_keywords?: string | null;
+};
 
 /**
  * PostUpdate
@@ -1098,6 +1082,32 @@ export type PreviewResult = {
 };
 
 /**
+ * ResyncMetadataResponse
+ *
+ * 重新同步元数据结果
+ */
+export type ResyncMetadataResponse = {
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Post Id
+     */
+    post_id: string;
+    /**
+     * Source Path
+     */
+    source_path: string;
+    /**
+     * Updated Fields
+     */
+    updated_fields: {
+        [key: string]: unknown;
+    };
+};
+
+/**
  * SyncError
  *
  * 同步过程中的错误记录 (对齐核心 ErrorDetail 结构)
@@ -1158,6 +1168,26 @@ export type SyncStats = {
      * Duration
      */
     duration?: number;
+};
+
+/**
+ * TagCleanupResponse
+ *
+ * 标签清理结果响应
+ */
+export type TagCleanupResponse = {
+    /**
+     * Deleted Count
+     */
+    deleted_count: number;
+    /**
+     * Deleted Tags
+     */
+    deleted_tags: Array<string>;
+    /**
+     * Message
+     */
+    message: string;
 };
 
 /**
@@ -1480,6 +1510,18 @@ export type UserUpdate = {
 };
 
 /**
+ * WebhookResponse
+ *
+ * Webhook 响应
+ */
+export type WebhookResponse = {
+    /**
+     * Status
+     */
+    status: string;
+};
+
+/**
  * MediaFileListResponse
  *
  * 媒体文件列表响应模型
@@ -1689,42 +1731,6 @@ export type PostDetailResponseWritable = {
     post_type?: PostType;
     status?: PostStatus;
     /**
-     * Category Id
-     */
-    category_id?: string | null;
-    /**
-     * Cover Media Id
-     */
-    cover_media_id?: string | null;
-    /**
-     * Is Featured
-     */
-    is_featured?: boolean;
-    /**
-     * Allow Comments
-     */
-    allow_comments?: boolean;
-    /**
-     * Enable Jsx
-     */
-    enable_jsx?: boolean;
-    /**
-     * Use Server Rendering
-     */
-    use_server_rendering?: boolean;
-    /**
-     * Meta Title
-     */
-    meta_title?: string | null;
-    /**
-     * Meta Description
-     */
-    meta_description?: string | null;
-    /**
-     * Meta Keywords
-     */
-    meta_keywords?: string | null;
-    /**
      * Id
      */
     id: string;
@@ -1764,6 +1770,10 @@ export type PostDetailResponseWritable = {
      * Author Id
      */
     author_id: string;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
     author?: UserResponse | null;
     category?: CategoryResponse | null;
     cover_media?: MediaFileResponseWritable | null;
@@ -1789,6 +1799,14 @@ export type PostDetailResponseWritable = {
     content_ast?: {
         [key: string]: unknown;
     } | null;
+    /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
+    /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
     /**
      * Toc
      */
@@ -1816,42 +1834,6 @@ export type PostShortResponseWritable = {
     post_type?: PostType;
     status?: PostStatus;
     /**
-     * Category Id
-     */
-    category_id?: string | null;
-    /**
-     * Cover Media Id
-     */
-    cover_media_id?: string | null;
-    /**
-     * Is Featured
-     */
-    is_featured?: boolean;
-    /**
-     * Allow Comments
-     */
-    allow_comments?: boolean;
-    /**
-     * Enable Jsx
-     */
-    enable_jsx?: boolean;
-    /**
-     * Use Server Rendering
-     */
-    use_server_rendering?: boolean;
-    /**
-     * Meta Title
-     */
-    meta_title?: string | null;
-    /**
-     * Meta Description
-     */
-    meta_description?: string | null;
-    /**
-     * Meta Keywords
-     */
-    meta_keywords?: string | null;
-    /**
      * Id
      */
     id: string;
@@ -1891,6 +1873,10 @@ export type PostShortResponseWritable = {
      * Author Id
      */
     author_id: string;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
     author?: UserResponse | null;
     category?: CategoryResponse | null;
     cover_media?: MediaFileResponseWritable | null;
@@ -3249,9 +3235,7 @@ export type GetPostTypesResponses = {
      *
      * Successful Response
      */
-    200: Array<{
-        [key: string]: unknown;
-    }>;
+    200: Array<PostTypeResponse>;
 };
 
 export type GetPostTypesResponse = GetPostTypesResponses[keyof GetPostTypesResponses];
@@ -3399,8 +3383,10 @@ export type DeleteOrphanedTagsResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    200: TagCleanupResponse;
 };
+
+export type DeleteOrphanedTagsResponse = DeleteOrphanedTagsResponses[keyof DeleteOrphanedTagsResponses];
 
 export type MergeTagsData = {
     body: TagMergeRequest;
@@ -4153,13 +4139,9 @@ export type UnlikePostError = UnlikePostErrors[keyof UnlikePostErrors];
 
 export type UnlikePostResponses = {
     /**
-     * Response Unlikepost
-     *
      * Successful Response
      */
-    200: {
-        [key: string]: unknown;
-    };
+    200: PostLikeResponse;
 };
 
 export type UnlikePostResponse = UnlikePostResponses[keyof UnlikePostResponses];
@@ -4207,13 +4189,9 @@ export type LikePostError = LikePostErrors[keyof LikePostErrors];
 
 export type LikePostResponses = {
     /**
-     * Response Likepost
-     *
      * Successful Response
      */
-    200: {
-        [key: string]: unknown;
-    };
+    200: PostLikeResponse;
 };
 
 export type LikePostResponse = LikePostResponses[keyof LikePostResponses];
@@ -4261,13 +4239,9 @@ export type UnbookmarkPostError = UnbookmarkPostErrors[keyof UnbookmarkPostError
 
 export type UnbookmarkPostResponses = {
     /**
-     * Response Unbookmarkpost
-     *
      * Successful Response
      */
-    200: {
-        [key: string]: unknown;
-    };
+    200: PostBookmarkResponse;
 };
 
 export type UnbookmarkPostResponse = UnbookmarkPostResponses[keyof UnbookmarkPostResponses];
@@ -4315,13 +4289,9 @@ export type BookmarkPostError = BookmarkPostErrors[keyof BookmarkPostErrors];
 
 export type BookmarkPostResponses = {
     /**
-     * Response Bookmarkpost
-     *
      * Successful Response
      */
-    200: {
-        [key: string]: unknown;
-    };
+    200: PostBookmarkResponse;
 };
 
 export type BookmarkPostResponse = BookmarkPostResponses[keyof BookmarkPostResponses];
@@ -4570,8 +4540,10 @@ export type GithubWebhookResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    200: WebhookResponse;
 };
+
+export type GithubWebhookResponse = GithubWebhookResponses[keyof GithubWebhookResponses];
 
 export type ResyncPostMetadataData = {
     body?: never;
@@ -4618,5 +4590,7 @@ export type ResyncPostMetadataResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    200: ResyncMetadataResponse;
 };
+
+export type ResyncPostMetadataResponse = ResyncPostMetadataResponses[keyof ResyncPostMetadataResponses];

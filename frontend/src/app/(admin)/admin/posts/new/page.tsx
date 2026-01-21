@@ -1,24 +1,28 @@
 import React from "react";
-// 确保 API 客户端已在服务端配置
 import "@/shared/api/config";
 import { listCategoriesByType, PostType } from "@/shared/api/generated";
 import { CreateView } from "./create-view";
+import { redirect } from "next/navigation";
 
 interface PageProps {
-  params: Promise<{
-    type: string;
+  searchParams: Promise<{
+    type?: string;
   }>;
 }
 
-export default async function NewPostByTypePage({ params }: PageProps) {
-  const { type } = await params;
-  const postType = (type as PostType) || "article";
+export default async function NewPostPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const postType = (params.type as PostType) || "article";
 
-  // 并行获取分类和标签
+  // 验证 post_type
+  if (!["article", "idea"].includes(postType)) {
+    redirect("/admin/posts");
+  }
+
   const [categoriesRes] = await Promise.all([
     listCategoriesByType({
       path: { post_type: postType },
-      query: { size: 100, include_inactive: true },
+      query: { include_inactive: true },
     }).catch(() => ({ data: null })),
   ]);
 

@@ -1,5 +1,4 @@
 import React from "react";
-// 确保 API 客户端已在服务端配置
 import "@/shared/api/config";
 import {
   listCategoriesByType,
@@ -11,33 +10,37 @@ import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{
-    type: string;
     id: string;
   }>;
 }
 
 export default async function EditPostPage({ params }: PageProps) {
-  const { type, id } = await params;
-  const postType = (type as PostType) || "article";
+  const { id } = await params;
 
-  // 并行获取文章详情、分类列表
-  const [postRes, categoriesRes] = await Promise.all([
+  // 先获取文章详情，从中读取 post_type
+  const postRes = await getPostById({
+    path: { post_type: "article", post_id: id }, // 先用 article 试试
+    query: { include_mdx: true },
+  }).catch(() =>
     getPostById({
-      path: { post_type: postType, post_id: id },
+      path: { post_type: "idea", post_id: id }, // 失败就试 idea
       query: { include_mdx: true },
-    }).catch(() => ({ data: null, error: true })),
-    listCategoriesByType({
-      path: { post_type: postType },
-      query: { size: 100, include_inactive: true },
-    }).catch(() => ({ data: null })),
-  ]);
+    }).catch(() => ({ data: null, error: true }))
+  );
 
   if (!postRes.data) {
-    // 如果获取失败，显示 404
     notFound();
   }
 
   const post = postRes.data;
+  const postType = post.post_type as PostType;
+
+  // 获取分类列表
+  const categoriesRes = await listCategoriesByType({
+    path: { post_type: postType },
+    query: { include_inactive: true },
+  }).catch(() => ({ data: null }));
+
   const categories = categoriesRes.data?.items || [];
 
   return <EditView post={post} postType={postType} categories={categories} />;

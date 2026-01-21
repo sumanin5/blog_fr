@@ -84,12 +84,12 @@
   - [ ] **Git Submodule 策略**: 将 `content/` 独立为私有仓库，通过 Submodule 或运行时挂载方式接入代码框架。
   - [ ] **安全部署流水线**: 优化 GitHub Actions，确保在公开展示框架的同时，私密内容（文章、图片）仅在生产环境（阿里云）通过凭证拉取，不进入公开镜像。
 - [ ] **物理磁盘读取器 (Disk Loader)**:
-  - [ ] 创建按路径读取 MDX 文件的专用 API，支持实时解析 Frontmatter 为编辑器表单数据。
-  - [ ] 处理文件锁定或并发编辑冲突（可选）。
+  - [x] 创建按路径读取 MDX 文件的专用 API，支持实时解析 Frontmatter 为编辑器表单数据。
+  - [x] 处理文件锁定或并发编辑冲突（可选）。
 - [ ] **物理磁盘反向写入 (Reverse Write)**:
-  - [ ] 实现 `Post` 模型到 `MDX+Frontmatter` 的序列化器。
-  - [ ] 改造 `POST/PATCH` 接口：在存入 DB 的同时，根据路径规则更新/创建物理文件。
-  - [ ] 处理文件重命名 (Rename) 导致的物理路径变更。
+  - [x] 实现 `Post` 模型到 `MDX+Frontmatter` 的序列化器。
+  - [x] 改造 `POST/PATCH` 接口：在存入 DB 的同时，根据路径规则更新/创建物理文件。
+  - [x] 处理文件重命名 (Rename) 导致的物理路径变更。
 - [ ] **结构化元数据编辑器 (Structured Metadata Sidebar)**:
   - [ ] **UI 开发**: 替换现有的手写 YAML 模式，改为右侧边栏表单。
   - [ ] **组件集成**: 集成 `CategorySelect`, `TagCombobox` 及媒体库封面选择。

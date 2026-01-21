@@ -43,6 +43,14 @@ class TagResponse(TagBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TagCleanupResponse(BaseModel):
+    """标签清理结果响应"""
+
+    deleted_count: int
+    deleted_tags: List[str]
+    message: str
+
+
 class TagMergeRequest(BaseModel):
     """标签合并请求"""
 
@@ -98,6 +106,13 @@ class PostBase(BaseModel):
     slug: Optional[str] = None  # 如果不填，后端自动生成 base-slug-xxxxxx 格式
     post_type: PostType = PostType.ARTICLE
     status: PostStatus = PostStatus.DRAFT
+
+
+class PostTypeResponse(BaseModel):
+    """文章类型响应架构"""
+
+    value: str
+    label: str
     category_id: Optional[UUID] = None
     cover_media_id: Optional[UUID] = None
     is_featured: bool = False
@@ -302,6 +317,18 @@ class PostPreviewResponse(BaseModel):
     toc: list
     reading_time: int
     excerpt: str
+
+
+class PostLikeResponse(BaseModel):
+    """点赞响应"""
+
+    like_count: int
+
+
+class PostBookmarkResponse(BaseModel):
+    """收藏响应"""
+
+    bookmark_count: int
 
 
 # 延迟导入避免循环依赖

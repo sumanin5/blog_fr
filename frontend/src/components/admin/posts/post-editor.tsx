@@ -1,46 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Save,
-  Eye,
-  Settings as SettingsIcon,
-  FileText,
-  ChevronLeft,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Save, Eye, FileText, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { CategorySelect } from "./category-select";
-import { TagSelect } from "./tag-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { MdxClientRenderer } from "@/components/post/content/renderers/mdx-client-renderer";
-import {
-  PostType,
-  CategoryResponse,
-  TagResponse,
-} from "@/shared/api/generated";
+import { CategoryResponse } from "@/shared/api/generated";
 import type { PostStatus } from "@/shared/api/generated";
+import { useEditorStore } from "@/stores/use-editor-store";
 
-import { CoverSelect } from "@/components/admin/media/cover-select";
-
-// 本地定义状态常量，因为生成的代码中 PostStatus 只是 Type Alias
-const POST_STATUS = {
-  DRAFT: "draft" as PostStatus,
-  PUBLISHED: "published" as PostStatus,
-  ARCHIVED: "archived" as PostStatus,
-};
+import {
+  PostMetadataSidebar,
+  POST_STATUS_VALUES,
+  PostMetadata,
+} from "./post-metadata-sidebar";
 
 import type { MediaFileResponse } from "@/hooks/use-media";
 
@@ -52,6 +30,7 @@ const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
 });
 
 interface PostEditorProps {
+  postId?: string; // Add an ID to identify which post we are editing so persistence works per-post
   initialData: {
     title: string;
     slug: string;
@@ -84,6 +63,7 @@ interface PostEditorProps {
 }
 
 export function PostEditor({
+  postId = "new", // default to 'new' if not provided
   initialData,
   postType = "article",
   categories,
@@ -91,44 +71,52 @@ export function PostEditor({
   isSaving,
 }: PostEditorProps) {
   const { theme } = useTheme();
-  const [title, setTitle] = useState(initialData.title);
-  const [slug, setSlug] = useState(initialData.slug);
-  const [contentMdx, setContentMdx] = useState(initialData.contentMdx);
-  const [cover, setCover] = useState<MediaFileResponse | null>(
-    initialData.coverMedia || null
-  );
-  const [category, setCategory] = useState<string>(
-    initialData.categoryId || "none"
-  );
-  const [activeTab, setActiveTab] = useState("edit");
 
-  // New states
-  const [status, setStatus] = useState<PostStatus>(
-    initialData.status || POST_STATUS.DRAFT
-  );
-  const [selectedTags, setSelectedTags] = useState<string[]>(
-    initialData.tags || []
-  );
-  const [isFeatured, setIsFeatured] = useState(initialData.isFeatured || false);
-  const [enableJsx, setEnableJsx] = useState(initialData.enableJsx || false);
-  const [useServerRendering, setUseServerRendering] = useState(
-    initialData.useServerRendering || false
-  );
-  const [excerpt, setExcerpt] = useState(initialData.excerpt || "");
+  // Zustand State Selectors
+  const {
+    title,
+    contentMdx,
+    metadata,
+    initializeEditor,
+    setTitle,
+    setContent,
+    setMetadata,
+  } = useEditorStore();
+
+  // Initialize store on mount or ID change
+  useEffect(() => {
+    initializeEditor(postId, {
+      title: initialData.title,
+      contentMdx: initialData.contentMdx,
+      metadata: {
+        slug: initialData.slug,
+        status: initialData.status || POST_STATUS_VALUES.DRAFT,
+        categoryId: initialData.categoryId || "none",
+        tags: initialData.tags || [],
+        cover: initialData.coverMedia || null,
+        excerpt: initialData.excerpt || "",
+        isFeatured: initialData.isFeatured || false,
+        enableJsx: initialData.enableJsx || false,
+        useServerRendering: initialData.useServerRendering || false,
+      },
+    });
+  }, [postId, initialData, initializeEditor]);
+
+  const [activeTab, setActiveTab] = useState("edit");
 
   const handleSave = () => {
     onSave({
       title,
-      slug,
+      slug: metadata.slug,
       contentMdx,
-      cover_media_id: cover?.id || null,
-      category_id: category === "none" ? null : category,
-      status,
-      tags: selectedTags,
-      is_featured: isFeatured,
-      enable_jsx: enableJsx,
-      use_server_rendering: useServerRendering,
-      excerpt: excerpt || null,
+      cover_media_id: metadata.cover?.id || null,
+      category_id: metadata.categoryId === "none" ? null : metadata.categoryId,
+      status: metadata.status,
+      tags: metadata.tags,
+      is_featured: metadata.isFeatured,
+      enable_jsx: metadata.enableJsx,
+      use_server_rendering: metadata.useServerRendering,
+      excerpt: metadata.excerpt || null,
     });
   };
 
@@ -144,27 +132,32 @@ export function PostEditor({
           </Button>
           <div className="h-4 w-px bg-border" />
           <h2 className="text-lg font-semibold truncate max-w-[300px]">
+            {/* Show title from store, fallbacks handled in store init */}
             {title || "未命名文章"}
           </h2>
           <div
             className={`px-2 py-0.5 rounded text-xs border ${
-              status === POST_STATUS.PUBLISHED
+              metadata.status === POST_STATUS_VALUES.PUBLISHED
                 ? "bg-green-500/10 text-green-500 border-green-500/20"
                 : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
             }`}
           >
-            {status === POST_STATUS.PUBLISHED ? "已发布" : "草稿"}
+            {metadata.status === POST_STATUS_VALUES.PUBLISHED
+              ? "已发布"
+              : "草稿"}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {status !== POST_STATUS.PUBLISHED && (
+          {metadata.status !== POST_STATUS_VALUES.PUBLISHED && (
             <Button variant="outline" size="sm" onClick={handleSave}>
               存为草稿
             </Button>
           )}
           <Button size="sm" onClick={handleSave} disabled={isSaving}>
             <Save className="mr-2 h-4 w-4" />{" "}
-            {status === POST_STATUS.PUBLISHED ? "更新文章" : "发布文章"}
+            {metadata.status === POST_STATUS_VALUES.PUBLISHED
+              ? "更新文章"
+              : "发布文章"}
           </Button>
         </div>
       </div>
@@ -201,7 +194,7 @@ export function PostEditor({
               <div className="h-full" data-color-mode={theme}>
                 <MDEditor
                   value={contentMdx}
-                  onChange={(val) => setContentMdx(val || "")}
+                  onChange={(val) => setContent(val || "")}
                   height="100%"
                   preview="edit"
                   hideToolbar={false}
@@ -232,128 +225,13 @@ export function PostEditor({
         </div>
 
         {/* 右侧设置区域 */}
-        <div className="space-y-6 overflow-y-auto pb-8 pr-2">
-          {/* 基本设置 */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-primary">
-              <SettingsIcon className="size-4" />
-              <h3 className="text-sm font-semibold uppercase tracking-wider">
-                文章设置
-              </h3>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="slug" className="text-xs">
-                URL 别名 (Slug)
-              </Label>
-              <Input
-                id="slug"
-                placeholder="my-post-slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="h-8 text-xs font-mono"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs">出版状态</Label>
-              <Select
-                value={status}
-                onValueChange={(val) => setStatus(val as PostStatus)}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={POST_STATUS.DRAFT}>
-                    草稿 (Draft)
-                  </SelectItem>
-                  <SelectItem value={POST_STATUS.PUBLISHED}>
-                    发布 (Published)
-                  </SelectItem>
-                  <SelectItem value={POST_STATUS.ARCHIVED}>
-                    归档 (Archived)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs">所属分类</Label>
-              <CategorySelect
-                postType={postType as PostType}
-                value={category}
-                onValueChange={setCategory}
-                categories={categories}
-                className="h-8 text-xs"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs">文章标签</Label>
-              <TagSelect
-                selectedTags={selectedTags}
-                onValueChange={setSelectedTags}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs">封面图片</Label>
-              <CoverSelect currentCover={cover} onCoverChange={setCover} />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs">摘要 (Excerpt)</Label>
-              <textarea
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="输入文章摘要..."
-                value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="h-px bg-border" />
-
-          {/* 高级设置 */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
-              高级设置
-            </h3>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-xs">精选文章</Label>
-                <p className="text-[10px] text-muted-foreground">
-                  置顶显示在首页
-                </p>
-              </div>
-              <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-xs">启用 JSX</Label>
-                <p className="text-[10px] text-muted-foreground">
-                  支持 React 组件渲染
-                </p>
-              </div>
-              <Switch checked={enableJsx} onCheckedChange={setEnableJsx} />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-xs">服务端渲染</Label>
-                <p className="text-[10px] text-muted-foreground">
-                  从服务器预编译 MDX
-                </p>
-              </div>
-              <Switch
-                checked={useServerRendering}
-                onCheckedChange={setUseServerRendering}
-              />
-            </div>
-          </div>
+        <div className="border-l pl-4 h-full overflow-hidden">
+          <PostMetadataSidebar
+            postType={postType}
+            categories={categories}
+            metadata={metadata}
+            onChange={setMetadata}
+          />
         </div>
       </div>
     </div>

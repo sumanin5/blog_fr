@@ -25,12 +25,16 @@ from app.posts.schema import (
     CategoryCreate,
     CategoryResponse,
     CategoryUpdate,
+    PostBookmarkResponse,
     PostCreate,
     PostDetailResponse,
+    PostLikeResponse,
     PostPreviewRequest,
     PostPreviewResponse,
     PostShortResponse,
+    PostTypeResponse,
     PostUpdate,
+    TagCleanupResponse,
     TagMergeRequest,
     TagResponse,
     TagUpdate,
@@ -53,7 +57,7 @@ router = APIRouter(prefix="/posts")
 # ========================================
 
 
-@router.get("/types", response_model=List[dict], summary="获取所有板块类型")
+@router.get("/types", response_model=List[PostTypeResponse], summary="获取所有板块类型")
 async def get_post_types():
     """获取所有板块类型（用于前端构建菜单）
 
@@ -90,6 +94,7 @@ async def list_tags(
 
 @router.delete(
     "/admin/tags/orphaned",
+    response_model=TagCleanupResponse,
     status_code=status.HTTP_200_OK,
     summary="清理孤立标签",
 )
@@ -334,7 +339,7 @@ async def get_post_by_slug(
 
 @router.post(
     "/{post_type}/{post_id}/like",
-    response_model=dict,
+    response_model=PostLikeResponse,
     summary="点赞文章",
 )
 async def like_post(
@@ -348,7 +353,7 @@ async def like_post(
 
 @router.delete(
     "/{post_type}/{post_id}/like",
-    response_model=dict,
+    response_model=PostLikeResponse,
     summary="取消点赞",
 )
 async def unlike_post(
@@ -362,7 +367,7 @@ async def unlike_post(
 
 @router.post(
     "/{post_type}/{post_id}/bookmark",
-    response_model=dict,
+    response_model=PostBookmarkResponse,
     summary="收藏文章",
 )
 async def bookmark_post(
@@ -376,7 +381,7 @@ async def bookmark_post(
 
 @router.delete(
     "/{post_type}/{post_id}/bookmark",
-    response_model=dict,
+    response_model=PostBookmarkResponse,
     summary="取消收藏",
 )
 async def unbookmark_post(

@@ -54,8 +54,7 @@ export function AdminSidebar({
 
   const mainMenuItems = [
     { icon: LayoutDashboard, label: "工作台", href: "/admin/dashboard" },
-    { icon: FileText, label: "文章管理", href: "/admin/posts/article/me" },
-    { icon: FileText, label: "想法管理", href: "/admin/posts/idea/me" },
+    { icon: FileText, label: "我的内容", href: "/admin/posts" },
     { icon: GitBranch, label: "Git 同步状态", href: "/admin/posts/sync" },
   ];
 

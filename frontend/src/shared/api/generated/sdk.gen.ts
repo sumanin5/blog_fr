@@ -664,12 +664,20 @@ export const githubWebhook = <ThrowOnError extends boolean = false>(options?: Op
  *
  * 重新同步单个文章的元数据。
  *
+ * ⚠️ 已废弃：此端点将在实现增量同步后被移除。
+ *
  * 场景：
  * - 用户在 frontmatter 中改了 author/cover/category 名字
  * - 需要重新查询数据库并更新 ID
  * - 自动回签新的 ID 到 frontmatter
  *
+ * 替代方案：
+ * - 使用 POST /sync 进行全量同步
+ * - 未来：使用增量同步（自动检测变化的文件）
+ *
  * 权限：仅管理员可用
+ *
+ * @deprecated
  */
 export const resyncPostMetadata = <ThrowOnError extends boolean = false>(options: Options<ResyncPostMetadataData, ThrowOnError>) => (options.client ?? client).post<ResyncPostMetadataResponses, ResyncPostMetadataErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

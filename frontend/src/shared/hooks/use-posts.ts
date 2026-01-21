@@ -7,9 +7,11 @@ import {
   updatePostByType,
   getPostById,
   PostType,
+  PostCreate,
+  PostUpdate,
 } from "@/shared/api/generated";
 import { toast } from "sonner";
-import { POST_TYPE_LABELS } from "@/shared/constants/posts";
+import { usePostTypes } from "./use-post-types";
 
 /**
  * 获取（超级管理员）全站文章列表
@@ -65,45 +67,26 @@ export function usePostDetail(id: string, postType: PostType) {
  */
 export function useCreatePost(postType: PostType) {
   const queryClient = useQueryClient();
+  const { data: postTypes } = usePostTypes();
 
   return useMutation({
-    mutationFn: (data: {
-      title: string;
-      slug: string;
-      contentMdx: string;
-      cover_media_id?: string | null;
-      category_id?: string | null;
-      status?: any; // PostStatus
-      tags?: string[];
-      is_featured?: boolean;
-      enable_jsx?: boolean;
-      use_server_rendering?: boolean;
-      excerpt?: string | null;
-    }) =>
+    mutationFn: (data: PostCreate) =>
       createPostByType({
         path: { post_type: postType },
         body: {
-          title: data.title,
-          slug: data.slug || undefined,
-          content_mdx: data.contentMdx,
+          ...data,
           post_type: postType,
           status: data.status || "draft",
-          cover_media_id: data.cover_media_id,
-          category_id: data.category_id,
-          tags: data.tags,
-          is_featured: data.is_featured,
-          enable_jsx: data.enable_jsx,
-          use_server_rendering: data.use_server_rendering,
-          excerpt: data.excerpt,
         },
       }),
     onSuccess: () => {
-      const label = POST_TYPE_LABELS[postType];
+      const typeInfo = postTypes?.find((t) => t.value === postType);
+      const label = typeInfo?.label || postType;
       toast.success(`${label}创建成功！已存为草稿。`);
       queryClient.invalidateQueries({ queryKey: ["posts", "me", postType] });
     },
-    onError: (error: any) => {
-      toast.error("创建失败: " + (error.message || "未知错误"));
+    onError: (error) => {
+      toast.error(error.message); // 简单、粗暴、有效
     },
   });
 }
@@ -115,42 +98,18 @@ export function useUpdatePost(id: string, postType: PostType) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: {
-      title: string;
-      slug: string;
-      contentMdx: string;
-      cover_media_id?: string | null;
-      category_id?: string | null;
-      status?: any;
-      tags?: string[];
-      is_featured?: boolean;
-      enable_jsx?: boolean;
-      use_server_rendering?: boolean;
-      excerpt?: string | null;
-    }) =>
+    mutationFn: (data: PostUpdate) =>
       updatePostByType({
         path: { post_id: id, post_type: postType },
-        body: {
-          title: data.title,
-          slug: data.slug,
-          content_mdx: data.contentMdx,
-          cover_media_id: data.cover_media_id,
-          category_id: data.category_id,
-          status: data.status,
-          tags: data.tags,
-          is_featured: data.is_featured,
-          enable_jsx: data.enable_jsx,
-          use_server_rendering: data.use_server_rendering,
-          excerpt: data.excerpt,
-        },
+        body: data,
       }),
     onSuccess: () => {
       toast.success("更新成功！");
       queryClient.invalidateQueries({ queryKey: ["posts", "detail", id] });
       queryClient.invalidateQueries({ queryKey: ["posts", "me", postType] });
     },
-    onError: (error: any) => {
-      toast.error("更新失败: " + (error.message || "未知错误"));
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 }
@@ -160,6 +119,7 @@ export function useUpdatePost(id: string, postType: PostType) {
  */
 export function useDeletePost() {
   const queryClient = useQueryClient();
+  const { data: postTypes } = usePostTypes();
 
   return useMutation({
     mutationFn: (variables: { id: string; type: PostType }) =>
@@ -170,17 +130,17 @@ export function useDeletePost() {
         },
       }),
     onSuccess: (_, variables) => {
-      toast.success("内容已删除");
+      const typeInfo = postTypes?.find((t) => t.value === variables.type);
+      const label = typeInfo?.label || "内容";
+      toast.success(`${label}已删除`);
       // 刷新相关列表
       queryClient.invalidateQueries({
         queryKey: ["posts", "me", variables.type],
       });
       queryClient.invalidateQueries({ queryKey: ["posts", "all"] });
     },
-    onError: (error: any) => {
-      toast.error("删除失败", {
-        description: error.message || "未知错误",
-      });
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 }

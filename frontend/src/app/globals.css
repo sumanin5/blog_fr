@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 @plugin "@tailwindcss/typography";
+@plugin "tailwind-scrollbar";
 
 /* KaTeX 数学公式样式 */
 @import "katex/dist/katex.min.css";
