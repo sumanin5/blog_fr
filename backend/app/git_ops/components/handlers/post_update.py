@@ -37,7 +37,8 @@ async def handle_post_update(
         current_user=operating_user,
         source_path=file_path,
     )
-    await session.refresh(updated_post)
+    # 预加载所有关系，避免在 write_post_ids_to_frontmatter 中懒加载
+    await session.refresh(updated_post, ["tags", "category", "author", "cover_media"])
 
     old_post_arg = None if force_write else matched_post
     await write_post_ids_to_frontmatter(

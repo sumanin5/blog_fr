@@ -6,7 +6,6 @@ from app.core.db import get_async_session
 from app.git_ops.components import verify_github_signature
 from app.git_ops.schema import (
     PreviewResult,
-    ResyncMetadataResponse,
     SyncStats,
     WebhookResponse,
 )
@@ -14,7 +13,7 @@ from app.git_ops.service import GitOpsService, run_background_sync
 from app.users.dependencies import get_current_adminuser
 from app.users.model import User
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Request
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -24,13 +23,19 @@ logger = logging.getLogger(__name__)
 async def trigger_sync(
     current_user: Annotated[User, Depends(get_current_adminuser)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    force_full: bool = False,
 ):
     """
     手动触发 GitOps 同步。
-    扫描 content/ 目录下的 MDX 文件，并更新数据库。
+
+    - 默认执行增量同步（仅处理变动的文件）。
+    - 设置 force_full=True 可强制执行全量扫描（耗时较长）。
     """
     service = GitOpsService(session)
-    return await service.sync_all(default_user=current_user)
+    if force_full:
+        return await service.sync_all(default_user=current_user)
+    else:
+        return await service.sync_incremental(default_user=current_user)
 
 
 @router.get("/preview", response_model=PreviewResult, summary="预览 Git 同步变更")
@@ -44,6 +49,24 @@ async def preview_sync(
     """
     service = GitOpsService(session)
     return await service.preview_sync()
+
+
+@router.post(
+    "/posts/{post_id}/resync-metadata",
+    summary="重新同步指定文章元数据",
+)
+async def resync_post_metadata(
+    post_id: str,
+    current_user: Annotated[User, Depends(get_current_adminuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    """
+    重新读取指定文章对应文件的 Frontmatter 元数据，并更新数据库。
+    仅适用于有 source_path 的文章。
+    """
+    service = GitOpsService(session)
+    await service.resync_post_metadata(post_id, default_user=current_user)
+    return {"status": "success"}
 
 
 @router.post(
@@ -66,36 +89,3 @@ async def github_webhook(
     logger.info("Valid webhook received, triggering background sync...")
     background_tasks.add_task(run_background_sync)
     return {"status": "triggered"}
-
-
-@router.post(
-    "/posts/{post_id}/resync-metadata",
-    response_model=ResyncMetadataResponse,
-    summary="重新同步文章元数据",
-    deprecated=True,
-)
-async def resync_post_metadata(
-    post_id: str,
-    current_user: Annotated[User, Depends(get_current_adminuser)],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-):
-    """
-    重新同步单个文章的元数据。
-
-    ⚠️ 已废弃：此端点将在实现增量同步后被移除。
-
-    场景：
-    - 用户在 frontmatter 中改了 author/cover/category 名字
-    - 需要重新查询数据库并更新 ID
-    - 自动回签新的 ID 到 frontmatter
-
-    替代方案：
-    - 使用 POST /sync 进行全量同步
-    - 未来：使用增量同步（自动检测变化的文件）
-
-    权限：仅管理员可用
-    """
-    from uuid import UUID
-
-    service = GitOpsService(session)
-    return await service.resync_metadata(UUID(post_id), current_user)

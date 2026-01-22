@@ -18,13 +18,6 @@ import { CoverSelect } from "@/components/admin/media/cover-select";
 import { PostType, PostStatus, CategoryResponse } from "@/shared/api/generated";
 import type { MediaFileResponse } from "@/hooks/use-media";
 
-// 本地定义状态常量
-export const POST_STATUS_VALUES = {
-  DRAFT: "draft" as PostStatus,
-  PUBLISHED: "published" as PostStatus,
-  ARCHIVED: "archived" as PostStatus,
-};
-
 // 1. 定义统一的元数据接口
 export interface PostMetadata {
   slug: string;

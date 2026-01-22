@@ -45,12 +45,21 @@ import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 export function DesktopNav() {
   return (
     <NavigationMenu delayDuration={0}>
-      <NavigationMenuList className="gap-2">
+      <NavigationMenuList className="gap-6">
         {MenuArray.map((menu) => (
           <NavigationMenuItem key={menu.title}>
             {menu.items && menu.items.length > 0 ? (
               <>
-                <NavigationMenuTrigger className="hover:text-primary focus:text-primary text-sm font-medium transition-colors">
+                <NavigationMenuTrigger
+                  // 彻底禁用点击逻辑，确保只有 Hover 能触发状态
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={(e) => e.preventDefault()}
+                  className={cn(
+                    "bg-transparent text-sm font-medium transition-colors hover:text-primary",
+                    "data-[state=open]:bg-transparent data-[state=open]:text-primary",
+                    "focus:bg-transparent focus:text-primary outline-none"
+                  )}
+                >
                   {menu.title}
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
@@ -81,7 +90,12 @@ export function DesktopNav() {
               <NavigationMenuLink asChild>
                 <Link
                   href={menu.link}
-                  className={cn(navigationMenuTriggerStyle(), "bg-transparent")}
+                  onPointerDown={(e) => e.preventDefault()}
+                  className={cn(
+                    navigationMenuTriggerStyle(),
+                    "bg-transparent transition-colors hover:text-primary active:bg-transparent",
+                    "focus:bg-transparent focus:text-primary outline-none"
+                  )}
                 >
                   {menu.title}
                 </Link>

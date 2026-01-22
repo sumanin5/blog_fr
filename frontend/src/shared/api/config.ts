@@ -1,39 +1,59 @@
 import { client } from "./generated/client.gen";
 import { settings } from "@/config/settings";
 import Cookies from "js-cookie";
+import { normalizeApiResponse, denormalizeApiRequest } from "./transformers";
 
-// 定义错误处理接口
-interface ApiErrorResponse {
-  error: {
-    code: string;
-    message: string;
-    details?: any;
-    request_id?: string;
-    timestamp?: string;
-  };
+// 定义 API 错误的结构
+interface ApiError {
+  code: string;
+  message: string;
+  details?: any;
+  request_id?: string;
+  timestamp?: string;
+}
+
+// 定义验证错误的结构
+interface ValidationErrorDetail {
+  field: string;
+  message: string;
+  type?: string;
+}
+
+// 自定义 API 异常类
+class ApiException extends Error {
+  code: string;
+  status?: number;
+
+  constructor(message: string, code: string, status?: number) {
+    super(message);
+    this.code = code;
+    this.status = status;
+    Object.setPrototypeOf(this, ApiException.prototype);
+  }
 }
 
 /**
  * 初始化 API 客户端
  * 根据环境自动选择 Base URL
  */
-const baseUrl =
-  typeof window === "undefined"
-    ? settings.BACKEND_INTERNAL_URL
-    : settings.NEXT_PUBLIC_API_URL;
-
 client.setConfig({
-  baseUrl: baseUrl,
+  baseUrl: settings.NEXT_PUBLIC_API_URL,
 
-  /**
-   * 自定义 fetch 配置
-   * 禁用 Next.js 缓存，让 React Query 完全管理缓存
-   */
   fetch: async (input, init) => {
-    return fetch(input, {
-      ...init,
-      cache: "no-store", // 禁用 Next.js 数据缓存
+    const response = await fetch(input, { ...init, cache: "no-store" });
+    // 2. 如果不是 JSON，直接返回
+    const contentType = response.headers.get("content-type");
+    if (!response.ok || !contentType?.includes("application/json")) {
+      return response;
+    }
+    const data = await response.json();
+    const normalizedData = normalizeApiResponse(data);
+    const clonedResponse = new Response(JSON.stringify(normalizedData), {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
     });
+    return clonedResponse;
   },
 });
 
@@ -47,20 +67,25 @@ client.interceptors.request.use((request) => {
       request.headers.set("Authorization", `Bearer ${token}`);
     }
   }
+  if (request.body && typeof request.body === "string") {
+    try {
+      const parsed = JSON.parse(request.body);
+      const denormalized = denormalizeApiRequest(parsed);
+      (request as any).body = JSON.stringify(denormalized);
+    } catch (error) {
+      // 如果解析失败，保持原样
+    }
+  }
   return request;
 });
 
 /**
  * 响应拦截器：处理 Token 失效
  */
-/**
- * 响应拦截器：只处理“状态同步”相关的副作用
- */
 client.interceptors.response.use((response) => {
   // 专门处理 401 清理 Token
   if (response.status === 401) {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
       Cookies.remove("access_token");
     }
   }
@@ -73,28 +98,25 @@ client.interceptors.response.use((response) => {
 client.interceptors.error.use((error: any, response) => {
   // 只有符合我们后端 ApiErrorResponse 格式的才处理
   if (error?.error) {
-    let finalMessage = error.error.message;
+    // ✨ 直接对应 ApiError 接口
+    const apiError = error.error as ApiError;
+    let finalMessage = apiError.message;
 
     // 处理 422 校验错误：把后端返回的字段错误数组拼成一句话
     if (
-      error.error.code === "VALIDATION_ERROR" &&
-      error.error.details?.validation_errors
+      apiError.code === "VALIDATION_ERROR" &&
+      apiError.details?.validation_errors
     ) {
-      const details = error.error.details.validation_errors
-        .map((err: any) => `${err.field}: ${err.message}`)
+      const details = (
+        apiError.details.validation_errors as ValidationErrorDetail[]
+      )
+        .map((err) => `${err.field}: ${err.message}`)
         .join("; ");
       finalMessage = `校验失败: ${details}`;
     }
 
-    // 构造带“人话”的 Error 对象
-    const customError = new Error(finalMessage);
-
-    // 把后端给的 code 也挂载上去，万一前端需要对特定 code 做逻辑（比如弹窗、刷新等）
-    (customError as any).code = error.error.code;
-    (customError as any).status = response?.status;
-
-    // 这一抛出去，TanStack Query 的 onError 接到的就是 customError
-    throw customError;
+    // ✨ 使用自定义 ApiException 类，提供更好的类型安全
+    throw new ApiException(finalMessage, apiError.code, response?.status);
   }
 
   // 如果不符合后端格式（比如网络断了），就原样抛出原始错误

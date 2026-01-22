@@ -115,6 +115,11 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 - `schema.py`: 定义 API 接口模型 (Pydantic)。
 - `metadata.py`: 定义 Frontmatter 数据模型，使用 Pydantic 的 validator 和 serializer 处理字段验证和转换。
 
+### 6. 并发控制与一致性安全
+
+- **并发锁 (Mutex Lock)**: `GitOpsService` 内部实现了基于 `asyncio.Lock` 的进程级互斥锁。这有效防止了 Webhook 频繁触发或与管理员手动操作冲突时可能引发的竞态条件 (Race Condition)。
+- **统一入口 (Unified Entrypoint)**: 所有 Git 操作（包括后台自动提交）被强制收敛通过 `GitOpsService` 执行，确保所有操作都经过 `GitOpsContainer` 的统一配置和状态管理，消除了因绕过容器而产生的配置不一致风险。
+
 ---
 
 ## 🔄 同步流程详解
@@ -132,6 +137,15 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
    - **异常捕获**: 每个文件的处理都在独立的 `try...except` 块中。
 6. **删除检测**: 遍历数据库中的文章，如果在本次扫描中未找到对应的文件，则执行删除。
 7. **统计与响应**: 返回包含新增、更新、删除、错误列表的 `SyncStats` 对象。
+
+### 6. 增量同步 (Incremental Sync)
+
+从 v3.2.0 开始，系统默认采用**增量同步**策略，显著提升性能：
+
+- **状态记录**: 在 `content/.gitops_last_sync` 文件中持久化存储上一次成功同步的 Git Commit Hash。
+- **差异获取**: 使用 `git diff --name-only <last_hash> HEAD` 获取变更文件列表。
+- **增量处理**: 仅处理变更列表中的文件（新增/修改/删除）。
+- **智能回退**: 如果本地没有 Hash 记录或获取 Diff 失败，自动降级为全量扫描模式 `sync_all`。
 
 ---
 
@@ -169,5 +183,5 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 
 ---
 
-**最后更新**: 2026-01-20
-**版本**: 3.0.0
+**最后更新**: 2026-01-21
+**版本**: 3.2.0

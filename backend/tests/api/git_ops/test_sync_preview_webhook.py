@@ -106,10 +106,14 @@ async def test_webhook_with_valid_signature(
     mock_content_dir: Path,
     superadmin_user,
     monkeypatch,
+    mocker,
 ):
     """测试 Webhook：有效签名"""
     # 设置 webhook secret
     monkeypatch.setattr(settings, "WEBHOOK_SECRET", "test_secret")
+
+    # Mock 后台同步任务，避免真实执行（后台任务无法访问测试 session 中的用户）
+    mock_bg_sync = mocker.patch("app.git_ops.router.run_background_sync")
 
     # 创建测试文件
     test_file = mock_content_dir / "webhook-test.mdx"
@@ -144,6 +148,9 @@ Content from webhook.
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "triggered"
+
+    # 验证后台任务被触发
+    mock_bg_sync.assert_called_once()
 
 
 @pytest.mark.asyncio

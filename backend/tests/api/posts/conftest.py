@@ -373,3 +373,15 @@ def assert_tag_response(data: dict):
     assert "id" in data
     assert "name" in data
     assert "slug" in data
+
+@pytest.fixture(autouse=True)
+def mock_content_dir(tmp_path, monkeypatch):
+    """
+    Mock settings.CONTENT_DIR for all post tests to prevent
+    GitOps configuration errors during background tasks.
+    """
+    from app.core.config import settings
+    d = tmp_path / "content"
+    d.mkdir()
+    monkeypatch.setattr(settings, "CONTENT_DIR", str(d))
+    return d

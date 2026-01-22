@@ -2,6 +2,7 @@ import { PostContent } from "@/components/post/content/post-content";
 import { PostMeta } from "@/components/post/components/post-meta";
 import { TableOfContents } from "@/components/mdx/utils/table-of-contents";
 import { PostDetailResponse } from "@/shared/api/generated/types.gen";
+import { ApiData } from "@/shared/api/transformers";
 
 interface TocItem {
   id: string;
@@ -10,7 +11,7 @@ interface TocItem {
 }
 
 interface PostDetailViewProps {
-  post: PostDetailResponse;
+  post: ApiData<PostDetailResponse>;
 }
 
 export async function PostDetailView({ post }: PostDetailViewProps) {
@@ -36,12 +37,12 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
           <PostMeta
             author={{
               username: post.author.username,
-              full_name: post.author.full_name || undefined,
+              full_name: post.author.fullName || undefined,
               avatar: post.author.avatar || undefined,
             }}
-            publishedAt={post.published_at || ""}
-            readingTime={post.reading_time || 0}
-            viewCount={post.view_count || 0}
+            publishedAt={post.publishedAt || ""}
+            readingTime={post.readingTime || 0}
+            viewCount={post.viewCount || 0}
             className="mb-8"
           />
         )}
@@ -63,13 +64,13 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
         {/* 文章内容 */}
         <div className="w-full min-w-0">
           <PostContent
-            mdx={post.content_mdx || undefined}
-            ast={post.content_ast}
+            mdx={post.contentMdx || undefined}
+            ast={post.contentAst}
             toc={
               post.toc as Array<{ id: string; title: string; level: number }>
             }
-            enableJsx={post.enable_jsx}
-            useServerRendering={post.use_server_rendering}
+            enableJsx={post.enableJsx}
+            useServerRendering={post.useServerRendering}
           />
         </div>
       </div>

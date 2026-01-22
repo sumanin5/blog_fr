@@ -27,33 +27,29 @@ export function Header() {
 
   return (
     <header className="border-border/40 bg-background/80 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
-      <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* 移动端导航 */}
-        <div className="md:hidden">
-          <MobileNav />
-        </div>
-
-        {/* 桌面端 Logo + 导航 */}
-        <div className="mr-4 hidden items-center gap-8 md:flex">
-          <Link href="/" className="flex items-center gap-2">
+      <div className="container mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8 gap-4">
+        {/* 1. 左侧 Logo (自然宽度) */}
+        <div className="flex items-center gap-2">
+          <div className="md:hidden">
+            <MobileNav />
+          </div>
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <div className="bg-primary/10 relative flex h-8 w-8 items-center justify-center rounded-lg">
               <PenTool className="text-primary h-5 w-5" />
             </div>
-            <span className="hidden font-mono text-lg font-bold tracking-tight sm:inline-block">
+            <span className="hidden font-mono text-lg font-bold tracking-tight sm:inline-block text-nowrap">
               BLOG_FR
             </span>
           </Link>
+        </div>
+
+        {/* 2. 中间 导航区域 (占据剩余空间并居中) */}
+        <div className="hidden flex-1 items-center justify-center md:flex">
           <DesktopNav />
         </div>
 
-        {/* 移动端 Logo */}
-        <div className="flex md:hidden">
-          <PenTool className="text-primary mr-2 h-6 w-6" />
-          <span className="font-mono font-bold">BLOG_FR</span>
-        </div>
-
-        {/* 右侧功能区 */}
-        <div className="flex items-center gap-2">
+        {/* 3. 右侧 功能区 (自然宽度) */}
+        <div className="flex items-center gap-2 shrink-0">
           {/* 搜索框 (桌面端) */}
           <div className="hidden sm:flex">
             <div className="relative">

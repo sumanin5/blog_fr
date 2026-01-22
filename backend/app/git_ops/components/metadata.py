@@ -45,9 +45,18 @@ class Frontmatter(BaseModel):
     @field_validator("tags", mode="before")
     @classmethod
     def parse_tags(cls, v: Any) -> Optional[List[str]]:
-        """将 YAML 中的逗号分隔字符串解析为列表"""
+        """将 YAML 中的逗号分隔字符串或 Tag 对象解析为列表"""
         if isinstance(v, str):
             return [t.strip() for t in v.split(",") if t.strip()]
+        # 处理 Tag 对象列表（从数据库加载时）
+        if isinstance(v, list):
+            result = []
+            for item in v:
+                if hasattr(item, "name"):  # Tag 对象
+                    result.append(item.name)
+                elif isinstance(item, str):
+                    result.append(item)
+            return result if result else None
         return v
 
     @field_validator("post_type", mode="before")
@@ -96,8 +105,12 @@ class Frontmatter(BaseModel):
 
     @classmethod
     def to_dict(cls, post: Any, tags: Optional[List[str]] = None) -> Dict[str, Any]:
-        """将 Post 对象转换为适合写入 MDX 的字典"""
+        """将 Post 对象转换为适合写入 MDX 的字典
+
+        注意：post_type 从路径推断，不写入 frontmatter（Git-First 原则）
+        """
         obj = cls.model_validate(post)
         if tags is not None:
             obj.tags = tags
-        return obj.model_dump(by_alias=True, exclude_none=True)
+        # 排除 post_type（从路径推断）和 None 值
+        return obj.model_dump(by_alias=True, exclude_none=True, exclude={"post_type"})

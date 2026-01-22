@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { PostShortResponse } from "@/shared/api/generated/types.gen";
+
+import { PostShortResponse, PostType } from "@/shared/api/generated/types.gen";
+import { ApiData } from "@/shared/api/transformers";
 import { Calendar, Clock } from "lucide-react";
+import { routes } from "@/lib/routes";
 
 interface PostCardProps {
-  post: PostShortResponse;
+  post: ApiData<PostShortResponse>;
 }
 
 export function PostCard({ post }: PostCardProps) {
@@ -13,16 +16,20 @@ export function PostCard({ post }: PostCardProps) {
     return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
   };
 
-  const authorName = post.author?.full_name || post.author?.username || "Admin";
+  const authorName = post.author?.fullName || post.author?.username || "Admin";
+  console.log("PostCard rendering post:", post);
 
   // 获取封面图缩略图 URL（优先使用 medium，其次 small，最后原图）
   const coverUrl =
-    post.cover_media?.thumbnails?.medium ||
-    post.cover_media?.thumbnails?.small ||
-    post.cover_media?.file_url;
+    post.coverMedia?.thumbnails?.medium ||
+    post.coverMedia?.thumbnails?.small ||
+    post.coverMedia?.fileUrl;
 
   return (
-    <Link href={`/posts/${post.slug}`} className="group block h-full">
+    <Link
+      href={routes.postDetailSlug(post.postType as PostType, post.slug)}
+      className="group block h-full"
+    >
       <article className="h-full cursor-pointer bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 flex flex-col">
         {/* 封面图区域 - 黄金比例的上半部分 */}
         <div className="relative h-64 overflow-hidden flex-shrink-0 bg-muted/20">
@@ -46,22 +53,14 @@ export function PostCard({ post }: PostCardProps) {
 
           {/* 分类/标签 - 左下角 */}
           <div className="absolute bottom-3 left-3 z-10 flex flex-wrap gap-2">
-            {post.category?.name ? (
-              <span className="inline-block px-2.5 py-1 bg-primary/90 backdrop-blur-sm border border-primary text-primary-foreground rounded text-xs font-mono uppercase tracking-wider shadow-sm">
-                {post.category.name}
+            {post.tags?.slice(0, 3).map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-block px-2.5 py-1 bg-primary/90 backdrop-blur-sm border border-primary text-primary-foreground rounded text-xs font-mono uppercase tracking-wider shadow-sm"
+              >
+                {tag.name}
               </span>
-            ) : (
-              post.tags &&
-              post.tags.length > 0 &&
-              post.tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="inline-block px-2.5 py-1 bg-primary/90 backdrop-blur-sm border border-primary text-primary-foreground rounded text-xs font-mono uppercase tracking-wider shadow-sm"
-                >
-                  {tag.name}
-                </span>
-              ))
-            )}
+            ))}
           </div>
         </div>
 
@@ -85,11 +84,11 @@ export function PostCard({ post }: PostCardProps) {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                <span>{formatDate(post.created_at)}</span>
+                <span>{formatDate(post.createdAt)}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                <span>{post.reading_time} min</span>
+                <span>{post.readingTime} min</span>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export default function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   // 1. 获取 Cookie 中的 Token
   const token = request.cookies.get("access_token")?.value;
 

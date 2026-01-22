@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { routes } from "@/lib/routes";
 import {
   Edit,
   Trash2,
@@ -10,7 +11,6 @@ import {
   Calendar,
   GitCommit,
   FileText,
-  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -34,7 +34,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PostShortResponse, PostStatus } from "@/shared/api/generated";
+import {
+  PostShortResponse,
+  PostStatus,
+  PostType,
+} from "@/shared/api/generated";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,11 +49,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ApiData } from "@/shared/api/transformers";
 
 interface PostListTableProps {
-  posts: PostShortResponse[];
+  posts: ApiData<PostShortResponse>[];
   isLoading: boolean;
-  onDelete?: (post: PostShortResponse) => void;
+  onDelete?: (post: ApiData<PostShortResponse>) => void;
   showAuthor?: boolean;
 }
 
@@ -60,7 +65,7 @@ export function PostListTable({
   showAuthor = false,
 }: PostListTableProps) {
   const [deletingPost, setDeletingPost] =
-    React.useState<PostShortResponse | null>(null);
+    React.useState<ApiData<PostShortResponse> | null>(null);
 
   if (isLoading) {
     return (
@@ -129,7 +134,7 @@ export function PostListTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="capitalize">
-                    {post.post_type}
+                    {post.postType}
                   </Badge>
                 </TableCell>
                 {showAuthor && (
@@ -142,18 +147,18 @@ export function PostListTable({
                 <TableCell>
                   <div className="flex items-center gap-2 text-muted-foreground text-xs">
                     <Calendar className="size-3" />
-                    {post.published_at
-                      ? format(new Date(post.published_at), "yyyy-MM-dd", {
+                    {post.publishedAt
+                      ? format(new Date(post.publishedAt), "yyyy-MM-dd", {
                           locale: zhCN,
                         })
                       : "未发布"}
                   </div>
                 </TableCell>
                 <TableCell>
-                  {post.git_hash ? (
+                  {post.gitHash ? (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80 font-mono">
                       <GitCommit className="size-3 text-primary/60" />
-                      {post.git_hash.substring(0, 7)}
+                      {post.gitHash.substring(0, 7)}
                     </div>
                   ) : (
                     <span className="text-xs text-muted-foreground/40 italic">
@@ -173,7 +178,10 @@ export function PostListTable({
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                         <Link
-                          href={`/posts/${post.slug}`}
+                          href={routes.postDetailSlug(
+                            post.postType as PostType,
+                            post.slug
+                          )}
                           target="_blank"
                           className="flex items-center"
                         >

@@ -3,25 +3,29 @@ import {
   CategoryResponse,
   PagePostShortResponse,
   PostShortResponse,
+  PostType,
 } from "@/shared/api/generated/types.gen";
+import { ApiData } from "@/shared/api/transformers";
 import { Sparkles, FileText, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { PostCard } from "./post-card";
 import { cn } from "@/lib/utils";
 
 interface PostListViewProps {
-  initialData: PagePostShortResponse;
+  initialData: ApiData<PagePostShortResponse>;
   categories: CategoryResponse[];
   currentCategory?: string;
   page: number;
+  postType: PostType;
 }
 
 export function PostListView({
   initialData,
   categories,
   currentCategory,
+  postType,
 }: PostListViewProps) {
-  const posts: PostShortResponse[] = initialData.items;
+  const posts: ApiData<PostShortResponse>[] = initialData.items;
 
   return (
     <div className="relative min-h-screen bg-background transition-colors duration-300">
@@ -65,7 +69,7 @@ export function PostListView({
             {/* 快速分类导航 (亮色下也更清晰) */}
             <div className="mt-12 flex flex-wrap justify-center gap-3">
               <Link
-                href="/posts"
+                href={`/posts/${postType}`}
                 className={cn(
                   "flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all border backdrop-blur-sm dark:backdrop-blur-md",
                   !currentCategory
@@ -79,7 +83,7 @@ export function PostListView({
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
-                  href={`/posts?category=${cat.id}`}
+                  href={`/posts/${postType}?category=${cat.id}`}
                   className={cn(
                     "rounded-full px-5 py-2 text-sm font-medium transition-all border backdrop-blur-sm dark:backdrop-blur-md",
                     currentCategory === cat.id
@@ -106,7 +110,7 @@ export function PostListView({
                 暂时没有该分类下的文章
               </p>
               <Link
-                href="/posts"
+                href={`/posts/${postType}`}
                 className="mt-4 text-primary hover:underline font-bold"
               >
                 查看全部文章

@@ -67,16 +67,16 @@ export function usePostDetail(id: string, postType: PostType) {
  */
 export function useCreatePost(postType: PostType) {
   const queryClient = useQueryClient();
-  const { data: postTypes } = usePostTypes();
+  const { data: postTypes = [] } = usePostTypes();
 
   return useMutation({
-    mutationFn: (data: PostCreate) =>
+    mutationFn: (newPost: PostCreate) =>
       createPostByType({
         path: { post_type: postType },
         body: {
-          ...data,
+          ...newPost,
           post_type: postType,
-          status: data.status || "draft",
+          status: newPost.status || "draft",
         },
       }),
     onSuccess: () => {
@@ -86,7 +86,7 @@ export function useCreatePost(postType: PostType) {
       queryClient.invalidateQueries({ queryKey: ["posts", "me", postType] });
     },
     onError: (error) => {
-      toast.error(error.message); // 简单、粗暴、有效
+      toast.error(error.message);
     },
   });
 }
@@ -119,7 +119,7 @@ export function useUpdatePost(id: string, postType: PostType) {
  */
 export function useDeletePost() {
   const queryClient = useQueryClient();
-  const { data: postTypes } = usePostTypes();
+  const { data: postTypes = [] } = usePostTypes();
 
   return useMutation({
     mutationFn: (variables: { id: string; type: PostType }) =>
