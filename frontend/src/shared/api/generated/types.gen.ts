@@ -491,6 +491,22 @@ export type MediaFileUploadResponse = {
 export type MediaType = 'image' | 'video' | 'document' | 'other';
 
 /**
+ * OperationResponse
+ *
+ * 通用操作响应
+ */
+export type OperationResponse = {
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Message
+     */
+    message?: string | null;
+};
+
+/**
  * Page[CategoryResponse]
  */
 export type PageCategoryResponse = {
@@ -608,6 +624,42 @@ export type PostCreate = {
      * Tags
      */
     tags?: Array<string> | null;
+    /**
+     * Category Id
+     */
+    category_id?: string | null;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
+    /**
+     * Allow Comments
+     */
+    allow_comments?: boolean;
+    /**
+     * Enable Jsx
+     */
+    enable_jsx?: boolean;
+    /**
+     * Use Server Rendering
+     */
+    use_server_rendering?: boolean;
+    /**
+     * Meta Title
+     */
+    meta_title?: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description?: string | null;
+    /**
+     * Meta Keywords
+     */
+    meta_keywords?: string | null;
     /**
      * Git Hash
      */
@@ -887,42 +939,6 @@ export type PostTypeResponse = {
      * Label
      */
     label: string;
-    /**
-     * Category Id
-     */
-    category_id?: string | null;
-    /**
-     * Cover Media Id
-     */
-    cover_media_id?: string | null;
-    /**
-     * Is Featured
-     */
-    is_featured?: boolean;
-    /**
-     * Allow Comments
-     */
-    allow_comments?: boolean;
-    /**
-     * Enable Jsx
-     */
-    enable_jsx?: boolean;
-    /**
-     * Use Server Rendering
-     */
-    use_server_rendering?: boolean;
-    /**
-     * Meta Title
-     */
-    meta_title?: string | null;
-    /**
-     * Meta Description
-     */
-    meta_description?: string | null;
-    /**
-     * Meta Keywords
-     */
-    meta_keywords?: string | null;
 };
 
 /**
@@ -1079,32 +1095,6 @@ export type PreviewResult = {
      * Errors
      */
     errors?: Array<SyncError>;
-};
-
-/**
- * ResyncMetadataResponse
- *
- * 重新同步元数据结果
- */
-export type ResyncMetadataResponse = {
-    /**
-     * Status
-     */
-    status: string;
-    /**
-     * Post Id
-     */
-    post_id: string;
-    /**
-     * Source Path
-     */
-    source_path: string;
-    /**
-     * Updated Fields
-     */
-    updated_fields: {
-        [key: string]: unknown;
-    };
 };
 
 /**
@@ -3193,14 +3183,71 @@ export type GetAllFilesAdminResponses = {
 
 export type GetAllFilesAdminResponse = GetAllFilesAdminResponses[keyof GetAllFilesAdminResponses];
 
-export type GetPostTypesData = {
+export type ListAllPostsAdminData = {
     body?: never;
     path?: never;
-    query?: never;
-    url: '/api/v1/posts/types';
+    query?: {
+        /**
+         * Status
+         *
+         * 文章状态（draft/published/archived）
+         */
+        status?: PostStatus | null;
+        /**
+         * Category Id
+         *
+         * 分类ID
+         */
+        category_id?: string | null;
+        /**
+         * Tag Id
+         *
+         * 标签ID
+         */
+        tag_id?: string | null;
+        /**
+         * Author Id
+         *
+         * 作者ID
+         */
+        author_id?: string | null;
+        /**
+         * Is Featured
+         *
+         * 是否为推荐文章
+         */
+        is_featured?: boolean | null;
+        /**
+         * Search
+         *
+         * 搜索关键词（标题、内容）
+         */
+        search?: string | null;
+        /**
+         * Limit
+         *
+         * 每页数量
+         */
+        limit?: number;
+        /**
+         * Offset
+         *
+         * 偏移量
+         */
+        offset?: number;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Size
+         */
+        size?: number;
+    };
+    url: '/api/v1/posts/admin/posts';
 };
 
-export type GetPostTypesErrors = {
+export type ListAllPostsAdminErrors = {
     /**
      * Bad Request
      */
@@ -3227,63 +3274,16 @@ export type GetPostTypesErrors = {
     500: ErrorResponse;
 };
 
-export type GetPostTypesError = GetPostTypesErrors[keyof GetPostTypesErrors];
+export type ListAllPostsAdminError = ListAllPostsAdminErrors[keyof ListAllPostsAdminErrors];
 
-export type GetPostTypesResponses = {
-    /**
-     * Response Getposttypes
-     *
-     * Successful Response
-     */
-    200: Array<PostTypeResponse>;
-};
-
-export type GetPostTypesResponse = GetPostTypesResponses[keyof GetPostTypesResponses];
-
-export type PreviewPostData = {
-    body: PostPreviewRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/posts/preview';
-};
-
-export type PreviewPostErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type PreviewPostError = PreviewPostErrors[keyof PreviewPostErrors];
-
-export type PreviewPostResponses = {
+export type ListAllPostsAdminResponses = {
     /**
      * Successful Response
      */
-    200: PostPreviewResponse;
+    200: PagePostShortResponse;
 };
 
-export type PreviewPostResponse = PreviewPostResponses[keyof PreviewPostResponses];
+export type ListAllPostsAdminResponse = ListAllPostsAdminResponses[keyof ListAllPostsAdminResponses];
 
 export type ListTagsData = {
     body?: never;
@@ -3291,8 +3291,10 @@ export type ListTagsData = {
     query?: {
         /**
          * Search
+         *
+         * 搜索关键词，支持标签名称模糊搜索
          */
-        search?: string;
+        search?: string | null;
         /**
          * Page
          */
@@ -3483,46 +3485,271 @@ export type UpdateTagResponses = {
 
 export type UpdateTagResponse = UpdateTagResponses[keyof UpdateTagResponses];
 
+export type ListCategoriesByTypeData = {
+    body?: never;
+    path: {
+        /**
+         * 板块类型
+         */
+        post_type: PostType;
+    };
+    query?: {
+        /**
+         * Include Inactive
+         *
+         * 是否包含未启用的分类
+         */
+        include_inactive?: boolean;
+    };
+    url: '/api/v1/posts/{post_type}/categories';
+};
+
+export type ListCategoriesByTypeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListCategoriesByTypeError = ListCategoriesByTypeErrors[keyof ListCategoriesByTypeErrors];
+
+export type ListCategoriesByTypeResponses = {
+    /**
+     * Successful Response
+     */
+    200: PageCategoryResponse;
+};
+
+export type ListCategoriesByTypeResponse = ListCategoriesByTypeResponses[keyof ListCategoriesByTypeResponses];
+
+export type CreateCategoryByTypeData = {
+    body: CategoryCreate;
+    path: {
+        /**
+         * 板块类型
+         */
+        post_type: PostType;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_type}/categories';
+};
+
+export type CreateCategoryByTypeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type CreateCategoryByTypeError = CreateCategoryByTypeErrors[keyof CreateCategoryByTypeErrors];
+
+export type CreateCategoryByTypeResponses = {
+    /**
+     * Successful Response
+     */
+    201: CategoryResponse;
+};
+
+export type CreateCategoryByTypeResponse = CreateCategoryByTypeResponses[keyof CreateCategoryByTypeResponses];
+
+export type DeleteCategoryByTypeData = {
+    body?: never;
+    path: {
+        /**
+         * 板块类型
+         */
+        post_type: PostType;
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_type}/categories/{category_id}';
+};
+
+export type DeleteCategoryByTypeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type DeleteCategoryByTypeError = DeleteCategoryByTypeErrors[keyof DeleteCategoryByTypeErrors];
+
+export type DeleteCategoryByTypeResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteCategoryByTypeResponse = DeleteCategoryByTypeResponses[keyof DeleteCategoryByTypeResponses];
+
+export type UpdateCategoryByTypeData = {
+    body: CategoryUpdate;
+    path: {
+        /**
+         * 板块类型
+         */
+        post_type: PostType;
+        /**
+         * Category Id
+         */
+        category_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_type}/categories/{category_id}';
+};
+
+export type UpdateCategoryByTypeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type UpdateCategoryByTypeError = UpdateCategoryByTypeErrors[keyof UpdateCategoryByTypeErrors];
+
+export type UpdateCategoryByTypeResponses = {
+    /**
+     * Successful Response
+     */
+    200: CategoryResponse;
+};
+
+export type UpdateCategoryByTypeResponse = UpdateCategoryByTypeResponses[keyof UpdateCategoryByTypeResponses];
+
 export type GetMyPostsData = {
     body?: never;
     path?: never;
     query?: {
         /**
-         * Post Type
-         */
-        post_type?: PostType | null;
-        /**
          * Status
          *
-         * 文章状态
+         * 文章状态（draft/published/archived）
          */
         status?: PostStatus | null;
         /**
          * Category Id
+         *
+         * 分类ID
          */
         category_id?: string | null;
         /**
          * Tag Id
+         *
+         * 标签ID
          */
         tag_id?: string | null;
         /**
          * Author Id
+         *
+         * 作者ID
          */
         author_id?: string | null;
         /**
          * Is Featured
+         *
+         * 是否为推荐文章
          */
         is_featured?: boolean | null;
         /**
          * Search
+         *
+         * 搜索关键词（标题、内容）
          */
         search?: string | null;
         /**
          * Limit
+         *
+         * 每页数量
          */
         limit?: number;
         /**
          * Offset
+         *
+         * 偏移量
          */
         offset?: number;
         /**
@@ -3575,47 +3802,106 @@ export type GetMyPostsResponses = {
 
 export type GetMyPostsResponse = GetMyPostsResponses[keyof GetMyPostsResponses];
 
+export type PreviewPostData = {
+    body: PostPreviewRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/posts/preview';
+};
+
+export type PreviewPostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type PreviewPostError = PreviewPostErrors[keyof PreviewPostErrors];
+
+export type PreviewPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PostPreviewResponse;
+};
+
+export type PreviewPostResponse = PreviewPostResponses[keyof PreviewPostResponses];
+
 export type ListPostsByTypeData = {
     body?: never;
     path: {
         /**
-         * Post Type
+         * 文章类型
          */
-        post_type: PostType | null;
+        post_type: PostType;
     };
     query?: {
         /**
          * Status
          *
-         * 文章状态
+         * 文章状态（draft/published/archived）
          */
         status?: PostStatus | null;
         /**
          * Category Id
+         *
+         * 分类ID
          */
         category_id?: string | null;
         /**
          * Tag Id
+         *
+         * 标签ID
          */
         tag_id?: string | null;
         /**
          * Author Id
+         *
+         * 作者ID
          */
         author_id?: string | null;
         /**
          * Is Featured
+         *
+         * 是否为推荐文章
          */
         is_featured?: boolean | null;
         /**
          * Search
+         *
+         * 搜索关键词（标题、内容）
          */
         search?: string | null;
         /**
          * Limit
+         *
+         * 每页数量
          */
         limit?: number;
         /**
          * Offset
+         *
+         * 偏移量
          */
         offset?: number;
         /**
@@ -3717,161 +4003,6 @@ export type CreatePostByTypeResponses = {
 };
 
 export type CreatePostByTypeResponse = CreatePostByTypeResponses[keyof CreatePostByTypeResponses];
-
-export type ListCategoriesByTypeData = {
-    body?: never;
-    path: {
-        /**
-         * 板块类型
-         */
-        post_type: PostType;
-    };
-    query?: {
-        /**
-         * Include Inactive
-         */
-        include_inactive?: boolean;
-    };
-    url: '/api/v1/posts/{post_type}/categories';
-};
-
-export type ListCategoriesByTypeErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type ListCategoriesByTypeError = ListCategoriesByTypeErrors[keyof ListCategoriesByTypeErrors];
-
-export type ListCategoriesByTypeResponses = {
-    /**
-     * Successful Response
-     */
-    200: PageCategoryResponse;
-};
-
-export type ListCategoriesByTypeResponse = ListCategoriesByTypeResponses[keyof ListCategoriesByTypeResponses];
-
-export type CreateCategoryByTypeData = {
-    body: CategoryCreate;
-    path: {
-        /**
-         * 板块类型
-         */
-        post_type: PostType;
-    };
-    query?: never;
-    url: '/api/v1/posts/{post_type}/categories';
-};
-
-export type CreateCategoryByTypeErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type CreateCategoryByTypeError = CreateCategoryByTypeErrors[keyof CreateCategoryByTypeErrors];
-
-export type CreateCategoryByTypeResponses = {
-    /**
-     * Successful Response
-     */
-    201: CategoryResponse;
-};
-
-export type CreateCategoryByTypeResponse = CreateCategoryByTypeResponses[keyof CreateCategoryByTypeResponses];
-
-export type ListTagsByTypeData = {
-    body?: never;
-    path: {
-        /**
-         * 板块类型
-         */
-        post_type: PostType;
-    };
-    query?: never;
-    url: '/api/v1/posts/{post_type}/tags';
-};
-
-export type ListTagsByTypeErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type ListTagsByTypeError = ListTagsByTypeErrors[keyof ListTagsByTypeErrors];
-
-export type ListTagsByTypeResponses = {
-    /**
-     * Successful Response
-     */
-    200: PageTagResponse;
-};
-
-export type ListTagsByTypeResponse = ListTagsByTypeResponses[keyof ListTagsByTypeResponses];
 
 export type DeletePostByTypeData = {
     body?: never;
@@ -4041,60 +4172,6 @@ export type UpdatePostByTypeResponses = {
 };
 
 export type UpdatePostByTypeResponse = UpdatePostByTypeResponses[keyof UpdatePostByTypeResponses];
-
-export type GetPostBySlugData = {
-    body?: never;
-    path: {
-        /**
-         * 板块类型
-         */
-        post_type: PostType;
-        /**
-         * Slug
-         */
-        slug: string;
-    };
-    query?: never;
-    url: '/api/v1/posts/{post_type}/slug/{slug}';
-};
-
-export type GetPostBySlugErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type GetPostBySlugError = GetPostBySlugErrors[keyof GetPostBySlugErrors];
-
-export type GetPostBySlugResponses = {
-    /**
-     * Successful Response
-     */
-    200: PostDetailResponse;
-};
-
-export type GetPostBySlugResponse = GetPostBySlugResponses[keyof GetPostBySlugResponses];
 
 export type UnlikePostData = {
     body?: never;
@@ -4296,7 +4373,113 @@ export type BookmarkPostResponses = {
 
 export type BookmarkPostResponse = BookmarkPostResponses[keyof BookmarkPostResponses];
 
-export type DeleteCategoryByTypeData = {
+export type GetPostTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/posts/types';
+};
+
+export type GetPostTypesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetPostTypesError = GetPostTypesErrors[keyof GetPostTypesErrors];
+
+export type GetPostTypesResponses = {
+    /**
+     * Response Getposttypes
+     *
+     * Successful Response
+     */
+    200: Array<PostTypeResponse>;
+};
+
+export type GetPostTypesResponse = GetPostTypesResponses[keyof GetPostTypesResponses];
+
+export type ListTagsByTypeData = {
+    body?: never;
+    path: {
+        /**
+         * 板块类型
+         */
+        post_type: PostType;
+    };
+    query?: {
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Size
+         */
+        size?: number;
+    };
+    url: '/api/v1/posts/{post_type}/tags';
+};
+
+export type ListTagsByTypeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListTagsByTypeError = ListTagsByTypeErrors[keyof ListTagsByTypeErrors];
+
+export type ListTagsByTypeResponses = {
+    /**
+     * Successful Response
+     */
+    200: PageTagResponse;
+};
+
+export type ListTagsByTypeResponse = ListTagsByTypeResponses[keyof ListTagsByTypeResponses];
+
+export type GetPostBySlugData = {
     body?: never;
     path: {
         /**
@@ -4304,15 +4487,15 @@ export type DeleteCategoryByTypeData = {
          */
         post_type: PostType;
         /**
-         * Category Id
+         * Slug
          */
-        category_id: string;
+        slug: string;
     };
     query?: never;
-    url: '/api/v1/posts/{post_type}/categories/{category_id}';
+    url: '/api/v1/posts/{post_type}/slug/{slug}';
 };
 
-export type DeleteCategoryByTypeErrors = {
+export type GetPostBySlugErrors = {
     /**
      * Bad Request
      */
@@ -4339,75 +4522,28 @@ export type DeleteCategoryByTypeErrors = {
     500: ErrorResponse;
 };
 
-export type DeleteCategoryByTypeError = DeleteCategoryByTypeErrors[keyof DeleteCategoryByTypeErrors];
+export type GetPostBySlugError = GetPostBySlugErrors[keyof GetPostBySlugErrors];
 
-export type DeleteCategoryByTypeResponses = {
+export type GetPostBySlugResponses = {
     /**
      * Successful Response
      */
-    204: void;
+    200: PostDetailResponse;
 };
 
-export type DeleteCategoryByTypeResponse = DeleteCategoryByTypeResponses[keyof DeleteCategoryByTypeResponses];
-
-export type UpdateCategoryByTypeData = {
-    body: CategoryUpdate;
-    path: {
-        /**
-         * 板块类型
-         */
-        post_type: PostType;
-        /**
-         * Category Id
-         */
-        category_id: string;
-    };
-    query?: never;
-    url: '/api/v1/posts/{post_type}/categories/{category_id}';
-};
-
-export type UpdateCategoryByTypeErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type UpdateCategoryByTypeError = UpdateCategoryByTypeErrors[keyof UpdateCategoryByTypeErrors];
-
-export type UpdateCategoryByTypeResponses = {
-    /**
-     * Successful Response
-     */
-    200: CategoryResponse;
-};
-
-export type UpdateCategoryByTypeResponse = UpdateCategoryByTypeResponses[keyof UpdateCategoryByTypeResponses];
+export type GetPostBySlugResponse = GetPostBySlugResponses[keyof GetPostBySlugResponses];
 
 export type TriggerSyncData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Force Full
+         *
+         * 是否强制全量同步
+         */
+        force_full?: boolean;
+    };
     url: '/api/v1/ops/git/sync';
 };
 
@@ -4494,6 +4630,56 @@ export type PreviewSyncResponses = {
 
 export type PreviewSyncResponse = PreviewSyncResponses[keyof PreviewSyncResponses];
 
+export type ResyncPostMetadataData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/ops/git/posts/{post_id}/resync-metadata';
+};
+
+export type ResyncPostMetadataErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ResyncPostMetadataError = ResyncPostMetadataErrors[keyof ResyncPostMetadataErrors];
+
+export type ResyncPostMetadataResponses = {
+    /**
+     * Successful Response
+     */
+    200: OperationResponse;
+};
+
+export type ResyncPostMetadataResponse = ResyncPostMetadataResponses[keyof ResyncPostMetadataResponses];
+
 export type GithubWebhookData = {
     body?: never;
     headers?: {
@@ -4544,53 +4730,3 @@ export type GithubWebhookResponses = {
 };
 
 export type GithubWebhookResponse = GithubWebhookResponses[keyof GithubWebhookResponses];
-
-export type ResyncPostMetadataData = {
-    body?: never;
-    path: {
-        /**
-         * Post Id
-         */
-        post_id: string;
-    };
-    query?: never;
-    url: '/api/v1/ops/git/posts/{post_id}/resync-metadata';
-};
-
-export type ResyncPostMetadataErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type ResyncPostMetadataError = ResyncPostMetadataErrors[keyof ResyncPostMetadataErrors];
-
-export type ResyncPostMetadataResponses = {
-    /**
-     * Successful Response
-     */
-    200: ResyncMetadataResponse;
-};
-
-export type ResyncPostMetadataResponse = ResyncPostMetadataResponses[keyof ResyncPostMetadataResponses];

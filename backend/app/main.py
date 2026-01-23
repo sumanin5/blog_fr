@@ -12,9 +12,10 @@ from app.core.error_handlers import (
 from app.core.exceptions import BaseAppException
 from app.core.monitoring import setup_monitoring
 from app.core.schemas import ErrorResponse
+from app.core.tags_metadata import DESCRIPTION, TAGS_METADATA
 from app.git_ops.router import router as git_ops_router
 from app.initial_data import init_db
-from app.media.router import router as media_router
+from app.media.routers import router as media_router
 from app.middleware import setup_middleware
 from app.posts.router import router as posts_router
 from app.users.router import router as users_router
@@ -32,7 +33,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Blog API",
     version="0.1.0",
-    description="博客系统 API",
+    description=DESCRIPTION,
+    openapi_tags=TAGS_METADATA,  # ← 添加 tags metadata
     generate_unique_id_function=custom_generate_unique_id,
     responses={
         400: {"model": ErrorResponse, "description": "Bad Request"},
@@ -114,13 +116,16 @@ async def scalar_html():
 # ============================================================
 # 包含路由
 # ============================================================
-# 包含路由
-# ============================================================
+# 主路由设置主标签，子路由可以设置更细的子标签
 app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["users"])
-app.include_router(media_router, prefix=f"{settings.API_PREFIX}/media", tags=["media"])
+app.include_router(
+    media_router, prefix=f"{settings.API_PREFIX}/media"
+)  # media 子路由自己设置 tags
 app.include_router(posts_router, prefix=f"{settings.API_PREFIX}", tags=["posts"])
 app.include_router(
-    git_ops_router, prefix=f"{settings.API_PREFIX}/ops/git", tags=["git-ops"]
+    git_ops_router,
+    prefix=f"{settings.API_PREFIX}/ops/git",
+    tags=["GitOps (Admin Only)"],
 )
 
 # ============================================================

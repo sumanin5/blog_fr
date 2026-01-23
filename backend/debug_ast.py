@@ -21,5 +21,4 @@ content3 = "这是行内公式：$E = mc^2$"
 processor3 = PostProcessor(content3).process()
 print("\n=== 数学公式 ===")
 print(json.dumps(processor3.content_ast, indent=2, ensure_ascii=False))
-print("\nHTML:")
-print(processor3.content_html)
+print(f"\nAST 节点数: {len(processor3.content_ast.get('children', []))}")

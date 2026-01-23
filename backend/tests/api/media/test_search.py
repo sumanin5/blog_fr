@@ -36,7 +36,7 @@ async def test_search_by_filename(
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
     assert result["total"] > 0
-    files_list = result["files"]
+    files_list = result["items"]
     assert len(files_list) > 0
     assert "photo" in files_list[0]["original_filename"].lower()
 
@@ -70,7 +70,7 @@ async def test_search_chinese_characters(
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
-    files_list = result["files"]
+    files_list = result["items"]
     assert len(files_list) > 0
 
     found = any(
@@ -107,4 +107,4 @@ async def test_search_no_results(
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
     assert result["total"] == 0
-    assert len(result["files"]) == 0
+    assert len(result["items"]) == 0

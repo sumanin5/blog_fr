@@ -1,112 +1,28 @@
 """
-媒体文件数据库操作（CRUD）- SQLModel 版本
+查询操作
 
-使用 SQLModel 的简化语法进行数据库操作
+包含各种复杂查询操作
 """
 
-import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
 from app.media.model import FileUsage, MediaFile, MediaType
-from app.media.schema import MediaFileUpdate
-from sqlmodel import and_, func, or_, select
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlmodel import and_, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
-
-logger = logging.getLogger(__name__)
 
 # 注意: 本文件中存在许多 type: ignore 注释，这是因为 Pylance 无法正确识别
 # SQLModel 的列（Column）对象的动态方法，如 .ilike(), .desc(), .is_() 等。
-# 这些方法在运行时是完全有效的，但静态类型检查器无法推断。
 
 
-# ========================================
-# 基础 CRUD 操作
-# ========================================
-
-
-async def get_media_file(session: AsyncSession, file_id: UUID) -> Optional[MediaFile]:
-    """根据ID获取媒体文件
-
-    Args:
-        session: 异步数据库会话
-        file_id: 文件ID
-
-    Returns:
-        MediaFile对象或None
-    """
-    return await session.get(MediaFile, file_id)
-
-
-async def get_media_file_by_path(
-    session: AsyncSession, file_path: str
-) -> Optional[MediaFile]:
-    """根据文件路径获取媒体文件
-
-    Args:
-        session: 异步数据库会话
-        file_path: 文件路径
-
-    Returns:
-        MediaFile对象或None
-    """
-    stmt = select(MediaFile).where(MediaFile.file_path == file_path)
-    result = await session.execute(stmt)
-    media_file = result.scalars().first()
-    return media_file
-
-
-async def get_media_file_by_hash(
-    session: AsyncSession, content_hash: str
-) -> Optional[MediaFile]:
-    """根据内容哈希获取媒体文件 (用于去重)"""
-    stmt = select(MediaFile).where(MediaFile.content_hash == content_hash)
-    result = await session.execute(stmt)
-    return result.scalars().first()
-
-
-async def update_media_file(
-    session: AsyncSession, media_file: MediaFile, update_data: MediaFileUpdate
-) -> MediaFile:
-    """更新媒体文件信息
-
-    Args:
-        session: 异步数据库会话
-        media_file: 要更新的媒体文件对象
-        update_data: 更新数据
-
-    Returns:
-        更新后的MediaFile对象
-    """
-    update_dict = update_data.model_dump(exclude_unset=True)
-
-    for field, value in update_dict.items():
-        setattr(media_file, field, value)
-
-    session.add(media_file)
-    await session.commit()
-    await session.refresh(media_file)
-
-    logger.info(f"更新媒体文件: {media_file.id}")
-    return media_file
-
-
-async def delete_media_file(session: AsyncSession, media_file: MediaFile) -> None:
-    """删除媒体文件记录
-
-    Args:
-        session: 异步数据库会话
-        media_file: 要删除的媒体文件对象
-    """
-    await session.delete(media_file)
-    await session.commit()
-    logger.info(f"删除媒体文件记录: {media_file.id}")
-
-
-# ========================================
-# 公开文件查询操作
-# ========================================
+async def paginate_query(
+    session: AsyncSession, query: select, params: Params = None
+) -> Page:
+    """通用分页查询"""
+    return await paginate(session, query, params)
 
 
 async def get_public_media_files(
@@ -172,11 +88,6 @@ async def get_user_public_files(
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
-
-
-# ========================================
-# 查询操作
-# ========================================
 
 
 async def get_user_media_files(
@@ -287,136 +198,6 @@ async def get_media_files_by_tags(
     return list(result.scalars().all())
 
 
-# ========================================
-# 统计操作
-# ========================================
-
-
-async def get_user_media_count(
-    session: AsyncSession, user_id: UUID, media_type: Optional[MediaType] = None
-) -> int:
-    """获取用户媒体文件数量
-
-    Args:
-        session: 异步数据库会话
-        user_id: 用户ID
-        media_type: 媒体类型过滤
-
-    Returns:
-        文件数量
-    """
-    stmt = select(func.count(MediaFile.id)).where(MediaFile.uploader_id == user_id)  # type: ignore
-
-    if media_type:
-        stmt = stmt.where(MediaFile.media_type == media_type)
-
-    result = await session.execute(stmt)
-    count = result.scalar()
-    return count if count is not None else 0
-
-
-async def get_user_storage_usage(session: AsyncSession, user_id: UUID) -> int:
-    """获取用户存储使用量
-
-    Args:
-        session: 异步数据库会话
-        user_id: 用户ID
-
-    Returns:
-        存储使用量（字节）
-    """
-    stmt = select(func.sum(MediaFile.file_size)).where(MediaFile.uploader_id == user_id)
-    result = await session.execute(stmt)
-    total = result.scalar()
-    return total if total is not None else 0
-
-
-async def get_media_stats_by_type(
-    session: AsyncSession, user_id: UUID
-) -> dict[str, int]:
-    """获取用户各类型媒体文件统计
-
-    Args:
-        session: 异步数据库会话
-        user_id: 用户ID
-
-    Returns:
-        各类型文件数量字典
-    """
-    stmt = (
-        select(MediaFile.media_type, func.count(MediaFile.id))  # type: ignore
-        .where(MediaFile.uploader_id == user_id)
-        .group_by(MediaFile.media_type)
-    )
-
-    result = await session.execute(stmt)
-    return {media_type: count for media_type, count in result.all()}
-
-
-async def get_user_media_stats(session: AsyncSession, user_id: UUID) -> dict:
-    """获取用户媒体文件统计信息 (综合)"""
-    total_count = await get_user_media_count(session, user_id)
-    storage_usage = await get_user_storage_usage(session, user_id)
-    stats_by_type = await get_media_stats_by_type(session, user_id)
-
-    return {
-        "total_files": total_count,
-        "storage_usage": storage_usage,
-        "files_by_type": stats_by_type,
-    }
-
-
-# ========================================
-# 批量操作
-# ========================================
-
-
-async def get_media_files_by_ids(
-    session: AsyncSession, file_ids: list[UUID]
-) -> list[MediaFile]:
-    """根据ID列表获取媒体文件
-
-    Args:
-        session: 异步数据库会话
-        file_ids: 文件ID列表
-
-    Returns:
-        MediaFile对象列表
-    """
-    stmt = select(MediaFile).where(MediaFile.id.in_(file_ids))  # type: ignore
-    result = await session.execute(stmt)
-    return list(result.scalars().all())
-
-
-async def update_view_count(session: AsyncSession, media_file: MediaFile) -> None:
-    """增加文件查看次数
-
-    Args:
-        session: 异步数据库会话
-        media_file: 媒体文件对象
-    """
-    media_file.view_count += 1
-    session.add(media_file)
-    await session.commit()
-
-
-async def update_download_count(session: AsyncSession, media_file: MediaFile) -> None:
-    """增加文件下载次数
-
-    Args:
-        session: 异步数据库会话
-        media_file: 媒体文件对象
-    """
-    media_file.download_count += 1
-    session.add(media_file)
-    await session.commit()
-
-
-# ========================================
-# 搜索操作
-# ========================================
-
-
 async def search_media_files(
     session: AsyncSession,
     query: str,
@@ -454,40 +235,6 @@ async def search_media_files(
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
-
-
-# ========================================
-# 清理操作
-# ========================================
-
-
-async def get_orphaned_files(
-    session: AsyncSession, days_old: int = 7
-) -> list[MediaFile]:
-    """获取孤立文件（处理失败或长时间处理中的文件）
-
-    Args:
-        session: 异步数据库会话
-        days_old: 天数阈值
-
-    Returns:
-        孤立的MediaFile对象列表
-    """
-    from datetime import datetime, timedelta
-
-    cutoff_date = datetime.utcnow() - timedelta(days=days_old)
-
-    stmt = select(MediaFile).where(
-        and_(MediaFile.is_processing, MediaFile.created_at < cutoff_date)
-    )
-
-    result = await session.execute(stmt)
-    return list(result.scalars().all())
-
-
-# ========================================
-# 高级查询操作
-# ========================================
 
 
 async def get_all_media_files(
@@ -550,8 +297,6 @@ async def get_recent_files(
     Returns:
         MediaFile对象列表
     """
-    from datetime import datetime, timedelta
-
     cutoff_date = datetime.utcnow() - timedelta(days=days)
 
     stmt = select(MediaFile).where(MediaFile.created_at >= cutoff_date)
@@ -584,6 +329,28 @@ async def get_popular_files(
         stmt = stmt.where(MediaFile.uploader_id == user_id)
 
     stmt = stmt.order_by(MediaFile.view_count.desc()).limit(limit)  # type: ignore
+
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_orphaned_files(
+    session: AsyncSession, days_old: int = 7
+) -> list[MediaFile]:
+    """获取孤立文件（处理失败或长时间处理中的文件）
+
+    Args:
+        session: 异步数据库会话
+        days_old: 天数阈值
+
+    Returns:
+        孤立的MediaFile对象列表
+    """
+    cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+
+    stmt = select(MediaFile).where(
+        and_(MediaFile.is_processing, MediaFile.created_at < cutoff_date)
+    )
 
     result = await session.execute(stmt)
     return list(result.scalars().all())

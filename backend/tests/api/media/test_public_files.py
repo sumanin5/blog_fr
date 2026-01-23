@@ -22,8 +22,11 @@ async def test_get_public_files_without_auth(
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
 
-    # 验证响应是列表格式
-    assert isinstance(result, list)
+    # 验证响应是分页格式
+    assert "items" in result
+    assert "total" in result
+    assert "page" in result
+    assert "size" in result
 
 
 @pytest.mark.asyncio
@@ -40,7 +43,8 @@ async def test_get_public_files_with_auth(
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
-    assert isinstance(result, list)
+    assert "items" in result
+    assert isinstance(result["items"], list)
 
 
 @pytest.mark.asyncio
@@ -52,13 +56,15 @@ async def test_get_public_files_with_pagination(
     """测试分页参数"""
     # 测试第一页
     response = await async_client.get(
-        api_urls.media_url("/public"), params={"page": 1, "page_size": 5}
+        api_urls.media_url("/public"), params={"page": 1, "size": 5}
     )
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
-    assert isinstance(result, list)
-    assert len(result) <= 5  # 不超过页面大小
+    assert "items" in result
+    assert len(result["items"]) <= 5  # 不超过页面大小
+    assert result["page"] == 1
+    assert result["size"] == 5
 
 
 @pytest.mark.asyncio
@@ -75,10 +81,10 @@ async def test_get_public_files_with_media_type_filter(
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
-    assert isinstance(result, list)
+    assert "items" in result
 
     # 如果有结果，验证都是图片类型
-    for file_info in result:
+    for file_info in result["items"]:
         assert file_info["media_type"] == "image"
 
 
@@ -95,10 +101,10 @@ async def test_get_public_files_with_usage_filter(
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
-    assert isinstance(result, list)
+    assert "items" in result
 
     # 如果有结果，验证都是指定用途
-    for file_info in result:
+    for file_info in result["items"]:
         assert file_info["usage"] == "general"
 
 
@@ -115,16 +121,16 @@ async def test_get_public_files_with_combined_filters(
             "media_type": "image",
             "usage": "general",
             "page": 1,
-            "page_size": 10,
+            "size": 10,
         },
     )
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
-    assert isinstance(result, list)
+    assert "items" in result
 
     # 验证过滤条件
-    for file_info in result:
+    for file_info in result["items"]:
         assert file_info["media_type"] == "image"
         assert file_info["usage"] == "general"
 
@@ -181,9 +187,10 @@ async def test_get_public_files_large_page_size(
     """测试超大页面大小"""
     response = await async_client.get(
         api_urls.media_url("/public"),
-        params={"page_size": 1000},  # 超过限制
+        params={"size": 1000},  # 超过限制
     )
 
+    # 超过最大限制会返回422验证错误
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
@@ -218,11 +225,12 @@ async def test_get_public_files_response_structure(
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
-    assert isinstance(result, list)
+    assert "items" in result
+    assert isinstance(result["items"], list)
 
     # 如果有文件，验证响应结构
-    if result:
-        file_info = result[0]
+    if result["items"]:
+        file_info = result["items"][0]
 
         # 验证必需字段
         required_fields = [
@@ -299,7 +307,7 @@ async def test_get_public_files_only_shows_public(
     # 验证所有返回的文件都是公开的
     # 注意：这里无法直接验证 is_public 字段，因为响应可能不包含该字段
     # 但可以验证不包含私有文件的描述
-    descriptions = [f.get("description", "") for f in result]
+    descriptions = [f.get("description", "") for f in result["items"]]
     assert "私有测试图片" not in descriptions
 
     # 如果有公开文件，应该能找到

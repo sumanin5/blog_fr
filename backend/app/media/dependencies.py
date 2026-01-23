@@ -1,109 +1,14 @@
 """
 媒体文件依赖项
 
-提供可复用的依赖项，如文件权限检查、文件获取等
+提供可复用的依赖项
 """
 
-import logging
 from typing import Annotated, Optional
-from uuid import UUID
 
-from app.core.db import get_async_session
-from app.core.exceptions import InsufficientPermissionsError
-from app.media import crud
-from app.media.exceptions import MediaFileNotFoundError
 from app.media.model import FileUsage, MediaFile, MediaType
-from app.media.schema import MediaFileQuery
-from app.users.dependencies import get_current_active_user
-from app.users.model import User
-from fastapi import Depends, File, Path, Query, UploadFile
-from sqlmodel.ext.asyncio.session import AsyncSession
-
-logger = logging.getLogger(__name__)
-
-
-# ========================================
-# 路径参数依赖项
-# ========================================
-
-
-async def get_media_file_by_id(
-    file_id: Annotated[UUID, Path(..., description="媒体文件ID")],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> MediaFile:
-    """根据ID获取媒体文件
-
-    Args:
-        file_id: 文件ID
-        session: 数据库会话
-
-    Returns:
-        MediaFile对象
-
-    Raises:
-        MediaFileNotFoundError: 文件不存在
-    """
-    media_file = await crud.get_media_file(session, file_id)
-    if not media_file:
-        raise MediaFileNotFoundError(f"媒体文件不存在: {file_id}")
-
-    return media_file
-
-
-# ========================================
-# 权限检查依赖项
-# ========================================
-
-
-async def check_file_owner_or_admin(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    media_file: Annotated[MediaFile, Depends(get_media_file_by_id)],
-) -> MediaFile:
-    """检查用户是否为文件所有者或管理员
-
-    Args:
-        media_file: 媒体文件对象
-        current_user: 当前用户
-
-    Returns:
-        MediaFile对象
-
-    Raises:
-        InsufficientPermissionsError: 权限不足
-    """
-    if media_file.uploader_id != current_user.id and not current_user.is_admin:
-        logger.warning(
-            f"用户 {current_user.username} 尝试访问不属于自己的文件: {media_file.id}"
-        )
-        raise InsufficientPermissionsError("只能访问自己上传的文件")
-
-    return media_file
-
-
-async def check_file_owner(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    media_file: Annotated[MediaFile, Depends(get_media_file_by_id)],
-) -> MediaFile:
-    """检查用户是否为文件所有者
-
-    Args:
-        media_file: 媒体文件对象
-        current_user: 当前用户
-
-    Returns:
-        MediaFile对象
-
-    Raises:
-        InsufficientPermissionsError: 权限不足
-    """
-    if media_file.uploader_id != current_user.id:
-        logger.warning(
-            f"用户 {current_user.username} 尝试修改不属于自己的文件: {media_file.id}"
-        )
-        raise InsufficientPermissionsError("只能修改自己上传的文件")
-
-    return media_file
-
+from app.media.schemas import MediaFileQuery
+from fastapi import File, Query, UploadFile
 
 # ========================================
 # 查询参数依赖项
@@ -164,9 +69,9 @@ def get_search_params(
 def validate_file_upload(
     max_size: Optional[int] = None,
 ) -> callable:
-    """创建文件上传验证依赖项（统一调用 utils 逻辑）
+    """创建文件上传验证依赖项
 
-    该依赖项会在 Router 层面初步检查文件的扩展名。
+    该依赖项会在 Router 层面初步检查文件的扩展名和大小
     """
     from app.media import utils
     from app.media.exceptions import FileSizeExceededError, UnsupportedFileTypeError
@@ -178,11 +83,11 @@ def validate_file_upload(
         mime_type = file.content_type or utils.get_mime_type(file.filename)
         media_type = utils.detect_media_type_from_mime(mime_type)
 
-        # 2. 验证扩展名（早于读取内容）
+        # 2. 验证扩展名
         if not utils.validate_file_extension(file.filename, media_type):
             raise UnsupportedFileTypeError(f"不支持的文件类型: {file.filename}")
 
-        # 3. 验证大小（如果浏览器提供了 size 属性，进行初步拦截）
+        # 3. 验证大小
         if file.size:
             if max_size and file.size > max_size:
                 raise FileSizeExceededError(f"文件超出自定义限制: {max_size}")
@@ -212,7 +117,6 @@ def get_cache_headers(
         缓存头字典
     """
     # 结合文件 ID 和最后修改时间生成 ETag
-    # 这样如果文件由于某种原因更新了，ETag 也会变化
     mtime = int(media_file.updated_at.timestamp())
     etag = f'W/"{media_file.id}-{mtime}"'
 

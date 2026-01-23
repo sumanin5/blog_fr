@@ -124,11 +124,6 @@ class Post(Base, table=True):
     content_mdx: str = Field(
         sa_column=Column(TEXT), description="正文(MDX - 支持 Markdown + JSX)"
     )
-    content_html: Optional[str] = Field(
-        default=None,
-        sa_column=Column(TEXT),
-        description="正文预览(HTML)，已废弃，保留用于向后兼容",
-    )
     content_ast: Optional[dict] = Field(
         default=None,
         sa_column=Column(JSONB),

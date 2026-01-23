@@ -17,8 +17,15 @@ graph TB
     end
 
     subgraph "业务编排层 (Service)"
-        C[GitOpsService<br>流程编排 & 错误处理]
-        Container[GitOpsContainer<br>依赖注入]
+        C[GitOpsService<br>门面模式 - 统一入口]
+        Container[GitOpsContainer<br>依赖注入容器]
+    end
+
+    subgraph "服务层 (Services)"
+        S1[SyncService<br>同步服务]
+        S2[PreviewService<br>预览服务]
+        S3[ResyncService<br>重新同步服务]
+        S4[CommitService<br>提交服务]
     end
 
     subgraph "核心组件层 (Components)"
@@ -40,18 +47,27 @@ graph TB
     A1 -->|HTTP POST| B
     A3 -.->|Webhook| B
 
-    B -->|依赖注入| Container
-    B -->|调用| C
+    B -->|创建| C
+    C -->|创建| Container
+    Container -->|延迟加载| S1
+    Container -->|延迟加载| S2
+    Container -->|延迟加载| S3
+    Container -->|延迟加载| S4
 
-    C -->|获取组件| Container
-    Container --> D
-    Container --> F
-    Container --> I
-    Container --> J
+    C -->|委托| S1
+    C -->|委托| S2
+    C -->|委托| S3
+    C -->|委托| S4
 
-    C -->|Git Pull| J
-    C -->|扫描文件| D
-    C -->|调用处理| H
+    Container -->|提供| D
+    Container -->|提供| F
+    Container -->|提供| I
+    Container -->|提供| J
+
+    S1 -->|使用| D
+    S1 -->|使用| F
+    S1 -->|使用| J
+    S1 -->|调用| H
 
     H -->|序列化/反序列化| F
     F -->|验证| E
@@ -83,9 +99,57 @@ GitOps 模块采用了组件化设计，将复杂的功能拆分为独立的、�
   - **Processors**: 采用 Pipeline 模式，处理复杂的字段解析逻辑（author、cover、category、tags 等），每个 Processor 负责一个字段的处理。
   - **Writer**: 负责物理文件的写入操作，包括处理文件重命名和移动。
 
-### 2. 依赖注入 (Dependency Injection)
+### 2. 依赖注入容器 (Dependency Injection Container)
 
-通过 `GitOpsContainer` 类统一管理组件的依赖关系。Service 层不需要知道组件的具体实现细节，只需要从容器中获取即可。这大大提高了代码的可测试性，方便 mock 各种组件。
+采用**依赖注入容器模式**，通过 `GitOpsContainer` 类集中管理所有依赖关系：
+
+#### 容器职责
+
+- **对象工厂**: 负责创建所有核心组件和服务
+- **依赖管理**: 管理组件之间的依赖关系
+- **单例管理**: 确保每个服务只创建一次
+- **延迟加载**: 服务按需创建，节省资源
+
+#### 两层架构
+
+```python
+GitOpsContainer
+├── 核心组件层（立即创建）
+│   ├── scanner: MDXScanner          # 文件扫描器
+│   ├── serializer: PostSerializer   # 序列化器
+│   ├── writer: FileWriter           # 文件写入器
+│   └── git_client: GitClient        # Git 客户端
+└── 服务层（延迟加载 + 单例）
+    ├── sync_service: SyncService       # 同步服务
+    ├── preview_service: PreviewService # 预览服务
+    ├── resync_service: ResyncService   # 重新同步服务
+    └── commit_service: CommitService   # 提交服务
+```
+
+#### 优势
+
+- ✅ **依赖共享**: 所有服务共享同一套核心组件，避免重复创建
+- ✅ **单例模式**: 每个服务在容器中只创建一次
+- ✅ **延迟加载**: 只在第一次访问时才创建服务
+- ✅ **易于测试**: 可以 mock 整个容器或单个组件
+- ✅ **集中管理**: 修改依赖关系只需改一处
+
+#### 使用示例
+
+```python
+# 创建容器
+container = GitOpsContainer(session)
+
+# 访问核心组件（立即可用）
+scanned = await container.scanner.scan_all()
+
+# 访问服务（第一次访问时创建）
+stats = await container.sync_service.sync_all()  # 创建 SyncService
+preview = await container.preview_service.preview_sync()  # 创建 PreviewService
+
+# 再次访问（返回已创建的实例）
+stats2 = await container.sync_service.sync_all()  # 复用同一个 SyncService
+```
 
 ### 3. 显式错误处理
 
@@ -115,9 +179,21 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 - `schema.py`: 定义 API 接口模型 (Pydantic)。
 - `metadata.py`: 定义 Frontmatter 数据模型，使用 Pydantic 的 validator 和 serializer 处理字段验证和转换。
 
-### 6. 并发控制与一致性安全
+### 6. 服务拆分与职责单一
 
-- **并发锁 (Mutex Lock)**: `GitOpsService` 内部实现了基于 `asyncio.Lock` 的进程级互斥锁。这有效防止了 Webhook 频繁触发或与管理员手动操作冲突时可能引发的竞态条件 (Race Condition)。
+将原来 481 行的 `service.py` 拆分为多个职责单一的服务类：
+
+- **SyncService** (~280 行): 负责全量和增量同步
+- **PreviewService** (~80 行): 负责同步预览（Dry Run）
+- **ResyncService** (~80 行): 负责重新同步单个文章
+- **CommitService** (~30 行): 负责 Git 提交和推送
+- **GitOpsService** (~70 行): 门面模式，协调各个子服务
+
+每个服务继承自 `BaseGitOpsService`，通过容器获取依赖。
+
+### 7. 并发控制与一致性安全
+
+- **并发锁 (Mutex Lock)**: `SyncService` 内部实现了基于 `asyncio.Lock` 的进程级互斥锁。这有效防止了 Webhook 频繁触发或与管理员手动操作冲突时可能引发的竞态条件 (Race Condition)。
 - **统一入口 (Unified Entrypoint)**: 所有 Git 操作（包括后台自动提交）被强制收敛通过 `GitOpsService` 执行，确保所有操作都经过 `GitOpsContainer` 的统一配置和状态管理，消除了因绕过容器而产生的配置不一致风险。
 
 ---
@@ -126,26 +202,40 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 
 ### 完整同步 (`sync_all`)
 
-1. **初始化**: `GitOpsService` 启动，加载所有组件。
-2. **Git Pull**: 尝试更新本地仓库。如果失败（如网络问题），记录警告并继续（降级为仅同步本地文件）。
-3. **全量扫描**: `Scanner` 遍历 content 目录，生成 `ScannedPost` 列表。
-4. **数据库对比**: 一次性查询所有已同步的文章 (`source_path is not null`)。
-5. **处理循环**:
+1. **初始化**: `GitOpsService` 创建 `GitOpsContainer`，容器初始化所有核心组件。
+2. **委托**: `GitOpsService.sync_all()` 委托给 `container.sync_service.sync_all()`。
+3. **Git Pull**: `SyncService` 使用 `container.git_client` 尝试更新本地仓库。如果失败（如网络问题），记录警告并继续（降级为仅同步本地文件）。
+4. **全量扫描**: 使用 `container.scanner` 遍历 content 目录，生成 `ScannedPost` 列表。
+5. **数据库对比**: 一次性查询所有已同步的文章 (`source_path is not null`)。
+6. **处理循环**:
    - 遍历扫描到的文件。
-   - **匹配策略**: 优先通过 `source_path` 匹配，其次通过 `slug` 匹配（检测文件重命名/移动）。
+   - **匹配策略**: 使用 `container.serializer` 匹配，优先通过 `source_path` 匹配，其次通过 `slug` 匹配（检测文件重命名/移动）。
    - **更新/创建**: 根据匹配结果调用 `handle_post_update` 或 `handle_post_create`。
    - **异常捕获**: 每个文件的处理都在独立的 `try...except` 块中。
-6. **删除检测**: 遍历数据库中的文章，如果在本次扫描中未找到对应的文件，则执行删除。
-7. **统计与响应**: 返回包含新增、更新、删除、错误列表的 `SyncStats` 对象。
+7. **删除检测**: 遍历数据库中的文章，如果在本次扫描中未找到对应的文件，则执行删除。
+8. **统计与响应**: 返回包含新增、更新、删除、错误列表的 `SyncStats` 对象。
 
-### 6. 增量同步 (Incremental Sync)
+### 增量同步 (`sync_incremental`)
 
 从 v3.2.0 开始，系统默认采用**增量同步**策略，显著提升性能：
 
-- **状态记录**: 在 `content/.gitops_last_sync` 文件中持久化存储上一次成功同步的 Git Commit Hash。
-- **差异获取**: 使用 `git diff --name-only <last_hash> HEAD` 获取变更文件列表。
-- **增量处理**: 仅处理变更列表中的文件（新增/修改/删除）。
-- **智能回退**: 如果本地没有 Hash 记录或获取 Diff 失败，自动降级为全量扫描模式 `sync_all`。
+1. **委托**: `GitOpsService.sync_incremental()` 委托给 `container.sync_service.sync_incremental()`。
+2. **状态记录**: 在 `content/.gitops_last_sync` 文件中持久化存储上一次成功同步的 Git Commit Hash。
+3. **差异获取**: 使用 `container.git_client.get_changed_files()` 获取变更文件列表。
+4. **增量处理**: 仅处理变更列表中的文件（新增/修改/删除）。
+5. **智能回退**: 如果本地没有 Hash 记录或获取 Diff 失败，自动降级为全量扫描模式 `sync_all`。
+
+### 预览同步 (`preview_sync`)
+
+1. **委托**: `GitOpsService.preview_sync()` 委托给 `container.preview_service.preview_sync()`。
+2. **Dry Run**: 扫描文件并对比数据库，但不执行任何写操作。
+3. **返回预览**: 返回 `PreviewResult`，包含待创建、更新、删除的文章列表。
+
+### 重新同步 (`resync_post_metadata`)
+
+1. **委托**: `GitOpsService.resync_post_metadata()` 委托给 `container.resync_service.resync_post_metadata()`。
+2. **单篇同步**: 重新读取指定文章的 Frontmatter，更新数据库。
+3. **用途**: 修复 frontmatter 错误、补全缺失的元数据。
 
 ---
 
@@ -183,5 +273,85 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 
 ---
 
-**最后更新**: 2026-01-21
-**版本**: 3.2.0
+---
+
+## 🏛️ 依赖注入容器详解
+
+### 容器模式的核心价值
+
+**依赖注入容器 = 对象工厂 + 依赖管理器 + 单例管理器**
+
+#### 问题场景（重构前）
+
+```python
+# ❌ 每个服务都要自己创建依赖
+class GitOpsService:
+    def __init__(self, session):
+        # 重复创建
+        self.scanner = MDXScanner(content_dir)
+        self.serializer = PostSerializer(session)
+        self.git_client = GitClient(content_dir)
+
+    async def sync_all(self):
+        scanned = await self.scanner.scan_all()
+
+    async def preview_sync(self):
+        # 又要创建一遍？
+        scanner = MDXScanner(content_dir)  # 重复！
+```
+
+#### 容器解决方案（重构后）
+
+```python
+# ✅ 容器统一管理依赖
+class GitOpsContainer:
+    def __init__(self, session, content_dir):
+        # 核心组件：容器创建并持有
+        self.scanner = MDXScanner(content_dir)
+        self.serializer = PostSerializer(session)
+        self.git_client = GitClient(content_dir)
+
+        # 服务层：延迟加载
+        self._sync_service = None
+        self._preview_service = None
+
+    @property
+    def sync_service(self):
+        """单例模式：只创建一次"""
+        if self._sync_service is None:
+            self._sync_service = SyncService(self.session, self)
+        return self._sync_service
+```
+
+### 调用流程
+
+```
+用户代码
+    ↓
+GitOpsService (门面)
+    ↓
+GitOpsContainer (容器)
+    ↓
+具体服务 (SyncService, PreviewService, etc.)
+    ↓
+核心组件 (Scanner, Serializer, GitClient)
+```
+
+### 测试优势
+
+```python
+# 可以 mock 整个容器
+mock_container = MagicMock()
+mock_container.scanner.scan_all.return_value = []
+service = SyncService(session, mock_container)
+
+# 或者只 mock 某个组件
+container = GitOpsContainer(session)
+container.scanner = mock_scanner
+service = SyncService(session, container)
+```
+
+---
+
+**最后更新**: 2026-01-23
+**版本**: 3.3.0 (依赖注入容器重构)

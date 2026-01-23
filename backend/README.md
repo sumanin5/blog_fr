@@ -25,7 +25,74 @@ docker compose up backend
 ```
 
 访问 API：`http://localhost:8000`
-API 文档：`http://localhost:8000/docs`
+API 文档：
+
+- Swagger UI: `http://localhost:8000/docs`
+- Scalar UI: `http://localhost:8000/scalar`（更现代化）
+- OpenAPI JSON: `http://localhost:8000/openapi.json`
+
+---
+
+## 📖 API 文档
+
+### 在线文档
+
+项目提供了两种交互式 API 文档界面：
+
+#### 1. Swagger UI（传统）
+
+访问：`http://localhost:8000/docs`
+
+**特点**：
+
+- ✅ 完整的接口列表
+- ✅ 在线测试功能
+- ✅ 请求/响应示例
+- ✅ 认证支持（Bearer Token）
+
+#### 2. Scalar UI（推荐）
+
+访问：`http://localhost:8000/scalar`
+
+**特点**：
+
+- ✅ 更现代化的界面
+- ✅ 更好的代码示例
+- ✅ 支持多种编程语言
+- ✅ 更清晰的文档结构
+
+### API 模块
+
+| 模块   | 前缀              | 说明                     |
+| ------ | ----------------- | ------------------------ |
+| Users  | `/api/v1/users`   | 用户认证和管理           |
+| Posts  | `/api/v1/posts`   | 文章创建、编辑、查询     |
+| Media  | `/api/v1/media`   | 媒体文件上传和管理       |
+| GitOps | `/api/v1/ops/git` | Git 自动化同步（管理员） |
+
+### 认证方式
+
+所有需要认证的接口都使用 JWT Bearer Token：
+
+```bash
+# 1. 登录获取 token
+curl -X POST http://localhost:8000/api/v1/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "password"}'
+
+# 2. 使用 token 访问受保护接口
+curl -X GET http://localhost:8000/api/v1/users/me \
+  -H "Authorization: Bearer <your_token>"
+```
+
+### 导出 OpenAPI 规范
+
+```bash
+# 导出 OpenAPI JSON
+python scripts/export_openapi.py
+
+# 生成的文件：docs/api/openapi.json
+```
 
 ---
 
@@ -63,6 +130,7 @@ docker compose up backend
 ```
 
 **特点**：
+
 - ✅ 体积小（只有必需依赖）
 - ✅ 启动快
 - ✅ 安全（没有测试工具）
@@ -164,13 +232,13 @@ backend/
 
 ### 连接信息
 
-| 项目 | 值 |
-|------|-----|
-| Host | `localhost` 或 `db`（容器内） |
-| Port | `5433`（本地）或 `5432`（容器内） |
-| User | `postgres` |
-| Password | `postgres` |
-| Database | `blog_fr` |
+| 项目     | 值                                |
+| -------- | --------------------------------- |
+| Host     | `localhost` 或 `db`（容器内）     |
+| Port     | `5433`（本地）或 `5432`（容器内） |
+| User     | `postgres`                        |
+| Password | `postgres`                        |
+| Database | `blog_fr`                         |
 
 详见项目根目录的 `.env` 文件。
 
@@ -216,24 +284,24 @@ uv lock
 
 ### 主要依赖
 
-| 包 | 用途 |
-|-----|------|
-| `fastapi` | Web 框架 |
-| `uvicorn` | ASGI 服务器 |
-| `sqlmodel` | ORM + 数据验证 |
+| 包         | 用途            |
+| ---------- | --------------- |
+| `fastapi`  | Web 框架        |
+| `uvicorn`  | ASGI 服务器     |
+| `sqlmodel` | ORM + 数据验证  |
 | `psycopg2` | PostgreSQL 驱动 |
-| `alembic` | 数据库迁移 |
-| `pyjwt` | JWT 认证 |
-| `passlib` | 密码哈希 |
+| `alembic`  | 数据库迁移      |
+| `pyjwt`    | JWT 认证        |
+| `passlib`  | 密码哈希        |
 
 ### 开发依赖
 
-| 包 | 用途 |
-|-----|------|
-| `pytest` | 单元测试 |
-| `jupyter` | 交互式开发 |
+| 包        | 用途                |
+| --------- | ------------------- |
+| `pytest`  | 单元测试            |
+| `jupyter` | 交互式开发          |
 | `ipython` | 增强型 Python Shell |
-| `ipdb` | 交互式调试器 |
+| `ipdb`    | 交互式调试器        |
 
 ---
 

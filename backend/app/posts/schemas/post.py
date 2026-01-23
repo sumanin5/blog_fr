@@ -3,7 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.core.config import settings
-from app.media.schema import MediaFileResponse
+from app.media.schemas import MediaFileResponse
 from app.posts.model import PostStatus, PostType
 from app.users.schema import UserResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -24,17 +24,7 @@ class PostTypeResponse(BaseModel):
 
     value: str
     label: str
-    category_id: Optional[UUID] = None
-    cover_media_id: Optional[UUID] = None
-    is_featured: bool = False
-    allow_comments: bool = True
-    enable_jsx: bool = False  # 是否启用 JSX 组件
-    use_server_rendering: bool = True  # 是否使用服务端渲染
-
-    # SEO 字段
-    meta_title: Optional[str] = ""
-    meta_description: Optional[str] = ""
-    meta_keywords: Optional[str] = ""
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostCreate(PostBase):

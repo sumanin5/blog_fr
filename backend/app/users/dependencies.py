@@ -56,7 +56,9 @@ async def get_current_user(
     """
     # 🛡️ 防御性检查：如果 token 是 None，说明没有提供认证
     if token is None:
-        raise InvalidCredentialsError("Authentication required")
+        raise InvalidCredentialsError(
+            "No authentication token provided. Please login to access this resource."
+        )
 
     try:
         # 解码 JWT token
@@ -66,13 +68,15 @@ async def get_current_user(
         token_data = TokenPayload(sub=user_id)
     except jwt.ExpiredSignatureError:
         logger.warning(f"JWT token expired: token={token[:20]}...")
-        raise InvalidCredentialsError("Token has expired")
+        raise InvalidCredentialsError("Token has expired. Please login again.")
     except jwt.InvalidTokenError as e:
         logger.warning(f"Invalid JWT token: error={str(e)}, token={token[:20]}...")
-        raise InvalidCredentialsError("Invalid token format")
+        raise InvalidCredentialsError(
+            "Invalid or malformed token. The token may be corrupted or tampered with."
+        )
     except Exception as e:
         logger.error(f"JWT decode error: {str(e)}")
-        raise InvalidCredentialsError("Token validation failed")
+        raise InvalidCredentialsError("Token validation failed. Please login again.")
 
     try:
         # 将 sub (str) 转换为 UUID
@@ -80,7 +84,9 @@ async def get_current_user(
         user = await crud.get_user_by_id(session, user_uuid)
         if user is None:
             logger.warning(f"User not found for valid JWT: user_id={user_uuid}")
-            raise InvalidCredentialsError("User not found")
+            raise InvalidCredentialsError(
+                "User not found. The account may have been deleted."
+            )
 
         logger.debug(
             f"JWT authentication successful: user_id={user.id}, username={user.username}"
@@ -88,10 +94,10 @@ async def get_current_user(
         return user
     except ValueError:
         logger.warning(f"Invalid UUID format in JWT: user_id={token_data.sub}")
-        raise InvalidCredentialsError("Invalid user ID format")
+        raise InvalidCredentialsError("Invalid user ID format in token.")
     except Exception as e:
         logger.error(f"Database error during user lookup: {str(e)}")
-        raise InvalidCredentialsError("Authentication failed")
+        raise InvalidCredentialsError("Authentication failed. Please try again.")
 
 
 async def get_current_active_user(

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Blog API",
-    "description": "博客系统 API",
+    "description": "\n## 博客系统 API\n\n一个功能完整的现代化博客系统后端 API，支持 Markdown/MDX 内容管理和 GitOps 自动化同步。\n\n### 核心特性\n\n- 🔐 **用户认证**：基于 JWT 的安全认证系统\n- 📝 **内容管理**：支持 Markdown/MDX 格式的文章创建和编辑\n- 🎨 **三种渲染模式**：后端渲染、前端 SSR、前端 CSR\n- 📁 **媒体管理**：图片、视频等媒体文件的上传和管理\n- 🔄 **GitOps 同步**：Git 仓库与数据库的双向自动化同步\n- 🔗 **Webhook 集成**：支持 GitHub Webhook 自动触发同步\n\n### 技术栈\n\n- **框架**：FastAPI + SQLModel + PostgreSQL\n- **认证**：JWT + OAuth2\n- **内容处理**：markdown-it-py + MDX\n- **异步支持**：asyncio + aiofiles\n\n### 快速开始\n\n1. 注册账号：`POST /api/v1/users/register`\n2. 登录获取 token：`POST /api/v1/users/login`\n3. 使用 token 访问受保护的接口：`Authorization: Bearer <token>`\n\n### 文档\n\n- [Swagger UI](/docs) - 交互式 API 文档\n- [Scalar UI](/scalar) - 现代化 API 文档\n- [OpenAPI JSON](/openapi.json) - OpenAPI 规范文件\n    ",
     "version": "0.1.0"
   },
   "paths": {
@@ -2658,117 +2658,189 @@
         }
       }
     },
-    "/api/v1/posts/types": {
+    "/api/v1/posts/admin/posts": {
       "get": {
         "tags": [
           "posts"
         ],
-        "summary": "获取所有板块类型",
-        "description": "获取所有板块类型（用于前端构建菜单）\n\n返回示例：\n[\n    {\"value\": \"article\", \"label\": \"Article\"},\n    {\"value\": \"idea\", \"label\": \"Idea\"}\n]",
-        "operationId": "getPostTypes",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/PostTypeResponse"
-                  },
-                  "type": "array",
-                  "title": "Response Getposttypes"
+        "summary": "获取所有文章列表（管理后台）",
+        "description": "获取所有文章列表（管理后台）\n\n权限：\n- 超级管理员：可以查看所有文章（包括所有用户的草稿）\n- 普通用户：只能查看自己的文章\n\n支持筛选：\n- status: 文章状态（draft/published/archived）\n- post_type: 文章类型（article/idea）\n- category_id: 分类ID\n- tag_id: 标签ID\n- author_id: 作者ID（超级管理员可用）\n- is_featured: 是否推荐\n- search: 搜索关键词\n\n示例：\n- GET /posts/admin/posts - 所有文章\n- GET /posts/admin/posts?status=draft - 草稿列表\n- GET /posts/admin/posts?author_id=xxx - 指定作者的文章（超级管理员）",
+        "operationId": "listAllPostsAdmin",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PostStatus"
+                },
+                {
+                  "type": "null"
                 }
-              }
+              ],
+              "description": "文章状态（draft/published/archived）",
+              "title": "Status"
+            },
+            "description": "文章状态（draft/published/archived）"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "分类ID",
+              "title": "Category Id"
+            },
+            "description": "分类ID"
+          },
+          {
+            "name": "tag_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "标签ID",
+              "title": "Tag Id"
+            },
+            "description": "标签ID"
+          },
+          {
+            "name": "author_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "作者ID",
+              "title": "Author Id"
+            },
+            "description": "作者ID"
+          },
+          {
+            "name": "is_featured",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "是否为推荐文章",
+              "title": "Is Featured"
+            },
+            "description": "是否为推荐文章"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "搜索关键词（标题、内容）",
+              "title": "Search"
+            },
+            "description": "搜索关键词（标题、内容）"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页数量",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "每页数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "偏移量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "偏移量"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
             }
           },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
             }
           }
-        }
-      }
-    },
-    "/api/v1/posts/preview": {
-      "post": {
-        "tags": [
-          "posts"
         ],
-        "summary": "文章实时预览",
-        "description": "预览 MDX 内容（转换 Markdown -> HTML）",
-        "operationId": "previewPost",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PostPreviewRequest"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PostPreviewResponse"
+                  "$ref": "#/components/schemas/Page_PostShortResponse_"
                 }
               }
             }
@@ -2855,9 +2927,18 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "搜索关键词，支持标签名称模糊搜索",
               "title": "Search"
-            }
+            },
+            "description": "搜索关键词，支持标签名称模糊搜索"
           },
           {
             "name": "page",
@@ -3250,715 +3331,7 @@
         }
       }
     },
-    "/api/v1/posts/me": {
-      "get": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "获取当前用户的文章列表",
-        "description": "获取当前用户的所有文章（包括草稿）\n\n示例：\n- GET /posts/me - 我的所有文章\n- GET /posts/me?status=draft - 我的草稿\n- GET /posts/me?status=published - 我的已发布文章\n\n注意：需要登录才能访问",
-        "operationId": "getMyPosts",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/PostType"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Post Type"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/PostStatus"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "文章状态",
-              "title": "Status"
-            },
-            "description": "文章状态"
-          },
-          {
-            "name": "category_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Category Id"
-            }
-          },
-          {
-            "name": "tag_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tag Id"
-            }
-          },
-          {
-            "name": "author_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Author Id"
-            }
-          },
-          {
-            "name": "is_featured",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Is Featured"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Search"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 20,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1,
-              "title": "Page"
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 50,
-              "title": "Size"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page_PostShortResponse_"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/posts/{post_type}": {
-      "get": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "获取指定板块的文章列表",
-        "description": "获取指定板块的文章列表（自动分页）\n\n示例：\n- GET /posts/article?page=1&size=20 - 文章列表\n- GET /posts/idea?page=1&size=20 - 想法列表\n- GET /posts/article?status=draft - 草稿列表（需要登录）",
-        "operationId": "listPostsByType",
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/PostType"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Post Type"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/PostStatus"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "文章状态",
-              "title": "Status"
-            },
-            "description": "文章状态"
-          },
-          {
-            "name": "category_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Category Id"
-            }
-          },
-          {
-            "name": "tag_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tag Id"
-            }
-          },
-          {
-            "name": "author_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Author Id"
-            }
-          },
-          {
-            "name": "is_featured",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Is Featured"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Search"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 20,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1,
-              "title": "Page"
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 50,
-              "title": "Size"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page_PostShortResponse_"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "创建文章",
-        "description": "创建新文章（需要登录）\n\n示例：\n- POST /posts/article - 创建文章\n- POST /posts/idea - 创建想法",
-        "operationId": "createPostByType",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType",
-              "description": "板块类型"
-            },
-            "description": "板块类型"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PostCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PostDetailResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/posts/{post_type}/categories": {
-      "get": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "获取指定板块的分类列表",
-        "description": "获取指定板块的分类列表（自动分页）\n\n示例：\n- GET /posts/article/categories - 文章分类（仅启用）\n- GET /posts/article/categories?include_inactive=true - 所有分类",
-        "operationId": "listCategoriesByType",
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType",
-              "description": "板块类型"
-            },
-            "description": "板块类型"
-          },
-          {
-            "name": "include_inactive",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Include Inactive"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page_CategoryResponse_"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "posts"
@@ -4065,16 +3438,14 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/posts/{post_type}/tags": {
+      },
       "get": {
         "tags": [
           "posts"
         ],
-        "summary": "获取指定板块的标签列表",
-        "description": "获取指定板块的标签列表（自动分页）\n\n示例：\n- GET /posts/article/tags - 文章标签\n- GET /posts/idea/tags - 想法标签",
-        "operationId": "listTagsByType",
+        "summary": "获取指定板块的分类列表",
+        "description": "获取指定板块的分类列表（自动分页）\n\n示例：\n- GET /posts/article/categories - 文章分类（仅启用）\n- GET /posts/article/categories?include_inactive=true - 所有分类",
+        "operationId": "listCategoriesByType",
         "parameters": [
           {
             "name": "post_type",
@@ -4085,6 +3456,18 @@
               "description": "板块类型"
             },
             "description": "板块类型"
+          },
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否包含未启用的分类",
+              "default": false,
+              "title": "Include Inactive"
+            },
+            "description": "是否包含未启用的分类"
           }
         ],
         "responses": {
@@ -4093,7 +3476,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_TagResponse_"
+                  "$ref": "#/components/schemas/Page_CategoryResponse_"
                 }
               }
             }
@@ -4161,14 +3544,14 @@
         }
       }
     },
-    "/api/v1/posts/{post_type}/{post_id}": {
-      "get": {
+    "/api/v1/posts/{post_type}/categories/{category_id}": {
+      "patch": {
         "tags": [
           "posts"
         ],
-        "summary": "通过ID获取文章详情",
-        "description": "根据 UUID 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n查询参数：\n- include_mdx: 是否包含原始 MDX 内容（用于编辑页面）\n  - False（默认）: 返回 AST（节省带宽）\n  - True: 返回 MDX（用于编辑）\n\n示例：\n- GET /posts/article/{uuid}\n- GET /posts/article/{uuid}?include_mdx=true\n\n注意：使用 :uuid 路径转换器确保与 slug 路由不冲突",
-        "operationId": "getPostById",
+        "summary": "更新分类",
+        "description": "更新分类（仅超级管理员）\n\n示例：\n- PATCH /posts/article/categories/{category_id}\n- PATCH /posts/idea/categories/{category_id}",
+        "operationId": "updateCategoryByType",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -4186,30 +3569,579 @@
             "description": "板块类型"
           },
           {
-            "name": "post_id",
+            "name": "category_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid",
-              "title": "Post Id"
+              "title": "Category Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "删除分类",
+        "description": "删除分类（仅超级管理员）\n\n示例：\n- DELETE /posts/article/categories/{category_id}\n- DELETE /posts/idea/categories/{category_id}",
+        "operationId": "deleteCategoryByType",
+        "security": [
           {
-            "name": "include_mdx",
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/me": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "获取当前用户的文章列表",
+        "description": "获取当前用户的所有文章（包括草稿）\n\n示例：\n- GET /posts/me - 我的所有文章\n- GET /posts/me?status=draft - 我的草稿\n- GET /posts/me?status=published - 我的已发布文章\n\n注意：需要登录才能访问",
+        "operationId": "getMyPosts",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "boolean",
-              "description": "是否包含原始 MDX 内容（用于编辑）",
-              "default": false,
-              "title": "Include Mdx"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PostStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "文章状态（draft/published/archived）",
+              "title": "Status"
             },
-            "description": "是否包含原始 MDX 内容（用于编辑）"
+            "description": "文章状态（draft/published/archived）"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "分类ID",
+              "title": "Category Id"
+            },
+            "description": "分类ID"
+          },
+          {
+            "name": "tag_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "标签ID",
+              "title": "Tag Id"
+            },
+            "description": "标签ID"
+          },
+          {
+            "name": "author_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "作者ID",
+              "title": "Author Id"
+            },
+            "description": "作者ID"
+          },
+          {
+            "name": "is_featured",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "是否为推荐文章",
+              "title": "Is Featured"
+            },
+            "description": "是否为推荐文章"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "搜索关键词（标题、内容）",
+              "title": "Search"
+            },
+            "description": "搜索关键词（标题、内容）"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页数量",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "每页数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "偏移量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "偏移量"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
+            }
           }
         ],
         "responses": {
           "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PostShortResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/preview": {
+      "post": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "文章实时预览",
+        "description": "预览 MDX 内容（转换 Markdown -> HTML）",
+        "operationId": "previewPost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}": {
+      "post": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "创建文章",
+        "description": "创建新文章（需要登录）\n\n示例：\n- POST /posts/article - 创建文章\n- POST /posts/idea - 创建想法",
+        "operationId": "createPostByType",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -4281,6 +4213,261 @@
           }
         }
       },
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "获取指定板块的文章列表",
+        "description": "获取指定板块的文章列表（自动分页）\n\n公开接口，只显示已发布的文章。\n\n示例：\n- GET /posts/article?page=1&size=20 - 文章列表\n- GET /posts/idea?page=1&size=20 - 想法列表\n- GET /posts/article?category_id=xxx - 按分类筛选",
+        "operationId": "listPostsByType",
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "文章类型"
+            },
+            "description": "文章类型"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PostStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "文章状态（draft/published/archived）",
+              "title": "Status"
+            },
+            "description": "文章状态（draft/published/archived）"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "分类ID",
+              "title": "Category Id"
+            },
+            "description": "分类ID"
+          },
+          {
+            "name": "tag_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "标签ID",
+              "title": "Tag Id"
+            },
+            "description": "标签ID"
+          },
+          {
+            "name": "author_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "作者ID",
+              "title": "Author Id"
+            },
+            "description": "作者ID"
+          },
+          {
+            "name": "is_featured",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "是否为推荐文章",
+              "title": "Is Featured"
+            },
+            "description": "是否为推荐文章"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "搜索关键词（标题、内容）",
+              "title": "Search"
+            },
+            "description": "搜索关键词（标题、内容）"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页数量",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "每页数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "偏移量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "偏移量"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PostShortResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}/{post_id}": {
       "patch": {
         "tags": [
           "posts"
@@ -4497,16 +4684,14 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/posts/{post_type}/slug/{slug}": {
+      },
       "get": {
         "tags": [
           "posts"
         ],
-        "summary": "通过Slug获取文章详情",
-        "description": "根据 Slug 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n示例：\n- GET /posts/article/slug/my-post-slug\n- GET /posts/idea/slug/my-idea-slug\n\n注意：使用 /slug/ 前缀明确区分 UUID 和 Slug 路由",
-        "operationId": "getPostBySlug",
+        "summary": "通过ID获取文章详情",
+        "description": "根据 UUID 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n查询参数：\n- include_mdx: 是否包含原始 MDX 内容（用于编辑页面）\n  - False（默认）: 返回 AST（节省带宽）\n  - True: 返回 MDX（用于编辑）\n\n示例：\n- GET /posts/article/{uuid}\n- GET /posts/article/{uuid}?include_mdx=true\n\n注意：使用 :uuid 路径转换器确保与 slug 路由不冲突",
+        "operationId": "getPostById",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -4524,13 +4709,26 @@
             "description": "板块类型"
           },
           {
-            "name": "slug",
+            "name": "post_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Slug"
+              "format": "uuid",
+              "title": "Post Id"
             }
+          },
+          {
+            "name": "include_mdx",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否包含原始 MDX 内容（用于编辑）",
+              "default": false,
+              "title": "Include Mdx"
+            },
+            "description": "是否包含原始 MDX 内容（用于编辑）"
           }
         ],
         "responses": {
@@ -4979,58 +5177,25 @@
         }
       }
     },
-    "/api/v1/posts/{post_type}/categories/{category_id}": {
-      "patch": {
+    "/api/v1/posts/types": {
+      "get": {
         "tags": [
           "posts"
         ],
-        "summary": "更新分类",
-        "description": "更新分类（仅超级管理员）\n\n示例：\n- PATCH /posts/article/categories/{category_id}\n- PATCH /posts/idea/categories/{category_id}",
-        "operationId": "updateCategoryByType",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType",
-              "description": "板块类型"
-            },
-            "description": "板块类型"
-          },
-          {
-            "name": "category_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Category Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CategoryUpdate"
-              }
-            }
-          }
-        },
+        "summary": "获取所有板块类型",
+        "description": "获取所有板块类型（用于前端构建菜单）\n\n返回示例：\n[\n    {\"value\": \"article\", \"label\": \"Article\"},\n    {\"value\": \"idea\", \"label\": \"Idea\"}\n]",
+        "operationId": "getPostTypes",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CategoryResponse"
+                  "items": {
+                    "$ref": "#/components/schemas/PostTypeResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Getposttypes"
                 }
               }
             }
@@ -5096,14 +5261,133 @@
             }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/api/v1/posts/{post_type}/tags": {
+      "get": {
         "tags": [
           "posts"
         ],
-        "summary": "删除分类",
-        "description": "删除分类（仅超级管理员）\n\n示例：\n- DELETE /posts/article/categories/{category_id}\n- DELETE /posts/idea/categories/{category_id}",
-        "operationId": "deleteCategoryByType",
+        "summary": "获取指定板块的标签列表",
+        "description": "获取指定板块的标签列表（自动分页）\n\n示例：\n- GET /posts/article/tags - 文章标签\n- GET /posts/idea/tags - 想法标签",
+        "operationId": "listTagsByType",
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TagResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}/slug/{slug}": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "通过Slug获取文章详情",
+        "description": "根据 Slug 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n示例：\n- GET /posts/article/slug/my-post-slug\n- GET /posts/idea/slug/my-idea-slug\n\n注意：使用 /slug/ 前缀明确区分 UUID 和 Slug 路由",
+        "operationId": "getPostBySlug",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -5121,19 +5405,25 @@
             "description": "板块类型"
           },
           {
-            "name": "category_id",
+            "name": "slug",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "title": "Category Id"
+              "title": "Slug"
             }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Successful Response"
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostDetailResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -5201,11 +5491,31 @@
     "/api/v1/ops/git/sync": {
       "post": {
         "tags": [
-          "git-ops"
+          "GitOps (Admin Only)",
+          "GitOps (Admin Only)"
         ],
         "summary": "手动触发 Git 同步",
-        "description": "手动触发 GitOps 同步。\n扫描 content/ 目录下的 MDX 文件，并更新数据库。",
+        "description": "手动触发 GitOps 同步。\n\n- 默认执行增量同步（仅处理变动的文件）。\n- 设置 force_full=True 可强制执行全量扫描（耗时较长）。",
         "operationId": "triggerSync",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "force_full",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否强制全量同步",
+              "default": false,
+              "title": "Force Full"
+            },
+            "description": "是否强制全量同步"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5277,18 +5587,14 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/ops/git/preview": {
       "get": {
         "tags": [
-          "git-ops"
+          "GitOps (Admin Only)",
+          "GitOps (Admin Only)"
         ],
         "summary": "预览 Git 同步变更",
         "description": "预览即将发生的变更 (Dry Run)。\n不会修改数据库。",
@@ -5372,22 +5678,28 @@
         ]
       }
     },
-    "/api/v1/ops/git/webhook": {
+    "/api/v1/ops/git/posts/{post_id}/resync-metadata": {
       "post": {
         "tags": [
-          "git-ops"
+          "GitOps (Admin Only)",
+          "GitOps (Admin Only)"
         ],
-        "summary": "GitHub Webhook 接收入口",
-        "description": "接收 GitHub Webhook Push 事件，触发后台同步。\n需配置 WEBHOOK_SECRET。",
-        "operationId": "githubWebhook",
+        "summary": "重新同步指定文章元数据",
+        "description": "重新读取指定文章对应文件的 Frontmatter 元数据，并更新数据库。\n仅适用于有 source_path 的文章。",
+        "operationId": "resyncPostMetadata",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
-            "name": "x-hub-signature-256",
-            "in": "header",
-            "required": false,
+            "name": "post_id",
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "string",
-              "title": "X-Hub-Signature-256"
+              "title": "Post Id"
             }
           }
         ],
@@ -5397,7 +5709,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WebhookResponse"
+                  "$ref": "#/components/schemas/OperationResponse"
                 }
               }
             }
@@ -5465,28 +5777,23 @@
         }
       }
     },
-    "/api/v1/ops/git/posts/{post_id}/resync-metadata": {
+    "/api/v1/ops/git/webhook": {
       "post": {
         "tags": [
-          "git-ops"
+          "GitOps (Admin Only)",
+          "GitOps (Admin Only)"
         ],
-        "summary": "重新同步文章元数据",
-        "description": "重新同步单个文章的元数据。\n\n⚠️ 已废弃：此端点将在实现增量同步后被移除。\n\n场景：\n- 用户在 frontmatter 中改了 author/cover/category 名字\n- 需要重新查询数据库并更新 ID\n- 自动回签新的 ID 到 frontmatter\n\n替代方案：\n- 使用 POST /sync 进行全量同步\n- 未来：使用增量同步（自动检测变化的文件）\n\n权限：仅管理员可用",
-        "operationId": "resyncPostMetadata",
-        "deprecated": true,
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
+        "summary": "GitHub Webhook 接收入口",
+        "description": "接收 GitHub Webhook Push 事件，触发后台同步。\n需配置 WEBHOOK_SECRET。",
+        "operationId": "githubWebhook",
         "parameters": [
           {
-            "name": "post_id",
-            "in": "path",
-            "required": true,
+            "name": "x-hub-signature-256",
+            "in": "header",
+            "required": false,
             "schema": {
               "type": "string",
-              "title": "Post Id"
+              "title": "X-Hub-Signature-256"
             }
           }
         ],
@@ -5496,7 +5803,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResyncMetadataResponse"
+                  "$ref": "#/components/schemas/WebhookResponse"
                 }
               }
             }
@@ -6415,6 +6722,31 @@
         ],
         "title": "MediaType"
       },
+      "OperationResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "OperationResponse",
+        "description": "通用操作响应"
+      },
       "Page_CategoryResponse_": {
         "properties": {
           "items": {
@@ -6604,6 +6936,83 @@
               }
             ],
             "title": "Tags"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
+          },
+          "is_featured": {
+            "type": "boolean",
+            "title": "Is Featured",
+            "default": false
+          },
+          "allow_comments": {
+            "type": "boolean",
+            "title": "Allow Comments",
+            "default": true
+          },
+          "enable_jsx": {
+            "type": "boolean",
+            "title": "Enable Jsx",
+            "default": false
+          },
+          "use_server_rendering": {
+            "type": "boolean",
+            "title": "Use Server Rendering",
+            "default": true
+          },
+          "meta_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Title"
+          },
+          "meta_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Description"
+          },
+          "meta_keywords": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Keywords"
           },
           "git_hash": {
             "anyOf": [
@@ -7103,86 +7512,6 @@
           "label": {
             "type": "string",
             "title": "Label"
-          },
-          "category_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category Id"
-          },
-          "cover_media_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cover Media Id"
-          },
-          "is_featured": {
-            "type": "boolean",
-            "title": "Is Featured",
-            "default": false
-          },
-          "allow_comments": {
-            "type": "boolean",
-            "title": "Allow Comments",
-            "default": true
-          },
-          "enable_jsx": {
-            "type": "boolean",
-            "title": "Enable Jsx",
-            "default": false
-          },
-          "use_server_rendering": {
-            "type": "boolean",
-            "title": "Use Server Rendering",
-            "default": true
-          },
-          "meta_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Title",
-            "default": ""
-          },
-          "meta_description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Description",
-            "default": ""
-          },
-          "meta_keywords": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Meta Keywords",
-            "default": ""
           }
         },
         "type": "object",
@@ -7541,36 +7870,6 @@
         "type": "object",
         "title": "PreviewResult",
         "description": "Git 同步预览结果"
-      },
-      "ResyncMetadataResponse": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "post_id": {
-            "type": "string",
-            "title": "Post Id"
-          },
-          "source_path": {
-            "type": "string",
-            "title": "Source Path"
-          },
-          "updated_fields": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Updated Fields"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status",
-          "post_id",
-          "source_path",
-          "updated_fields"
-        ],
-        "title": "ResyncMetadataResponse",
-        "description": "重新同步元数据结果"
       },
       "SyncError": {
         "properties": {
@@ -8255,5 +8554,27 @@
         }
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "users",
+      "description": "\n## 用户管理模块\n\n提供完整的用户认证和管理功能。\n\n### 核心功能\n\n#### 🔐 认证与授权\n- **JWT Token 认证**：基于 JWT 的无状态认证机制\n- **OAuth2 密码模式**：标准的 OAuth2 密码授权流程\n- **角色权限控制**：支持普通用户、管理员、超级管理员三级权限\n\n#### 👤 用户管理\n- **用户注册**：支持邮箱注册，自动生成唯一用户名\n- **用户登录**：返回 access_token 和 refresh_token\n- **个人信息管理**：查看和更新个人资料\n- **密码管理**：修改密码功能\n\n#### 🛡️ 安全特性\n- **密码加密**：使用 bcrypt 加密存储\n- **Token 过期机制**：access_token 30天，refresh_token 7天\n- **权限验证**：基于依赖注入的权限检查\n\n### 权限级别\n\n| 角色 | 权限 | 说明 |\n|------|------|------|\n| 普通用户 | `is_active=True` | 可以创建和管理自己的文章 |\n| 管理员 | `is_admin=True` | 可以管理所有文章和用户 |\n| 超级管理员 | `is_superadmin=True` | 拥有所有权限，包括 GitOps 同步 |\n\n### 典型流程\n\n```\n1. 注册 → POST /users/register\n2. 登录 → POST /users/login (获取 token)\n3. 访问受保护资源 → 携带 Authorization: Bearer <token>\n4. Token 过期 → 使用 refresh_token 刷新\n```\n    "
+    },
+    {
+      "name": "media",
+      "description": "\n## 媒体文件管理模块\n\n提供图片、视频等媒体文件的上传、存储和管理功能。\n\n### 核心功能\n\n#### 📤 文件上传\n- **多文件上传**：支持批量上传多个文件\n- **类型验证**：自动验证文件类型（图片、视频、文档）\n- **大小限制**：可配置的文件大小限制\n- **自动缩略图**：图片自动生成缩略图（150x150）\n\n#### 🗂️ 文件管理\n- **分页查询**：支持分页获取媒体文件列表\n- **文件详情**：查看文件元数据（大小、类型、上传时间等）\n- **文件删除**：删除文件及其缩略图\n- **去重机制**：基于内容哈希的文件去重\n\n#### 📁 存储结构\n\n```\nmedia/\n├── uploads/           # 原始文件\n│   └── 2026/01/      # 按年月组织\n│       └── file.jpg\n└── thumbnails/        # 缩略图\n    └── 2026/01/\n        └── file_thumb.jpg\n```\n\n### 支持的文件类型\n\n| 类型 | 扩展名 | 说明 |\n|------|--------|------|\n| 图片 | `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp` | 自动生成缩略图 |\n| 视频 | `.mp4`, `.webm`, `.mov` | 仅存储，不处理 |\n| 文档 | `.pdf`, `.doc`, `.docx` | 仅存储 |\n\n### 安全特性\n\n- ✅ **内容类型验证**：检查文件真实类型，防止伪造\n- ✅ **文件名清理**：移除特殊字符，防止路径遍历\n- ✅ **权限控制**：需要登录才能上传\n- ✅ **哈希去重**：避免重复上传相同文件\n    "
+    },
+    {
+      "name": "posts",
+      "description": "\n## 文章管理模块\n\n提供文章的创建、编辑、发布和查询功能，支持 Markdown/MDX 格式。\n\n### 核心功能\n\n#### ✍️ 文章创建与编辑\n- **Markdown/MDX 支持**：完整支持 Markdown 和 MDX 语法\n- **实时预览**：提供预览接口，实时渲染 Markdown\n- **草稿功能**：支持保存草稿，稍后发布\n- **分类和标签**：支持文章分类和多标签\n\n#### 📊 文章类型\n- **Article（文章）**：长篇内容，支持完整的 Markdown 功能\n- **Idea（想法）**：短篇内容，快速记录灵感\n\n#### 🎨 三种渲染模式\n\n博客系统支持三种 Markdown/MDX 渲染模式，适应不同场景：\n\n##### 1️⃣ 后端渲染（Backend Rendering）\n```\nMarkdown → Python (markdown-it-py) → HTML → 前端显示\n```\n- **适用场景**：简单的 Markdown 文章，不需要交互\n- **优点**：SEO 友好，首屏加载快\n- **缺点**：不支持 React 组件\n\n##### 2️⃣ 前端服务端渲染（Frontend SSR）\n```\nMDX → Next.js Server (next-mdx-remote) → HTML + Hydration → 前端交互\n```\n- **适用场景**：需要 React 组件的文章\n- **优点**：SEO 友好 + 支持交互组件（需要自定义）\n- **缺点**：服务器负载较高\n- **配置**：`enable_jsx: true`\n\n##### 3️⃣ 前端客户端渲染（Frontend CSR）\n```\nMDX → 浏览器 (@mdx-js/mdx) → React 组件 → 前端交互\n```\n- **适用场景**：高度交互的文章（图表、动画等）\n- **优点**：最灵活，支持所有 React 特性\n- **缺点**：SEO 较差，首屏加载慢\n- **配置**：`enable_jsx: true && use_server_rendering: false`\n\n#### 🔄 渲染模式选择\n\n| 模式 | SEO | 交互性 | 性能 | 推荐场景 |\n|------|-----|--------|------|----------|\n| 后端渲染 | ⭐⭐⭐ | ❌ | ⭐⭐⭐ | 纯文本文章 |\n| 前端 SSR | ⭐⭐⭐ | ⭐⭐ | ⭐⭐ | 带组件的文章 |\n| 前端 CSR | ⭐ | ⭐⭐⭐ | ⭐ | 交互式内容 |\n\n### 文章状态\n\n- **draft（草稿）**：仅作者和管理员可见\n- **published（已发布）**：所有人可见\n- **archived（归档）**：不在列表中显示，但可通过链接访问\n\n### 权限控制\n\n- **创建文章**：需要登录\n- **编辑文章**：作者或管理员\n- **删除文章**：作者或管理员\n- **查看草稿**：作者或管理员\n- **查看已发布文章**：所有人（包括游客）\n    "
+    },
+    {
+      "name": "GitOps (Admin Only)",
+      "description": "\n## GitOps 自动化同步模块 🚀\n\n**⚠️ 权限要求：所有接口都需要超级管理员权限**\n\n实现 Git 仓库与数据库的双向自动化同步，让内容管理更加高效。\n\n### 核心理念\n\n**Git-First 策略**：Git 仓库是内容的唯一真实来源（Single Source of Truth）\n\n```\nGit 仓库 (Markdown 文件) ⟷ 数据库 (结构化数据) ⟷ 前端展示\n```\n\n### 🔄 双向同步机制\n\n#### 📥 Git → 数据库（同步）\n\n将 Git 仓库中的 Markdown 文件同步到数据库：\n\n```\n1. 扫描 content/ 目录下的所有 .md/.mdx 文件\n2. 解析 Frontmatter 元数据（标题、分类、标签等）\n3. 匹配数据库中的文章（通过 source_path 或 slug）\n4. 创建新文章 / 更新已有文章 / 删除不存在的文章\n5. 刷新前端缓存\n```\n\n**支持的同步模式**：\n\n##### 1️⃣ 全量同步（Full Sync）\n- **触发**：`POST /sync?force_full=true`\n- **行为**：扫描所有文件，完整对比\n- **耗时**：较长（取决于文件数量）\n- **适用**：首次同步、数据修复\n\n##### 2️⃣ 增量同步（Incremental Sync）⚡\n- **触发**：`POST /sync`（默认）\n- **行为**：只处理变更的文件（基于 Git diff）\n- **耗时**：很快（只处理变更）\n- **适用**：日常同步、Webhook 触发\n\n**增量同步原理**：\n```bash\n# 1. 记录上次同步的 commit hash\necho \"abc123\" > content/.gitops_last_sync\n\n# 2. 获取变更文件\ngit diff --name-only abc123..HEAD\n\n# 3. 只处理变更的文件\n- 新增文件 → 创建文章\n- 修改文件 → 更新文章\n- 删除文件 → 删除文章\n```\n\n#### 📤 数据库 → Git（回写）\n\n将数据库变更自动提交到 Git：\n\n```\n1. 用户在后台创建/编辑文章\n2. 后台任务自动将文章写入 Markdown 文件\n3. 自动执行 git add, commit, push\n4. 保持 Git 仓库与数据库同步\n```\n\n**回写时机**：\n- ✅ 创建文章：写入新文件 + 回签 UUID\n- ✅ 更新文章：更新文件内容和 Frontmatter\n- ✅ 删除文章：删除对应文件\n- ✅ 移动文章：重命名文件路径\n\n### 🔍 预览模式（Dry Run）\n\n在实际同步前预览变更：\n\n```\nGET /preview\n```\n\n**返回内容**：\n- 待创建的文章列表\n- 待更新的文章列表\n- 待删除的文章列表\n- 潜在的错误和警告\n\n### 🔗 Webhook 集成\n\n支持 GitHub Webhook，实现自动化同步：\n\n```\nGitHub Push Event → Webhook → 后台同步任务 → 数据库更新\n```\n\n**配置步骤**：\n1. 在 GitHub 仓库设置中添加 Webhook\n2. URL: `https://your-api.com/api/v1/ops/git/webhook`\n3. Content type: `application/json`\n4. Secret: 配置 `WEBHOOK_SECRET` 环境变量\n5. Events: 选择 `Push events`\n\n**安全验证**：\n- ✅ HMAC-SHA256 签名验证\n- ✅ 防止重放攻击\n- ✅ 后台异步处理，不阻塞响应\n\n### 📝 Frontmatter 元数据\n\n文章的元数据存储在 Markdown 文件的 Frontmatter 中：\n\n```yaml\n---\ntitle: \"文章标题\"\nslug: \"article-slug\"\ndate: \"2026-01-23\"\nstatus: \"published\"\nauthor: \"username\"\ncategory: \"技术\"\ntags: [\"Python\", \"FastAPI\"]\ncover: \"cover.jpg\"\nfeatured: true\n---\n\n# 文章内容\n\n这里是 Markdown 内容...\n```\n\n**字段说明**：\n- `title`: 文章标题（必填）\n- `slug`: URL 标识（必填，唯一）\n- `date`: 发布日期（可选，默认当前时间）\n- `status`: 状态（draft/published/archived）\n- `author`: 作者用户名（可选，默认 superadmin）\n- `category`: 分类名称（可选，自动创建）\n- `tags`: 标签列表（可选，自动创建）\n- `cover`: 封面图片文件名（可选）\n- `featured`: 是否推荐（可选，默认 false）\n\n### 🗂️ 文件组织结构\n\n```\ncontent/\n├── articles/          # 文章类型\n│   ├── tech/         # 技术分类\n│   │   └── python-tutorial.mdx\n│   └── life/         # 生活分类\n│       └── travel-notes.md\n└── ideas/            # 想法类型\n    └── quick-thought.md\n```\n\n**路径推导规则**：\n- `post_type`: 从第一级目录推导（articles/ideas）\n- `category`: 从第二级目录推导（tech/life）\n- `slug`: 从文件名推导（去除扩展名）\n\n### 🔧 重新同步元数据\n\n修复单篇文章的元数据错误：\n\n```\nPOST /posts/{post_id}/resync-metadata\n```\n\n**使用场景**：\n- Frontmatter 格式错误\n- 元数据缺失或不完整\n- 手动修改了文件需要重新读取\n\n### 📊 同步统计\n\n每次同步返回详细的统计信息：\n\n```json\n{\n  \"added\": [\"article1.mdx\", \"article2.mdx\"],\n  \"updated\": [\"article3.mdx\"],\n  \"deleted\": [\"article4.mdx\"],\n  \"errors\": [],\n  \"duration\": 1.23\n}\n```\n\n### 🛡️ 错误处理\n\n- **单文件错误不影响整体**：某个文件解析失败，其他文件继续处理\n- **详细错误日志**：记录每个错误的上下文和堆栈\n- **错误收集**：所有错误汇总在响应中返回\n- **自动回退**：增量同步失败自动回退到全量同步\n\n### 🚀 性能优化\n\n- ✅ **增量同步**：只处理变更文件，大幅提升速度\n- ✅ **并发扫描**：使用 asyncio 并发扫描文件\n- ✅ **数据库预加载**：一次性查询所有文章，避免 N+1 问题\n- ✅ **哈希缓存**：记录文件哈希，避免重复处理\n- ✅ **后台任务**：Webhook 触发的同步在后台执行\n\n### 📚 相关文档\n\n- [GitOps 架构设计](./ARCHITECTURE.md)\n- [增量同步原理](./docs/incremental-sync.md)\n- [Frontmatter 规范](./docs/frontmatter-spec.md)\n    ",
+      "externalDocs": {
+        "description": "查看 GitOps 完整架构文档",
+        "url": "https://github.com/your-repo/blob/main/backend/app/git_ops/ARCHITECTURE.md"
+      }
+    }
+  ]
 }

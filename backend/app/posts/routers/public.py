@@ -49,17 +49,19 @@ async def get_post_types():
     summary="获取指定板块的文章列表",
 )
 async def list_posts_by_type(
-    post_type: Annotated[PostType, Path(description="板块类型")],
+    post_type: Annotated[PostType, Path(description="文章类型")],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
     filters: Annotated[PostFilterParams, Depends()],
     params: Annotated[Params, Depends()],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """获取指定板块的文章列表（自动分页）
+
+    公开接口，只显示已发布的文章。
 
     示例：
     - GET /posts/article?page=1&size=20 - 文章列表
     - GET /posts/idea?page=1&size=20 - 想法列表
-    - GET /posts/article?status=draft - 草稿列表（需要登录）
+    - GET /posts/article?category_id=xxx - 按分类筛选
     """
     query = utils.build_posts_query(
         post_type=post_type,
@@ -68,9 +70,7 @@ async def list_posts_by_type(
         author_id=filters.author_id,
         is_featured=filters.is_featured,
         search_query=filters.search,
-        status=filters.status
-        if filters.status
-        else PostStatus.PUBLISHED,  # 默认只显示已发布
+        status=PostStatus.PUBLISHED,  # 公开接口强制只显示已发布
     )
     return await crud.paginate_query(session, query, params)
 
@@ -83,7 +83,9 @@ async def list_posts_by_type(
 async def list_categories_by_type(
     post_type: Annotated[PostType, Path(description="板块类型")],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    include_inactive: bool = False,
+    include_inactive: Annotated[
+        bool, Query(description="是否包含未启用的分类")
+    ] = False,
 ):
     """获取指定板块的分类列表（自动分页）
 
@@ -104,6 +106,7 @@ async def list_categories_by_type(
 async def list_tags_by_type(
     post_type: Annotated[PostType, Path(description="板块类型")],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    params: Annotated[Params, Depends()],
 ):
     """获取指定板块的标签列表（自动分页）
 
@@ -111,8 +114,9 @@ async def list_tags_by_type(
     - GET /posts/article/tags - 文章标签
     - GET /posts/idea/tags - 想法标签
     """
-    query = utils.build_tags_query(post_type)
-    return await crud.paginate_query(session, query)
+    from app.posts.cruds import tag as tag_crud
+
+    return await tag_crud.list_tags_with_count(session, params, post_type=post_type)
 
 
 @router.get(
@@ -123,9 +127,11 @@ async def list_tags_by_type(
 async def get_post_by_id(
     post_type: Annotated[PostType, Path(description="板块类型")],
     post_id: UUID,
-    include_mdx: bool = Query(False, description="是否包含原始 MDX 内容（用于编辑）"),
-    session: Annotated[AsyncSession, Depends(get_async_session)] = None,
-    current_user: Annotated[Optional[User], Depends(get_optional_current_user)] = None,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    current_user: Annotated[Optional[User], Depends(get_optional_current_user)],
+    include_mdx: Annotated[
+        bool, Query(description="是否包含原始 MDX 内容（用于编辑）")
+    ] = False,
 ):
     """根据 UUID 获取文章详情并增加浏览量
 
@@ -172,7 +178,7 @@ async def get_post_by_slug(
     post_type: Annotated[PostType, Path(description="板块类型")],
     slug: str,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    current_user: Annotated[Optional[User], Depends(get_optional_current_user)] = None,
+    current_user: Annotated[Optional[User], Depends(get_optional_current_user)],
 ):
     """根据 Slug 获取文章详情并增加浏览量
 

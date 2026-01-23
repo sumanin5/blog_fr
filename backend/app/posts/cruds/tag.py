@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
 
-from app.posts.model import Tag
+from app.posts.model import PostType, Tag
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlmodel import func, select
@@ -23,13 +23,18 @@ async def get_tag_by_slug(session: AsyncSession, slug: str) -> Optional[Tag]:
 
 
 async def list_tags_with_count(
-    session: AsyncSession, params: Params, search: str = None
+    session: AsyncSession,
+    params: Params,
+    search: str = None,
+    post_type: Optional[PostType] = None,
 ) -> Page[Tag]:
     """获取标签列表并附加文章关联数"""
-    from app.posts.model import PostTagLink
+    from app.posts.model import Post, PostTagLink
 
     # 1. 基础查询
     stmt = select(Tag)
+    if post_type:
+        stmt = stmt.join(Tag.posts).where(Post.post_type == post_type).distinct()
     if search:
         stmt = stmt.where(Tag.name.ilike(f"%{search}%"))
     stmt = stmt.order_by(Tag.name)
@@ -42,11 +47,14 @@ async def list_tags_with_count(
 
     # 3. 聚合查询计数
     tag_ids = [tag.id for tag in page.items]
-    count_stmt = (
-        select(PostTagLink.tag_id, func.count(PostTagLink.post_id))
-        .where(PostTagLink.tag_id.in_(tag_ids))
-        .group_by(PostTagLink.tag_id)
+    count_stmt = select(PostTagLink.tag_id, func.count(PostTagLink.post_id)).where(
+        PostTagLink.tag_id.in_(tag_ids)
     )
+    if post_type:
+        count_stmt = count_stmt.join(Post, PostTagLink.post_id == Post.id).where(
+            Post.post_type == post_type
+        )
+    count_stmt = count_stmt.group_by(PostTagLink.tag_id)
     count_result = await session.exec(count_stmt)
     count_map = {row[0]: row[1] for row in count_result.all()}
 

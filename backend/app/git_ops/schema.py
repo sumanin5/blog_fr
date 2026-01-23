@@ -56,6 +56,13 @@ class ResyncMetadataResponse(BaseModel):
     updated_fields: Dict[str, Any]
 
 
+class OperationResponse(BaseModel):
+    """通用操作响应"""
+
+    status: str
+    message: Optional[str] = None
+
+
 class WebhookResponse(BaseModel):
     """Webhook 响应"""
 

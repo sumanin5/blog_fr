@@ -1,16 +1,19 @@
 """
-用户路由（API Endpoints）- 重构版本
+用户路由（API Endpoints）
 
-定义所有用户相关的 API 接口，专注于HTTP层面的处理
+定义所有用户相关的 API 接口，专注于HTTP层面的处理。
+文档已分类到 api_doc 子模块中。
 """
 
 from typing import Annotated
 
 from app.core.db import get_async_session
-from app.users import dependencies, service
+from app.users import service
+from app.users.api_doc import admin, auth, profile
 from app.users.dependencies import (
     get_current_active_user,
     get_current_superuser,
+    get_user_by_id_dep,
 )
 from app.users.model import User
 from app.users.schema import (
@@ -40,19 +43,11 @@ router = APIRouter()
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
     summary="注册新用户",
-    description="创建一个新用户账号（默认普通用户权限）",
+    description=auth.REGISTER_DOC,
 )
 async def register_user(
     user_in: UserRegister, session: Annotated[AsyncSession, Depends(get_async_session)]
 ):
-    """
-    注册新用户
-
-    - **username**: 用户名（3-50 字符，唯一）
-    - **email**: 邮箱（唯一）
-    - **password**: 密码（至少 6 个字符）
-    - **full_name**: 全名（可选）
-    """
     return await service.register_user(session, user_in)
 
 
@@ -60,21 +55,12 @@ async def register_user(
     "/login",
     response_model=TokenResponse,
     summary="用户登录",
-    description="使用用户名/邮箱和密码登录",
+    description=auth.LOGIN_DOC,
 )
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """
-    用户登录
-
-    - **username**: 用户名或邮箱
-    - **password**: 密码
-
-    Returns:
-        JWT token
-    """
     return await service.authenticate_and_create_token(
         session, form_data.username, form_data.password
     )
@@ -89,12 +75,11 @@ async def login(
     "/me",
     response_model=UserResponse,
     summary="获取当前用户信息",
-    description="获取当前登录用户的详细信息",
+    description=profile.GET_ME_DOC,
 )
 async def get_current_user_info(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    """获取当前用户信息"""
     return current_user
 
 
@@ -102,14 +87,13 @@ async def get_current_user_info(
     "/me",
     response_model=UserResponse,
     summary="更新当前用户信息",
-    description="部分更新当前登录用户的信息",
+    description=profile.UPDATE_ME_DOC,
 )
 async def update_current_user_info(
     user_in: UserUpdate,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """部分更新当前用户信息"""
     return await service.update_user_profile(
         session, current_user, user_in, current_user
     )
@@ -118,14 +102,13 @@ async def update_current_user_info(
 @router.delete(
     "/me",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="删除当前用户",
-    description="删除当前登录用户的账号",
+    summary="删除当前用户账号",
+    description=profile.DELETE_ME_DOC,
 )
 async def delete_current_user_account(
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """删除当前用户账号"""
     await service.delete_user_account(session, current_user, current_user)
     return None
 
@@ -138,8 +121,8 @@ async def delete_current_user_account(
 @router.get(
     "/",
     response_model=UserListResponse,
-    summary="获取用户列表",
-    description="获取所有用户列表（仅管理员）",
+    summary="获取用户列表（管理员）",
+    description=admin.LIST_USERS_DOC,
 )
 async def get_users_list(
     session: Annotated[AsyncSession, Depends(get_async_session)],
@@ -148,13 +131,6 @@ async def get_users_list(
     limit: int = 100,
     is_active: bool | None = None,
 ):
-    """
-    获取用户列表（仅管理员）
-
-    - **skip**: 跳过的记录数
-    - **limit**: 返回的最大记录数
-    - **is_active**: 是否只返回激活的用户
-    """
     users = await service.get_users_list(
         session, skip=skip, limit=limit, is_active=is_active, current_user=current_user
     )
@@ -164,30 +140,28 @@ async def get_users_list(
 @router.get(
     "/{user_id}",
     response_model=UserResponse,
-    summary="获取指定用户信息",
-    description="根据 ID 获取用户信息（仅管理员）",
+    summary="获取指定用户信息（管理员）",
+    description=admin.GET_USER_DOC,
 )
 async def get_user_by_id(
     current_user: Annotated[User, Depends(get_current_superuser)],
-    target_user: Annotated[User, Depends(dependencies.get_user_by_id_dep)],
+    target_user: Annotated[User, Depends(get_user_by_id_dep)],
 ):
-    """获取指定用户信息（仅管理员）"""
     return target_user
 
 
 @router.patch(
     "/{user_id}",
     response_model=UserResponse,
-    summary="更新指定用户信息",
-    description="部分更新指定用户的信息（仅管理员）",
+    summary="更新指定用户信息（管理员）",
+    description=admin.UPDATE_USER_DOC,
 )
 async def update_user_by_id(
     user_in: UserUpdate,
     current_user: Annotated[User, Depends(get_current_superuser)],
-    target_user: Annotated[User, Depends(dependencies.get_user_by_id_dep)],
+    target_user: Annotated[User, Depends(get_user_by_id_dep)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """部分更新指定用户信息（仅管理员）"""
     return await service.update_user_profile(
         session, target_user, user_in, current_user
     )
@@ -196,14 +170,13 @@ async def update_user_by_id(
 @router.delete(
     "/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="删除指定用户",
-    description="删除指定用户（仅管理员）",
+    summary="删除指定用户（管理员）",
+    description=admin.DELETE_USER_DOC,
 )
 async def delete_user_by_id(
     current_user: Annotated[User, Depends(get_current_superuser)],
-    target_user: Annotated[User, Depends(dependencies.get_user_by_id_dep)],
+    target_user: Annotated[User, Depends(get_user_by_id_dep)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    """删除指定用户（仅管理员）"""
     await service.delete_user_account(session, target_user, current_user)
     return None

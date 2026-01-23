@@ -65,8 +65,9 @@ async def create_test_post():
         print(f"📄 摘要: {post.excerpt[:100]}...")
         print(f"🏷️  标签: {', '.join([tag.name for tag in post.tags])}")
         print(f"📑 目录项数: {len(post.toc)}")
-        print(f"📏 HTML 长度: {len(post.content_html)} 字符")
         print(f"📏 MDX 长度: {len(post.content_mdx)} 字符")
+        if post.content_ast:
+            print(f"📏 AST 节点数: {len(post.content_ast.get('children', []))} 个")
         print("\n📑 目录结构:")
         for item in post.toc[:5]:  # 只显示前5个
             indent = "  " * (item["level"] - 1)

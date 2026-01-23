@@ -63,11 +63,13 @@ async def test_get_user_files_empty_list(
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
 
-    # 验证响应结构
+    # 验证响应结构（fastapi-pagination格式）
     assert "total" in result
-    assert "files" in result
+    assert "items" in result
+    assert "page" in result
+    assert "size" in result
     assert result["total"] == 0
-    assert result["files"] == []
+    assert result["items"] == []
 
 
 # ========================================
@@ -117,8 +119,8 @@ async def test_get_user_files_isolation(
 
     # 应该只看到自己的1个文件
     assert result["total"] == 1
-    assert len(result["files"]) == 1
-    assert result["files"][0]["description"] == "普通用户的文件"
+    assert len(result["items"]) == 1
+    assert result["items"][0]["description"] == "普通用户的文件"
 
     # 管理员查看自己的文件列表
     response = await async_client.get(
@@ -130,8 +132,8 @@ async def test_get_user_files_isolation(
 
     # 应该只看到自己的1个文件
     assert result["total"] == 1
-    assert len(result["files"]) == 1
-    assert result["files"][0]["description"] == "管理员的文件"
+    assert len(result["items"]) == 1
+    assert result["items"][0]["description"] == "管理员的文件"
 
 
 # ========================================
@@ -171,16 +173,19 @@ async def test_get_user_files_response_structure(
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
 
-    # 验证顶层结构
+    # 验证顶层结构（fastapi-pagination格式）
     assert "total" in result
-    assert "files" in result
+    assert "items" in result
+    assert "page" in result
+    assert "size" in result
+    assert "pages" in result
     assert isinstance(result["total"], int)
-    assert isinstance(result["files"], list)
+    assert isinstance(result["items"], list)
     assert result["total"] == 1
-    assert len(result["files"]) == 1
+    assert len(result["items"]) == 1
 
     # 验证文件对象结构
-    file_info = result["files"][0]
+    file_info = result["items"][0]
     required_fields = [
         "id",
         "original_filename",
@@ -226,7 +231,9 @@ async def test_get_user_files_pagination_default(
     """测试默认分页参数"""
     # 上传3个文件
     for i in range(3):
-        files = {"file": (f"file_{i}.jpg", sample_image_data + str(i).encode(), "image/jpeg")}
+        files = {
+            "file": (f"file_{i}.jpg", sample_image_data + str(i).encode(), "image/jpeg")
+        }
         data = {"usage": "general", "description": f"文件 {i}"}
 
         await async_client.post(
@@ -245,7 +252,7 @@ async def test_get_user_files_pagination_default(
     result = response.json()
 
     assert result["total"] == 3
-    assert len(result["files"]) == 3
+    assert len(result["items"]) == 3
 
 
 @pytest.mark.asyncio
@@ -259,7 +266,13 @@ async def test_get_user_files_pagination_custom(
     """测试自定义分页参数"""
     # 上传5个文件
     for i in range(5):
-        files = {"file": (f"page_file_{i}.jpg", sample_image_data + str(i).encode(), "image/jpeg")}
+        files = {
+            "file": (
+                f"page_file_{i}.jpg",
+                sample_image_data + str(i).encode(),
+                "image/jpeg",
+            )
+        }
         data = {"usage": "general", "description": f"分页文件 {i}"}
 
         await async_client.post(
@@ -272,41 +285,45 @@ async def test_get_user_files_pagination_custom(
     # 测试第一页，每页2个
     response = await async_client.get(
         api_urls.media_url("/"),
-        params={"limit": 2, "offset": 0},
+        params={"page": 1, "size": 2},
         headers=normal_user_token_headers,
     )
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
 
-    assert result["total"] == 2  # 返回的文件数量
-    assert len(result["files"]) == 2
+    assert result["total"] == 5  # 总数
+    assert len(result["items"]) == 2  # 当前页数量
+    assert result["page"] == 1
+    assert result["size"] == 2
 
     # 测试第二页
     response = await async_client.get(
         api_urls.media_url("/"),
-        params={"limit": 2, "offset": 2},
+        params={"page": 2, "size": 2},
         headers=normal_user_token_headers,
     )
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
 
-    assert result["total"] == 2
-    assert len(result["files"]) == 2
+    assert result["total"] == 5
+    assert len(result["items"]) == 2
+    assert result["page"] == 2
 
     # 测试最后一页
     response = await async_client.get(
         api_urls.media_url("/"),
-        params={"limit": 2, "offset": 4},
+        params={"page": 3, "size": 2},
         headers=normal_user_token_headers,
     )
 
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
 
-    assert result["total"] == 1  # 最后一页只有1个文件
-    assert len(result["files"]) == 1
+    assert result["total"] == 5
+    assert len(result["items"]) == 1  # 最后一页只有1个文件
+    assert result["page"] == 3
 
 
 # ========================================
@@ -345,8 +362,8 @@ async def test_get_user_files_filter_by_media_type(
     result = response.json()
 
     assert result["total"] == 1
-    assert len(result["files"]) == 1
-    assert result["files"][0]["media_type"] == "image"
+    assert len(result["items"]) == 1
+    assert result["items"][0]["media_type"] == "image"
 
     # 过滤不存在的类型
     response = await async_client.get(
@@ -359,7 +376,7 @@ async def test_get_user_files_filter_by_media_type(
     result = response.json()
 
     assert result["total"] == 0
-    assert len(result["files"]) == 0
+    assert len(result["items"]) == 0
 
 
 @pytest.mark.asyncio
@@ -375,7 +392,9 @@ async def test_get_user_files_filter_by_usage(
     usages = ["general", "avatar", "cover"]
 
     for usage in usages:
-        files = {"file": (f"{usage}.jpg", sample_image_data + usage.encode(), "image/jpeg")}
+        files = {
+            "file": (f"{usage}.jpg", sample_image_data + usage.encode(), "image/jpeg")
+        }
         data = {"usage": usage, "description": f"{usage}文件"}
 
         await async_client.post(
@@ -396,8 +415,8 @@ async def test_get_user_files_filter_by_usage(
     result = response.json()
 
     assert result["total"] == 1
-    assert len(result["files"]) == 1
-    assert result["files"][0]["usage"] == "avatar"
+    assert len(result["items"]) == 1
+    assert result["items"][0]["usage"] == "avatar"
 
     # 过滤通用文件
     response = await async_client.get(
@@ -410,8 +429,8 @@ async def test_get_user_files_filter_by_usage(
     result = response.json()
 
     assert result["total"] == 1
-    assert len(result["files"]) == 1
-    assert result["files"][0]["usage"] == "general"
+    assert len(result["items"]) == 1
+    assert result["items"][0]["usage"] == "general"
 
 
 @pytest.mark.asyncio
@@ -431,7 +450,9 @@ async def test_get_user_files_combined_filters(
     ]
 
     for filename, usage, description in test_files:
-        files = {"file": (filename, sample_image_data + filename.encode(), "image/jpeg")}
+        files = {
+            "file": (filename, sample_image_data + filename.encode(), "image/jpeg")
+        }
         data = {"usage": usage, "description": description}
 
         await async_client.post(
@@ -452,9 +473,9 @@ async def test_get_user_files_combined_filters(
     result = response.json()
 
     assert result["total"] == 2  # 应该有2个通用图片
-    assert len(result["files"]) == 2
+    assert len(result["items"]) == 2
 
-    for file_info in result["files"]:
+    for file_info in result["items"]:
         assert file_info["media_type"] == "image"
         assert file_info["usage"] == "general"
 
@@ -506,31 +527,32 @@ async def test_get_user_files_invalid_pagination(
     api_urls: APIConfig,
 ):
     """测试无效的分页参数"""
-    # 测试负数限制
+    # 测试负数页码
     response = await async_client.get(
         api_urls.media_url("/"),
-        params={"limit": -1},
+        params={"page": -1},
         headers=normal_user_token_headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    # 测试负数偏移
+    # 测试负数size
     response = await async_client.get(
         api_urls.media_url("/"),
-        params={"offset": -1},
+        params={"size": -1},
         headers=normal_user_token_headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    # 测试超大限制
+    # 测试超大size（超过最大限制100）
     response = await async_client.get(
         api_urls.media_url("/"),
-        params={"limit": 1000},
+        params={"size": 1000},
         headers=normal_user_token_headers,
     )
 
+    # 超过最大限制会返回422验证错误
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
@@ -554,7 +576,9 @@ async def test_get_user_files_sorting_by_creation_time(
     filenames = ["first.jpg", "second.jpg", "third.jpg"]
 
     for filename in filenames:
-        files = {"file": (filename, sample_image_data + filename.encode(), "image/jpeg")}
+        files = {
+            "file": (filename, sample_image_data + filename.encode(), "image/jpeg")
+        }
         data = {"usage": "general", "description": f"文件 {filename}"}
 
         await async_client.post(
@@ -574,10 +598,10 @@ async def test_get_user_files_sorting_by_creation_time(
     result = response.json()
 
     assert result["total"] == 3
-    assert len(result["files"]) == 3
+    assert len(result["items"]) == 3
 
     # 验证按创建时间降序排列（最新的在前）
-    files = result["files"]
+    files = result["items"]
     assert files[0]["original_filename"] == "third.jpg"
     assert files[1]["original_filename"] == "second.jpg"
     assert files[2]["original_filename"] == "first.jpg"

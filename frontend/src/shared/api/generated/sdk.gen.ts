@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, BookmarkPostData, BookmarkPostErrors, BookmarkPostResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, GithubWebhookData, GithubWebhookErrors, GithubWebhookResponses, LikePostData, LikePostErrors, LikePostResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, PreviewSyncData, PreviewSyncErrors, PreviewSyncResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, ResyncPostMetadataData, ResyncPostMetadataErrors, ResyncPostMetadataResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, TriggerSyncData, TriggerSyncErrors, TriggerSyncResponses, UnbookmarkPostData, UnbookmarkPostErrors, UnbookmarkPostResponses, UnlikePostData, UnlikePostErrors, UnlikePostResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
+import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, BookmarkPostData, BookmarkPostErrors, BookmarkPostResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, GithubWebhookData, GithubWebhookErrors, GithubWebhookResponses, LikePostData, LikePostErrors, LikePostResponses, ListAllPostsAdminData, ListAllPostsAdminErrors, ListAllPostsAdminResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, PreviewSyncData, PreviewSyncErrors, PreviewSyncResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, ResyncPostMetadataData, ResyncPostMetadataErrors, ResyncPostMetadataResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, TriggerSyncData, TriggerSyncErrors, TriggerSyncResponses, UnbookmarkPostData, UnbookmarkPostErrors, UnbookmarkPostResponses, UnlikePostData, UnlikePostErrors, UnlikePostResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -316,30 +316,32 @@ export const getAllFilesAdmin = <ThrowOnError extends boolean = false>(options?:
 });
 
 /**
- * 获取所有板块类型
+ * 获取所有文章列表（管理后台）
  *
- * 获取所有板块类型（用于前端构建菜单）
+ * 获取所有文章列表（管理后台）
  *
- * 返回示例：
- * [
- * {"value": "article", "label": "Article"},
- * {"value": "idea", "label": "Idea"}
- * ]
+ * 权限：
+ * - 超级管理员：可以查看所有文章（包括所有用户的草稿）
+ * - 普通用户：只能查看自己的文章
+ *
+ * 支持筛选：
+ * - status: 文章状态（draft/published/archived）
+ * - post_type: 文章类型（article/idea）
+ * - category_id: 分类ID
+ * - tag_id: 标签ID
+ * - author_id: 作者ID（超级管理员可用）
+ * - is_featured: 是否推荐
+ * - search: 搜索关键词
+ *
+ * 示例：
+ * - GET /posts/admin/posts - 所有文章
+ * - GET /posts/admin/posts?status=draft - 草稿列表
+ * - GET /posts/admin/posts?author_id=xxx - 指定作者的文章（超级管理员）
  */
-export const getPostTypes = <ThrowOnError extends boolean = false>(options?: Options<GetPostTypesData, ThrowOnError>) => (options?.client ?? client).get<GetPostTypesResponses, GetPostTypesErrors, ThrowOnError>({ url: '/api/v1/posts/types', ...options });
-
-/**
- * 文章实时预览
- *
- * 预览 MDX 内容（转换 Markdown -> HTML）
- */
-export const previewPost = <ThrowOnError extends boolean = false>(options: Options<PreviewPostData, ThrowOnError>) => (options.client ?? client).post<PreviewPostResponses, PreviewPostErrors, ThrowOnError>({
-    url: '/api/v1/posts/preview',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+export const listAllPostsAdmin = <ThrowOnError extends boolean = false>(options?: Options<ListAllPostsAdminData, ThrowOnError>) => (options?.client ?? client).get<ListAllPostsAdminResponses, ListAllPostsAdminErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/admin/posts',
+    ...options
 });
 
 /**
@@ -395,55 +397,6 @@ export const updateTag = <ThrowOnError extends boolean = false>(options: Options
 });
 
 /**
- * 获取当前用户的文章列表
- *
- * 获取当前用户的所有文章（包括草稿）
- *
- * 示例：
- * - GET /posts/me - 我的所有文章
- * - GET /posts/me?status=draft - 我的草稿
- * - GET /posts/me?status=published - 我的已发布文章
- *
- * 注意：需要登录才能访问
- */
-export const getMyPosts = <ThrowOnError extends boolean = false>(options?: Options<GetMyPostsData, ThrowOnError>) => (options?.client ?? client).get<GetMyPostsResponses, GetMyPostsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/me',
-    ...options
-});
-
-/**
- * 获取指定板块的文章列表
- *
- * 获取指定板块的文章列表（自动分页）
- *
- * 示例：
- * - GET /posts/article?page=1&size=20 - 文章列表
- * - GET /posts/idea?page=1&size=20 - 想法列表
- * - GET /posts/article?status=draft - 草稿列表（需要登录）
- */
-export const listPostsByType = <ThrowOnError extends boolean = false>(options: Options<ListPostsByTypeData, ThrowOnError>) => (options.client ?? client).get<ListPostsByTypeResponses, ListPostsByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}', ...options });
-
-/**
- * 创建文章
- *
- * 创建新文章（需要登录）
- *
- * 示例：
- * - POST /posts/article - 创建文章
- * - POST /posts/idea - 创建想法
- */
-export const createPostByType = <ThrowOnError extends boolean = false>(options: Options<CreatePostByTypeData, ThrowOnError>) => (options.client ?? client).post<CreatePostByTypeResponses, CreatePostByTypeErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/{post_type}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
  * 获取指定板块的分类列表
  *
  * 获取指定板块的分类列表（自动分页）
@@ -474,15 +427,103 @@ export const createCategoryByType = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * 获取指定板块的标签列表
+ * 删除分类
  *
- * 获取指定板块的标签列表（自动分页）
+ * 删除分类（仅超级管理员）
  *
  * 示例：
- * - GET /posts/article/tags - 文章标签
- * - GET /posts/idea/tags - 想法标签
+ * - DELETE /posts/article/categories/{category_id}
+ * - DELETE /posts/idea/categories/{category_id}
  */
-export const listTagsByType = <ThrowOnError extends boolean = false>(options: Options<ListTagsByTypeData, ThrowOnError>) => (options.client ?? client).get<ListTagsByTypeResponses, ListTagsByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/tags', ...options });
+export const deleteCategoryByType = <ThrowOnError extends boolean = false>(options: Options<DeleteCategoryByTypeData, ThrowOnError>) => (options.client ?? client).delete<DeleteCategoryByTypeResponses, DeleteCategoryByTypeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/{post_type}/categories/{category_id}',
+    ...options
+});
+
+/**
+ * 更新分类
+ *
+ * 更新分类（仅超级管理员）
+ *
+ * 示例：
+ * - PATCH /posts/article/categories/{category_id}
+ * - PATCH /posts/idea/categories/{category_id}
+ */
+export const updateCategoryByType = <ThrowOnError extends boolean = false>(options: Options<UpdateCategoryByTypeData, ThrowOnError>) => (options.client ?? client).patch<UpdateCategoryByTypeResponses, UpdateCategoryByTypeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/{post_type}/categories/{category_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 获取当前用户的文章列表
+ *
+ * 获取当前用户的所有文章（包括草稿）
+ *
+ * 示例：
+ * - GET /posts/me - 我的所有文章
+ * - GET /posts/me?status=draft - 我的草稿
+ * - GET /posts/me?status=published - 我的已发布文章
+ *
+ * 注意：需要登录才能访问
+ */
+export const getMyPosts = <ThrowOnError extends boolean = false>(options?: Options<GetMyPostsData, ThrowOnError>) => (options?.client ?? client).get<GetMyPostsResponses, GetMyPostsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/me',
+    ...options
+});
+
+/**
+ * 文章实时预览
+ *
+ * 预览 MDX 内容（转换 Markdown -> HTML）
+ */
+export const previewPost = <ThrowOnError extends boolean = false>(options: Options<PreviewPostData, ThrowOnError>) => (options.client ?? client).post<PreviewPostResponses, PreviewPostErrors, ThrowOnError>({
+    url: '/api/v1/posts/preview',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 获取指定板块的文章列表
+ *
+ * 获取指定板块的文章列表（自动分页）
+ *
+ * 公开接口，只显示已发布的文章。
+ *
+ * 示例：
+ * - GET /posts/article?page=1&size=20 - 文章列表
+ * - GET /posts/idea?page=1&size=20 - 想法列表
+ * - GET /posts/article?category_id=xxx - 按分类筛选
+ */
+export const listPostsByType = <ThrowOnError extends boolean = false>(options: Options<ListPostsByTypeData, ThrowOnError>) => (options.client ?? client).get<ListPostsByTypeResponses, ListPostsByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}', ...options });
+
+/**
+ * 创建文章
+ *
+ * 创建新文章（需要登录）
+ *
+ * 示例：
+ * - POST /posts/article - 创建文章
+ * - POST /posts/idea - 创建想法
+ */
+export const createPostByType = <ThrowOnError extends boolean = false>(options: Options<CreatePostByTypeData, ThrowOnError>) => (options.client ?? client).post<CreatePostByTypeResponses, CreatePostByTypeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/{post_type}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * 删除文章
@@ -545,27 +586,6 @@ export const updatePostByType = <ThrowOnError extends boolean = false>(options: 
 });
 
 /**
- * 通过Slug获取文章详情
- *
- * 根据 Slug 获取文章详情并增加浏览量
- *
- * 权限规则：
- * - 已发布文章：任何人可访问（包括未登录）
- * - 草稿文章：只有作者或超级管理员可访问
- *
- * 示例：
- * - GET /posts/article/slug/my-post-slug
- * - GET /posts/idea/slug/my-idea-slug
- *
- * 注意：使用 /slug/ 前缀明确区分 UUID 和 Slug 路由
- */
-export const getPostBySlug = <ThrowOnError extends boolean = false>(options: Options<GetPostBySlugData, ThrowOnError>) => (options.client ?? client).get<GetPostBySlugResponses, GetPostBySlugErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/{post_type}/slug/{slug}',
-    ...options
-});
-
-/**
  * 取消点赞
  *
  * 取消点赞 (-1)
@@ -594,44 +614,57 @@ export const unbookmarkPost = <ThrowOnError extends boolean = false>(options: Op
 export const bookmarkPost = <ThrowOnError extends boolean = false>(options: Options<BookmarkPostData, ThrowOnError>) => (options.client ?? client).post<BookmarkPostResponses, BookmarkPostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/bookmark', ...options });
 
 /**
- * 删除分类
+ * 获取所有板块类型
  *
- * 删除分类（仅超级管理员）
+ * 获取所有板块类型（用于前端构建菜单）
  *
- * 示例：
- * - DELETE /posts/article/categories/{category_id}
- * - DELETE /posts/idea/categories/{category_id}
+ * 返回示例：
+ * [
+ * {"value": "article", "label": "Article"},
+ * {"value": "idea", "label": "Idea"}
+ * ]
  */
-export const deleteCategoryByType = <ThrowOnError extends boolean = false>(options: Options<DeleteCategoryByTypeData, ThrowOnError>) => (options.client ?? client).delete<DeleteCategoryByTypeResponses, DeleteCategoryByTypeErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/{post_type}/categories/{category_id}',
-    ...options
-});
+export const getPostTypes = <ThrowOnError extends boolean = false>(options?: Options<GetPostTypesData, ThrowOnError>) => (options?.client ?? client).get<GetPostTypesResponses, GetPostTypesErrors, ThrowOnError>({ url: '/api/v1/posts/types', ...options });
 
 /**
- * 更新分类
+ * 获取指定板块的标签列表
  *
- * 更新分类（仅超级管理员）
+ * 获取指定板块的标签列表（自动分页）
  *
  * 示例：
- * - PATCH /posts/article/categories/{category_id}
- * - PATCH /posts/idea/categories/{category_id}
+ * - GET /posts/article/tags - 文章标签
+ * - GET /posts/idea/tags - 想法标签
  */
-export const updateCategoryByType = <ThrowOnError extends boolean = false>(options: Options<UpdateCategoryByTypeData, ThrowOnError>) => (options.client ?? client).patch<UpdateCategoryByTypeResponses, UpdateCategoryByTypeErrors, ThrowOnError>({
+export const listTagsByType = <ThrowOnError extends boolean = false>(options: Options<ListTagsByTypeData, ThrowOnError>) => (options.client ?? client).get<ListTagsByTypeResponses, ListTagsByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/tags', ...options });
+
+/**
+ * 通过Slug获取文章详情
+ *
+ * 根据 Slug 获取文章详情并增加浏览量
+ *
+ * 权限规则：
+ * - 已发布文章：任何人可访问（包括未登录）
+ * - 草稿文章：只有作者或超级管理员可访问
+ *
+ * 示例：
+ * - GET /posts/article/slug/my-post-slug
+ * - GET /posts/idea/slug/my-idea-slug
+ *
+ * 注意：使用 /slug/ 前缀明确区分 UUID 和 Slug 路由
+ */
+export const getPostBySlug = <ThrowOnError extends boolean = false>(options: Options<GetPostBySlugData, ThrowOnError>) => (options.client ?? client).get<GetPostBySlugResponses, GetPostBySlugErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/{post_type}/categories/{category_id}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+    url: '/api/v1/posts/{post_type}/slug/{slug}',
+    ...options
 });
 
 /**
  * 手动触发 Git 同步
  *
  * 手动触发 GitOps 同步。
- * 扫描 content/ 目录下的 MDX 文件，并更新数据库。
+ *
+ * - 默认执行增量同步（仅处理变动的文件）。
+ * - 设置 force_full=True 可强制执行全量扫描（耗时较长）。
  */
 export const triggerSync = <ThrowOnError extends boolean = false>(options?: Options<TriggerSyncData, ThrowOnError>) => (options?.client ?? client).post<TriggerSyncResponses, TriggerSyncErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -652,35 +685,21 @@ export const previewSync = <ThrowOnError extends boolean = false>(options?: Opti
 });
 
 /**
- * GitHub Webhook 接收入口
+ * 重新同步指定文章元数据
  *
- * 接收 GitHub Webhook Push 事件，触发后台同步。
- * 需配置 WEBHOOK_SECRET。
- */
-export const githubWebhook = <ThrowOnError extends boolean = false>(options?: Options<GithubWebhookData, ThrowOnError>) => (options?.client ?? client).post<GithubWebhookResponses, GithubWebhookErrors, ThrowOnError>({ url: '/api/v1/ops/git/webhook', ...options });
-
-/**
- * 重新同步文章元数据
- *
- * 重新同步单个文章的元数据。
- *
- * ⚠️ 已废弃：此端点将在实现增量同步后被移除。
- *
- * 场景：
- * - 用户在 frontmatter 中改了 author/cover/category 名字
- * - 需要重新查询数据库并更新 ID
- * - 自动回签新的 ID 到 frontmatter
- *
- * 替代方案：
- * - 使用 POST /sync 进行全量同步
- * - 未来：使用增量同步（自动检测变化的文件）
- *
- * 权限：仅管理员可用
- *
- * @deprecated
+ * 重新读取指定文章对应文件的 Frontmatter 元数据，并更新数据库。
+ * 仅适用于有 source_path 的文章。
  */
 export const resyncPostMetadata = <ThrowOnError extends boolean = false>(options: Options<ResyncPostMetadataData, ThrowOnError>) => (options.client ?? client).post<ResyncPostMetadataResponses, ResyncPostMetadataErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/ops/git/posts/{post_id}/resync-metadata',
     ...options
 });
+
+/**
+ * GitHub Webhook 接收入口
+ *
+ * 接收 GitHub Webhook Push 事件，触发后台同步。
+ * 需配置 WEBHOOK_SECRET。
+ */
+export const githubWebhook = <ThrowOnError extends boolean = false>(options?: Options<GithubWebhookData, ThrowOnError>) => (options?.client ?? client).post<GithubWebhookResponses, GithubWebhookErrors, ThrowOnError>({ url: '/api/v1/ops/git/webhook', ...options });

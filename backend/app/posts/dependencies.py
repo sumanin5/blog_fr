@@ -9,7 +9,7 @@ from app.core.db import get_async_session
 from app.core.exceptions import InsufficientPermissionsError
 from app.posts import crud
 from app.posts.exceptions import PostNotFoundError
-from app.posts.model import Post, PostStatus, PostType
+from app.posts.model import Post, PostStatus
 from app.users.dependencies import get_current_active_user
 from app.users.model import User
 from fastapi import Depends, Query
@@ -47,21 +47,29 @@ async def check_post_owner_or_admin(
 
 
 class PostFilterParams:
-    """文章列表过滤参数封装"""
+    """文章列表过滤参数封装
+
+    注意：不包含 post_type，因为它在不同路由中可能是路径参数或查询参数
+    """
 
     def __init__(
         self,
-        post_type: Optional[PostType] = None,
-        status: Optional[PostStatus] = Query(None, description="文章状态"),
-        category_id: Optional[UUID] = None,
-        tag_id: Optional[UUID] = None,
-        author_id: Optional[UUID] = None,
-        is_featured: Optional[bool] = None,
-        search: Optional[str] = None,
-        limit: int = Query(20, ge=1, le=100),
-        offset: int = Query(0, ge=0),
+        status: Annotated[
+            Optional[PostStatus],
+            Query(description="文章状态（draft/published/archived）"),
+        ] = None,
+        category_id: Annotated[Optional[UUID], Query(description="分类ID")] = None,
+        tag_id: Annotated[Optional[UUID], Query(description="标签ID")] = None,
+        author_id: Annotated[Optional[UUID], Query(description="作者ID")] = None,
+        is_featured: Annotated[
+            Optional[bool], Query(description="是否为推荐文章")
+        ] = None,
+        search: Annotated[
+            Optional[str], Query(description="搜索关键词（标题、内容）")
+        ] = None,
+        limit: Annotated[int, Query(ge=1, le=100, description="每页数量")] = 20,
+        offset: Annotated[int, Query(ge=0, description="偏移量")] = 0,
     ):
-        self.post_type = post_type
         self.status = status
         self.category_id = category_id
         self.tag_id = tag_id

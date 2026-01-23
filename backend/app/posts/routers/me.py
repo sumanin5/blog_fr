@@ -20,21 +20,46 @@ router = APIRouter()
 )
 async def get_my_posts(
     current_user: Annotated[User, Depends(get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
     filters: Annotated[PostFilterParams, Depends()],
     params: Annotated[Params, Depends()],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """获取当前用户的所有文章（包括草稿）
 
-    示例：
-    - GET /posts/me - 我的所有文章
-    - GET /posts/me?status=draft - 我的草稿
-    - GET /posts/me?status=published - 我的已发布文章
+    权限：
+    - 需要登录
+    - 只能查看自己的文章
 
-    注意：需要登录才能访问
+    支持筛选：
+    - status: 文章状态（draft/published/archived）
+    - category_id: 分类ID
+    - tag_id: 标签ID
+    - is_featured: 是否推荐
+    - search: 搜索关键词
+
+    分页参数：
+    - page: 页码（默认1）
+    - size: 每页数量（默认20，最大100）
+
+    示例：
+    - GET /posts/me - 我的所有文章（所有板块）
+    - GET /posts/me?status=draft - 我的草稿
+    - GET /posts/me?status=published&page=2&size=10 - 我的已发布文章（第2页）
+    - GET /posts/me?search=Python - 搜索我的文章
+
+    返回：
+    - items: 文章列表
+    - total: 总数
+    - page: 当前页
+    - size: 每页数量
+    - pages: 总页数
+
+    注意：
+    - 此接口返回所有板块（article + idea）的文章
+    - 如果需要按板块筛选，请使用管理后台接口
     """
     query = utils.build_posts_query(
-        post_type=filters.post_type,  # 可以筛选类型
+        post_type=None,  # 不筛选类型，显示所有板块的文章
         status=filters.status,  # 可以筛选状态
         author_id=current_user.id,  # 只显示当前用户的
         category_id=filters.category_id,
