@@ -72,26 +72,17 @@ export type BodyLogin = {
  * Body_uploadFile
  */
 export type BodyUploadFile = {
-    /**
-     * 文件用途
-     */
     usage?: FileUsage;
     /**
      * Is Public
-     *
-     * 是否公开
      */
     is_public?: boolean;
     /**
      * Description
-     *
-     * 文件描述
      */
     description?: string;
     /**
      * Alt Text
-     *
-     * 替代文本
      */
     alt_text?: string;
     /**
@@ -266,26 +257,6 @@ export type ErrorResponse = {
  * FileUsage
  */
 export type FileUsage = 'general' | 'avatar' | 'cover' | 'icon' | 'favicon' | 'document' | 'attachment';
-
-/**
- * MediaFileListResponse
- *
- * 媒体文件列表响应模型
- */
-export type MediaFileListResponse = {
-    /**
-     * Total
-     *
-     * 总数
-     */
-    total: number;
-    /**
-     * Files
-     *
-     * 文件列表
-     */
-    files: Array<MediaFileResponse>;
-};
 
 /**
  * MediaFileResponse
@@ -533,6 +504,32 @@ export type PageCategoryResponse = {
 };
 
 /**
+ * Page[MediaFileResponse]
+ */
+export type PageMediaFileResponse = {
+    /**
+     * Items
+     */
+    items: Array<MediaFileResponse>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Size
+     */
+    size: number;
+    /**
+     * Pages
+     */
+    pages: number;
+};
+
+/**
  * Page[PostShortResponse]
  */
 export type PagePostShortResponse = {
@@ -692,7 +689,7 @@ export type PostDetailResponse = {
     /**
      * Slug
      */
-    slug: string;
+    slug?: string | null;
     post_type?: PostType;
     status?: PostStatus;
     /**
@@ -847,7 +844,7 @@ export type PostShortResponse = {
     /**
      * Slug
      */
-    slug: string;
+    slug?: string | null;
     post_type?: PostType;
     status?: PostStatus;
     /**
@@ -1062,7 +1059,7 @@ export type PreviewChange = {
     /**
      * File
      */
-    file: string;
+    file?: string | null;
     /**
      * Title
      */
@@ -1512,26 +1509,6 @@ export type WebhookResponse = {
 };
 
 /**
- * MediaFileListResponse
- *
- * 媒体文件列表响应模型
- */
-export type MediaFileListResponseWritable = {
-    /**
-     * Total
-     *
-     * 总数
-     */
-    total: number;
-    /**
-     * Files
-     *
-     * 文件列表
-     */
-    files: Array<MediaFileResponseWritable>;
-};
-
-/**
  * MediaFileResponse
  *
  * 媒体文件响应模型
@@ -1674,6 +1651,32 @@ export type MediaFileUploadResponseWritable = {
 };
 
 /**
+ * Page[MediaFileResponse]
+ */
+export type PageMediaFileResponseWritable = {
+    /**
+     * Items
+     */
+    items: Array<MediaFileResponseWritable>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Size
+     */
+    size: number;
+    /**
+     * Pages
+     */
+    pages: number;
+};
+
+/**
  * Page[PostShortResponse]
  */
 export type PagePostShortResponseWritable = {
@@ -1717,7 +1720,7 @@ export type PostDetailResponseWritable = {
     /**
      * Slug
      */
-    slug: string;
+    slug?: string | null;
     post_type?: PostType;
     status?: PostStatus;
     /**
@@ -1820,7 +1823,7 @@ export type PostShortResponseWritable = {
     /**
      * Slug
      */
-    slug: string;
+    slug?: string | null;
     post_type?: PostType;
     status?: PostStatus;
     /**
@@ -2372,10 +2375,14 @@ export type GetPublicFilesData = {
     query?: {
         /**
          * Media Type
+         *
+         * 媒体类型过滤
          */
         media_type?: MediaType | null;
         /**
          * Usage
+         *
+         * 用途过滤
          */
         usage?: FileUsage | null;
         /**
@@ -2383,9 +2390,9 @@ export type GetPublicFilesData = {
          */
         page?: number;
         /**
-         * Page Size
+         * Size
          */
-        page_size?: number;
+        size?: number;
     };
     url: '/api/v1/media/public';
 };
@@ -2421,11 +2428,9 @@ export type GetPublicFilesError = GetPublicFilesErrors[keyof GetPublicFilesError
 
 export type GetPublicFilesResponses = {
     /**
-     * Response Getpublicfiles
-     *
      * Successful Response
      */
-    200: Array<MediaFileResponse>;
+    200: PageMediaFileResponse;
 };
 
 export type GetPublicFilesResponse = GetPublicFilesResponses[keyof GetPublicFilesResponses];
@@ -2498,17 +2503,13 @@ export type GetUserFilesData = {
          */
         usage?: FileUsage | null;
         /**
-         * Limit
-         *
-         * 限制数量
+         * Page
          */
-        limit?: number;
+        page?: number;
         /**
-         * Offset
-         *
-         * 偏移量
+         * Size
          */
-        offset?: number;
+        size?: number;
     };
     url: '/api/v1/media/';
 };
@@ -2546,7 +2547,7 @@ export type GetUserFilesResponses = {
     /**
      * Successful Response
      */
-    200: MediaFileListResponse;
+    200: PageMediaFileResponse;
 };
 
 export type GetUserFilesResponse = GetUserFilesResponses[keyof GetUserFilesResponses];
@@ -2704,13 +2705,13 @@ export type UpdateFileResponse = UpdateFileResponses[keyof UpdateFileResponses];
 export type SearchFilesData = {
     body?: never;
     path?: never;
-    query?: {
+    query: {
         /**
          * Q
          *
          * 搜索关键词
          */
-        q?: string | null;
+        q: string;
         /**
          * Media Type
          *
@@ -2718,17 +2719,13 @@ export type SearchFilesData = {
          */
         media_type?: MediaType | null;
         /**
-         * Limit
-         *
-         * 限制数量
+         * Page
          */
-        limit?: number;
+        page?: number;
         /**
-         * Offset
-         *
-         * 偏移量
+         * Size
          */
-        offset?: number;
+        size?: number;
     };
     url: '/api/v1/media/search';
 };
@@ -2766,7 +2763,7 @@ export type SearchFilesResponses = {
     /**
      * Successful Response
      */
-    200: MediaFileListResponse;
+    200: PageMediaFileResponse;
 };
 
 export type SearchFilesResponse = SearchFilesResponses[keyof SearchFilesResponses];
@@ -2865,56 +2862,6 @@ export type BatchDeleteFilesResponses = {
 };
 
 export type BatchDeleteFilesResponse = BatchDeleteFilesResponses[keyof BatchDeleteFilesResponses];
-
-export type RegenerateThumbnailsData = {
-    body?: never;
-    path: {
-        /**
-         * File Id
-         */
-        file_id: string;
-    };
-    query?: never;
-    url: '/api/v1/media/{file_id}/regenerate-thumbnails';
-};
-
-export type RegenerateThumbnailsErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type RegenerateThumbnailsError = RegenerateThumbnailsErrors[keyof RegenerateThumbnailsErrors];
-
-export type RegenerateThumbnailsResponses = {
-    /**
-     * Successful Response
-     */
-    200: ThumbnailRegenerateResponse;
-};
-
-export type RegenerateThumbnailsResponse = RegenerateThumbnailsResponses[keyof RegenerateThumbnailsResponses];
 
 export type ViewFileData = {
     body?: never;
@@ -3064,6 +3011,56 @@ export type DownloadFileResponses = {
     200: unknown;
 };
 
+export type RegenerateThumbnailsData = {
+    body?: never;
+    path: {
+        /**
+         * File Id
+         */
+        file_id: string;
+    };
+    query?: never;
+    url: '/api/v1/media/{file_id}/regenerate-thumbnails';
+};
+
+export type RegenerateThumbnailsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type RegenerateThumbnailsError = RegenerateThumbnailsErrors[keyof RegenerateThumbnailsErrors];
+
+export type RegenerateThumbnailsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ThumbnailRegenerateResponse;
+};
+
+export type RegenerateThumbnailsResponse = RegenerateThumbnailsResponses[keyof RegenerateThumbnailsResponses];
+
 export type GetStatsOverviewData = {
     body?: never;
     path?: never;
@@ -3130,17 +3127,13 @@ export type GetAllFilesAdminData = {
          */
         usage?: FileUsage | null;
         /**
-         * Limit
-         *
-         * 限制数量
+         * Page
          */
-        limit?: number;
+        page?: number;
         /**
-         * Offset
-         *
-         * 偏移量
+         * Size
          */
-        offset?: number;
+        size?: number;
     };
     url: '/api/v1/media/admin/all';
 };
@@ -3178,112 +3171,10 @@ export type GetAllFilesAdminResponses = {
     /**
      * Successful Response
      */
-    200: MediaFileListResponse;
+    200: PageMediaFileResponse;
 };
 
 export type GetAllFilesAdminResponse = GetAllFilesAdminResponses[keyof GetAllFilesAdminResponses];
-
-export type ListAllPostsAdminData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Status
-         *
-         * 文章状态（draft/published/archived）
-         */
-        status?: PostStatus | null;
-        /**
-         * Category Id
-         *
-         * 分类ID
-         */
-        category_id?: string | null;
-        /**
-         * Tag Id
-         *
-         * 标签ID
-         */
-        tag_id?: string | null;
-        /**
-         * Author Id
-         *
-         * 作者ID
-         */
-        author_id?: string | null;
-        /**
-         * Is Featured
-         *
-         * 是否为推荐文章
-         */
-        is_featured?: boolean | null;
-        /**
-         * Search
-         *
-         * 搜索关键词（标题、内容）
-         */
-        search?: string | null;
-        /**
-         * Limit
-         *
-         * 每页数量
-         */
-        limit?: number;
-        /**
-         * Offset
-         *
-         * 偏移量
-         */
-        offset?: number;
-        /**
-         * Page
-         */
-        page?: number;
-        /**
-         * Size
-         */
-        size?: number;
-    };
-    url: '/api/v1/posts/admin/posts';
-};
-
-export type ListAllPostsAdminErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type ListAllPostsAdminError = ListAllPostsAdminErrors[keyof ListAllPostsAdminErrors];
-
-export type ListAllPostsAdminResponses = {
-    /**
-     * Successful Response
-     */
-    200: PagePostShortResponse;
-};
-
-export type ListAllPostsAdminResponse = ListAllPostsAdminResponses[keyof ListAllPostsAdminResponses];
 
 export type ListTagsData = {
     body?: never;
@@ -3484,6 +3375,65 @@ export type UpdateTagResponses = {
 };
 
 export type UpdateTagResponse = UpdateTagResponses[keyof UpdateTagResponses];
+
+export type ListTagsByTypeData = {
+    body?: never;
+    path: {
+        /**
+         * 板块类型
+         */
+        post_type: PostType;
+    };
+    query?: {
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Size
+         */
+        size?: number;
+    };
+    url: '/api/v1/posts/{post_type}/tags';
+};
+
+export type ListTagsByTypeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListTagsByTypeError = ListTagsByTypeErrors[keyof ListTagsByTypeErrors];
+
+export type ListTagsByTypeResponses = {
+    /**
+     * Successful Response
+     */
+    200: PageTagResponse;
+};
+
+export type ListTagsByTypeResponse = ListTagsByTypeResponses[keyof ListTagsByTypeResponses];
 
 export type ListCategoriesByTypeData = {
     body?: never;
@@ -3699,6 +3649,215 @@ export type UpdateCategoryByTypeResponses = {
 };
 
 export type UpdateCategoryByTypeResponse = UpdateCategoryByTypeResponses[keyof UpdateCategoryByTypeResponses];
+
+export type ListPostsByTypeAdminData = {
+    body?: never;
+    path: {
+        /**
+         * 板块类型
+         */
+        post_type: PostType;
+    };
+    query?: {
+        /**
+         * Status
+         *
+         * 文章状态（draft/published/archived）
+         */
+        status?: PostStatus | null;
+        /**
+         * Category Id
+         *
+         * 分类ID
+         */
+        category_id?: string | null;
+        /**
+         * Tag Id
+         *
+         * 标签ID
+         */
+        tag_id?: string | null;
+        /**
+         * Author Id
+         *
+         * 作者ID
+         */
+        author_id?: string | null;
+        /**
+         * Is Featured
+         *
+         * 是否为推荐文章
+         */
+        is_featured?: boolean | null;
+        /**
+         * Search
+         *
+         * 搜索关键词（标题、内容）
+         */
+        search?: string | null;
+        /**
+         * Limit
+         *
+         * 每页数量
+         */
+        limit?: number;
+        /**
+         * Offset
+         *
+         * 偏移量
+         */
+        offset?: number;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Size
+         */
+        size?: number;
+    };
+    url: '/api/v1/posts/{post_type}/admin/posts';
+};
+
+export type ListPostsByTypeAdminErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListPostsByTypeAdminError = ListPostsByTypeAdminErrors[keyof ListPostsByTypeAdminErrors];
+
+export type ListPostsByTypeAdminResponses = {
+    /**
+     * Successful Response
+     */
+    200: PagePostShortResponse;
+};
+
+export type ListPostsByTypeAdminResponse = ListPostsByTypeAdminResponses[keyof ListPostsByTypeAdminResponses];
+
+export type ListAllPostsAdminData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         *
+         * 文章状态（draft/published/archived）
+         */
+        status?: PostStatus | null;
+        /**
+         * Category Id
+         *
+         * 分类ID
+         */
+        category_id?: string | null;
+        /**
+         * Tag Id
+         *
+         * 标签ID
+         */
+        tag_id?: string | null;
+        /**
+         * Author Id
+         *
+         * 作者ID
+         */
+        author_id?: string | null;
+        /**
+         * Is Featured
+         *
+         * 是否为推荐文章
+         */
+        is_featured?: boolean | null;
+        /**
+         * Search
+         *
+         * 搜索关键词（标题、内容）
+         */
+        search?: string | null;
+        /**
+         * Limit
+         *
+         * 每页数量
+         */
+        limit?: number;
+        /**
+         * Offset
+         *
+         * 偏移量
+         */
+        offset?: number;
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Size
+         */
+        size?: number;
+    };
+    url: '/api/v1/posts/admin/posts';
+};
+
+export type ListAllPostsAdminErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListAllPostsAdminError = ListAllPostsAdminErrors[keyof ListAllPostsAdminErrors];
+
+export type ListAllPostsAdminResponses = {
+    /**
+     * Successful Response
+     */
+    200: PagePostShortResponse;
+};
+
+export type ListAllPostsAdminResponse = ListAllPostsAdminResponses[keyof ListAllPostsAdminResponses];
 
 export type GetMyPostsData = {
     body?: never;
@@ -4178,6 +4337,8 @@ export type UnlikePostData = {
     path: {
         /**
          * Post Id
+         *
+         * 文章 ID
          */
         post_id: string;
     };
@@ -4228,6 +4389,8 @@ export type LikePostData = {
     path: {
         /**
          * Post Id
+         *
+         * 文章 ID
          */
         post_id: string;
     };
@@ -4278,6 +4441,8 @@ export type UnbookmarkPostData = {
     path: {
         /**
          * Post Id
+         *
+         * 文章 ID
          */
         post_id: string;
     };
@@ -4328,6 +4493,8 @@ export type BookmarkPostData = {
     path: {
         /**
          * Post Id
+         *
+         * 文章 ID
          */
         post_id: string;
     };
@@ -4419,65 +4586,6 @@ export type GetPostTypesResponses = {
 };
 
 export type GetPostTypesResponse = GetPostTypesResponses[keyof GetPostTypesResponses];
-
-export type ListTagsByTypeData = {
-    body?: never;
-    path: {
-        /**
-         * 板块类型
-         */
-        post_type: PostType;
-    };
-    query?: {
-        /**
-         * Page
-         */
-        page?: number;
-        /**
-         * Size
-         */
-        size?: number;
-    };
-    url: '/api/v1/posts/{post_type}/tags';
-};
-
-export type ListTagsByTypeErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Forbidden
-     */
-    403: ErrorResponse;
-    /**
-     * Not Found
-     */
-    404: ErrorResponse;
-    /**
-     * Validation Error
-     */
-    422: ErrorResponse;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponse;
-};
-
-export type ListTagsByTypeError = ListTagsByTypeErrors[keyof ListTagsByTypeErrors];
-
-export type ListTagsByTypeResponses = {
-    /**
-     * Successful Response
-     */
-    200: PageTagResponse;
-};
-
-export type ListTagsByTypeResponse = ListTagsByTypeResponses[keyof ListTagsByTypeResponses];
 
 export type GetPostBySlugData = {
     body?: never;

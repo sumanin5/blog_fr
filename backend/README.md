@@ -207,6 +207,96 @@ pytest -s
 
 ---
 
+## 🛡️ 错误处理模式
+
+### 统一的全局异常处理
+
+本项目采用了 **FastAPI 全局异常处理器模式**，这是一个**标准且优秀**的企业级实践。
+
+#### 核心特点
+
+1. **统一响应结构**
+
+   所有错误响应都遵循统一的 JSON 格式：
+
+   ```json
+   {
+     "error": {
+       "code": "ERROR_CODE",
+       "message": "Human readable message",
+       "details": { ... },
+       "timestamp": "2026-01-24T10:00:00Z",
+       "request_id": "uuid"
+     }
+   }
+   ```
+
+2. **集中式处理**
+
+   在 `app/main.py` 中使用 `app.add_exception_handler` 注册处理器：
+
+   ```python
+   app.add_exception_handler(BaseAppException, app_exception_handler)
+   app.add_exception_handler(RequestValidationError, validation_exception_handler)
+   app.add_exception_handler(SQLAlchemyError, database_exception_handler)
+   app.add_exception_handler(Exception, unexpected_exception_handler)
+   ```
+
+3. **环境隔离**
+
+   - **开发环境**: 返回详细的报错信息和 Traceback，方便调试
+   - **生产环境**: 隐藏敏感信息，只返回通用错误消息，防止信息泄露
+
+4. **全链路追踪**
+   - 所有错误响应都包含 `request_id`
+   - 可以通过 ID 在日志系统中追踪完整请求链路
+
+#### 异常处理器类型
+
+| 处理器                         | 捕获异常                 | HTTP 状态码 | 说明             |
+| ------------------------------ | ------------------------ | ----------- | ---------------- |
+| `app_exception_handler`        | `BaseAppException`       | 自定义      | 业务逻辑异常     |
+| `validation_exception_handler` | `RequestValidationError` | 422         | 请求参数验证失败 |
+| `database_exception_handler`   | `SQLAlchemyError`        | 500         | 数据库操作异常   |
+| `unexpected_exception_handler` | `Exception`              | 500         | 未预期的系统异常 |
+
+#### 为什么这是标准模式？
+
+这套错误处理模式在 FastAPI 和现代 Python Web 开发中非常通用，它：
+
+- ✅ **解耦**: 业务逻辑与错误响应格式分离
+- ✅ **安全**: 生产环境隐藏敏感信息
+- ✅ **可观测**: 通过 request_id 实现全链路追踪
+- ✅ **前端友好**: 统一的响应格式降低前端处理复杂度
+- ✅ **可扩展**: 易于添加新的异常类型和处理器
+
+#### 使用示例
+
+```python
+# 业务代码中只需抛出异常
+from app.core.exceptions import BaseAppException
+
+class PostNotFoundError(BaseAppException):
+    def __init__(self, post_id: str):
+        super().__init__(
+            message=f"Post {post_id} not found",
+            status_code=404,
+            error_code="POST_NOT_FOUND"
+        )
+
+# 在路由中使用
+@router.get("/posts/{post_id}")
+async def get_post(post_id: str):
+    post = await post_service.get_post(post_id)
+    if not post:
+        raise PostNotFoundError(post_id)  # 自动转换为 JSON 响应
+    return post
+```
+
+详细实现见 `app/core/error_handlers.py` 和 `app/core/exceptions.py`。
+
+---
+
 ## 🗂️ 项目结构
 
 ```

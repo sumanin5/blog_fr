@@ -353,5 +353,126 @@ service = SyncService(session, container)
 
 ---
 
-**最后更新**: 2026-01-23
-**版本**: 3.3.0 (依赖注入容器重构)
+## 🛡️ 错误处理模式
+
+### 显式错误处理策略
+
+GitOps 模块采用**显式的 try-except 块**进行错误处理，移除了过度封装的 `error_handler` 装饰器。这种方式更加 Pythonic，控制流更清晰。
+
+#### 错误分类
+
+1. **配置错误** (`GitOpsConfigurationError`)
+
+   - **场景**: content 目录不存在、Git 仓库未初始化
+   - **处理**: 直接抛出，中断流程
+   - **原因**: 无法继续执行，需要管理员介入
+
+2. **业务逻辑错误** (`GitOpsSyncError`)
+
+   - **场景**: 必填字段缺失、author 不存在、category 创建失败
+   - **处理**: 记录错误日志，跳过当前文件，继续处理其他文件
+   - **原因**: 单个文件的错误不应影响整体同步
+
+3. **系统错误** (`Exception`)
+   - **场景**: 数据库连接失败、文件读取权限问题、未预期的异常
+   - **处理**: 记录完整堆栈信息，跳过当前文件
+   - **原因**: 确保单个文件的崩溃不会影响其他文件
+
+#### 错误处理代码示例
+
+```python
+# 在 SyncService.sync_all 中
+for scanned in scanned_posts:
+    try:
+        # 处理文件
+        matched_post, is_renamed = await self.serializer.match_post(...)
+
+        if matched_post:
+            await handle_post_update(...)
+        else:
+            await handle_post_create(...)
+
+    except GitOpsSyncError as e:
+        # 业务逻辑错误：记录并继续
+        logger.error(f"同步文件失败: {scanned.file_path} - {e}")
+        stats.errors.append({
+            "file": str(scanned.file_path),
+            "error": str(e),
+            "type": "sync_error"
+        })
+
+    except Exception as e:
+        # 系统错误：记录堆栈并继续
+        logger.exception(f"处理文件时发生未预期错误: {scanned.file_path}")
+        stats.errors.append({
+            "file": str(scanned.file_path),
+            "error": str(e),
+            "type": "unexpected_error",
+            "traceback": traceback.format_exc()
+        })
+```
+
+#### 优势
+
+- ✅ **控制流清晰**: 开发者能直观地看到错误是如何被捕获和处理的
+- ✅ **灵活性**: 可以针对不同的错误类型采取不同的处理策略
+- ✅ **可维护性**: 不需要理解复杂的装饰器逻辑
+- ✅ **Pythonic**: 符合 Python 社区的最佳实践
+
+### 全局异常处理（FastAPI 层）
+
+项目在 FastAPI 层实现了统一的全局异常处理器（`app/core/error_handlers.py`），这是一个**标准且优秀**的模式：
+
+#### 核心特点
+
+1. **统一响应结构**
+
+   ```json
+   {
+     "error": {
+       "code": "ERROR_CODE",
+       "message": "Human readable message",
+       "details": { ... },
+       "timestamp": "2026-01-24T10:00:00Z",
+       "request_id": "uuid"
+     }
+   }
+   ```
+
+2. **集中式处理**
+
+   - 在 `main.py` 中使用 `app.add_exception_handler` 注册
+   - 业务代码只需 `raise` 异常，不需要关心如何返回 JSON
+
+3. **环境隔离**
+
+   - **开发环境**: 返回详细的报错信息和 Traceback
+   - **生产环境**: 隐藏敏感信息，只返回通用错误消息
+
+4. **全链路追踪**
+   - 所有错误响应都包含 `request_id`
+   - 可以通过 ID 在日志系统中追踪完整请求链路
+
+#### 异常处理器类型
+
+| 处理器                         | 捕获异常                 | HTTP 状态码 | 说明             |
+| ------------------------------ | ------------------------ | ----------- | ---------------- |
+| `app_exception_handler`        | `BaseAppException`       | 自定义      | 业务逻辑异常     |
+| `validation_exception_handler` | `RequestValidationError` | 422         | 请求参数验证失败 |
+| `database_exception_handler`   | `SQLAlchemyError`        | 500         | 数据库操作异常   |
+| `unexpected_exception_handler` | `Exception`              | 500         | 未预期的系统异常 |
+
+#### 为什么这是标准模式？
+
+这套错误处理模式在 FastAPI 和现代 Python Web 开发中非常通用，它：
+
+- ✅ **解耦**: 业务逻辑与错误响应格式分离
+- ✅ **安全**: 生产环境隐藏敏感信息
+- ✅ **可观测**: 通过 request_id 实现全链路追踪
+- ✅ **前端友好**: 统一的响应格式降低前端处理复杂度
+- ✅ **可扩展**: 易于添加新的异常类型和处理器
+
+---
+
+**最后更新**: 2026-01-24
+**版本**: 3.3.0 (依赖注入容器重构 + 错误处理说明)

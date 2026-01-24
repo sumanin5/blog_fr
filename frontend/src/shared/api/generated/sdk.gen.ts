@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, BookmarkPostData, BookmarkPostErrors, BookmarkPostResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, GithubWebhookData, GithubWebhookErrors, GithubWebhookResponses, LikePostData, LikePostErrors, LikePostResponses, ListAllPostsAdminData, ListAllPostsAdminErrors, ListAllPostsAdminResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, PreviewSyncData, PreviewSyncErrors, PreviewSyncResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, ResyncPostMetadataData, ResyncPostMetadataErrors, ResyncPostMetadataResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, TriggerSyncData, TriggerSyncErrors, TriggerSyncResponses, UnbookmarkPostData, UnbookmarkPostErrors, UnbookmarkPostResponses, UnlikePostData, UnlikePostErrors, UnlikePostResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
+import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, BookmarkPostData, BookmarkPostErrors, BookmarkPostResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, GithubWebhookData, GithubWebhookErrors, GithubWebhookResponses, LikePostData, LikePostErrors, LikePostResponses, ListAllPostsAdminData, ListAllPostsAdminErrors, ListAllPostsAdminResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeAdminData, ListPostsByTypeAdminErrors, ListPostsByTypeAdminResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, PreviewSyncData, PreviewSyncErrors, PreviewSyncResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, ResyncPostMetadataData, ResyncPostMetadataErrors, ResyncPostMetadataResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, TriggerSyncData, TriggerSyncErrors, TriggerSyncResponses, UnbookmarkPostData, UnbookmarkPostErrors, UnbookmarkPostResponses, UnlikePostData, UnlikePostErrors, UnlikePostResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -26,7 +26,66 @@ export const readRoot = <ThrowOnError extends boolean = false>(options?: Options
 /**
  * 注册新用户
  *
- * 创建一个新用户账号（默认普通用户权限）
+ * 注册新用户账号
+ *
+ * ## 权限
+ * - 公开接口，无需登录
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "username": "johndoe",
+ * "email": "john@example.com",
+ * "password": "securepassword123",
+ * "full_name": "John Doe"
+ * }
+ * ```
+ *
+ * ## 字段说明
+ * - `username`: 用户名（3-50字符，唯一，只能包含字母、数字、下划线）
+ * - `email`: 邮箱地址（唯一，必须是有效的邮箱格式）
+ * - `password`: 密码（至少6个字符）
+ * - `full_name`: 全名（可选，最多100字符）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "id": "uuid",
+ * "username": "johndoe",
+ * "email": "john@example.com",
+ * "full_name": "John Doe",
+ * "is_active": true,
+ * "is_admin": false,
+ * "is_superadmin": false,
+ * "created_at": "2026-01-23T10:00:00Z"
+ * }
+ * ```
+ *
+ * - 创建成功的用户对象（不包含密码）
+ * - 默认权限：普通用户（`is_admin=false`, `is_superadmin=false`）
+ * - 默认状态：激活（`is_active=true`）
+ *
+ * ## 示例
+ * ```bash
+ * # 注册新用户
+ * curl -X POST http://localhost:8000/api/v1/users/register \
+ * -H "Content-Type: application/json" \
+ * -d '{
+ * "username": "johndoe",
+ * "email": "john@example.com",
+ * "password": "securepassword123",
+ * "full_name": "John Doe"
+ * }'
+ * ```
+ *
+ * ## 错误码
+ * - `400 BAD_REQUEST`: 用户名或邮箱已存在
+ * - `422 UNPROCESSABLE_ENTITY`: 数据验证失败（格式不正确）
+ *
+ * ## 注意事项
+ * - 密码会自动加密存储（使用 bcrypt）
+ * - 注册后需要使用 `/login` 接口获取 token
+ * - 用户名不区分大小写，但会保留原始大小写
  */
 export const registerUser = <ThrowOnError extends boolean = false>(options: Options<RegisterUserData, ThrowOnError>) => (options.client ?? client).post<RegisterUserResponses, RegisterUserErrors, ThrowOnError>({
     url: '/api/v1/users/register',
@@ -40,7 +99,54 @@ export const registerUser = <ThrowOnError extends boolean = false>(options: Opti
 /**
  * 用户登录
  *
- * 使用用户名/邮箱和密码登录
+ * 用户登录获取访问令牌
+ *
+ * ## 权限
+ * - 公开接口，无需登录
+ *
+ * ## 请求体（Form Data）
+ * - `username`: 用户名或邮箱（必填）
+ * - `password`: 密码（必填）
+ *
+ * **注意**：请求格式为 `application/x-www-form-urlencoded`（OAuth2 标准）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+ * "token_type": "bearer"
+ * }
+ * ```
+ *
+ * ## 使用方式
+ * 1. 调用此接口获取 `access_token`
+ * 2. 在后续请求的 Header 中添加：`Authorization: Bearer {access_token}`
+ *
+ * ## 示例
+ * ```bash
+ * # 使用用户名登录
+ * curl -X POST http://localhost:8000/api/v1/users/login \
+ * -H "Content-Type: application/x-www-form-urlencoded" \
+ * -d "username=johndoe&password=securepassword123"
+ *
+ * # 使用邮箱登录
+ * curl -X POST http://localhost:8000/api/v1/users/login \
+ * -H "Content-Type: application/x-www-form-urlencoded" \
+ * -d "username=john@example.com&password=securepassword123"
+ *
+ * # 使用返回的 token 访问受保护接口
+ * curl -X GET http://localhost:8000/api/v1/users/me \
+ * -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ * ```
+ *
+ * ## 错误码
+ * - `400 BAD_REQUEST`: 用户名或密码错误
+ * - `400 BAD_REQUEST`: 用户账号未激活
+ *
+ * ## 注意事项
+ * - Token 有效期为 30 天
+ * - 支持使用用户名或邮箱登录
+ * - 密码错误次数过多可能导致账号临时锁定（如果启用了安全策略）
  */
 export const login = <ThrowOnError extends boolean = false>(options: Options<LoginData, ThrowOnError>) => (options.client ?? client).post<LoginResponses, LoginErrors, ThrowOnError>({
     ...urlSearchParamsBodySerializer,
@@ -53,9 +159,34 @@ export const login = <ThrowOnError extends boolean = false>(options: Options<Log
 });
 
 /**
- * 删除当前用户
+ * 删除当前用户账号
  *
- * 删除当前登录用户的账号
+ * 删除当前用户账号
+ *
+ * ## 权限
+ * - 需要登录
+ * - 只能删除自己的账号
+ *
+ * ## 返回值
+ * - 成功：`204 No Content`（无响应体）
+ *
+ * ## 示例
+ * ```bash
+ * # 删除当前用户账号
+ * curl -X DELETE http://localhost:8000/api/v1/users/me \
+ * -H "Authorization: Bearer <your_token>"
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 超级管理员不能删除自己（保护措施）
+ *
+ * ## 注意事项
+ * - **此操作不可逆**，用户数据将被永久删除
+ * - 删除后，该用户的所有 token 立即失效
+ * - 用户创建的内容（文章、评论等）可能会被保留或转移（取决于业务逻辑）
+ * - 建议在删除前提示用户确认
+ * - 超级管理员账号不能自我删除（防止误操作）
  */
 export const deleteCurrentUserAccount = <ThrowOnError extends boolean = false>(options?: Options<DeleteCurrentUserAccountData, ThrowOnError>) => (options?.client ?? client).delete<DeleteCurrentUserAccountResponses, DeleteCurrentUserAccountErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -66,7 +197,42 @@ export const deleteCurrentUserAccount = <ThrowOnError extends boolean = false>(o
 /**
  * 获取当前用户信息
  *
- * 获取当前登录用户的详细信息
+ * 获取当前登录用户信息
+ *
+ * ## 权限
+ * - 需要登录
+ * - 返回当前 token 对应的用户信息
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "id": "uuid",
+ * "username": "johndoe",
+ * "email": "john@example.com",
+ * "full_name": "John Doe",
+ * "is_active": true,
+ * "is_admin": false,
+ * "is_superadmin": false,
+ * "created_at": "2026-01-23T10:00:00Z",
+ * "updated_at": "2026-01-23T10:00:00Z"
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取当前用户信息
+ * curl -X GET http://localhost:8000/api/v1/users/me \
+ * -H "Authorization: Bearer <your_token>"
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录或 token 无效
+ * - `401 UNAUTHORIZED`: Token 已过期
+ *
+ * ## 注意事项
+ * - 不返回密码字段
+ * - 可用于验证 token 是否有效
+ * - 适用于前端获取当前登录用户信息
  */
 export const getCurrentUserInfo = <ThrowOnError extends boolean = false>(options?: Options<GetCurrentUserInfoData, ThrowOnError>) => (options?.client ?? client).get<GetCurrentUserInfoResponses, GetCurrentUserInfoErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -77,7 +243,66 @@ export const getCurrentUserInfo = <ThrowOnError extends boolean = false>(options
 /**
  * 更新当前用户信息
  *
- * 部分更新当前登录用户的信息
+ * 更新当前用户信息
+ *
+ * ## 权限
+ * - 需要登录
+ * - 只能更新自己的信息
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "email": "newemail@example.com",
+ * "full_name": "New Name",
+ * "password": "newpassword123"
+ * }
+ * ```
+ *
+ * **所有字段都是可选的**，只更新提供的字段。
+ *
+ * ## 字段说明
+ * - `email`: 新邮箱地址（可选，必须唯一）
+ * - `full_name`: 新全名（可选）
+ * - `password`: 新密码（可选，至少 6 个字符）
+ *
+ * ## 返回值
+ * 返回更新后的用户对象（不包含密码）。
+ *
+ * ## 示例
+ * ```bash
+ * # 更新邮箱
+ * curl -X PATCH http://localhost:8000/api/v1/users/me \
+ * -H "Authorization: Bearer <your_token>" \
+ * -H "Content-Type: application/json" \
+ * -d '{"email": "newemail@example.com"}'
+ *
+ * # 更新密码
+ * curl -X PATCH http://localhost:8000/api/v1/users/me \
+ * -H "Authorization: Bearer <your_token>" \
+ * -H "Content-Type: application/json" \
+ * -d '{"password": "newpassword123"}'
+ *
+ * # 同时更新多个字段
+ * curl -X PATCH http://localhost:8000/api/v1/users/me \
+ * -H "Authorization: Bearer <your_token>" \
+ * -H "Content-Type: application/json" \
+ * -d '{
+ * "email": "newemail@example.com",
+ * "full_name": "New Name",
+ * "password": "newpassword123"
+ * }'
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `400 BAD_REQUEST`: 邮箱已被其他用户使用
+ * - `422 UNPROCESSABLE_ENTITY`: 数据验证失败
+ *
+ * ## 注意事项
+ * - 不能修改用户名（username 是唯一标识）
+ * - 不能修改权限字段（is_admin, is_superadmin）
+ * - 修改密码后，旧 token 仍然有效（直到过期）
+ * - 新密码会自动加密存储
  */
 export const updateCurrentUserInfo = <ThrowOnError extends boolean = false>(options: Options<UpdateCurrentUserInfoData, ThrowOnError>) => (options.client ?? client).patch<UpdateCurrentUserInfoResponses, UpdateCurrentUserInfoErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -90,9 +315,65 @@ export const updateCurrentUserInfo = <ThrowOnError extends boolean = false>(opti
 });
 
 /**
- * 获取用户列表
+ * 获取用户列表（管理员）
  *
- * 获取所有用户列表（仅管理员）
+ * 获取用户列表（管理员）
+ *
+ * ## 权限
+ * - 需要管理员权限（`is_admin=true` 或 `is_superadmin=true`）
+ *
+ * ## 查询参数
+ * - `page`: 页码（默认 1）
+ * - `size`: 每页数量（默认 20，最大 100）
+ * - `is_active`: 过滤激活状态（可选，true/false）
+ * - `is_admin`: 过滤管理员（可选，true/false）
+ * - `search`: 搜索关键词（可选，搜索用户名、邮箱、全名）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "items": [
+ * {
+ * "id": "uuid",
+ * "username": "johndoe",
+ * "email": "john@example.com",
+ * "full_name": "John Doe",
+ * "is_active": true,
+ * "is_admin": false,
+ * "is_superadmin": false,
+ * "created_at": "2026-01-23T10:00:00Z"
+ * }
+ * ],
+ * "total": 100,
+ * "page": 1,
+ * "size": 20,
+ * "pages": 5
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取所有用户
+ * GET /users?page=1&size=20
+ *
+ * # 搜索用户
+ * GET /users?search=john
+ *
+ * # 过滤激活用户
+ * GET /users?is_active=true
+ *
+ * # 过滤管理员
+ * GET /users?is_admin=true
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无管理员权限
+ *
+ * ## 注意事项
+ * - 不返回密码字段
+ * - 支持分页和搜索
+ * - 适用于管理后台的用户管理界面
  */
 export const getUsersList = <ThrowOnError extends boolean = false>(options?: Options<GetUsersListData, ThrowOnError>) => (options?.client ?? client).get<GetUsersListResponses, GetUsersListErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -101,9 +382,39 @@ export const getUsersList = <ThrowOnError extends boolean = false>(options?: Opt
 });
 
 /**
- * 删除指定用户
+ * 删除指定用户（管理员）
  *
- * 删除指定用户（仅管理员）
+ * 删除指定用户（管理员）
+ *
+ * ## 权限
+ * - 需要管理员权限
+ * - 普通管理员不能删除超级管理员
+ * - 超级管理员可以删除任何用户（除了自己）
+ *
+ * ## 路径参数
+ * - `user_id`: 用户 UUID
+ *
+ * ## 返回值
+ * - 成功：`204 No Content`（无响应体）
+ *
+ * ## 示例
+ * ```bash
+ * # 删除指定用户
+ * DELETE /users/123e4567-e89b-12d3-a456-426614174000
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权限
+ * - `404 NOT_FOUND`: 用户不存在
+ * - `400 BAD_REQUEST`: 不能删除自己
+ *
+ * ## 注意事项
+ * - **此操作不可逆**，用户数据将被永久删除
+ * - 删除后，该用户的所有 token 立即失效
+ * - 不能删除自己（防止误操作）
+ * - 普通管理员不能删除超级管理员
+ * - 建议在删除前确认用户创建的内容如何处理
  */
 export const deleteUserById = <ThrowOnError extends boolean = false>(options: Options<DeleteUserByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteUserByIdResponses, DeleteUserByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -112,9 +423,45 @@ export const deleteUserById = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
- * 获取指定用户信息
+ * 获取指定用户信息（管理员）
  *
- * 根据 ID 获取用户信息（仅管理员）
+ * 获取指定用户信息（管理员）
+ *
+ * ## 权限
+ * - 需要管理员权限
+ *
+ * ## 路径参数
+ * - `user_id`: 用户 UUID
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "id": "uuid",
+ * "username": "johndoe",
+ * "email": "john@example.com",
+ * "full_name": "John Doe",
+ * "is_active": true,
+ * "is_admin": false,
+ * "is_superadmin": false,
+ * "created_at": "2026-01-23T10:00:00Z",
+ * "updated_at": "2026-01-23T10:00:00Z"
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取指定用户信息
+ * GET /users/123e4567-e89b-12d3-a456-426614174000
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无管理员权限
+ * - `404 NOT_FOUND`: 用户不存在
+ *
+ * ## 注意事项
+ * - 不返回密码字段
+ * - 管理员可以查看任何用户的信息
  */
 export const getUserById = <ThrowOnError extends boolean = false>(options: Options<GetUserByIdData, ThrowOnError>) => (options.client ?? client).get<GetUserByIdResponses, GetUserByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -123,9 +470,73 @@ export const getUserById = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 /**
- * 更新指定用户信息
+ * 更新指定用户信息（管理员）
  *
- * 部分更新指定用户的信息（仅管理员）
+ * 更新指定用户信息（管理员）
+ *
+ * ## 权限
+ * - 需要管理员权限
+ * - 普通管理员不能修改超级管理员
+ * - 超级管理员可以修改任何用户
+ *
+ * ## 路径参数
+ * - `user_id`: 用户 UUID
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "email": "newemail@example.com",
+ * "full_name": "New Name",
+ * "is_active": true,
+ * "is_admin": false,
+ * "password": "newpassword123"
+ * }
+ * ```
+ *
+ * **所有字段都是可选的**，只更新提供的字段。
+ *
+ * ## 字段说明
+ * - `email`: 新邮箱地址（可选）
+ * - `full_name`: 新全名（可选）
+ * - `is_active`: 激活状态（可选）
+ * - `is_admin`: 管理员权限（可选，仅超级管理员可修改）
+ * - `password`: 新密码（可选）
+ *
+ * ## 返回值
+ * 返回更新后的用户对象。
+ *
+ * ## 示例
+ * ```bash
+ * # 禁用用户
+ * PATCH /users/{user_id}
+ * {
+ * "is_active": false
+ * }
+ *
+ * # 提升为管理员（仅超级管理员）
+ * PATCH /users/{user_id}
+ * {
+ * "is_admin": true
+ * }
+ *
+ * # 重置密码
+ * PATCH /users/{user_id}
+ * {
+ * "password": "newpassword123"
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权限（普通管理员尝试修改超级管理员）
+ * - `404 NOT_FOUND`: 用户不存在
+ * - `400 BAD_REQUEST`: 邮箱已被使用
+ *
+ * ## 注意事项
+ * - 不能修改用户名
+ * - 普通管理员不能修改权限字段
+ * - 修改密码后，用户的所有 token 仍然有效
+ * - 禁用用户后，该用户无法登录（但 token 仍有效直到过期）
  */
 export const updateUserById = <ThrowOnError extends boolean = false>(options: Options<UpdateUserByIdData, ThrowOnError>) => (options.client ?? client).patch<UpdateUserByIdResponses, UpdateUserByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -140,14 +551,123 @@ export const updateUserById = <ThrowOnError extends boolean = false>(options: Op
 /**
  * 获取公开文件列表
  *
- * 获取公开文件列表（无需认证）
+ * 获取公开文件列表
+ *
+ * ## 权限
+ * - 无需认证，任何人都可以访问
+ * - 仅返回 `is_public=True` 的文件
+ *
+ * ## 查询参数
+ * - `media_type`: 文件类型过滤（image/video/audio/document）
+ * - `usage`: 用途过滤（avatar/cover/content/general）
+ * - `page`: 页码（默认 1）
+ * - `page_size`: 每页数量（默认 20，最大 100）
+ *
+ * ## 返回值
+ * ```json
+ * [
+ * {
+ * "id": "uuid",
+ * "original_filename": "example.jpg",
+ * "file_path": "/uploads/2026/01/example.jpg",
+ * "mime_type": "image/jpeg",
+ * "file_size": 102400,
+ * "media_type": "image",
+ * "usage": "cover",
+ * "is_public": true,
+ * "view_count": 100,
+ * "download_count": 10,
+ * "created_at": "2026-01-23T10:00:00Z"
+ * }
+ * ]
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取所有公开图片
+ * GET /media/public?media_type=image&page=1&page_size=20
+ *
+ * # 获取公开封面图
+ * GET /media/public?usage=cover
+ * ```
+ *
+ * ## 注意事项
+ * - 不返回私有文件
+ * - 不包含上传者信息（隐私保护）
+ * - 适用于公开画廊、资源库等场景
  */
 export const getPublicFiles = <ThrowOnError extends boolean = false>(options?: Options<GetPublicFilesData, ThrowOnError>) => (options?.client ?? client).get<GetPublicFilesResponses, GetPublicFilesErrors, ThrowOnError>({ url: '/api/v1/media/public', ...options });
 
 /**
- * 上传文件
+ * 上传媒体文件
  *
- * 上传媒体文件（需要登录）
+ * 上传媒体文件
+ *
+ * ## 权限
+ * - 需要登录
+ * - 所有登录用户都可以上传文件
+ *
+ * ## 表单参数
+ * - `file`: 文件（必填，multipart/form-data）
+ * - `usage`: 文件用途（可选，默认 general）
+ * - `avatar`: 用户头像
+ * - `cover`: 文章封面
+ * - `content`: 文章内容图片
+ * - `general`: 通用文件
+ * - `is_public`: 是否公开（可选，默认 false）
+ * - `description`: 文件描述（可选）
+ * - `alt_text`: 替代文本（可选，用于无障碍访问）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "message": "文件上传成功",
+ * "file": {
+ * "id": "uuid",
+ * "original_filename": "example.jpg",
+ * "file_path": "/uploads/2026/01/example.jpg",
+ * "mime_type": "image/jpeg",
+ * "file_size": 102400,
+ * "media_type": "image",
+ * "thumbnails": {
+ * "small": "/thumbnails/2026/01/example_small.webp",
+ * "medium": "/thumbnails/2026/01/example_medium.webp",
+ * "large": "/thumbnails/2026/01/example_large.webp"
+ * }
+ * }
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 上传文章封面图
+ * curl -X POST /media/upload \
+ * -H "Authorization: Bearer <token>" \
+ * -F "file=@cover.jpg" \
+ * -F "usage=cover" \
+ * -F "is_public=true" \
+ * -F "description=文章封面图"
+ *
+ * # 上传用户头像
+ * curl -X POST /media/upload \
+ * -H "Authorization: Bearer <token>" \
+ * -F "file=@avatar.png" \
+ * -F "usage=avatar" \
+ * -F "is_public=true"
+ * ```
+ *
+ * ## 错误码
+ * - `400 BAD_REQUEST`: 文件类型不支持、文件过大
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `413 PAYLOAD_TOO_LARGE`: 文件超过大小限制
+ * - `500 INTERNAL_SERVER_ERROR`: 文件保存失败
+ *
+ * ## 注意事项
+ * - 支持的文件类型：图片（jpg/png/gif/webp）、视频（mp4/webm）、音频（mp3/wav）、文档（pdf）
+ * - 文件大小限制：图片 10MB，视频 100MB，其他 50MB
+ * - 图片会自动生成缩略图（small/medium/large）
+ * - 文件名会自动重命名为 UUID，避免冲突
+ * - 文件按日期分目录存储（/uploads/YYYY/MM/）
  */
 export const uploadFile = <ThrowOnError extends boolean = false>(options: Options<UploadFileData, ThrowOnError>) => (options.client ?? client).post<UploadFileResponses, UploadFileErrors, ThrowOnError>({
     ...formDataBodySerializer,
@@ -161,9 +681,59 @@ export const uploadFile = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
- * 获取文件列表
+ * 获取当前用户的媒体文件列表
  *
- * 获取当前用户的媒体文件列表（需要登录）
+ * 获取当前用户的媒体文件列表
+ *
+ * ## 权限
+ * - 需要登录
+ * - 仅返回当前用户上传的文件
+ *
+ * ## 查询参数
+ * - `q`: 搜索关键词（可选，搜索文件名和描述）
+ * - `media_type`: 文件类型过滤（image/video/audio/document）
+ * - `usage`: 用途过滤（avatar/cover/content/general）
+ * - `limit`: 返回数量（默认 20，最大 100）
+ * - `offset`: 偏移量（默认 0）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "total": 42,
+ * "files": [
+ * {
+ * "id": "uuid",
+ * "original_filename": "example.jpg",
+ * "file_path": "/uploads/2026/01/example.jpg",
+ * "mime_type": "image/jpeg",
+ * "file_size": 102400,
+ * "media_type": "image",
+ * "usage": "cover",
+ * "is_public": true,
+ * "view_count": 100,
+ * "download_count": 10,
+ * "created_at": "2026-01-23T10:00:00Z"
+ * }
+ * ]
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取我的所有图片
+ * GET /media/?media_type=image
+ *
+ * # 搜索文件
+ * GET /media/?q=封面
+ *
+ * # 分页获取
+ * GET /media/?limit=20&offset=40
+ * ```
+ *
+ * ## 注意事项
+ * - 仅返回当前用户上传的文件
+ * - 包含公开和私有文件
+ * - 适用于用户文件管理界面
  */
 export const getUserFiles = <ThrowOnError extends boolean = false>(options?: Options<GetUserFilesData, ThrowOnError>) => (options?.client ?? client).get<GetUserFilesResponses, GetUserFilesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -172,9 +742,40 @@ export const getUserFiles = <ThrowOnError extends boolean = false>(options?: Opt
 });
 
 /**
- * 删除文件
+ * 删除媒体文件
  *
- * 删除媒体文件（需要是所有者或超级管理员）
+ * 删除媒体文件
+ *
+ * ## 权限
+ * - 需要登录
+ * - 仅文件所有者或超级管理员可以删除
+ *
+ * ## 路径参数
+ * - `file_id`: 文件 UUID
+ *
+ * ## 返回值
+ * - 成功：204 No Content（无响应体）
+ *
+ * ## 示例
+ * ```bash
+ * # 删除文件
+ * DELETE /media/123e4567-e89b-12d3-a456-426614174000
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权删除此文件
+ * - `404 NOT_FOUND`: 文件不存在
+ * - `409 CONFLICT`: 文件正在被使用（如作为文章封面）
+ *
+ * ## 注意事项
+ * - 删除操作会同时删除：
+ * - 数据库记录
+ * - 原始文件
+ * - 所有缩略图
+ * - 删除操作不可逆
+ * - 如果文件正在被文章引用，删除会失败
+ * - 建议在删除前检查文件的使用情况
  */
 export const deleteFile = <ThrowOnError extends boolean = false>(options: Options<DeleteFileData, ThrowOnError>) => (options.client ?? client).delete<DeleteFileResponses, DeleteFileErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -183,9 +784,61 @@ export const deleteFile = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
- * 获取文件详情
+ * 获取媒体文件详细信息
  *
- * 获取媒体文件详细信息（需要登录，service层检查权限）
+ * 获取媒体文件详细信息
+ *
+ * ## 权限
+ * - 需要登录
+ * - 可以查看：
+ * - 自己上传的文件（公开或私有）
+ * - 其他用户的公开文件
+ * - 超级管理员可以查看所有文件
+ *
+ * ## 路径参数
+ * - `file_id`: 文件 UUID
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "id": "uuid",
+ * "original_filename": "example.jpg",
+ * "file_path": "/uploads/2026/01/example.jpg",
+ * "mime_type": "image/jpeg",
+ * "file_size": 102400,
+ * "media_type": "image",
+ * "usage": "cover",
+ * "is_public": true,
+ * "description": "文章封面图",
+ * "alt_text": "示例图片",
+ * "view_count": 100,
+ * "download_count": 10,
+ * "thumbnails": {
+ * "small": "/thumbnails/2026/01/example_small.webp",
+ * "medium": "/thumbnails/2026/01/example_medium.webp",
+ * "large": "/thumbnails/2026/01/example_large.webp"
+ * },
+ * "uploader_id": "uuid",
+ * "created_at": "2026-01-23T10:00:00Z",
+ * "updated_at": "2026-01-23T10:00:00Z"
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取文件详情
+ * GET /media/123e4567-e89b-12d3-a456-426614174000
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权访问此文件（私有文件且非所有者）
+ * - `404 NOT_FOUND`: 文件不存在
+ *
+ * ## 注意事项
+ * - 包含完整的文件元数据
+ * - 包含缩略图路径（如果是图片）
+ * - 不会增加查看次数（仅获取元数据）
  */
 export const getFileDetail = <ThrowOnError extends boolean = false>(options: Options<GetFileDetailData, ThrowOnError>) => (options.client ?? client).get<GetFileDetailResponses, GetFileDetailErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -194,9 +847,56 @@ export const getFileDetail = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
- * 更新文件信息
+ * 更新媒体文件信息
  *
- * 更新媒体文件信息（需要是所有者或超级管理员）
+ * 更新媒体文件信息
+ *
+ * ## 权限
+ * - 需要登录
+ * - 仅文件所有者或超级管理员可以更新
+ *
+ * ## 路径参数
+ * - `file_id`: 文件 UUID
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "description": "更新后的描述",
+ * "alt_text": "更新后的替代文本",
+ * "usage": "cover",
+ * "is_public": true
+ * }
+ * ```
+ *
+ * 所有字段都是可选的，仅更新提供的字段。
+ *
+ * ## 返回值
+ * 返回更新后的完整文件信息。
+ *
+ * ## 示例
+ * ```bash
+ * # 更新文件描述
+ * PATCH /media/123e4567-e89b-12d3-a456-426614174000
+ * {
+ * "description": "新的文件描述"
+ * }
+ *
+ * # 修改文件公开状态
+ * PATCH /media/123e4567-e89b-12d3-a456-426614174000
+ * {
+ * "is_public": true
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权修改此文件
+ * - `404 NOT_FOUND`: 文件不存在
+ *
+ * ## 注意事项
+ * - 不能修改文件本身，仅能修改元数据
+ * - 修改 `usage` 不会移动文件位置
+ * - 修改 `is_public` 会影响文件的访问权限
  */
 export const updateFile = <ThrowOnError extends boolean = false>(options: Options<UpdateFileData, ThrowOnError>) => (options.client ?? client).patch<UpdateFileResponses, UpdateFileErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -209,11 +909,51 @@ export const updateFile = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
- * 搜索文件
+ * 搜索媒体文件
  *
- * 搜索媒体文件（需要登录）
+ * 搜索媒体文件
+ *
+ * ## 权限
+ * - 需要登录
+ * - 仅搜索当前用户上传的文件
+ *
+ * ## 查询参数
+ * - `query`: 搜索关键词（必填，搜索文件名和描述）
+ * - `media_type`: 文件类型过滤（可选）
+ * - `limit`: 返回数量（默认 20）
+ * - `offset`: 偏移量（默认 0）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "total": 5,
+ * "files": [
+ * {
+ * "id": "uuid",
+ * "original_filename": "example.jpg",
+ * "description": "包含搜索关键词的描述",
+ * ...
+ * }
+ * ]
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 搜索文件名包含 "封面" 的文件
+ * GET /media/search?query=封面
+ *
+ * # 搜索图片类型的文件
+ * GET /media/search?query=logo&media_type=image
+ * ```
+ *
+ * ## 注意事项
+ * - 搜索范围：文件名、描述、替代文本
+ * - 搜索不区分大小写
+ * - 支持模糊匹配
+ * - 仅搜索当前用户的文件
  */
-export const searchFiles = <ThrowOnError extends boolean = false>(options?: Options<SearchFilesData, ThrowOnError>) => (options?.client ?? client).get<SearchFilesResponses, SearchFilesErrors, ThrowOnError>({
+export const searchFiles = <ThrowOnError extends boolean = false>(options: Options<SearchFilesData, ThrowOnError>) => (options.client ?? client).get<SearchFilesResponses, SearchFilesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/media/search',
     ...options
@@ -222,7 +962,50 @@ export const searchFiles = <ThrowOnError extends boolean = false>(options?: Opti
 /**
  * 切换文件公开状态
  *
- * 切换文件公开状态（需要是所有者或超级管理员）
+ * 切换文件公开状态
+ *
+ * ## 权限
+ * - 需要登录
+ * - 仅文件所有者或超级管理员可以操作
+ *
+ * ## 路径参数
+ * - `file_id`: 文件 UUID
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "is_public": true
+ * }
+ * ```
+ *
+ * ## 返回值
+ * 返回更新后的完整文件信息。
+ *
+ * ## 示例
+ * ```bash
+ * # 设置为公开
+ * PATCH /media/123e4567-e89b-12d3-a456-426614174000/publicity
+ * {
+ * "is_public": true
+ * }
+ *
+ * # 设置为私有
+ * PATCH /media/123e4567-e89b-12d3-a456-426614174000/publicity
+ * {
+ * "is_public": false
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权修改此文件
+ * - `404 NOT_FOUND`: 文件不存在
+ *
+ * ## 注意事项
+ * - 公开文件可以被任何登录用户访问
+ * - 私有文件仅所有者和超级管理员可以访问
+ * - 修改公开状态不会影响文件的物理位置
+ * - 适用于快速切换文件的访问权限
  */
 export const toggleFilePublicity = <ThrowOnError extends boolean = false>(options: Options<ToggleFilePublicityData, ThrowOnError>) => (options.client ?? client).patch<ToggleFilePublicityResponses, ToggleFilePublicityErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -235,9 +1018,52 @@ export const toggleFilePublicity = <ThrowOnError extends boolean = false>(option
 });
 
 /**
- * 批量删除文件
+ * 批量删除媒体文件
  *
- * 批量删除媒体文件（需要登录）
+ * 批量删除媒体文件
+ *
+ * ## 权限
+ * - 需要登录
+ * - 仅能删除自己上传的文件
+ * - 超级管理员可以删除任何文件
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "file_ids": [
+ * "123e4567-e89b-12d3-a456-426614174000",
+ * "223e4567-e89b-12d3-a456-426614174001"
+ * ]
+ * }
+ * ```
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "message": "批量删除完成",
+ * "deleted_count": 2
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 批量删除文件
+ * POST /media/batch-delete
+ * {
+ * "file_ids": ["uuid1", "uuid2", "uuid3"]
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 部分文件无权删除（会跳过这些文件）
+ * - `404 NOT_FOUND`: 部分文件不存在（会跳过这些文件）
+ *
+ * ## 注意事项
+ * - 删除操作是原子性的（全部成功或全部失败）
+ * - 如果某个文件无权删除，整个操作会失败
+ * - 删除会同时删除文件和缩略图
+ * - 适用于文件管理界面的批量操作
  */
 export const batchDeleteFiles = <ThrowOnError extends boolean = false>(options: Options<BatchDeleteFilesData, ThrowOnError>) => (options.client ?? client).post<BatchDeleteFilesResponses, BatchDeleteFilesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -250,20 +1076,44 @@ export const batchDeleteFiles = <ThrowOnError extends boolean = false>(options: 
 });
 
 /**
- * 重新生成缩略图
+ * 查看媒体文件
  *
- * 重新生成缩略图（需要是所有者或超级管理员）
- */
-export const regenerateThumbnails = <ThrowOnError extends boolean = false>(options: Options<RegenerateThumbnailsData, ThrowOnError>) => (options.client ?? client).post<RegenerateThumbnailsResponses, RegenerateThumbnailsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/media/{file_id}/regenerate-thumbnails',
-    ...options
-});
-
-/**
- * 查看文件
+ * 查看媒体文件（返回文件内容）
  *
- * 查看媒体文件（需要登录，带权限检查）
+ * ## 权限
+ * - 需要登录
+ * - 可以查看：
+ * - 自己上传的文件
+ * - 其他用户的公开文件
+ * - 超级管理员可以查看所有文件
+ *
+ * ## 路径参数
+ * - `file_id`: 文件 UUID
+ *
+ * ## 返回值
+ * - 直接返回文件内容（二进制流）
+ * - Content-Type 根据文件类型自动设置
+ * - 包含缓存头（Cache-Control, ETag）
+ *
+ * ## 示例
+ * ```bash
+ * # 在浏览器中查看图片
+ * GET /media/123e4567-e89b-12d3-a456-426614174000/view
+ *
+ * # 在 img 标签中使用
+ * <img src="/media/123e4567-e89b-12d3-a456-426614174000/view" />
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权访问此文件
+ * - `404 NOT_FOUND`: 文件不存在或文件已被删除
+ *
+ * ## 注意事项
+ * - 每次访问会增加查看次数（view_count +1）
+ * - 返回原始文件，不是缩略图
+ * - 包含缓存头，浏览器会缓存文件
+ * - 适用于在网页中直接显示文件
  */
 export const viewFile = <ThrowOnError extends boolean = false>(options: Options<ViewFileData, ThrowOnError>) => (options.client ?? client).get<ViewFileResponses, ViewFileErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -274,7 +1124,45 @@ export const viewFile = <ThrowOnError extends boolean = false>(options: Options<
 /**
  * 查看缩略图
  *
- * 查看缩略图（需要登录，带权限检查）
+ * 查看缩略图（返回缩略图内容）
+ *
+ * ## 权限
+ * - 需要登录
+ * - 权限规则同查看原文件
+ *
+ * ## 路径参数
+ * - `file_id`: 文件 UUID
+ * - `size`: 缩略图尺寸
+ * - `small`: 150x150px
+ * - `medium`: 300x300px
+ * - `large`: 600x600px
+ *
+ * ## 返回值
+ * - 直接返回缩略图内容（WebP 格式）
+ * - Content-Type: image/webp
+ * - 包含缓存头
+ *
+ * ## 示例
+ * ```bash
+ * # 获取小尺寸缩略图
+ * GET /media/123e4567-e89b-12d3-a456-426614174000/thumbnail/small
+ *
+ * # 在 img 标签中使用
+ * <img src="/media/{file_id}/thumbnail/medium" />
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权访问此文件
+ * - `404 NOT_FOUND`: 文件不存在或缩略图不存在
+ * - `400 BAD_REQUEST`: 不支持的尺寸或文件类型不是图片
+ *
+ * ## 注意事项
+ * - 仅图片文件有缩略图
+ * - 缩略图格式统一为 WebP（高压缩率）
+ * - 缩略图会在上传时自动生成
+ * - 如果缩略图丢失，可以使用重新生成接口
+ * - 不会增加查看次数（仅原文件会统计）
  */
 export const viewThumbnail = <ThrowOnError extends boolean = false>(options: Options<ViewThumbnailData, ThrowOnError>) => (options.client ?? client).get<ViewThumbnailResponses, ViewThumbnailErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -283,9 +1171,43 @@ export const viewThumbnail = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
- * 下载文件
+ * 下载媒体文件
  *
- * 下载媒体文件（需要登录，带权限检查）
+ * 下载媒体文件
+ *
+ * ## 权限
+ * - 需要登录
+ * - 权限规则同查看文件
+ *
+ * ## 路径参数
+ * - `file_id`: 文件 UUID
+ *
+ * ## 返回值
+ * - 直接返回文件内容（二进制流）
+ * - Content-Disposition: attachment（触发浏览器下载）
+ * - 文件名为原始文件名
+ *
+ * ## 示例
+ * ```bash
+ * # 下载文件
+ * GET /media/123e4567-e89b-12d3-a456-426614174000/download
+ *
+ * # 使用 curl 下载
+ * curl -O -J /media/123e4567-e89b-12d3-a456-426614174000/download
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权访问此文件
+ * - `404 NOT_FOUND`: 文件不存在或文件已被删除
+ *
+ * ## 注意事项
+ * - 每次下载会增加下载次数（download_count +1）
+ * - 与 `/view` 的区别：
+ * - `/view`: 在浏览器中显示（Content-Disposition: inline）
+ * - `/download`: 触发下载（Content-Disposition: attachment）
+ * - 保留原始文件名
+ * - 适用于用户主动下载文件的场景
  */
 export const downloadFile = <ThrowOnError extends boolean = false>(options: Options<DownloadFileData, ThrowOnError>) => (options.client ?? client).get<DownloadFileResponses, DownloadFileErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -294,9 +1216,96 @@ export const downloadFile = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
- * 获取统计概览
+ * 重新生成缩略图
  *
- * 获取用户媒体文件统计概览（需要登录）
+ * 重新生成缩略图
+ *
+ * ## 权限
+ * - 需要登录
+ * - 仅文件所有者或超级管理员可以操作
+ *
+ * ## 路径参数
+ * - `file_id`: 文件 UUID
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "message": "缩略图重新生成成功",
+ * "thumbnails": {
+ * "small": "/thumbnails/2026/01/example_small.webp",
+ * "medium": "/thumbnails/2026/01/example_medium.webp",
+ * "large": "/thumbnails/2026/01/example_large.webp"
+ * }
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 重新生成缩略图
+ * POST /media/123e4567-e89b-12d3-a456-426614174000/regenerate-thumbnails
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权操作此文件
+ * - `404 NOT_FOUND`: 文件不存在
+ * - `400 BAD_REQUEST`: 文件类型不是图片
+ *
+ * ## 注意事项
+ * - 仅图片文件可以生成缩略图
+ * - 会删除旧的缩略图并生成新的
+ * - 适用场景：
+ * - 缩略图丢失或损坏
+ * - 更新缩略图生成算法后重新生成
+ * - 原图被替换后需要更新缩略图
+ */
+export const regenerateThumbnails = <ThrowOnError extends boolean = false>(options: Options<RegenerateThumbnailsData, ThrowOnError>) => (options.client ?? client).post<RegenerateThumbnailsResponses, RegenerateThumbnailsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/media/{file_id}/regenerate-thumbnails',
+    ...options
+});
+
+/**
+ * 获取用户媒体文件统计概览
+ *
+ * 获取用户媒体文件统计概览
+ *
+ * ## 权限
+ * - 需要登录
+ * - 仅返回当前用户的统计数据
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "total_files": 42,
+ * "total_size": 10485760,
+ * "by_type": {
+ * "image": 30,
+ * "video": 5,
+ * "audio": 2,
+ * "document": 5
+ * },
+ * "by_usage": {
+ * "avatar": 1,
+ * "cover": 10,
+ * "content": 25,
+ * "general": 6
+ * },
+ * "public_files": 20,
+ * "private_files": 22
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取统计概览
+ * GET /media/stats/overview
+ * ```
+ *
+ * ## 注意事项
+ * - 统计数据实时计算
+ * - `total_size` 单位为字节
+ * - 适用于用户仪表板显示
  */
 export const getStatsOverview = <ThrowOnError extends boolean = false>(options?: Options<GetStatsOverviewData, ThrowOnError>) => (options?.client ?? client).get<GetStatsOverviewResponses, GetStatsOverviewErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -305,9 +1314,52 @@ export const getStatsOverview = <ThrowOnError extends boolean = false>(options?:
 });
 
 /**
- * 获取所有文件（管理员）
+ * 获取系统中所有媒体文件
  *
- * 获取系统中所有媒体文件（仅管理员）
+ * 获取系统中所有媒体文件
+ *
+ * ## 权限
+ * - 需要管理员权限（is_superadmin=True）
+ *
+ * ## 查询参数
+ * - `media_type`: 文件类型过滤（可选）
+ * - `usage`: 用途过滤（可选）
+ * - `limit`: 返回数量（默认 20，最大 100）
+ * - `offset`: 偏移量（默认 0）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "total": 150,
+ * "files": [
+ * {
+ * "id": "uuid",
+ * "original_filename": "example.jpg",
+ * "uploader_id": "user-uuid",
+ * "is_public": true,
+ * ...
+ * }
+ * ]
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取所有文件
+ * GET /media/admin/all
+ *
+ * # 获取所有图片
+ * GET /media/admin/all?media_type=image
+ *
+ * # 分页获取
+ * GET /media/admin/all?limit=50&offset=100
+ * ```
+ *
+ * ## 注意事项
+ * - 返回所有用户上传的文件
+ * - 包含公开和私有文件
+ * - 包含上传者信息
+ * - 适用于管理后台的文件管理
  */
 export const getAllFilesAdmin = <ThrowOnError extends boolean = false>(options?: Options<GetAllFilesAdminData, ThrowOnError>) => (options?.client ?? client).get<GetAllFilesAdminResponses, GetAllFilesAdminErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -316,38 +1368,48 @@ export const getAllFilesAdmin = <ThrowOnError extends boolean = false>(options?:
 });
 
 /**
- * 获取所有文章列表（管理后台）
- *
- * 获取所有文章列表（管理后台）
- *
- * 权限：
- * - 超级管理员：可以查看所有文章（包括所有用户的草稿）
- * - 普通用户：只能查看自己的文章
- *
- * 支持筛选：
- * - status: 文章状态（draft/published/archived）
- * - post_type: 文章类型（article/idea）
- * - category_id: 分类ID
- * - tag_id: 标签ID
- * - author_id: 作者ID（超级管理员可用）
- * - is_featured: 是否推荐
- * - search: 搜索关键词
- *
- * 示例：
- * - GET /posts/admin/posts - 所有文章
- * - GET /posts/admin/posts?status=draft - 草稿列表
- * - GET /posts/admin/posts?author_id=xxx - 指定作者的文章（超级管理员）
- */
-export const listAllPostsAdmin = <ThrowOnError extends boolean = false>(options?: Options<ListAllPostsAdminData, ThrowOnError>) => (options?.client ?? client).get<ListAllPostsAdminResponses, ListAllPostsAdminErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/posts/admin/posts',
-    ...options
-});
-
-/**
  * 获取所有标签
  *
  * 获取所有标签列表（支持搜索）
+ *
+ * ## 权限
+ * - 需要登录
+ *
+ * ## 查询参数
+ * - `search`: 搜索关键词，支持标签名称模糊搜索
+ * - `page`: 页码（默认1）
+ * - `size`: 每页数量（默认20，最大100）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "items": [
+ * {
+ * "id": "uuid",
+ * "name": "Python",
+ * "slug": "python",
+ * "post_count": 42
+ * }
+ * ],
+ * "total": 100,
+ * "page": 1,
+ * "size": 20,
+ * "pages": 5
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取所有标签
+ * GET /posts/admin/tags
+ *
+ * # 搜索标签
+ * GET /posts/admin/tags?search=Python
+ * ```
+ *
+ * ## 注意事项
+ * - 包含标签下的文章数量统计
+ * - 按使用频率排序
  */
 export const listTags = <ThrowOnError extends boolean = false>(options?: Options<ListTagsData, ThrowOnError>) => (options?.client ?? client).get<ListTagsResponses, ListTagsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -359,6 +1421,32 @@ export const listTags = <ThrowOnError extends boolean = false>(options?: Options
  * 清理孤立标签
  *
  * 删除孤立标签（仅超级管理员）
+ *
+ * ## 权限
+ * - 需要超级管理员权限
+ *
+ * ## 功能说明
+ * - 删除没有关联任何文章的标签
+ * - 清理数据库中的冗余数据
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "deleted_count": 5,
+ * "deleted_tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+ * "message": "已删除 5 个孤立标签"
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * DELETE /posts/admin/tags/orphaned
+ * ```
+ *
+ * ## 注意事项
+ * - 删除操作不可恢复
+ * - 建议定期执行以清理数据
+ * - 不会影响有文章关联的标签
  */
 export const deleteOrphanedTags = <ThrowOnError extends boolean = false>(options?: Options<DeleteOrphanedTagsData, ThrowOnError>) => (options?.client ?? client).delete<DeleteOrphanedTagsResponses, DeleteOrphanedTagsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -370,6 +1458,46 @@ export const deleteOrphanedTags = <ThrowOnError extends boolean = false>(options
  * 合并标签
  *
  * 合并标签（仅超级管理员）
+ *
+ * ## 权限
+ * - 需要超级管理员权限
+ *
+ * ## 功能说明
+ * - 将源标签的所有文章关联转移到目标标签
+ * - 删除源标签
+ * - 用于合并重复或相似的标签
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "source_tag_id": "uuid",
+ * "target_tag_id": "uuid"
+ * }
+ * ```
+ *
+ * ## 返回值
+ * - 返回目标标签对象（包含更新后的文章数量）
+ *
+ * ## 示例
+ * ```bash
+ * POST /posts/admin/tags/merge
+ * Content-Type: application/json
+ *
+ * {
+ * "source_tag_id": "550e8400-e29b-41d4-a716-446655440000",
+ * "target_tag_id": "660e8400-e29b-41d4-a716-446655440001"
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 权限不足（非超级管理员）
+ * - `404 NOT_FOUND`: 标签不存在
+ *
+ * ## 注意事项
+ * - 源标签会被删除
+ * - 所有关联会转移到目标标签
+ * - 不会产生重复关联
  */
 export const mergeTags = <ThrowOnError extends boolean = false>(options: Options<MergeTagsData, ThrowOnError>) => (options.client ?? client).post<MergeTagsResponses, MergeTagsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -385,6 +1513,43 @@ export const mergeTags = <ThrowOnError extends boolean = false>(options: Options
  * 更新标签
  *
  * 更新标签（仅超级管理员）
+ *
+ * ## 权限
+ * - 需要超级管理员权限
+ *
+ * ## 路径参数
+ * - `tag_id`: 标签ID（UUID格式）
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "name": "新标签名",
+ * "slug": "new-tag-slug"
+ * }
+ * ```
+ *
+ * ## 返回值
+ * - 返回更新后的标签对象
+ *
+ * ## 示例
+ * ```bash
+ * PATCH /posts/admin/tags/550e8400-e29b-41d4-a716-446655440000
+ * Content-Type: application/json
+ *
+ * {
+ * "name": "Python 3"
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `400 BAD_REQUEST`: Slug已存在
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 权限不足（非超级管理员）
+ * - `404 NOT_FOUND`: 标签不存在
+ *
+ * ## 注意事项
+ * - 所有字段都是可选的
+ * - 更新 slug 会影响 URL
  */
 export const updateTag = <ThrowOnError extends boolean = false>(options: Options<UpdateTagData, ThrowOnError>) => (options.client ?? client).patch<UpdateTagResponses, UpdateTagErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -397,13 +1562,51 @@ export const updateTag = <ThrowOnError extends boolean = false>(options: Options
 });
 
 /**
+ * 获取指定板块的标签列表
+ *
+ * 获取指定板块的标签列表（自动分页）
+ *
+ * ## 权限
+ * - 公开接口，无需认证
+ *
+ * ## 示例
+ * ```bash
+ * # 获取文章标签
+ * GET /posts/article/tags
+ *
+ * # 获取想法标签
+ * GET /posts/idea/tags
+ * ```
+ *
+ * ## 注意事项
+ * - 包含标签下的文章数量统计
+ * - 按使用频率排序
+ */
+export const listTagsByType = <ThrowOnError extends boolean = false>(options: Options<ListTagsByTypeData, ThrowOnError>) => (options.client ?? client).get<ListTagsByTypeResponses, ListTagsByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/tags', ...options });
+
+/**
  * 获取指定板块的分类列表
  *
  * 获取指定板块的分类列表（自动分页）
  *
- * 示例：
- * - GET /posts/article/categories - 文章分类（仅启用）
- * - GET /posts/article/categories?include_inactive=true - 所有分类
+ * ## 权限
+ * - 公开接口，无需认证
+ *
+ * ## 查询参数
+ * - `include_inactive`: 是否包含未启用的分类（默认false）
+ *
+ * ## 示例
+ * ```bash
+ * # 获取文章分类（仅启用）
+ * GET /posts/article/categories
+ *
+ * # 获取所有分类
+ * GET /posts/article/categories?include_inactive=true
+ * ```
+ *
+ * ## 注意事项
+ * - 默认只返回启用的分类（is_active=true）
+ * - 包含分类下的文章数量统计
  */
 export const listCategoriesByType = <ThrowOnError extends boolean = false>(options: Options<ListCategoriesByTypeData, ThrowOnError>) => (options.client ?? client).get<ListCategoriesByTypeResponses, ListCategoriesByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/categories', ...options });
 
@@ -412,9 +1615,56 @@ export const listCategoriesByType = <ThrowOnError extends boolean = false>(optio
  *
  * 创建新分类（仅超级管理员）
  *
- * 示例：
- * - POST /posts/article/categories - 创建文章分类
- * - POST /posts/idea/categories - 创建想法分类
+ * ## 权限
+ * - 需要超级管理员权限
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "name": "分类名称",
+ * "slug": "category-slug",
+ * "description": "分类描述",
+ * "is_active": true
+ * }
+ * ```
+ *
+ * ## 字段说明
+ * - `name`: 分类名称（必填）
+ * - `slug`: URL别名（可选，自动生成）
+ * - `description`: 分类描述（可选）
+ * - `is_active`: 是否启用（默认true）
+ *
+ * ## 示例
+ * ```bash
+ * # 创建文章分类
+ * POST /posts/article/categories
+ * Content-Type: application/json
+ *
+ * {
+ * "name": "技术文章",
+ * "description": "技术相关的文章"
+ * }
+ *
+ * # 创建想法分类
+ * POST /posts/idea/categories
+ * Content-Type: application/json
+ *
+ * {
+ * "name": "随笔"
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `400 BAD_REQUEST`: Slug已存在
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 权限不足（非超级管理员）
+ *
+ * ## 注意事项
+ * - Slug 必须在同一板块内唯一
+ * - 如果不提供 slug，会自动生成
  */
 export const createCategoryByType = <ThrowOnError extends boolean = false>(options: Options<CreateCategoryByTypeData, ThrowOnError>) => (options.client ?? client).post<CreateCategoryByTypeResponses, CreateCategoryByTypeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -431,9 +1681,35 @@ export const createCategoryByType = <ThrowOnError extends boolean = false>(optio
  *
  * 删除分类（仅超级管理员）
  *
- * 示例：
- * - DELETE /posts/article/categories/{category_id}
- * - DELETE /posts/idea/categories/{category_id}
+ * ## 权限
+ * - 需要超级管理员权限
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `category_id`: 分类ID（UUID格式）
+ *
+ * ## 返回值
+ * - 204 No Content（无响应体）
+ *
+ * ## 示例
+ * ```bash
+ * # 删除文章分类
+ * DELETE /posts/article/categories/550e8400-e29b-41d4-a716-446655440000
+ *
+ * # 删除想法分类
+ * DELETE /posts/idea/categories/550e8400-e29b-41d4-a716-446655440000
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 权限不足（非超级管理员）
+ * - `404 NOT_FOUND`: 分类不存在
+ * - `409 CONFLICT`: 分类下还有文章（需要先移除关联）
+ *
+ * ## 注意事项
+ * - 删除操作不可恢复
+ * - 如果分类下有文章，删除会失败
+ * - 建议先将文章移到其他分类或取消关联
  */
 export const deleteCategoryByType = <ThrowOnError extends boolean = false>(options: Options<DeleteCategoryByTypeData, ThrowOnError>) => (options.client ?? client).delete<DeleteCategoryByTypeResponses, DeleteCategoryByTypeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -446,9 +1722,51 @@ export const deleteCategoryByType = <ThrowOnError extends boolean = false>(optio
  *
  * 更新分类（仅超级管理员）
  *
- * 示例：
- * - PATCH /posts/article/categories/{category_id}
- * - PATCH /posts/idea/categories/{category_id}
+ * ## 权限
+ * - 需要超级管理员权限
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `category_id`: 分类ID（UUID格式）
+ *
+ * ## 请求体（所有字段都是可选的）
+ * ```json
+ * {
+ * "name": "新分类名",
+ * "slug": "new-slug",
+ * "description": "新描述",
+ * "is_active": false
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 更新分类名称
+ * PATCH /posts/article/categories/550e8400-e29b-41d4-a716-446655440000
+ * Content-Type: application/json
+ *
+ * {
+ * "name": "技术博客"
+ * }
+ *
+ * # 禁用分类
+ * PATCH /posts/article/categories/550e8400-e29b-41d4-a716-446655440000
+ * Content-Type: application/json
+ *
+ * {
+ * "is_active": false
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `400 BAD_REQUEST`: Slug已被其他分类使用
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 权限不足（非超级管理员）
+ * - `404 NOT_FOUND`: 分类不存在
+ *
+ * ## 注意事项
+ * - 禁用分类不会影响已关联的文章
+ * - 禁用的分类不会在公开接口中显示
  */
 export const updateCategoryByType = <ThrowOnError extends boolean = false>(options: Options<UpdateCategoryByTypeData, ThrowOnError>) => (options.client ?? client).patch<UpdateCategoryByTypeResponses, UpdateCategoryByTypeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -461,16 +1779,141 @@ export const updateCategoryByType = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
+ * 获取指定板块的文章列表（管理后台）
+ *
+ * 获取指定板块的文章列表（管理后台）
+ *
+ * ## 权限
+ * - 超级管理员：可以查看所有文章（包括所有用户的草稿）
+ * - 普通用户：只能查看自己的文章
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ *
+ * ## 查询参数
+ * - `status`: 文章状态（draft/published/archived）
+ * - `category_id`: 分类ID
+ * - `tag_id`: 标签ID
+ * - `author_id`: 作者ID（超级管理员可用）
+ * - `is_featured`: 是否推荐
+ * - `search`: 搜索关键词
+ * - `page`: 页码（默认1）
+ * - `size`: 每页数量（默认20，最大100）
+ *
+ * ## 示例
+ * ```bash
+ * # 获取所有文章（article 板块）
+ * GET /posts/article/admin/posts
+ *
+ * # 获取草稿列表
+ * GET /posts/article/admin/posts?status=draft
+ *
+ * # 获取指定作者的想法（超级管理员）
+ * GET /posts/idea/admin/posts?author_id=xxx
+ * ```
+ *
+ * ## 注意事项
+ * - 普通用户自动过滤为自己的文章
+ * - 超级管理员可以查看所有用户的文章
+ * - 包含所有状态的文章（草稿、已发布、已归档）
+ */
+export const listPostsByTypeAdmin = <ThrowOnError extends boolean = false>(options: Options<ListPostsByTypeAdminData, ThrowOnError>) => (options.client ?? client).get<ListPostsByTypeAdminResponses, ListPostsByTypeAdminErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/{post_type}/admin/posts',
+    ...options
+});
+
+/**
+ * 获取所有文章列表（管理后台，跨板块）
+ *
+ * 获取所有文章列表（管理后台，跨板块）
+ *
+ * ## 权限
+ * - 超级管理员：可以查看所有文章（包括所有用户的草稿）
+ * - 普通用户：只能查看自己的文章
+ *
+ * ## 查询参数
+ * - `status`: 文章状态（draft/published/archived）
+ * - `category_id`: 分类ID
+ * - `tag_id`: 标签ID
+ * - `author_id`: 作者ID（超级管理员可用）
+ * - `is_featured`: 是否推荐
+ * - `search`: 搜索关键词
+ * - `page`: 页码（默认1）
+ * - `size`: 每页数量（默认20，最大100）
+ *
+ * ## 示例
+ * ```bash
+ * # 获取所有板块的所有文章
+ * GET /posts/admin/posts
+ *
+ * # 获取所有板块的草稿列表
+ * GET /posts/admin/posts?status=draft
+ *
+ * # 全局搜索
+ * GET /posts/admin/posts?search=Python
+ * ```
+ *
+ * ## 注意事项
+ * - 此接口返回 article 和 idea 混合的结果
+ * - 适合全局搜索和管理
+ * - 普通用户自动过滤为自己的文章
+ */
+export const listAllPostsAdmin = <ThrowOnError extends boolean = false>(options?: Options<ListAllPostsAdminData, ThrowOnError>) => (options?.client ?? client).get<ListAllPostsAdminResponses, ListAllPostsAdminErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/admin/posts',
+    ...options
+});
+
+/**
  * 获取当前用户的文章列表
  *
  * 获取当前用户的所有文章（包括草稿）
  *
- * 示例：
- * - GET /posts/me - 我的所有文章
- * - GET /posts/me?status=draft - 我的草稿
- * - GET /posts/me?status=published - 我的已发布文章
+ * ## 权限
+ * - 需要登录
+ * - 只能查看自己的文章
  *
- * 注意：需要登录才能访问
+ * ## 查询参数
+ * - `status`: 文章状态（draft/published/archived）
+ * - `category_id`: 分类ID
+ * - `tag_id`: 标签ID
+ * - `is_featured`: 是否推荐
+ * - `search`: 搜索关键词
+ * - `page`: 页码（默认1）
+ * - `size`: 每页数量（默认20，最大100）
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "items": [...],
+ * "total": 42,
+ * "page": 1,
+ * "size": 20,
+ * "pages": 3
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 获取我的所有文章（所有板块）
+ * GET /posts/me
+ *
+ * # 获取我的草稿
+ * GET /posts/me?status=draft
+ *
+ * # 获取我的已发布文章（第2页）
+ * GET /posts/me?status=published&page=2&size=10
+ *
+ * # 搜索我的文章
+ * GET /posts/me?search=Python
+ * ```
+ *
+ * ## 注意事项
+ * - 此接口返回所有板块（article + idea）的文章
+ * - 包含草稿、已发布、已归档的所有状态
+ * - 如果需要按板块筛选，请使用管理后台接口
+ * - 适用于用户个人文章管理页面
  */
 export const getMyPosts = <ThrowOnError extends boolean = false>(options?: Options<GetMyPostsData, ThrowOnError>) => (options?.client ?? client).get<GetMyPostsResponses, GetMyPostsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -481,7 +1924,68 @@ export const getMyPosts = <ThrowOnError extends boolean = false>(options?: Optio
 /**
  * 文章实时预览
  *
- * 预览 MDX 内容（转换 Markdown -> HTML）
+ * 预览 MDX 内容（实时渲染）
+ *
+ * ## 权限
+ * - 公开接口，无需登录
+ *
+ * ## 功能说明
+ * - 将 MDX 内容转换为 AST 结构
+ * - 生成文章目录（TOC）
+ * - 计算阅读时间
+ * - 生成摘要
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "content_mdx": "# 标题\n\n这是内容..."
+ * }
+ * ```
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "content_ast": {
+ * "type": "root",
+ * "children": [...]
+ * },
+ * "toc": [
+ * {
+ * "id": "heading-1",
+ * "title": "标题",
+ * "level": 1
+ * }
+ * ],
+ * "reading_time": 5,
+ * "excerpt": "这是内容..."
+ * }
+ * ```
+ *
+ * ## 字段说明
+ * - `content_ast`: AST 结构（用于前端渲染）
+ * - `toc`: 文章目录
+ * - `reading_time`: 预计阅读时间（分钟）
+ * - `excerpt`: 自动生成的摘要（前200字符）
+ *
+ * ## 示例
+ * ```bash
+ * POST /posts/preview
+ * Content-Type: application/json
+ *
+ * {
+ * "content_mdx": "# Hello World\n\nThis is a test."
+ * }
+ * ```
+ *
+ * ## 使用场景
+ * - 编辑器实时预览
+ * - 发布前检查渲染效果
+ * - 测试 MDX 语法
+ *
+ * ## 注意事项
+ * - 此接口不会保存数据
+ * - 支持完整的 Markdown 和 MDX 语法
+ * - 支持数学公式、代码高亮等
  */
 export const previewPost = <ThrowOnError extends boolean = false>(options: Options<PreviewPostData, ThrowOnError>) => (options.client ?? client).post<PreviewPostResponses, PreviewPostErrors, ThrowOnError>({
     url: '/api/v1/posts/preview',
@@ -497,23 +2001,128 @@ export const previewPost = <ThrowOnError extends boolean = false>(options: Optio
  *
  * 获取指定板块的文章列表（自动分页）
  *
- * 公开接口，只显示已发布的文章。
+ * ## 权限
+ * - 公开接口，无需认证
+ * - 只显示已发布的文章（对非认证用户）
+ * - 已认证用户可按需请求草稿文章
  *
- * 示例：
- * - GET /posts/article?page=1&size=20 - 文章列表
- * - GET /posts/idea?page=1&size=20 - 想法列表
- * - GET /posts/article?category_id=xxx - 按分类筛选
+ * ## 查询参数
+ * - `category_id`: 分类ID（可选）
+ * - `tag_id`: 标签ID（可选）
+ * - `author_id`: 作者ID（可选）
+ * - `is_featured`: 是否推荐（可选）
+ * - `search`: 搜索关键词（可选）
+ * - `status`: 文章状态（可选，仅已认证用户可指定draft）
+ * - `page`: 页码（默认1）
+ * - `size`: 每页数量（默认20，最大100）
+ *
+ * ## 示例
+ * ```bash
+ * # 获取文章列表
+ * GET /posts/article?page=1&size=20
+ *
+ * # 获取想法列表
+ * GET /posts/idea?page=1&size=20
+ *
+ * # 按分类筛选
+ * GET /posts/article?category_id=xxx
+ *
+ * # 搜索文章
+ * GET /posts/article?search=Python
+ *
+ * # 已认证用户查看草稿
+ * GET /posts/article?status=draft
+ * ```
+ *
+ * ## 注意事项
+ * - 未认证用户仅返回已发布的文章（status=published）
+ * - 已认证用户可指定 status=draft 查看草稿
+ * - 支持多条件组合筛选
+ * - 返回结果包含分页信息
  */
-export const listPostsByType = <ThrowOnError extends boolean = false>(options: Options<ListPostsByTypeData, ThrowOnError>) => (options.client ?? client).get<ListPostsByTypeResponses, ListPostsByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}', ...options });
+export const listPostsByType = <ThrowOnError extends boolean = false>(options: Options<ListPostsByTypeData, ThrowOnError>) => (options.client ?? client).get<ListPostsByTypeResponses, ListPostsByTypeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/{post_type}',
+    ...options
+});
 
 /**
  * 创建文章
  *
- * 创建新文章（需要登录）
+ * 创建新文章
  *
- * 示例：
- * - POST /posts/article - 创建文章
- * - POST /posts/idea - 创建想法
+ * ## 权限
+ * - 需要登录
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ *
+ * ## 请求体
+ * ```json
+ * {
+ * "title": "文章标题",
+ * "slug": "article-slug",
+ * "content_mdx": "# 标题\n\n内容...",
+ * "excerpt": "文章摘要",
+ * "status": "draft",
+ * "category_id": "uuid",
+ * "tags": ["Python", "FastAPI"],
+ * "cover_media_id": "uuid",
+ * "is_featured": false,
+ * "enable_jsx": false,
+ * "meta_title": "SEO标题",
+ * "meta_description": "SEO描述"
+ * }
+ * ```
+ *
+ * ## 字段说明
+ * - `title`: 文章标题（必填）
+ * - `slug`: URL别名（可选，自动生成）
+ * - `content_mdx`: MDX内容（必填）
+ * - `excerpt`: 摘要（可选，自动生成）
+ * - `status`: 状态（draft/published/archived，默认draft）
+ * - `category_id`: 分类ID（可选）
+ * - `tags`: 标签名称列表（可选，自动创建不存在的标签）
+ * - `cover_media_id`: 封面图ID（可选）
+ * - `is_featured`: 是否推荐（默认false）
+ * - `enable_jsx`: 是否启用JSX组件（默认false）
+ *
+ * ## 返回值
+ * - 创建成功的文章对象（包含生成的AST、TOC等）
+ *
+ * ## 示例
+ * ```bash
+ * # 创建文章
+ * POST /posts/article
+ * Content-Type: application/json
+ *
+ * {
+ * "title": "My First Post",
+ * "content_mdx": "# Hello World",
+ * "status": "draft"
+ * }
+ *
+ * # 创建想法
+ * POST /posts/idea
+ * Content-Type: application/json
+ *
+ * {
+ * "title": "Quick Idea",
+ * "content_mdx": "Just a thought..."
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `400 BAD_REQUEST`: Slug已存在
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `404 NOT_FOUND`: 分类或封面图不存在
+ * - `422 UNPROCESSABLE_ENTITY`: 数据验证失败
+ *
+ * ## 注意事项
+ * - 创建后会自动触发 Git 提交（后台任务）
+ * - 如果不提供 slug，会自动生成
+ * - 标签会自动创建并关联
+ * - 会自动生成 AST、TOC、阅读时间等
  */
 export const createPostByType = <ThrowOnError extends boolean = false>(options: Options<CreatePostByTypeData, ThrowOnError>) => (options.client ?? client).post<CreatePostByTypeResponses, CreatePostByTypeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -528,11 +2137,38 @@ export const createPostByType = <ThrowOnError extends boolean = false>(options: 
 /**
  * 删除文章
  *
- * 删除文章（需要是作者或超级管理员）
+ * 删除文章
  *
- * 示例：
- * - DELETE /posts/article/{post_id}
- * - DELETE /posts/idea/{post_id}
+ * ## 权限
+ * - 需要登录
+ * - 只有作者或超级管理员可以删除
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `post_id`: 文章ID（UUID格式）
+ *
+ * ## 返回值
+ * - 204 No Content（无响应体）
+ *
+ * ## 示例
+ * ```bash
+ * # 删除文章
+ * DELETE /posts/article/550e8400-e29b-41d4-a716-446655440000
+ *
+ * # 删除想法
+ * DELETE /posts/idea/550e8400-e29b-41d4-a716-446655440000
+ * ```
+ *
+ * ## 错误码
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权删除（非作者且非超级管理员）
+ * - `404 NOT_FOUND`: 文章不存在
+ *
+ * ## 注意事项
+ * - 删除操作不可恢复
+ * - 会同时删除文章的所有关联数据（标签关联、版本历史等）
+ * - 删除后会自动触发 Git 提交（后台任务）
+ * - 如果文章有 source_path，对应的 Git 文件也会被删除
  */
 export const deletePostByType = <ThrowOnError extends boolean = false>(options: Options<DeletePostByTypeData, ThrowOnError>) => (options.client ?? client).delete<DeletePostByTypeResponses, DeletePostByTypeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -545,20 +2181,55 @@ export const deletePostByType = <ThrowOnError extends boolean = false>(options: 
  *
  * 根据 UUID 获取文章详情并增加浏览量
  *
- * 权限规则：
+ * ## 权限
  * - 已发布文章：任何人可访问（包括未登录）
  * - 草稿文章：只有作者或超级管理员可访问
  *
- * 查询参数：
- * - include_mdx: 是否包含原始 MDX 内容（用于编辑页面）
- * - False（默认）: 返回 AST（节省带宽）
- * - True: 返回 MDX（用于编辑）
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `post_id`: 文章UUID
  *
- * 示例：
- * - GET /posts/article/{uuid}
- * - GET /posts/article/{uuid}?include_mdx=true
+ * ## 查询参数
+ * - `include_mdx`: 是否包含原始 MDX 内容（用于编辑）
+ * - `false`（默认）: 返回 AST（节省带宽）
+ * - `true`: 返回 MDX（用于编辑）
  *
- * 注意：使用 :uuid 路径转换器确保与 slug 路由不冲突
+ * ## 返回值
+ * ```json
+ * {
+ * "id": "uuid",
+ * "title": "文章标题",
+ * "slug": "article-slug",
+ * "content_ast": {...},  // 或 content_mdx
+ * "toc": [...],
+ * "reading_time": 5,
+ * "excerpt": "摘要",
+ * "status": "published",
+ * "view_count": 100,
+ * "like_count": 10,
+ * "bookmark_count": 5,
+ * "created_at": "2026-01-23T10:00:00Z",
+ * "updated_at": "2026-01-23T10:00:00Z"
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 查看文章
+ * GET /posts/article/550e8400-e29b-41d4-a716-446655440000
+ *
+ * # 编辑模式（获取 MDX）
+ * GET /posts/article/550e8400-e29b-41d4-a716-446655440000?include_mdx=true
+ * ```
+ *
+ * ## 错误码
+ * - `403 FORBIDDEN`: 无权访问（草稿文章且非作者）
+ * - `404 NOT_FOUND`: 文章不存在
+ *
+ * ## 注意事项
+ * - 每次访问会增加浏览次数（view_count +1）
+ * - 使用 :uuid 路径转换器确保与 slug 路由不冲突
+ * - 根据 enable_jsx 字段决定返回 AST 还是 MDX
  */
 export const getPostById = <ThrowOnError extends boolean = false>(options: Options<GetPostByIdData, ThrowOnError>) => (options.client ?? client).get<GetPostByIdResponses, GetPostByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -569,11 +2240,68 @@ export const getPostById = <ThrowOnError extends boolean = false>(options: Optio
 /**
  * 更新文章
  *
- * 更新文章（需要是作者或超级管理员）
+ * 更新文章
  *
- * 示例：
- * - PATCH /posts/article/{post_id}
- * - PATCH /posts/idea/{post_id}
+ * ## 权限
+ * - 需要登录
+ * - 只有作者或超级管理员可以更新
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `post_id`: 文章ID（UUID格式）
+ *
+ * ## 请求体（所有字段都是可选的）
+ * ```json
+ * {
+ * "title": "新标题",
+ * "content_mdx": "# 新内容",
+ * "status": "published",
+ * "category_id": "uuid",
+ * "tags": ["新标签"],
+ * "is_featured": true
+ * }
+ * ```
+ *
+ * ## 字段说明
+ * - 只更新提供的字段
+ * - 未提供的字段保持不变
+ * - `tags`: 会完全替换现有标签（不是追加）
+ *
+ * ## 返回值
+ * - 更新后的文章对象
+ *
+ * ## 示例
+ * ```bash
+ * # 发布文章
+ * PATCH /posts/article/550e8400-e29b-41d4-a716-446655440000
+ * Content-Type: application/json
+ *
+ * {
+ * "status": "published"
+ * }
+ *
+ * # 更新标题和内容
+ * PATCH /posts/article/550e8400-e29b-41d4-a716-446655440000
+ * Content-Type: application/json
+ *
+ * {
+ * "title": "Updated Title",
+ * "content_mdx": "# Updated Content"
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `400 BAD_REQUEST`: Slug已被其他文章使用
+ * - `401 UNAUTHORIZED`: 未登录
+ * - `403 FORBIDDEN`: 无权更新（非作者且非超级管理员）
+ * - `404 NOT_FOUND`: 文章不存在
+ * - `422 UNPROCESSABLE_ENTITY`: 数据验证失败
+ *
+ * ## 注意事项
+ * - 更新后会自动触发 Git 提交（后台任务）
+ * - 更新内容会重新生成 AST、TOC等
+ * - 更新标签会自动创建不存在的标签
+ * - 不能修改 post_type（需要删除后重建）
  */
 export const updatePostByType = <ThrowOnError extends boolean = false>(options: Options<UpdatePostByTypeData, ThrowOnError>) => (options.client ?? client).patch<UpdatePostByTypeResponses, UpdatePostByTypeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -588,28 +2316,167 @@ export const updatePostByType = <ThrowOnError extends boolean = false>(options: 
 /**
  * 取消点赞
  *
- * 取消点赞 (-1)
+ * 取消点赞（减少点赞数）
+ *
+ * ## 权限
+ * - 无需认证，任何人都可以取消点赞
+ * - 不记录点赞用户，仅统计点赞总数
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `post_id`: 文章 UUID
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "like_count": 41
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 取消点赞
+ * DELETE /posts/article/123e4567-e89b-12d3-a456-426614174000/like
+ *
+ * # 响应
+ * {
+ * "like_count": 42
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `404 NOT_FOUND`: 文章不存在
+ * - `500 INTERNAL_SERVER_ERROR`: 数据库更新失败
+ *
+ * ## 注意事项
+ * - 点赞数不会减少到负数（最小为 0）
+ * - 建议前端实现防抖，避免重复请求
  */
 export const unlikePost = <ThrowOnError extends boolean = false>(options: Options<UnlikePostData, ThrowOnError>) => (options.client ?? client).delete<UnlikePostResponses, UnlikePostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/like', ...options });
 
 /**
  * 点赞文章
  *
- * 点赞文章 (+1)
+ * 点赞文章（增加点赞数）
+ *
+ * ## 权限
+ * - 无需认证，任何人都可以点赞
+ * - 不记录点赞用户，仅统计点赞总数
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `post_id`: 文章 UUID
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "like_count": 42
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 点赞文章
+ * POST /posts/article/123e4567-e89b-12d3-a456-426614174000/like
+ *
+ * # 响应
+ * {
+ * "like_count": 43
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `404 NOT_FOUND`: 文章不存在
+ * - `500 INTERNAL_SERVER_ERROR`: 数据库更新失败
+ *
+ * ## 注意事项
+ * - 不验证用户身份，允许重复点赞
+ * - 点赞数不会减少到负数
+ * - 建议前端实现防抖，避免重复请求
  */
 export const likePost = <ThrowOnError extends boolean = false>(options: Options<LikePostData, ThrowOnError>) => (options.client ?? client).post<LikePostResponses, LikePostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/like', ...options });
 
 /**
  * 取消收藏
  *
- * 取消收藏 (-1)
+ * 取消收藏（减少收藏数）
+ *
+ * ## 权限
+ * - 无需认证，任何人都可以取消收藏
+ * - 不记录收藏用户，仅统计收藏总数
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `post_id`: 文章 UUID
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "bookmark_count": 14
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 取消收藏
+ * DELETE /posts/article/123e4567-e89b-12d3-a456-426614174000/bookmark
+ *
+ * # 响应
+ * {
+ * "bookmark_count": 15
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `404 NOT_FOUND`: 文章不存在
+ * - `500 INTERNAL_SERVER_ERROR`: 数据库更新失败
+ *
+ * ## 注意事项
+ * - 收藏数不会减少到负数（最小为 0）
+ * - 建议前端实现防抖，避免重复请求
  */
 export const unbookmarkPost = <ThrowOnError extends boolean = false>(options: Options<UnbookmarkPostData, ThrowOnError>) => (options.client ?? client).delete<UnbookmarkPostResponses, UnbookmarkPostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/bookmark', ...options });
 
 /**
  * 收藏文章
  *
- * 收藏文章 (+1)
+ * 收藏文章（增加收藏数）
+ *
+ * ## 权限
+ * - 无需认证，任何人都可以收藏
+ * - 不记录收藏用户，仅统计收藏总数
+ *
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `post_id`: 文章 UUID
+ *
+ * ## 返回值
+ * ```json
+ * {
+ * "bookmark_count": 15
+ * }
+ * ```
+ *
+ * ## 示例
+ * ```bash
+ * # 收藏文章
+ * POST /posts/article/123e4567-e89b-12d3-a456-426614174000/bookmark
+ *
+ * # 响应
+ * {
+ * "bookmark_count": 16
+ * }
+ * ```
+ *
+ * ## 错误码
+ * - `404 NOT_FOUND`: 文章不存在
+ * - `500 INTERNAL_SERVER_ERROR`: 数据库更新失败
+ *
+ * ## 注意事项
+ * - 不验证用户身份，允许重复收藏
+ * - 收藏数不会减少到负数
+ * - 建议前端实现防抖，避免重复请求
+ * - 如需实现用户收藏列表，需要额外的用户收藏关系表
  */
 export const bookmarkPost = <ThrowOnError extends boolean = false>(options: Options<BookmarkPostData, ThrowOnError>) => (options.client ?? client).post<BookmarkPostResponses, BookmarkPostErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/{post_id}/bookmark', ...options });
 
@@ -619,38 +2486,45 @@ export const bookmarkPost = <ThrowOnError extends boolean = false>(options: Opti
  * 获取所有板块类型（用于前端构建菜单）
  *
  * 返回示例：
+ * ```json
  * [
  * {"value": "article", "label": "Article"},
  * {"value": "idea", "label": "Idea"}
  * ]
+ * ```
  */
 export const getPostTypes = <ThrowOnError extends boolean = false>(options?: Options<GetPostTypesData, ThrowOnError>) => (options?.client ?? client).get<GetPostTypesResponses, GetPostTypesErrors, ThrowOnError>({ url: '/api/v1/posts/types', ...options });
-
-/**
- * 获取指定板块的标签列表
- *
- * 获取指定板块的标签列表（自动分页）
- *
- * 示例：
- * - GET /posts/article/tags - 文章标签
- * - GET /posts/idea/tags - 想法标签
- */
-export const listTagsByType = <ThrowOnError extends boolean = false>(options: Options<ListTagsByTypeData, ThrowOnError>) => (options.client ?? client).get<ListTagsByTypeResponses, ListTagsByTypeErrors, ThrowOnError>({ url: '/api/v1/posts/{post_type}/tags', ...options });
 
 /**
  * 通过Slug获取文章详情
  *
  * 根据 Slug 获取文章详情并增加浏览量
  *
- * 权限规则：
+ * ## 权限
  * - 已发布文章：任何人可访问（包括未登录）
  * - 草稿文章：只有作者或超级管理员可访问
  *
- * 示例：
- * - GET /posts/article/slug/my-post-slug
- * - GET /posts/idea/slug/my-idea-slug
+ * ## 路径参数
+ * - `post_type`: 板块类型（article/idea）
+ * - `slug`: 文章Slug（URL别名）
  *
- * 注意：使用 /slug/ 前缀明确区分 UUID 和 Slug 路由
+ * ## 示例
+ * ```bash
+ * # 通过 Slug 访问文章
+ * GET /posts/article/slug/my-post-slug
+ *
+ * # 通过 Slug 访问想法
+ * GET /posts/idea/slug/my-idea-slug
+ * ```
+ *
+ * ## 错误码
+ * - `403 FORBIDDEN`: 无权访问（草稿文章且非作者）
+ * - `404 NOT_FOUND`: 文章不存在或 Slug 不匹配
+ *
+ * ## 注意事项
+ * - 使用 /slug/ 前缀明确区分 UUID 和 Slug 路由
+ * - Slug 必须在同一板块内唯一
+ * - 每次访问会增加浏览次数
  */
 export const getPostBySlug = <ThrowOnError extends boolean = false>(options: Options<GetPostBySlugData, ThrowOnError>) => (options.client ?? client).get<GetPostBySlugResponses, GetPostBySlugErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -661,10 +2535,55 @@ export const getPostBySlug = <ThrowOnError extends boolean = false>(options: Opt
 /**
  * 手动触发 Git 同步
  *
- * 手动触发 GitOps 同步。
+ * 手动触发 Git 同步
  *
- * - 默认执行增量同步（仅处理变动的文件）。
- * - 设置 force_full=True 可强制执行全量扫描（耗时较长）。
+ * 权限：
+ * - 需要管理员权限
+ *
+ * 功能说明：
+ * - 从 Git 仓库同步 Markdown/MDX 文件到数据库
+ * - 支持增量同步（默认）和全量同步
+ * - 自动处理文件的创建、更新、删除
+ *
+ * 查询参数：
+ * - force_full: 是否强制全量同步（默认 false）
+ * - false: 增量同步，只处理变动的文件（快速）
+ * - true: 全量同步，扫描所有文件（耗时较长，用于修复数据）
+ *
+ * 返回：
+ * ```json
+ * {
+ * "total_scanned": 10,
+ * "created": 2,
+ * "updated": 3,
+ * "deleted": 1,
+ * "skipped": 4,
+ * "errors": []
+ * }
+ * ```
+ *
+ * 字段说明：
+ * - total_scanned: 扫描的文件总数
+ * - created: 新创建的文章数
+ * - updated: 更新的文章数
+ * - deleted: 删除的文章数
+ * - skipped: 跳过的文件数（未变更）
+ * - errors: 错误列表
+ *
+ * 示例：
+ * - POST /git-ops/sync - 增量同步
+ * - POST /git-ops/sync?force_full=true - 全量同步
+ *
+ * 错误码：
+ * - 401: 未登录
+ * - 403: 权限不足（非管理员）
+ * - 500: Git 操作失败
+ *
+ * 注意：
+ * - 增量同步基于 Git commit 历史，速度快
+ * - 全量同步会扫描所有文件，适合修复数据不一致
+ * - 同步过程中会自动处理图片上传和标签创建
+ * - 建议在低峰期执行全量同步
  */
 export const triggerSync = <ThrowOnError extends boolean = false>(options?: Options<TriggerSyncData, ThrowOnError>) => (options?.client ?? client).post<TriggerSyncResponses, TriggerSyncErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -675,8 +2594,60 @@ export const triggerSync = <ThrowOnError extends boolean = false>(options?: Opti
 /**
  * 预览 Git 同步变更
  *
- * 预览即将发生的变更 (Dry Run)。
- * 不会修改数据库。
+ * 预览 Git 同步变更（Dry Run）
+ *
+ * 权限：
+ * - 需要管理员权限
+ *
+ * 功能说明：
+ * - 预览即将发生的变更，不会修改数据库
+ * - 用于在实际同步前检查变更内容
+ * - 帮助识别潜在问题
+ *
+ * 返回：
+ * ```json
+ * {
+ * "to_create": [
+ * {
+ * "path": "content/articles/new-post.md",
+ * "title": "新文章标题",
+ * "reason": "文件存在于 Git 但不在数据库"
+ * }
+ * ],
+ * "to_update": [
+ * {
+ * "path": "content/articles/existing-post.md",
+ * "title": "现有文章",
+ * "reason": "Git hash 不匹配"
+ * }
+ * ],
+ * "to_delete": [
+ * {
+ * "path": "content/articles/deleted-post.md",
+ * "title": "已删除文章",
+ * "reason": "文件不存在于 Git"
+ * }
+ * ],
+ * "summary": {
+ * "total_to_create": 1,
+ * "total_to_update": 1,
+ * "total_to_delete": 1
+ * }
+ * }
+ * ```
+ *
+ * 示例：
+ * - GET /git-ops/preview
+ *
+ * 错误码：
+ * - 401: 未登录
+ * - 403: 权限不足（非管理员）
+ * - 500: Git 操作失败
+ *
+ * 注意：
+ * - 此接口只读，不会修改任何数据
+ * - 建议在执行同步前先预览变更
+ * - 可以帮助发现配置错误或意外删除
  */
 export const previewSync = <ThrowOnError extends boolean = false>(options?: Options<PreviewSyncData, ThrowOnError>) => (options?.client ?? client).get<PreviewSyncResponses, PreviewSyncErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -687,8 +2658,46 @@ export const previewSync = <ThrowOnError extends boolean = false>(options?: Opti
 /**
  * 重新同步指定文章元数据
  *
- * 重新读取指定文章对应文件的 Frontmatter 元数据，并更新数据库。
- * 仅适用于有 source_path 的文章。
+ * 重新同步指定文章的 Frontmatter 元数据
+ *
+ * 权限：
+ * - 需要管理员权限
+ *
+ * 功能说明：
+ * - 从 Git 文件重新读取 Frontmatter 元数据
+ * - 更新数据库中的文章信息
+ * - 用于修复元数据不一致的问题
+ *
+ * 路径参数：
+ * - post_id: 文章ID（UUID格式）
+ *
+ * 适用场景：
+ * - 手动修改了 Git 文件的 Frontmatter
+ * - 数据库元数据与文件不一致
+ * - 需要强制刷新文章元数据
+ *
+ * 返回：
+ * ```json
+ * {
+ * "status": "success",
+ * "message": "Post {post_id} metadata resynced successfully"
+ * }
+ * ```
+ *
+ * 示例：
+ * - POST /git-ops/posts/550e8400-e29b-41d4-a716-446655440000/resync-metadata
+ *
+ * 错误码：
+ * - 400: 文章没有关联的 Git 文件（source_path 为空）
+ * - 401: 未登录
+ * - 403: 权限不足（非管理员）
+ * - 404: 文章不存在
+ * - 404: Git 文件不存在
+ *
+ * 注意：
+ * - 只适用于通过 Git 同步创建的文章（有 source_path）
+ * - 不会修改文章内容，只更新元数据（标题、分类、标签等）
+ * - 会自动处理标签的创建和关联
  */
 export const resyncPostMetadata = <ThrowOnError extends boolean = false>(options: Options<ResyncPostMetadataData, ThrowOnError>) => (options.client ?? client).post<ResyncPostMetadataResponses, ResyncPostMetadataErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -699,7 +2708,60 @@ export const resyncPostMetadata = <ThrowOnError extends boolean = false>(options
 /**
  * GitHub Webhook 接收入口
  *
- * 接收 GitHub Webhook Push 事件，触发后台同步。
- * 需配置 WEBHOOK_SECRET。
+ * 接收 GitHub Webhook 推送事件
+ *
+ * 权限：
+ * - 公开接口（通过签名验证）
+ *
+ * 功能说明：
+ * - 接收 GitHub 的 Push 事件
+ * - 验证 Webhook 签名确保安全
+ * - 触发后台增量同步任务
+ *
+ * 配置要求：
+ * 1. 在 GitHub 仓库设置中配置 Webhook
+ * - Payload URL: https://your-domain.com/api/v1/git-ops/webhook
+ * - Content type: application/json
+ * - Secret: 与环境变量 WEBHOOK_SECRET 一致
+ * - Events: 选择 "Just the push event"
+ *
+ * 2. 设置环境变量
+ * ```
+ * WEBHOOK_SECRET=your-secret-key
+ * ```
+ *
+ * 请求头：
+ * - X-Hub-Signature-256: GitHub 生成的 HMAC 签名
+ *
+ * 返回：
+ * ```json
+ * {
+ * "status": "triggered"
+ * }
+ * ```
+ *
+ * 工作流程：
+ * 1. GitHub 检测到 Push 事件
+ * 2. 发送 Webhook 到此接口
+ * 3. 验证签名
+ * 4. 触发后台增量同步任务
+ * 5. 立即返回响应（不等待同步完成）
+ *
+ * 示例：
+ * - POST /git-ops/webhook
+ * ```
+ * X-Hub-Signature-256: sha256=xxx
+ * ```
+ *
+ * 错误码：
+ * - 400: 签名验证失败
+ * - 400: 缺少签名头
+ * - 500: 后台任务启动失败
+ *
+ * 注意：
+ * - 签名验证失败会抛出异常，拒绝请求
+ * - 同步任务在后台异步执行，不会阻塞响应
+ * - 建议配置 Webhook 重试机制
+ * - 可以在日志中查看同步结果
  */
 export const githubWebhook = <ThrowOnError extends boolean = false>(options?: Options<GithubWebhookData, ThrowOnError>) => (options?.client ?? client).post<GithubWebhookResponses, GithubWebhookErrors, ThrowOnError>({ url: '/api/v1/ops/git/webhook', ...options });

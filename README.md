@@ -25,6 +25,8 @@
 - 🔍 **SEO 友好**: 语义化 HTML、动态元数据生成与 OpenGraph 标签优化
 - 🐳 **容器化部署**: 完整的 Docker & Docker Compose 配置，一键启动开发与生产环境
 - 🧪 **质量保证**: 集成 Pytest 和测试覆盖率工具
+- 🔄 **GitOps 内容同步**: 基于依赖注入容器的自动化内容管理，支持增量同步和全量同步
+- 🛡️ **企业级错误处理**: 统一的全局异常处理器，提供标准化的错误响应格式和全链路追踪
 
 ---
 
@@ -95,10 +97,10 @@ docker compose up -d
 
 ```bash
 cd frontend
-npm install
-npm run dev        # 启动开发服务器 (http://localhost:3000)
-npm run build      # 构建生产版本
-npm run api:generate  # 从 OpenAPI schema 生成类型安全的 SDK
+pnpm install
+pnpm dev        # 启动开发服务器 (http://localhost:3000)
+pnpm build      # 构建生产版本
+./scripts/generate-api.sh  # 从 OpenAPI schema 生成类型安全的 SDK
 ```
 
 ### 后端开发
@@ -167,8 +169,51 @@ blog_fr/
 
 - **混合渲染**: Next.js App Router 支持 SSR 和 CSR，根据页面特性自动选择最佳渲染策略
 - **类型安全**: OpenAPI schema 自动生成 TypeScript SDK，确保前后端接口类型一致
-- **模块化设计**: 后端按功能模块划分（users、posts、media），前端按组件和功能组织
+- **模块化设计**: 后端按功能模块划分（users、posts、media、git_ops），前端按组件和功能组织
 - **开发体验**: 支持 Hot Reload、TypeScript 检查、自动格式化
+
+### GitOps 内容同步模块
+
+`git_ops` 模块是一个基于**依赖注入容器模式**的内容同步引擎，实现了从 Git 仓库到数据库的自动化内容管理。
+
+**核心特性**:
+
+- 🔄 **增量同步**: 基于 Git Diff 的智能增量同步，显著提升性能
+- 📦 **依赖注入容器**: 统一管理所有依赖关系，支持延迟加载和单例模式
+- 🛡️ **显式错误处理**: 采用 Pythonic 的 try-except 块，控制流清晰
+- 🔍 **全链路追踪**: 所有操作都有详细的日志和错误追踪
+- 🧪 **易于测试**: 可以轻松 mock 整个容器或单个组件
+
+**架构模式**:
+
+```
+GitOpsService (门面)
+    ↓
+GitOpsContainer (容器)
+    ↓
+服务层 (SyncService, PreviewService, etc.)
+    ↓
+核心组件 (Scanner, Serializer, GitClient)
+```
+
+详细文档:
+
+- [GitOps 架构设计](./backend/app/git_ops/ARCHITECTURE.md)
+- [依赖注入详解](./backend/app/git_ops/DEPENDENCY_INJECTION_EXPLAINED.md)
+- [同步流程可视化](./backend/app/git_ops/SYNC_FLOW_WITH_DI.md)
+
+### 错误处理模式
+
+项目采用了 **FastAPI 全局异常处理器模式**，这是一个标准且优秀的企业级实践：
+
+**核心特点**:
+
+- ✅ **统一响应结构**: 所有错误都遵循统一的 JSON 格式
+- ✅ **集中式处理**: 业务代码只需 `raise` 异常，不需要关心如何返回 JSON
+- ✅ **环境隔离**: 开发环境返回详细错误，生产环境隐藏敏感信息
+- ✅ **全链路追踪**: 所有错误响应都包含 `request_id`
+
+详见 [后端 README - 错误处理模式](./backend/README.md#-错误处理模式)。
 
 关于架构的详细说明，请参阅 [架构文档](./ARCHITECTURE.md)。
 
@@ -248,6 +293,7 @@ docker compose down
 - [后端 API 文档](./backend/README.md) - FastAPI 开发指南
 - [前端开发指南](./frontend/SETUP.md) - Next.js 开发环境配置
 - [API 集成指南](./docs/api/FRONTEND_API_INTEGRATION_GUIDE.md) - 前端如何使用后端 API
+- [错误处理协作指南](./frontend/ERROR_HANDLING.md) - 前后端错误处理机制详解 ⭐
 
 ---
 

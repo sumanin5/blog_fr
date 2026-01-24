@@ -85,7 +85,7 @@
     "/api/v1/users/register": {
       "post": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "注册新用户",
         "description": "注册新用户账号\n\n## 权限\n- 公开接口，无需登录\n\n## 请求体\n```json\n{\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"securepassword123\",\n    \"full_name\": \"John Doe\"\n}\n```\n\n## 字段说明\n- `username`: 用户名（3-50字符，唯一，只能包含字母、数字、下划线）\n- `email`: 邮箱地址（唯一，必须是有效的邮箱格式）\n- `password`: 密码（至少6个字符）\n- `full_name`: 全名（可选，最多100字符）\n\n## 返回值\n```json\n{\n    \"id\": \"uuid\",\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"full_name\": \"John Doe\",\n    \"is_active\": true,\n    \"is_admin\": false,\n    \"is_superadmin\": false,\n    \"created_at\": \"2026-01-23T10:00:00Z\"\n}\n```\n\n- 创建成功的用户对象（不包含密码）\n- 默认权限：普通用户（`is_admin=false`, `is_superadmin=false`）\n- 默认状态：激活（`is_active=true`）\n\n## 示例\n```bash\n# 注册新用户\ncurl -X POST http://localhost:8000/api/v1/users/register \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"securepassword123\",\n    \"full_name\": \"John Doe\"\n  }'\n```\n\n## 错误码\n- `400 BAD_REQUEST`: 用户名或邮箱已存在\n- `422 UNPROCESSABLE_ENTITY`: 数据验证失败（格式不正确）\n\n## 注意事项\n- 密码会自动加密存储（使用 bcrypt）\n- 注册后需要使用 `/login` 接口获取 token\n- 用户名不区分大小写，但会保留原始大小写",
@@ -177,7 +177,7 @@
     "/api/v1/users/login": {
       "post": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "用户登录",
         "description": "用户登录获取访问令牌\n\n## 权限\n- 公开接口，无需登录\n\n## 请求体（Form Data）\n- `username`: 用户名或邮箱（必填）\n- `password`: 密码（必填）\n\n**注意**：请求格式为 `application/x-www-form-urlencoded`（OAuth2 标准）\n\n## 返回值\n```json\n{\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"token_type\": \"bearer\"\n}\n```\n\n## 使用方式\n1. 调用此接口获取 `access_token`\n2. 在后续请求的 Header 中添加：`Authorization: Bearer {access_token}`\n\n## 示例\n```bash\n# 使用用户名登录\ncurl -X POST http://localhost:8000/api/v1/users/login \\\n  -H \"Content-Type: application/x-www-form-urlencoded\" \\\n  -d \"username=johndoe&password=securepassword123\"\n\n# 使用邮箱登录\ncurl -X POST http://localhost:8000/api/v1/users/login \\\n  -H \"Content-Type: application/x-www-form-urlencoded\" \\\n  -d \"username=john@example.com&password=securepassword123\"\n\n# 使用返回的 token 访问受保护接口\ncurl -X GET http://localhost:8000/api/v1/users/me \\\n  -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n```\n\n## 错误码\n- `400 BAD_REQUEST`: 用户名或密码错误\n- `400 BAD_REQUEST`: 用户账号未激活\n\n## 注意事项\n- Token 有效期为 30 天\n- 支持使用用户名或邮箱登录\n- 密码错误次数过多可能导致账号临时锁定（如果启用了安全策略）",
@@ -269,7 +269,7 @@
     "/api/v1/users/me": {
       "get": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "获取当前用户信息",
         "description": "获取当前登录用户信息\n\n## 权限\n- 需要登录\n- 返回当前 token 对应的用户信息\n\n## 返回值\n```json\n{\n    \"id\": \"uuid\",\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"full_name\": \"John Doe\",\n    \"is_active\": true,\n    \"is_admin\": false,\n    \"is_superadmin\": false,\n    \"created_at\": \"2026-01-23T10:00:00Z\",\n    \"updated_at\": \"2026-01-23T10:00:00Z\"\n}\n```\n\n## 示例\n```bash\n# 获取当前用户信息\ncurl -X GET http://localhost:8000/api/v1/users/me \\\n  -H \"Authorization: Bearer <your_token>\"\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录或 token 无效\n- `401 UNAUTHORIZED`: Token 已过期\n\n## 注意事项\n- 不返回密码字段\n- 可用于验证 token 是否有效\n- 适用于前端获取当前登录用户信息",
@@ -354,7 +354,7 @@
       },
       "delete": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "删除当前用户账号",
         "description": "删除当前用户账号\n\n## 权限\n- 需要登录\n- 只能删除自己的账号\n\n## 返回值\n- 成功：`204 No Content`（无响应体）\n\n## 示例\n```bash\n# 删除当前用户账号\ncurl -X DELETE http://localhost:8000/api/v1/users/me \\\n  -H \"Authorization: Bearer <your_token>\"\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 超级管理员不能删除自己（保护措施）\n\n## 注意事项\n- **此操作不可逆**，用户数据将被永久删除\n- 删除后，该用户的所有 token 立即失效\n- 用户创建的内容（文章、评论等）可能会被保留或转移（取决于业务逻辑）\n- 建议在删除前提示用户确认\n- 超级管理员账号不能自我删除（防止误操作）",
@@ -432,7 +432,7 @@
       },
       "patch": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "更新当前用户信息",
         "description": "更新当前用户信息\n\n## 权限\n- 需要登录\n- 只能更新自己的信息\n\n## 请求体\n```json\n{\n    \"email\": \"newemail@example.com\",\n    \"full_name\": \"New Name\",\n    \"password\": \"newpassword123\"\n}\n```\n\n**所有字段都是可选的**，只更新提供的字段。\n\n## 字段说明\n- `email`: 新邮箱地址（可选，必须唯一）\n- `full_name`: 新全名（可选）\n- `password`: 新密码（可选，至少 6 个字符）\n\n## 返回值\n返回更新后的用户对象（不包含密码）。\n\n## 示例\n```bash\n# 更新邮箱\ncurl -X PATCH http://localhost:8000/api/v1/users/me \\\n  -H \"Authorization: Bearer <your_token>\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\": \"newemail@example.com\"}'\n\n# 更新密码\ncurl -X PATCH http://localhost:8000/api/v1/users/me \\\n  -H \"Authorization: Bearer <your_token>\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"password\": \"newpassword123\"}'\n\n# 同时更新多个字段\ncurl -X PATCH http://localhost:8000/api/v1/users/me \\\n  -H \"Authorization: Bearer <your_token>\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"newemail@example.com\",\n    \"full_name\": \"New Name\",\n    \"password\": \"newpassword123\"\n  }'\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `400 BAD_REQUEST`: 邮箱已被其他用户使用\n- `422 UNPROCESSABLE_ENTITY`: 数据验证失败\n\n## 注意事项\n- 不能修改用户名（username 是唯一标识）\n- 不能修改权限字段（is_admin, is_superadmin）\n- 修改密码后，旧 token 仍然有效（直到过期）\n- 新密码会自动加密存储",
@@ -529,7 +529,7 @@
     "/api/v1/users/": {
       "get": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "获取用户列表（管理员）",
         "description": "获取用户列表（管理员）\n\n## 权限\n- 需要管理员权限（`is_admin=true` 或 `is_superadmin=true`）\n\n## 查询参数\n- `page`: 页码（默认 1）\n- `size`: 每页数量（默认 20，最大 100）\n- `is_active`: 过滤激活状态（可选，true/false）\n- `is_admin`: 过滤管理员（可选，true/false）\n- `search`: 搜索关键词（可选，搜索用户名、邮箱、全名）\n\n## 返回值\n```json\n{\n    \"items\": [\n        {\n            \"id\": \"uuid\",\n            \"username\": \"johndoe\",\n            \"email\": \"john@example.com\",\n            \"full_name\": \"John Doe\",\n            \"is_active\": true,\n            \"is_admin\": false,\n            \"is_superadmin\": false,\n            \"created_at\": \"2026-01-23T10:00:00Z\"\n        }\n    ],\n    \"total\": 100,\n    \"page\": 1,\n    \"size\": 20,\n    \"pages\": 5\n}\n```\n\n## 示例\n```bash\n# 获取所有用户\nGET /users?page=1&size=20\n\n# 搜索用户\nGET /users?search=john\n\n# 过滤激活用户\nGET /users?is_active=true\n\n# 过滤管理员\nGET /users?is_admin=true\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 无管理员权限\n\n## 注意事项\n- 不返回密码字段\n- 支持分页和搜索\n- 适用于管理后台的用户管理界面",
@@ -654,7 +654,7 @@
     "/api/v1/users/{user_id}": {
       "get": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "获取指定用户信息（管理员）",
         "description": "获取指定用户信息（管理员）\n\n## 权限\n- 需要管理员权限\n\n## 路径参数\n- `user_id`: 用户 UUID\n\n## 返回值\n```json\n{\n    \"id\": \"uuid\",\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"full_name\": \"John Doe\",\n    \"is_active\": true,\n    \"is_admin\": false,\n    \"is_superadmin\": false,\n    \"created_at\": \"2026-01-23T10:00:00Z\",\n    \"updated_at\": \"2026-01-23T10:00:00Z\"\n}\n```\n\n## 示例\n```bash\n# 获取指定用户信息\nGET /users/123e4567-e89b-12d3-a456-426614174000\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 无管理员权限\n- `404 NOT_FOUND`: 用户不存在\n\n## 注意事项\n- 不返回密码字段\n- 管理员可以查看任何用户的信息",
@@ -753,7 +753,7 @@
       },
       "patch": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "更新指定用户信息（管理员）",
         "description": "更新指定用户信息（管理员）\n\n## 权限\n- 需要管理员权限\n- 普通管理员不能修改超级管理员\n- 超级管理员可以修改任何用户\n\n## 路径参数\n- `user_id`: 用户 UUID\n\n## 请求体\n```json\n{\n    \"email\": \"newemail@example.com\",\n    \"full_name\": \"New Name\",\n    \"is_active\": true,\n    \"is_admin\": false,\n    \"password\": \"newpassword123\"\n}\n```\n\n**所有字段都是可选的**，只更新提供的字段。\n\n## 字段说明\n- `email`: 新邮箱地址（可选）\n- `full_name`: 新全名（可选）\n- `is_active`: 激活状态（可选）\n- `is_admin`: 管理员权限（可选，仅超级管理员可修改）\n- `password`: 新密码（可选）\n\n## 返回值\n返回更新后的用户对象。\n\n## 示例\n```bash\n# 禁用用户\nPATCH /users/{user_id}\n{\n    \"is_active\": false\n}\n\n# 提升为管理员（仅超级管理员）\nPATCH /users/{user_id}\n{\n    \"is_admin\": true\n}\n\n# 重置密码\nPATCH /users/{user_id}\n{\n    \"password\": \"newpassword123\"\n}\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 无权限（普通管理员尝试修改超级管理员）\n- `404 NOT_FOUND`: 用户不存在\n- `400 BAD_REQUEST`: 邮箱已被使用\n\n## 注意事项\n- 不能修改用户名\n- 普通管理员不能修改权限字段\n- 修改密码后，用户的所有 token 仍然有效\n- 禁用用户后，该用户无法登录（但 token 仍有效直到过期）",
@@ -862,7 +862,7 @@
       },
       "delete": {
         "tags": [
-          "users"
+          "Users"
         ],
         "summary": "删除指定用户（管理员）",
         "description": "删除指定用户（管理员）\n\n## 权限\n- 需要管理员权限\n- 普通管理员不能删除超级管理员\n- 超级管理员可以删除任何用户（除了自己）\n\n## 路径参数\n- `user_id`: 用户 UUID\n\n## 返回值\n- 成功：`204 No Content`（无响应体）\n\n## 示例\n```bash\n# 删除指定用户\nDELETE /users/123e4567-e89b-12d3-a456-426614174000\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 无权限\n- `404 NOT_FOUND`: 用户不存在\n- `400 BAD_REQUEST`: 不能删除自己\n\n## 注意事项\n- **此操作不可逆**，用户数据将被永久删除\n- 删除后，该用户的所有 token 立即失效\n- 不能删除自己（防止误操作）\n- 普通管理员不能删除超级管理员\n- 建议在删除前确认用户创建的内容如何处理",
@@ -2638,12 +2638,985 @@
         }
       }
     },
+    "/api/v1/posts/admin/tags": {
+      "get": {
+        "tags": [
+          "Posts - Tags"
+        ],
+        "summary": "获取所有标签",
+        "description": "获取所有标签列表（支持搜索）\n\n## 权限\n- 需要登录\n\n## 查询参数\n- `search`: 搜索关键词，支持标签名称模糊搜索\n- `page`: 页码（默认1）\n- `size`: 每页数量（默认20，最大100）\n\n## 返回值\n```json\n{\n    \"items\": [\n        {\n            \"id\": \"uuid\",\n            \"name\": \"Python\",\n            \"slug\": \"python\",\n            \"post_count\": 42\n        }\n    ],\n    \"total\": 100,\n    \"page\": 1,\n    \"size\": 20,\n    \"pages\": 5\n}\n```\n\n## 示例\n```bash\n# 获取所有标签\nGET /posts/admin/tags\n\n# 搜索标签\nGET /posts/admin/tags?search=Python\n```\n\n## 注意事项\n- 包含标签下的文章数量统计\n- 按使用频率排序",
+        "operationId": "listTags",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "搜索关键词，支持标签名称模糊搜索",
+              "title": "Search"
+            },
+            "description": "搜索关键词，支持标签名称模糊搜索"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TagResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/admin/tags/orphaned": {
+      "delete": {
+        "tags": [
+          "Posts - Tags"
+        ],
+        "summary": "清理孤立标签",
+        "description": "删除孤立标签（仅超级管理员）\n\n## 权限\n- 需要超级管理员权限\n\n## 功能说明\n- 删除没有关联任何文章的标签\n- 清理数据库中的冗余数据\n\n## 返回值\n```json\n{\n    \"deleted_count\": 5,\n    \"deleted_tags\": [\"tag1\", \"tag2\", \"tag3\", \"tag4\", \"tag5\"],\n    \"message\": \"已删除 5 个孤立标签\"\n}\n```\n\n## 示例\n```bash\nDELETE /posts/admin/tags/orphaned\n```\n\n## 注意事项\n- 删除操作不可恢复\n- 建议定期执行以清理数据\n- 不会影响有文章关联的标签",
+        "operationId": "deleteOrphanedTags",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagCleanupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/posts/admin/tags/merge": {
+      "post": {
+        "tags": [
+          "Posts - Tags"
+        ],
+        "summary": "合并标签",
+        "description": "合并标签（仅超级管理员）\n\n## 权限\n- 需要超级管理员权限\n\n## 功能说明\n- 将源标签的所有文章关联转移到目标标签\n- 删除源标签\n- 用于合并重复或相似的标签\n\n## 请求体\n```json\n{\n    \"source_tag_id\": \"uuid\",\n    \"target_tag_id\": \"uuid\"\n}\n```\n\n## 返回值\n- 返回目标标签对象（包含更新后的文章数量）\n\n## 示例\n```bash\nPOST /posts/admin/tags/merge\nContent-Type: application/json\n\n{\n    \"source_tag_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"target_tag_id\": \"660e8400-e29b-41d4-a716-446655440001\"\n}\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 权限不足（非超级管理员）\n- `404 NOT_FOUND`: 标签不存在\n\n## 注意事项\n- 源标签会被删除\n- 所有关联会转移到目标标签\n- 不会产生重复关联",
+        "operationId": "mergeTags",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/posts/admin/tags/{tag_id}": {
+      "patch": {
+        "tags": [
+          "Posts - Tags"
+        ],
+        "summary": "更新标签",
+        "description": "更新标签（仅超级管理员）\n\n## 权限\n- 需要超级管理员权限\n\n## 路径参数\n- `tag_id`: 标签ID（UUID格式）\n\n## 请求体\n```json\n{\n    \"name\": \"新标签名\",\n    \"slug\": \"new-tag-slug\"\n}\n```\n\n## 返回值\n- 返回更新后的标签对象\n\n## 示例\n```bash\nPATCH /posts/admin/tags/550e8400-e29b-41d4-a716-446655440000\nContent-Type: application/json\n\n{\n    \"name\": \"Python 3\"\n}\n```\n\n## 错误码\n- `400 BAD_REQUEST`: Slug已存在\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 权限不足（非超级管理员）\n- `404 NOT_FOUND`: 标签不存在\n\n## 注意事项\n- 所有字段都是可选的\n- 更新 slug 会影响 URL",
+        "operationId": "updateTag",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}/tags": {
+      "get": {
+        "tags": [
+          "Posts - Tags"
+        ],
+        "summary": "获取指定板块的标签列表",
+        "description": "获取指定板块的标签列表（自动分页）\n\n## 权限\n- 公开接口，无需认证\n\n## 示例\n```bash\n# 获取文章标签\nGET /posts/article/tags\n\n# 获取想法标签\nGET /posts/idea/tags\n```\n\n## 注意事项\n- 包含标签下的文章数量统计\n- 按使用频率排序",
+        "operationId": "listTagsByType",
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TagResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}/categories": {
+      "post": {
+        "tags": [
+          "Posts - Categories"
+        ],
+        "summary": "创建分类",
+        "description": "创建新分类（仅超级管理员）\n\n## 权限\n- 需要超级管理员权限\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n\n## 请求体\n```json\n{\n    \"name\": \"分类名称\",\n    \"slug\": \"category-slug\",\n    \"description\": \"分类描述\",\n    \"is_active\": true\n}\n```\n\n## 字段说明\n- `name`: 分类名称（必填）\n- `slug`: URL别名（可选，自动生成）\n- `description`: 分类描述（可选）\n- `is_active`: 是否启用（默认true）\n\n## 示例\n```bash\n# 创建文章分类\nPOST /posts/article/categories\nContent-Type: application/json\n\n{\n    \"name\": \"技术文章\",\n    \"description\": \"技术相关的文章\"\n}\n\n# 创建想法分类\nPOST /posts/idea/categories\nContent-Type: application/json\n\n{\n    \"name\": \"随笔\"\n}\n```\n\n## 错误码\n- `400 BAD_REQUEST`: Slug已存在\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 权限不足（非超级管理员）\n\n## 注意事项\n- Slug 必须在同一板块内唯一\n- 如果不提供 slug，会自动生成",
+        "operationId": "createCategoryByType",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Posts - Categories"
+        ],
+        "summary": "获取指定板块的分类列表",
+        "description": "获取指定板块的分类列表（自动分页）\n\n## 权限\n- 公开接口，无需认证\n\n## 查询参数\n- `include_inactive`: 是否包含未启用的分类（默认false）\n\n## 示例\n```bash\n# 获取文章分类（仅启用）\nGET /posts/article/categories\n\n# 获取所有分类\nGET /posts/article/categories?include_inactive=true\n```\n\n## 注意事项\n- 默认只返回启用的分类（is_active=true）\n- 包含分类下的文章数量统计",
+        "operationId": "listCategoriesByType",
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否包含未启用的分类",
+              "default": false,
+              "title": "Include Inactive"
+            },
+            "description": "是否包含未启用的分类"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CategoryResponse_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{post_type}/categories/{category_id}": {
+      "patch": {
+        "tags": [
+          "Posts - Categories"
+        ],
+        "summary": "更新分类",
+        "description": "更新分类（仅超级管理员）\n\n## 权限\n- 需要超级管理员权限\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `category_id`: 分类ID（UUID格式）\n\n## 请求体（所有字段都是可选的）\n```json\n{\n    \"name\": \"新分类名\",\n    \"slug\": \"new-slug\",\n    \"description\": \"新描述\",\n    \"is_active\": false\n}\n```\n\n## 示例\n```bash\n# 更新分类名称\nPATCH /posts/article/categories/550e8400-e29b-41d4-a716-446655440000\nContent-Type: application/json\n\n{\n    \"name\": \"技术博客\"\n}\n\n# 禁用分类\nPATCH /posts/article/categories/550e8400-e29b-41d4-a716-446655440000\nContent-Type: application/json\n\n{\n    \"is_active\": false\n}\n```\n\n## 错误码\n- `400 BAD_REQUEST`: Slug已被其他分类使用\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 权限不足（非超级管理员）\n- `404 NOT_FOUND`: 分类不存在\n\n## 注意事项\n- 禁用分类不会影响已关联的文章\n- 禁用的分类不会在公开接口中显示",
+        "operationId": "updateCategoryByType",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Posts - Categories"
+        ],
+        "summary": "删除分类",
+        "description": "删除分类（仅超级管理员）\n\n## 权限\n- 需要超级管理员权限\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `category_id`: 分类ID（UUID格式）\n\n## 返回值\n- 204 No Content（无响应体）\n\n## 示例\n```bash\n# 删除文章分类\nDELETE /posts/article/categories/550e8400-e29b-41d4-a716-446655440000\n\n# 删除想法分类\nDELETE /posts/idea/categories/550e8400-e29b-41d4-a716-446655440000\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 权限不足（非超级管理员）\n- `404 NOT_FOUND`: 分类不存在\n- `409 CONFLICT`: 分类下还有文章（需要先移除关联）\n\n## 注意事项\n- 删除操作不可恢复\n- 如果分类下有文章，删除会失败\n- 建议先将文章移到其他分类或取消关联",
+        "operationId": "deleteCategoryByType",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostType",
+              "description": "板块类型"
+            },
+            "description": "板块类型"
+          },
+          {
+            "name": "category_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Category Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/posts/{post_type}/admin/posts": {
       "get": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "获取指定板块的文章列表（管理后台）",
+        "description": "获取指定板块的文章列表（管理后台）\n\n## 权限\n- 超级管理员：可以查看所有文章（包括所有用户的草稿）\n- 普通用户：只能查看自己的文章\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n\n## 查询参数\n- `status`: 文章状态（draft/published/archived）\n- `category_id`: 分类ID\n- `tag_id`: 标签ID\n- `author_id`: 作者ID（超级管理员可用）\n- `is_featured`: 是否推荐\n- `search`: 搜索关键词\n- `page`: 页码（默认1）\n- `size`: 每页数量（默认20，最大100）\n\n## 示例\n```bash\n# 获取所有文章（article 板块）\nGET /posts/article/admin/posts\n\n# 获取草稿列表\nGET /posts/article/admin/posts?status=draft\n\n# 获取指定作者的想法（超级管理员）\nGET /posts/idea/admin/posts?author_id=xxx\n```\n\n## 注意事项\n- 普通用户自动过滤为自己的文章\n- 超级管理员可以查看所有用户的文章\n- 包含所有状态的文章（草稿、已发布、已归档）",
         "operationId": "listPostsByTypeAdmin",
         "security": [
           {
@@ -2900,9 +3873,10 @@
     "/api/v1/posts/admin/posts": {
       "get": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "获取所有文章列表（管理后台，跨板块）",
+        "description": "获取所有文章列表（管理后台，跨板块）\n\n## 权限\n- 超级管理员：可以查看所有文章（包括所有用户的草稿）\n- 普通用户：只能查看自己的文章\n\n## 查询参数\n- `status`: 文章状态（draft/published/archived）\n- `category_id`: 分类ID\n- `tag_id`: 标签ID\n- `author_id`: 作者ID（超级管理员可用）\n- `is_featured`: 是否推荐\n- `search`: 搜索关键词\n- `page`: 页码（默认1）\n- `size`: 每页数量（默认20，最大100）\n\n## 示例\n```bash\n# 获取所有板块的所有文章\nGET /posts/admin/posts\n\n# 获取所有板块的草稿列表\nGET /posts/admin/posts?status=draft\n\n# 全局搜索\nGET /posts/admin/posts?search=Python\n```\n\n## 注意事项\n- 此接口返回 article 和 idea 混合的结果\n- 适合全局搜索和管理\n- 普通用户自动过滤为自己的文章",
         "operationId": "listAllPostsAdmin",
         "security": [
           {
@@ -3149,9 +4123,10 @@
     "/api/v1/posts/me": {
       "get": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "获取当前用户的文章列表",
+        "description": "获取当前用户的所有文章（包括草稿）\n\n## 权限\n- 需要登录\n- 只能查看自己的文章\n\n## 查询参数\n- `status`: 文章状态（draft/published/archived）\n- `category_id`: 分类ID\n- `tag_id`: 标签ID\n- `is_featured`: 是否推荐\n- `search`: 搜索关键词\n- `page`: 页码（默认1）\n- `size`: 每页数量（默认20，最大100）\n\n## 返回值\n```json\n{\n    \"items\": [...],\n    \"total\": 42,\n    \"page\": 1,\n    \"size\": 20,\n    \"pages\": 3\n}\n```\n\n## 示例\n```bash\n# 获取我的所有文章（所有板块）\nGET /posts/me\n\n# 获取我的草稿\nGET /posts/me?status=draft\n\n# 获取我的已发布文章（第2页）\nGET /posts/me?status=published&page=2&size=10\n\n# 搜索我的文章\nGET /posts/me?search=Python\n```\n\n## 注意事项\n- 此接口返回所有板块（article + idea）的文章\n- 包含草稿、已发布、已归档的所有状态\n- 如果需要按板块筛选，请使用管理后台接口\n- 适用于用户个人文章管理页面",
         "operationId": "getMyPosts",
         "security": [
           {
@@ -3398,9 +4373,10 @@
     "/api/v1/posts/preview": {
       "post": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "文章实时预览",
+        "description": "预览 MDX 内容（实时渲染）\n\n## 权限\n- 公开接口，无需登录\n\n## 功能说明\n- 将 MDX 内容转换为 AST 结构\n- 生成文章目录（TOC）\n- 计算阅读时间\n- 生成摘要\n\n## 请求体\n```json\n{\n    \"content_mdx\": \"# 标题\\n\\n这是内容...\"\n}\n```\n\n## 返回值\n```json\n{\n    \"content_ast\": {\n        \"type\": \"root\",\n        \"children\": [...]\n    },\n    \"toc\": [\n        {\n            \"id\": \"heading-1\",\n            \"title\": \"标题\",\n            \"level\": 1\n        }\n    ],\n    \"reading_time\": 5,\n    \"excerpt\": \"这是内容...\"\n}\n```\n\n## 字段说明\n- `content_ast`: AST 结构（用于前端渲染）\n- `toc`: 文章目录\n- `reading_time`: 预计阅读时间（分钟）\n- `excerpt`: 自动生成的摘要（前200字符）\n\n## 示例\n```bash\nPOST /posts/preview\nContent-Type: application/json\n\n{\n    \"content_mdx\": \"# Hello World\\n\\nThis is a test.\"\n}\n```\n\n## 使用场景\n- 编辑器实时预览\n- 发布前检查渲染效果\n- 测试 MDX 语法\n\n## 注意事项\n- 此接口不会保存数据\n- 支持完整的 Markdown 和 MDX 语法\n- 支持数学公式、代码高亮等",
         "operationId": "previewPost",
         "requestBody": {
           "content": {
@@ -3489,9 +4465,10 @@
     "/api/v1/posts/{post_type}": {
       "post": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "创建文章",
+        "description": "创建新文章\n\n## 权限\n- 需要登录\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n\n## 请求体\n```json\n{\n    \"title\": \"文章标题\",\n    \"slug\": \"article-slug\",\n    \"content_mdx\": \"# 标题\\n\\n内容...\",\n    \"excerpt\": \"文章摘要\",\n    \"status\": \"draft\",\n    \"category_id\": \"uuid\",\n    \"tags\": [\"Python\", \"FastAPI\"],\n    \"cover_media_id\": \"uuid\",\n    \"is_featured\": false,\n    \"enable_jsx\": false,\n    \"meta_title\": \"SEO标题\",\n    \"meta_description\": \"SEO描述\"\n}\n```\n\n## 字段说明\n- `title`: 文章标题（必填）\n- `slug`: URL别名（可选，自动生成）\n- `content_mdx`: MDX内容（必填）\n- `excerpt`: 摘要（可选，自动生成）\n- `status`: 状态（draft/published/archived，默认draft）\n- `category_id`: 分类ID（可选）\n- `tags`: 标签名称列表（可选，自动创建不存在的标签）\n- `cover_media_id`: 封面图ID（可选）\n- `is_featured`: 是否推荐（默认false）\n- `enable_jsx`: 是否启用JSX组件（默认false）\n\n## 返回值\n- 创建成功的文章对象（包含生成的AST、TOC等）\n\n## 示例\n```bash\n# 创建文章\nPOST /posts/article\nContent-Type: application/json\n\n{\n    \"title\": \"My First Post\",\n    \"content_mdx\": \"# Hello World\",\n    \"status\": \"draft\"\n}\n\n# 创建想法\nPOST /posts/idea\nContent-Type: application/json\n\n{\n    \"title\": \"Quick Idea\",\n    \"content_mdx\": \"Just a thought...\"\n}\n```\n\n## 错误码\n- `400 BAD_REQUEST`: Slug已存在\n- `401 UNAUTHORIZED`: 未登录\n- `404 NOT_FOUND`: 分类或封面图不存在\n- `422 UNPROCESSABLE_ENTITY`: 数据验证失败\n\n## 注意事项\n- 创建后会自动触发 Git 提交（后台任务）\n- 如果不提供 slug，会自动生成\n- 标签会自动创建并关联\n- 会自动生成 AST、TOC、阅读时间等",
         "operationId": "createPostByType",
         "security": [
           {
@@ -3595,11 +4572,16 @@
       },
       "get": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "获取指定板块的文章列表",
-        "description": "获取指定板块的文章列表（自动分页）\n\n公开接口，只显示已发布的文章。\n\n示例：\n- GET /posts/article?page=1&size=20 - 文章列表\n- GET /posts/idea?page=1&size=20 - 想法列表\n- GET /posts/article?category_id=xxx - 按分类筛选",
+        "description": "获取指定板块的文章列表（自动分页）\n\n## 权限\n- 公开接口，无需认证\n- 只显示已发布的文章（对非认证用户）\n- 已认证用户可按需请求草稿文章\n\n## 查询参数\n- `category_id`: 分类ID（可选）\n- `tag_id`: 标签ID（可选）\n- `author_id`: 作者ID（可选）\n- `is_featured`: 是否推荐（可选）\n- `search`: 搜索关键词（可选）\n- `status`: 文章状态（可选，仅已认证用户可指定draft）\n- `page`: 页码（默认1）\n- `size`: 每页数量（默认20，最大100）\n\n## 示例\n```bash\n# 获取文章列表\nGET /posts/article?page=1&size=20\n\n# 获取想法列表\nGET /posts/idea?page=1&size=20\n\n# 按分类筛选\nGET /posts/article?category_id=xxx\n\n# 搜索文章\nGET /posts/article?search=Python\n\n# 已认证用户查看草稿\nGET /posts/article?status=draft\n```\n\n## 注意事项\n- 未认证用户仅返回已发布的文章（status=published）\n- 已认证用户可指定 status=draft 查看草稿\n- 支持多条件组合筛选\n- 返回结果包含分页信息",
         "operationId": "listPostsByType",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "post_type",
@@ -3850,9 +4832,10 @@
     "/api/v1/posts/{post_type}/{post_id}": {
       "patch": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "更新文章",
+        "description": "更新文章\n\n## 权限\n- 需要登录\n- 只有作者或超级管理员可以更新\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `post_id`: 文章ID（UUID格式）\n\n## 请求体（所有字段都是可选的）\n```json\n{\n    \"title\": \"新标题\",\n    \"content_mdx\": \"# 新内容\",\n    \"status\": \"published\",\n    \"category_id\": \"uuid\",\n    \"tags\": [\"新标签\"],\n    \"is_featured\": true\n}\n```\n\n## 字段说明\n- 只更新提供的字段\n- 未提供的字段保持不变\n- `tags`: 会完全替换现有标签（不是追加）\n\n## 返回值\n- 更新后的文章对象\n\n## 示例\n```bash\n# 发布文章\nPATCH /posts/article/550e8400-e29b-41d4-a716-446655440000\nContent-Type: application/json\n\n{\n    \"status\": \"published\"\n}\n\n# 更新标题和内容\nPATCH /posts/article/550e8400-e29b-41d4-a716-446655440000\nContent-Type: application/json\n\n{\n    \"title\": \"Updated Title\",\n    \"content_mdx\": \"# Updated Content\"\n}\n```\n\n## 错误码\n- `400 BAD_REQUEST`: Slug已被其他文章使用\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 无权更新（非作者且非超级管理员）\n- `404 NOT_FOUND`: 文章不存在\n- `422 UNPROCESSABLE_ENTITY`: 数据验证失败\n\n## 注意事项\n- 更新后会自动触发 Git 提交（后台任务）\n- 更新内容会重新生成 AST、TOC等\n- 更新标签会自动创建不存在的标签\n- 不能修改 post_type（需要删除后重建）",
         "operationId": "updatePostByType",
         "security": [
           {
@@ -3966,9 +4949,10 @@
       },
       "delete": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "删除文章",
+        "description": "删除文章\n\n## 权限\n- 需要登录\n- 只有作者或超级管理员可以删除\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `post_id`: 文章ID（UUID格式）\n\n## 返回值\n- 204 No Content（无响应体）\n\n## 示例\n```bash\n# 删除文章\nDELETE /posts/article/550e8400-e29b-41d4-a716-446655440000\n\n# 删除想法\nDELETE /posts/idea/550e8400-e29b-41d4-a716-446655440000\n```\n\n## 错误码\n- `401 UNAUTHORIZED`: 未登录\n- `403 FORBIDDEN`: 无权删除（非作者且非超级管理员）\n- `404 NOT_FOUND`: 文章不存在\n\n## 注意事项\n- 删除操作不可恢复\n- 会同时删除文章的所有关联数据（标签关联、版本历史等）\n- 删除后会自动触发 Git 提交（后台任务）\n- 如果文章有 source_path，对应的 Git 文件也会被删除",
         "operationId": "deletePostByType",
         "security": [
           {
@@ -4065,10 +5049,10 @@
       },
       "get": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "通过ID获取文章详情",
-        "description": "根据 UUID 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n查询参数：\n- include_mdx: 是否包含原始 MDX 内容（用于编辑页面）\n  - False（默认）: 返回 AST（节省带宽）\n  - True: 返回 MDX（用于编辑）\n\n示例：\n- GET /posts/article/{uuid}\n- GET /posts/article/{uuid}?include_mdx=true\n\n注意：使用 :uuid 路径转换器确保与 slug 路由不冲突",
+        "description": "根据 UUID 获取文章详情并增加浏览量\n\n## 权限\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `post_id`: 文章UUID\n\n## 查询参数\n- `include_mdx`: 是否包含原始 MDX 内容（用于编辑）\n  - `false`（默认）: 返回 AST（节省带宽）\n  - `true`: 返回 MDX（用于编辑）\n\n## 返回值\n```json\n{\n    \"id\": \"uuid\",\n    \"title\": \"文章标题\",\n    \"slug\": \"article-slug\",\n    \"content_ast\": {...},  // 或 content_mdx\n    \"toc\": [...],\n    \"reading_time\": 5,\n    \"excerpt\": \"摘要\",\n    \"status\": \"published\",\n    \"view_count\": 100,\n    \"like_count\": 10,\n    \"bookmark_count\": 5,\n    \"created_at\": \"2026-01-23T10:00:00Z\",\n    \"updated_at\": \"2026-01-23T10:00:00Z\"\n}\n```\n\n## 示例\n```bash\n# 查看文章\nGET /posts/article/550e8400-e29b-41d4-a716-446655440000\n\n# 编辑模式（获取 MDX）\nGET /posts/article/550e8400-e29b-41d4-a716-446655440000?include_mdx=true\n```\n\n## 错误码\n- `403 FORBIDDEN`: 无权访问（草稿文章且非作者）\n- `404 NOT_FOUND`: 文章不存在\n\n## 注意事项\n- 每次访问会增加浏览次数（view_count +1）\n- 使用 :uuid 路径转换器确保与 slug 路由不冲突\n- 根据 enable_jsx 字段决定返回 AST 还是 MDX",
         "operationId": "getPostById",
         "security": [
           {
@@ -4186,7 +5170,7 @@
     "/api/v1/posts/{post_type}/{post_id}/like": {
       "post": {
         "tags": [
-          "posts"
+          "Posts - Interactions"
         ],
         "summary": "点赞文章",
         "description": "点赞文章（增加点赞数）\n\n## 权限\n- 无需认证，任何人都可以点赞\n- 不记录点赞用户，仅统计点赞总数\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `post_id`: 文章 UUID\n\n## 返回值\n```json\n{\n    \"like_count\": 42\n}\n```\n\n## 示例\n```bash\n# 点赞文章\nPOST /posts/article/123e4567-e89b-12d3-a456-426614174000/like\n\n# 响应\n{\n    \"like_count\": 43\n}\n```\n\n## 错误码\n- `404 NOT_FOUND`: 文章不存在\n- `500 INTERNAL_SERVER_ERROR`: 数据库更新失败\n\n## 注意事项\n- 不验证用户身份，允许重复点赞\n- 点赞数不会减少到负数\n- 建议前端实现防抖，避免重复请求",
@@ -4280,7 +5264,7 @@
       },
       "delete": {
         "tags": [
-          "posts"
+          "Posts - Interactions"
         ],
         "summary": "取消点赞",
         "description": "取消点赞（减少点赞数）\n\n## 权限\n- 无需认证，任何人都可以取消点赞\n- 不记录点赞用户，仅统计点赞总数\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `post_id`: 文章 UUID\n\n## 返回值\n```json\n{\n    \"like_count\": 41\n}\n```\n\n## 示例\n```bash\n# 取消点赞\nDELETE /posts/article/123e4567-e89b-12d3-a456-426614174000/like\n\n# 响应\n{\n    \"like_count\": 42\n}\n```\n\n## 错误码\n- `404 NOT_FOUND`: 文章不存在\n- `500 INTERNAL_SERVER_ERROR`: 数据库更新失败\n\n## 注意事项\n- 点赞数不会减少到负数（最小为 0）\n- 建议前端实现防抖，避免重复请求",
@@ -4376,7 +5360,7 @@
     "/api/v1/posts/{post_type}/{post_id}/bookmark": {
       "post": {
         "tags": [
-          "posts"
+          "Posts - Interactions"
         ],
         "summary": "收藏文章",
         "description": "收藏文章（增加收藏数）\n\n## 权限\n- 无需认证，任何人都可以收藏\n- 不记录收藏用户，仅统计收藏总数\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `post_id`: 文章 UUID\n\n## 返回值\n```json\n{\n    \"bookmark_count\": 15\n}\n```\n\n## 示例\n```bash\n# 收藏文章\nPOST /posts/article/123e4567-e89b-12d3-a456-426614174000/bookmark\n\n# 响应\n{\n    \"bookmark_count\": 16\n}\n```\n\n## 错误码\n- `404 NOT_FOUND`: 文章不存在\n- `500 INTERNAL_SERVER_ERROR`: 数据库更新失败\n\n## 注意事项\n- 不验证用户身份，允许重复收藏\n- 收藏数不会减少到负数\n- 建议前端实现防抖，避免重复请求\n- 如需实现用户收藏列表，需要额外的用户收藏关系表",
@@ -4470,7 +5454,7 @@
       },
       "delete": {
         "tags": [
-          "posts"
+          "Posts - Interactions"
         ],
         "summary": "取消收藏",
         "description": "取消收藏（减少收藏数）\n\n## 权限\n- 无需认证，任何人都可以取消收藏\n- 不记录收藏用户，仅统计收藏总数\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `post_id`: 文章 UUID\n\n## 返回值\n```json\n{\n    \"bookmark_count\": 14\n}\n```\n\n## 示例\n```bash\n# 取消收藏\nDELETE /posts/article/123e4567-e89b-12d3-a456-426614174000/bookmark\n\n# 响应\n{\n    \"bookmark_count\": 15\n}\n```\n\n## 错误码\n- `404 NOT_FOUND`: 文章不存在\n- `500 INTERNAL_SERVER_ERROR`: 数据库更新失败\n\n## 注意事项\n- 收藏数不会减少到负数（最小为 0）\n- 建议前端实现防抖，避免重复请求",
@@ -4566,10 +5550,10 @@
     "/api/v1/posts/types": {
       "get": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "获取所有板块类型",
-        "description": "获取所有板块类型（用于前端构建菜单）\n\n返回示例：\n[\n    {\"value\": \"article\", \"label\": \"Article\"},\n    {\"value\": \"idea\", \"label\": \"Idea\"}\n]",
+        "description": "获取所有板块类型（用于前端构建菜单）\n\n返回示例：\n```json\n[\n    {\"value\": \"article\", \"label\": \"Article\"},\n    {\"value\": \"idea\", \"label\": \"Idea\"}\n]\n```",
         "operationId": "getPostTypes",
         "responses": {
           "200": {
@@ -4649,342 +5633,13 @@
         }
       }
     },
-    "/api/v1/posts/{post_type}/categories": {
-      "get": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "获取指定板块的分类列表",
-        "description": "获取指定板块的分类列表（自动分页）\n\n示例：\n- GET /posts/article/categories - 文章分类（仅启用）\n- GET /posts/article/categories?include_inactive=true - 所有分类",
-        "operationId": "listCategoriesByType",
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType",
-              "description": "板块类型"
-            },
-            "description": "板块类型"
-          },
-          {
-            "name": "include_inactive",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "是否包含未启用的分类",
-              "default": false,
-              "title": "Include Inactive"
-            },
-            "description": "是否包含未启用的分类"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page_CategoryResponse_"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "创建分类",
-        "description": "创建新分类（仅超级管理员）\n\n示例：\n- POST /posts/article/categories - 创建文章分类\n- POST /posts/idea/categories - 创建想法分类",
-        "operationId": "createCategoryByType",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType",
-              "description": "板块类型"
-            },
-            "description": "板块类型"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CategoryCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CategoryResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/posts/{post_type}/tags": {
-      "get": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "获取指定板块的标签列表",
-        "operationId": "listTagsByType",
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType",
-              "description": "板块类型"
-            },
-            "description": "板块类型"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1,
-              "title": "Page"
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 50,
-              "title": "Size"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page_TagResponse_"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/posts/{post_type}/slug/{slug}": {
       "get": {
         "tags": [
-          "posts"
+          "Posts - Articles"
         ],
         "summary": "通过Slug获取文章详情",
-        "description": "根据 Slug 获取文章详情并增加浏览量\n\n权限规则：\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n示例：\n- GET /posts/article/slug/my-post-slug\n- GET /posts/idea/slug/my-idea-slug\n\n注意：使用 /slug/ 前缀明确区分 UUID 和 Slug 路由",
+        "description": "根据 Slug 获取文章详情并增加浏览量\n\n## 权限\n- 已发布文章：任何人可访问（包括未登录）\n- 草稿文章：只有作者或超级管理员可访问\n\n## 路径参数\n- `post_type`: 板块类型（article/idea）\n- `slug`: 文章Slug（URL别名）\n\n## 示例\n```bash\n# 通过 Slug 访问文章\nGET /posts/article/slug/my-post-slug\n\n# 通过 Slug 访问想法\nGET /posts/idea/slug/my-idea-slug\n```\n\n## 错误码\n- `403 FORBIDDEN`: 无权访问（草稿文章且非作者）\n- `404 NOT_FOUND`: 文章不存在或 Slug 不匹配\n\n## 注意事项\n- 使用 /slug/ 前缀明确区分 UUID 和 Slug 路由\n- Slug 必须在同一板块内唯一\n- 每次访问会增加浏览次数",
         "operationId": "getPostBySlug",
         "security": [
           {
@@ -5019,647 +5674,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostDetailResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/posts/{post_type}/categories/{category_id}": {
-      "patch": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "更新分类",
-        "description": "更新分类（仅超级管理员）\n\n示例：\n- PATCH /posts/article/categories/{category_id}\n- PATCH /posts/idea/categories/{category_id}",
-        "operationId": "updateCategoryByType",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType",
-              "description": "板块类型"
-            },
-            "description": "板块类型"
-          },
-          {
-            "name": "category_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Category Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CategoryUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CategoryResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "删除分类",
-        "operationId": "deleteCategoryByType",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "post_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PostType",
-              "description": "板块类型"
-            },
-            "description": "板块类型"
-          },
-          {
-            "name": "category_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Category Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/posts/admin/tags": {
-      "get": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "获取所有标签",
-        "description": "获取所有标签列表（支持搜索）",
-        "operationId": "listTags",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "搜索关键词，支持标签名称模糊搜索",
-              "title": "Search"
-            },
-            "description": "搜索关键词，支持标签名称模糊搜索"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1,
-              "title": "Page"
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 50,
-              "title": "Size"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page_TagResponse_"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/posts/admin/tags/orphaned": {
-      "delete": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "清理孤立标签",
-        "description": "删除孤立标签（仅超级管理员）",
-        "operationId": "deleteOrphanedTags",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TagCleanupResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/posts/admin/tags/merge": {
-      "post": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "合并标签",
-        "description": "合并标签（仅超级管理员）",
-        "operationId": "mergeTags",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TagMergeRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TagResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/posts/admin/tags/{tag_id}": {
-      "patch": {
-        "tags": [
-          "posts"
-        ],
-        "summary": "更新标签",
-        "description": "更新标签（仅超级管理员）",
-        "operationId": "updateTag",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "tag_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Tag Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TagUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TagResponse"
                 }
               }
             }
@@ -7258,7 +7272,14 @@
             "title": "Title"
           },
           "slug": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Slug"
           },
           "post_type": {
@@ -7444,7 +7465,6 @@
         "type": "object",
         "required": [
           "title",
-          "slug",
           "id",
           "excerpt",
           "reading_time",
@@ -7526,7 +7546,14 @@
             "title": "Title"
           },
           "slug": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Slug"
           },
           "post_type": {
@@ -7666,7 +7693,6 @@
         "type": "object",
         "required": [
           "title",
-          "slug",
           "id",
           "excerpt",
           "reading_time",
@@ -8003,7 +8029,14 @@
       "PreviewChange": {
         "properties": {
           "file": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "File"
           },
           "title": {
@@ -8021,7 +8054,6 @@
         },
         "type": "object",
         "required": [
-          "file",
           "title"
         ],
         "title": "PreviewChange",
@@ -8755,8 +8787,20 @@
       "description": "**管理员接口** - 查看和管理所有用户的文件（仅管理员）"
     },
     {
-      "name": "posts",
-      "description": "\n## 文章管理模块\n\n提供文章的创建、编辑、发布和查询功能，支持 Markdown/MDX 格式。\n\n### 核心功能\n\n#### ✍️ 文章创建与编辑\n- **Markdown/MDX 支持**：完整支持 Markdown 和 MDX 语法\n- **实时预览**：提供预览接口，实时渲染 Markdown\n- **草稿功能**：支持保存草稿，稍后发布\n- **分类和标签**：支持文章分类和多标签\n\n#### 📊 文章类型\n- **Article（文章）**：长篇内容，支持完整的 Markdown 功能\n- **Idea（想法）**：短篇内容，快速记录灵感\n\n#### 🎨 三种渲染模式\n\n博客系统支持三种 Markdown/MDX 渲染模式，适应不同场景：\n\n##### 1️⃣ 后端渲染（Backend Rendering）\n```\nMarkdown → Python (markdown-it-py) → HTML → 前端显示\n```\n- **适用场景**：简单的 Markdown 文章，不需要交互\n- **优点**：SEO 友好，首屏加载快\n- **缺点**：不支持 React 组件\n\n##### 2️⃣ 前端服务端渲染（Frontend SSR）\n```\nMDX → Next.js Server (next-mdx-remote) → HTML + Hydration → 前端交互\n```\n- **适用场景**：需要 React 组件的文章\n- **优点**：SEO 友好 + 支持交互组件（需要自定义）\n- **缺点**：服务器负载较高\n- **配置**：`enable_jsx: true`\n\n##### 3️⃣ 前端客户端渲染（Frontend CSR）\n```\nMDX → 浏览器 (@mdx-js/mdx) → React 组件 → 前端交互\n```\n- **适用场景**：高度交互的文章（图表、动画等）\n- **优点**：最灵活，支持所有 React 特性\n- **缺点**：SEO 较差，首屏加载慢\n- **配置**：`enable_jsx: true && use_server_rendering: false`\n\n#### 🔄 渲染模式选择\n\n| 模式 | SEO | 交互性 | 性能 | 推荐场景 |\n|------|-----|--------|------|----------|\n| 后端渲染 | ⭐⭐⭐ | ❌ | ⭐⭐⭐ | 纯文本文章 |\n| 前端 SSR | ⭐⭐⭐ | ⭐⭐ | ⭐⭐ | 带组件的文章 |\n| 前端 CSR | ⭐ | ⭐⭐⭐ | ⭐ | 交互式内容 |\n\n### 文章状态\n\n- **draft（草稿）**：仅作者和管理员可见\n- **published（已发布）**：所有人可见\n- **archived（归档）**：不在列表中显示，但可通过链接访问\n\n### 权限控制\n\n- **创建文章**：需要登录\n- **编辑文章**：作者或管理员\n- **删除文章**：作者或管理员\n- **查看草稿**：作者或管理员\n- **查看已发布文章**：所有人（包括游客）\n    "
+      "name": "Posts - Articles",
+      "description": "**文章管理** - 文章的创建、编辑、删除、查询和预览，支持 Markdown/MDX 三种渲染模式"
+    },
+    {
+      "name": "Posts - Categories",
+      "description": "**分类管理** - 文章分类的增删改查，支持按板块（article/idea）分类管理（超级管理员）"
+    },
+    {
+      "name": "Posts - Tags",
+      "description": "**标签管理** - 标签的创建、更新、合并、清理孤立标签等操作（超级管理员）"
+    },
+    {
+      "name": "Posts - Interactions",
+      "description": "**互动功能** - 文章点赞、取消点赞、收藏、取消收藏等互动操作（无需认证）"
     },
     {
       "name": "GitOps (Admin Only)",

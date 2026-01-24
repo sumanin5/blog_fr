@@ -318,9 +318,32 @@ service = SyncService(session, container)
 
 ### 如何向后兼容？
 
-`GitOpsService` 保持了原有的 API 不变，所有现有代码无需修改。内部实现改为委托给容器中的服务，对外部调用者完全透明。
+`GitOpsService` 保持了原有的 API 不变，所有现有代码无需修改。内部实现改为委托给容器中的服务,对外部调用者完全透明。
+
+### 错误处理采用什么模式？
+
+GitOps 模块采用**显式的 try-except 块**进行错误处理，移除了过度封装的装饰器。这种方式更加 Pythonic，控制流更清晰。
+
+**错误分类**:
+
+- **配置错误**: 直接抛出，中断流程
+- **业务逻辑错误**: 记录日志，跳过当前文件，继续处理其他文件
+- **系统错误**: 记录完整堆栈，跳过当前文件
+
+**全局异常处理**: 项目在 FastAPI 层实现了统一的全局异常处理器（`app/core/error_handlers.py`），这是一个标准且优秀的模式，提供统一的错误响应格式、环境隔离和全链路追踪。
+
+详见 [ARCHITECTURE.md](./ARCHITECTURE.md#-错误处理模式)。
 
 ---
 
-**最后更新**: 2026-01-23
-**文档版本**: 3.3.0 (依赖注入容器重构)
+## 📚 相关文档
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - 整体架构设计和错误处理模式
+- [DEPENDENCY_INJECTION_EXPLAINED.md](./DEPENDENCY_INJECTION_EXPLAINED.md) - 依赖注入详解
+- [SYNC_FLOW_WITH_DI.md](./SYNC_FLOW_WITH_DI.md) - 同步流程可视化（含依赖注入）
+- [services/README.md](./services/README.md) - 服务层详细文档
+
+---
+
+**最后更新**: 2026-01-24
+**文档版本**: 3.3.0 (依赖注入容器重构 + 错误处理说明)
