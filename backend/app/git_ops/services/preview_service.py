@@ -7,7 +7,7 @@ import logging
 from app.git_ops.components.comparator import PostComparator
 from app.git_ops.exceptions import collect_errors
 from app.git_ops.schema import PreviewChange, PreviewResult
-from app.posts import crud as post_crud
+from app.posts import cruds as post_crud
 
 from .base import BaseGitOpsService
 

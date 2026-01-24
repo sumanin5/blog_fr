@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 
-from app.posts import crud
+from app.posts import cruds as crud
 from app.posts.exceptions import PostNotFoundError
 from sqlmodel.ext.asyncio.session import AsyncSession
 

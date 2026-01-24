@@ -17,7 +17,8 @@ LIST_POSTS_BY_TYPE_DOC = """获取指定板块的文章列表（自动分页）
 
 ## 权限
 - 公开接口，无需认证
-- 只显示已发布的文章
+- 只显示已发布的文章（对非认证用户）
+- 已认证用户可按需请求草稿文章
 
 ## 查询参数
 - `category_id`: 分类ID（可选）
@@ -25,6 +26,7 @@ LIST_POSTS_BY_TYPE_DOC = """获取指定板块的文章列表（自动分页）
 - `author_id`: 作者ID（可选）
 - `is_featured`: 是否推荐（可选）
 - `search`: 搜索关键词（可选）
+- `status`: 文章状态（可选，仅已认证用户可指定draft）
 - `page`: 页码（默认1）
 - `size`: 每页数量（默认20，最大100）
 
@@ -41,53 +43,16 @@ GET /posts/article?category_id=xxx
 
 # 搜索文章
 GET /posts/article?search=Python
+
+# 已认证用户查看草稿
+GET /posts/article?status=draft
 ```
 
 ## 注意事项
-- 仅返回已发布的文章（status=published）
+- 未认证用户仅返回已发布的文章（status=published）
+- 已认证用户可指定 status=draft 查看草稿
 - 支持多条件组合筛选
 - 返回结果包含分页信息
-"""
-
-LIST_CATEGORIES_BY_TYPE_DOC = """获取指定板块的分类列表（自动分页）
-
-## 权限
-- 公开接口，无需认证
-
-## 查询参数
-- `include_inactive`: 是否包含未启用的分类（默认false）
-
-## 示例
-```bash
-# 获取文章分类（仅启用）
-GET /posts/article/categories
-
-# 获取所有分类
-GET /posts/article/categories?include_inactive=true
-```
-
-## 注意事项
-- 默认只返回启用的分类（is_active=true）
-- 包含分类下的文章数量统计
-"""
-
-LIST_TAGS_BY_TYPE_DOC = """获取指定板块的标签列表（自动分页）
-
-## 权限
-- 公开接口，无需认证
-
-## 示例
-```bash
-# 获取文章标签
-GET /posts/article/tags
-
-# 获取想法标签
-GET /posts/idea/tags
-```
-
-## 注意事项
-- 包含标签下的文章数量统计
-- 按使用频率排序
 """
 
 GET_POST_BY_ID_DOC = """根据 UUID 获取文章详情并增加浏览量

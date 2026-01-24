@@ -33,7 +33,7 @@ class SyncStats(BaseModel):
 class PreviewChange(BaseModel):
     """预览中的单个变更"""
 
-    file: str
+    file: str | None = None
     title: str
     changes: List[str] = []
 

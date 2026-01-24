@@ -15,8 +15,8 @@ from app.git_ops.components import (
 )
 from app.git_ops.exceptions import GitError, collect_errors
 from app.git_ops.schema import SyncStats
-from app.posts import crud as post_crud
-from app.posts import service as post_service
+from app.posts import cruds as post_crud
+from app.posts import services as post_service
 from app.users.model import User
 
 from .base import BaseGitOpsService

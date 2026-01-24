@@ -4,14 +4,14 @@ from typing import Optional
 from uuid import UUID
 
 from app.core.exceptions import InsufficientPermissionsError
-from app.posts import crud
+from app.posts import cruds as crud
 from app.posts.exceptions import (
     CategoryNotFoundError,
     CategoryTypeMismatchError,
     PostNotFoundError,
 )
 from app.posts.model import Post, PostStatus, PostType
-from app.posts.schema import PostCreate, PostUpdate
+from app.posts.schemas import PostCreate, PostUpdate
 from app.posts.utils import (
     PostProcessor,
     generate_slug_with_random_suffix,
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _sync_to_disk(
-    session: AsyncSession, post_id: UUID, old_source_path: str = None
+    session: AsyncSession, post_id: UUID, old_source_path: str | None = None
 ):
     """
     辅助函数：将文章同步写入到物理磁盘（反向同步）
@@ -35,8 +35,6 @@ async def _sync_to_disk(
         # 重新查询以确保加载所有关系（Tags, Category）
         # 使用 select IN 预加载（虽然 crud.get_post_by_id 应该已经做了，但再次确保）
         post = await crud.get_post_by_id(session, post_id)
-        if not post:
-            return
 
         writer = FileWriter(session=session)
 
@@ -52,7 +50,10 @@ async def _sync_to_disk(
 
         # 执行写入
         relative_path = await writer.write_post(
-            post, old_post=old_post_stub, category_slug=category_slug, tags=tag_names
+            post,
+            old_post=old_post_stub,  # type: ignore
+            category_slug=category_slug,
+            tags=tag_names,
         )
 
         # 如果计算出的路径与当前数据库记录不一致，更新数据库
@@ -174,8 +175,6 @@ async def delete_post(session: AsyncSession, post_id: UUID, current_user: User) 
     """
 
     post = await crud.get_post_by_id(session, post_id)
-    if not post:
-        raise PostNotFoundError()
 
     # 细粒度权限检查：超级管理员可以删除任何文章，普通用户只能删除自己的
     if not current_user.is_superadmin and post.author_id != current_user.id:
@@ -200,7 +199,7 @@ async def create_post(
     post_in: PostCreate,
     author_id: UUID,
     preserve_slug: bool = False,
-    source_path: str = None,
+    source_path: str | None = None,
 ) -> Post:
     """
     创建文章流水线
@@ -308,7 +307,7 @@ async def update_post(
     post_id: UUID,
     post_in: PostUpdate,
     current_user: User,
-    source_path: str = None,
+    source_path: str | None = None,
 ) -> Post:
     """更新文章（带细粒度权限检查）
 
@@ -321,8 +320,6 @@ async def update_post(
     """
 
     db_post = await crud.get_post_by_id(session, post_id)
-    if not db_post:
-        raise PostNotFoundError()
 
     # 细粒度权限检查：超级管理员可以修改任何文章，普通用户只能修改自己的
     if not current_user.is_superadmin and db_post.author_id != current_user.id:

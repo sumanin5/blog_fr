@@ -38,8 +38,8 @@ class CoverProcessor(FieldProcessor):
         self,
         session: AsyncSession,
         cover_value: str,
-        mdx_file_path: str = None,
-        content_dir: Path = None,
+        mdx_file_path: str | None = None,
+        content_dir: Path | None = None,
     ) -> Optional[UUID]:
         """根据文件路径、文件名或外部 URL 查询/注入媒体库 ID"""
         from app.media import crud as media_crud

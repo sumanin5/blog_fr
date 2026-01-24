@@ -7,7 +7,7 @@ API Tags Metadata - OpenAPI 文档标签描述
 
 from app.git_ops.tag_metadata import GITOPS_TAG_METADATA
 from app.media.tag_metadata import MEDIA_TAGS_METADATA
-from app.posts.tag_metadata import POSTS_TAG_METADATA
+from app.posts.tag_metadata import POSTS_TAGS_METADATA
 from app.users.tag_metadata import USERS_TAG_METADATA
 
 # ============================================================
@@ -16,7 +16,7 @@ from app.users.tag_metadata import USERS_TAG_METADATA
 TAGS_METADATA = [
     USERS_TAG_METADATA,
     *MEDIA_TAGS_METADATA,  # media 的子标签
-    POSTS_TAG_METADATA,
+    *POSTS_TAGS_METADATA,  # posts 的子标签
     GITOPS_TAG_METADATA,
 ]
 

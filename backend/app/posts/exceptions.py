@@ -44,3 +44,12 @@ class SlugConflictError(BaseAppException):
 
     def __init__(self, message: str = "Slug already exists"):
         super().__init__(message=message, status_code=400, error_code="SLUG_CONFLICT")
+
+
+class PostProcessingError(BaseAppException):
+    """文章处理异常（MDX 解析、图片上传等）"""
+
+    def __init__(self, message: str = "Post processing failed"):
+        super().__init__(
+            message=message, status_code=400, error_code="POST_PROCESSING_FAILED"
+        )

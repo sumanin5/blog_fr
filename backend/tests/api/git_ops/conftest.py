@@ -209,7 +209,7 @@ def mock_png():
 @pytest.fixture
 def mock_git_background_commit(mocker):
     """Mock run_background_commit 防止真实的 Git 提交"""
-    return mocker.patch("app.posts.routers.editor.run_background_commit")
+    return mocker.patch("app.posts.routers.posts.editor.run_background_commit")
 
 
 @pytest.fixture

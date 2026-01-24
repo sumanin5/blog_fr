@@ -139,7 +139,6 @@ class PostShortResponse(PostBase):
     """用于列表展示的精简响应，规避 N+1 风险"""
 
     id: UUID
-    slug: str
     excerpt: str
     reading_time: int
     view_count: int

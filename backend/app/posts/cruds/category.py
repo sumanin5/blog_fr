@@ -14,7 +14,7 @@ async def get_category_by_slug_and_type(
     stmt = (
         select(Category)
         .where(and_(Category.slug == slug, Category.post_type == post_type))
-        .options(selectinload(Category.icon))
+        .options(selectinload(Category.icon))  # type: ignore
     )
     result = await session.exec(stmt)
     return result.one_or_none()

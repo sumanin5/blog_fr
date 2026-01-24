@@ -7,7 +7,7 @@ from uuid import UUID
 
 from app.core.db import get_async_session
 from app.core.exceptions import InsufficientPermissionsError
-from app.posts import crud
+from app.posts import cruds as crud
 from app.posts.exceptions import PostNotFoundError
 from app.posts.model import Post, PostStatus
 from app.users.dependencies import get_current_active_user

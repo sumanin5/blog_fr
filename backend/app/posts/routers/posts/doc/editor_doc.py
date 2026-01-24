@@ -66,7 +66,7 @@ Content-Type: application/json
 - 支持数学公式、代码高亮等
 """
 
-CREATE_POST_DOC = """创建新文章
+CREATE_POST_BY_TYPE_DOC = """创建新文章
 
 ## 权限
 - 需要登录
@@ -142,7 +142,7 @@ Content-Type: application/json
 - 会自动生成 AST、TOC、阅读时间等
 """
 
-UPDATE_POST_DOC = """更新文章
+UPDATE_POST_BY_TYPE_DOC = """更新文章
 
 ## 权限
 - 需要登录
@@ -206,7 +206,7 @@ Content-Type: application/json
 - 不能修改 post_type（需要删除后重建）
 """
 
-DELETE_POST_DOC = """删除文章
+DELETE_POST_BY_TYPE_DOC = """删除文章
 
 ## 权限
 - 需要登录

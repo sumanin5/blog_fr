@@ -2,9 +2,10 @@ import logging
 from uuid import UUID
 
 from app.core.exceptions import InsufficientPermissionsError
-from app.posts import crud
-from app.posts.exceptions import SlugConflictError, TagNotFoundError
-from app.posts.schema import TagUpdate
+from app.posts import cruds as crud
+from app.posts.exceptions import SlugConflictError
+from app.posts.model import Tag
+from app.posts.schemas import TagUpdate
 from app.users.model import User
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 async def update_tag(
     session: AsyncSession, tag_id: UUID, tag_in: TagUpdate, current_user: User
-) -> TagNotFoundError:
+) -> "Tag":
     """更新标签（仅超级管理员）
 
     用于统一标签命名、更新颜色等
@@ -36,10 +37,8 @@ async def update_tag(
     if not current_user.is_superadmin:
         raise InsufficientPermissionsError("只有超级管理员可以更新标签")
 
-    # 获取标签
+    # 获取标签（不存在会抛异常）
     db_tag = await crud.get_tag_by_id(session, tag_id)
-    if not db_tag:
-        raise TagNotFoundError()
 
     update_data = tag_in.model_dump(exclude_unset=True)
 
@@ -103,7 +102,7 @@ async def merge_tags(
     source_tag_id: UUID,
     target_tag_id: UUID,
     current_user: User,
-) -> TagNotFoundError:
+) -> "Tag":
     """合并标签（仅超级管理员）
 
     将 source_tag 的所有文章关联转移到 target_tag，然后删除 source_tag
@@ -126,14 +125,9 @@ async def merge_tags(
     if not current_user.is_superadmin:
         raise InsufficientPermissionsError("只有超级管理员可以合并标签")
 
-    # 验证两个标签是否存在
+    # 验证源标签和目标标签是否存在（不存在会抛异常）
     source_tag = await crud.get_tag_by_id(session, source_tag_id)
-    target_tag = await crud.get_tag_by_id(session, target_tag_id)
-
-    if not source_tag:
-        raise TagNotFoundError(f"源标签不存在: {source_tag_id}")
-    if not target_tag:
-        raise TagNotFoundError(f"目标标签不存在: {target_tag_id}")
+    await crud.get_tag_by_id(session, target_tag_id)  # 验证存在，但不需要返回值
 
     if source_tag_id == target_tag_id:
         raise ValueError("源标签和目标标签不能相同")

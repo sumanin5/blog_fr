@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from app.git_ops.components.writer.file_operator import write_post_ids_to_frontmatter
 
@@ -9,7 +10,7 @@ async def handle_post_update(
     session,
     matched_post,
     scanned,
-    file_path: str,
+    file_path: Path,
     is_move: bool,
     serializer,
     operating_user,
@@ -19,8 +20,8 @@ async def handle_post_update(
     force_write: bool = False,
 ):
     """处理文章更新或移动"""
-    from app.posts import service as post_service
-    from app.posts.schema import PostUpdate
+    from app.posts import services as post_service
+    from app.posts.schemas import PostUpdate
 
     update_dict = await serializer.from_frontmatter(scanned)
     update_dict.pop("slug", None)
@@ -35,7 +36,7 @@ async def handle_post_update(
         matched_post.id,
         post_in,
         current_user=operating_user,
-        source_path=file_path,
+        source_path=file_path.as_posix(),
     )
     # 预加载所有关系，避免在 write_post_ids_to_frontmatter 中懒加载
     await session.refresh(updated_post, ["tags", "category", "author", "cover_media"])

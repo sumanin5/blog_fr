@@ -41,7 +41,7 @@ class BaseGitOpsService:
             self.serializer = self.container.serializer
             self.git_client = self.container.git_client
 
-    async def _get_operating_user(self, default_user: User = None) -> User:
+    async def _get_operating_user(self, default_user: User | None = None) -> User:
         """获取操作用户，如果没有提供则查找 superadmin"""
         if default_user:
             return default_user

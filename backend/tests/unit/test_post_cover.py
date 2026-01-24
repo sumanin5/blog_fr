@@ -6,7 +6,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from app.core.config import settings
-from app.posts.schema import PostDetailResponse, PostShortResponse
+from app.posts.schemas import PostDetailResponse, PostShortResponse
 
 
 class TestPostCoverUrls:

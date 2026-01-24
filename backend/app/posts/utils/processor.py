@@ -21,7 +21,7 @@ from .markdown_renderer import setup_markdown_renderer
 class PostProcessor:
     """MDX 文章处理器"""
 
-    def __init__(self, raw_content: str, mdx_path: str = None, session=None):
+    def __init__(self, raw_content: str, mdx_path: str | None = None, session=None):
         self.raw_content = raw_content
         self.mdx_path = mdx_path
         self.session = session
@@ -135,7 +135,12 @@ class PostProcessor:
 
         from app.core.config import settings
         from app.media import service as media_service
+        from app.posts.exceptions import PostProcessingError
         from app.users import crud as user_crud
+
+        # 参数检查：只有同时提供 session 和 mdx_path 才能处理图片
+        if not self.session or not self.mdx_path:
+            return content
 
         # 匹配 Markdown 图片: ![alt](path)
         img_pattern = r"!\[(.*?)\]\((.*?)\)"
@@ -173,7 +178,9 @@ class PostProcessor:
                 ):
                     admin = await user_crud.get_superuser(self.session)
                     if not admin:
-                        continue
+                        raise PostProcessingError(
+                            f"Failed to process image {img_path}: no superuser found"
+                        )
 
                     # 读取内容
                     file_bytes = await asyncio.to_thread(img_abs_path.read_bytes)
@@ -196,10 +203,10 @@ class PostProcessor:
                     # 替换正文中的链
                     content = content.replace(f"({img_path})", f"({new_url})")
 
+            except PostProcessingError:
+                raise
             except Exception as e:
-                import logging
-
-                logging.getLogger(__name__).error(
+                raise PostProcessingError(
                     f"Failed to process inline image {img_path}: {e}"
                 )
 

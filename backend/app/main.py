@@ -17,7 +17,7 @@ from app.git_ops.router import router as git_ops_router
 from app.initial_data import init_db
 from app.media.routers import router as media_router
 from app.middleware import setup_middleware
-from app.posts.router import router as posts_router
+from app.posts.routers import router as posts_router
 from app.users.router import router as users_router
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -49,10 +49,10 @@ app = FastAPI(
 # ============================================================
 # 异常处理器注册
 # ============================================================
-app.add_exception_handler(BaseAppException, app_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(SQLAlchemyError, database_exception_handler)
-app.add_exception_handler(Exception, unexpected_exception_handler)
+app.add_exception_handler(BaseAppException, app_exception_handler)  # type: ignore
+app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore
+app.add_exception_handler(SQLAlchemyError, database_exception_handler)  # type: ignore
+app.add_exception_handler(Exception, unexpected_exception_handler)  # type: ignore
 
 # ============================================================
 # CORS 配置：允许前端跨域访问
@@ -117,11 +117,11 @@ async def scalar_html():
 # 包含路由
 # ============================================================
 # 主路由设置主标签，子路由可以设置更细的子标签
-app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["users"])
+app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["Users"])
 app.include_router(
     media_router, prefix=f"{settings.API_PREFIX}/media"
 )  # media 子路由自己设置 tags
-app.include_router(posts_router, prefix=f"{settings.API_PREFIX}", tags=["posts"])
+app.include_router(posts_router, prefix=f"{settings.API_PREFIX}")
 app.include_router(
     git_ops_router,
     prefix=f"{settings.API_PREFIX}/ops/git",

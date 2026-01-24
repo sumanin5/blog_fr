@@ -43,7 +43,7 @@ async def sync_post_tags(
         post: 文章对象
         tag_names: 标签名称列表
     """
-    from app.posts import crud
+    from app.posts import cruds as crud
 
     if post.id is None:
         raise ValueError("Post must be persisted (have an ID) before syncing tags")

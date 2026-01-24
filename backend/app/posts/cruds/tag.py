@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from app.posts.model import PostType, Tag
@@ -9,14 +9,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 async def paginate_query(
-    session: AsyncSession, query: select, params: Params = None
+    session: AsyncSession, query: Any, params: Params | None = None
 ) -> Page:
     """通用分页查询"""
     return await paginate(session, query, params)
 
 
-async def get_tag_by_slug(session: AsyncSession, slug: str) -> Optional[Tag]:
-    """根据 Slug 获取标签"""
+async def get_tag_by_slug(session: AsyncSession, slug: str) -> Tag | None:
+    """根据 Slug 获取标签（可以返回 None）"""
     stmt = select(Tag).where(Tag.slug == slug)
     result = await session.exec(stmt)
     return result.one_or_none()
@@ -25,7 +25,7 @@ async def get_tag_by_slug(session: AsyncSession, slug: str) -> Optional[Tag]:
 async def list_tags_with_count(
     session: AsyncSession,
     params: Params,
-    search: str = None,
+    search: str | None = None,
     post_type: Optional[PostType] = None,
 ) -> Page[Tag]:
     """获取标签列表并附加文章关联数"""
@@ -34,9 +34,9 @@ async def list_tags_with_count(
     # 1. 基础查询
     stmt = select(Tag)
     if post_type:
-        stmt = stmt.join(Tag.posts).where(Post.post_type == post_type).distinct()
+        stmt = stmt.join(Tag.posts).where(Post.post_type == post_type).distinct()  # type: ignore
     if search:
-        stmt = stmt.where(Tag.name.ilike(f"%{search}%"))
+        stmt = stmt.where(Tag.name.ilike(f"%{search}%"))  # type: ignore
     stmt = stmt.order_by(Tag.name)
 
     # 2. 分页
@@ -47,14 +47,14 @@ async def list_tags_with_count(
 
     # 3. 聚合查询计数
     tag_ids = [tag.id for tag in page.items]
-    count_stmt = select(PostTagLink.tag_id, func.count(PostTagLink.post_id)).where(
-        PostTagLink.tag_id.in_(tag_ids)
+    count_stmt = select(PostTagLink.tag_id, func.count(PostTagLink.post_id)).where(  # type: ignore
+        PostTagLink.tag_id.in_(tag_ids)  # type: ignore
     )
     if post_type:
-        count_stmt = count_stmt.join(Post, PostTagLink.post_id == Post.id).where(
+        count_stmt = count_stmt.join(Post, PostTagLink.post_id == Post.id).where(  # type: ignore
             Post.post_type == post_type
         )
-    count_stmt = count_stmt.group_by(PostTagLink.tag_id)
+    count_stmt = count_stmt.group_by(PostTagLink.tag_id)  # type: ignore
     count_result = await session.exec(count_stmt)
     count_map = {row[0]: row[1] for row in count_result.all()}
 
@@ -65,11 +65,20 @@ async def list_tags_with_count(
     return page
 
 
-async def get_tag_by_id(session: AsyncSession, tag_id: UUID) -> Optional[Tag]:
-    """根据 ID 获取标签"""
+async def get_tag_by_id(session: AsyncSession, tag_id: UUID) -> Tag:
+    """根据 ID 获取标签
+
+    Raises:
+        TagNotFoundError: 标签不存在
+    """
+    from app.posts.exceptions import TagNotFoundError
+
     stmt = select(Tag).where(Tag.id == tag_id)
     result = await session.exec(stmt)
-    return result.one_or_none()
+    tag = result.one_or_none()
+    if not tag:
+        raise TagNotFoundError()
+    return tag
 
 
 async def get_or_create_tag(session: AsyncSession, name: str, slug: str) -> Tag:
@@ -91,9 +100,10 @@ async def get_orphaned_tags(session: AsyncSession) -> list[Tag]:
     from sqlalchemy import not_
 
     # 查找不在 PostTagLink 中的标签
+    subquery = select(PostTagLink.tag_id)
     stmt = (
         select(Tag)
-        .where(not_(Tag.id.in_(select(PostTagLink.tag_id))))
+        .where(not_(Tag.id.in_(subquery)))  # type: ignore
         .order_by(Tag.name)
     )
     result = await session.exec(stmt)
@@ -119,7 +129,11 @@ async def delete_tag(session: AsyncSession, tag: Tag) -> None:
 async def merge_tags(
     session: AsyncSession, source_tag_id: UUID, target_tag_id: UUID
 ) -> Tag:
-    """合并标签：将 source_tag 的所有文章关联转移到 target_tag，然后删除 source_tag"""
+    """合并标签：将 source_tag 的所有文章关联转移到 target_tag，然后删除 source_tag
+
+    Raises:
+        TagNotFoundError: source_tag_id 或 target_tag_id 不存在
+    """
     from app.posts.model import PostTagLink
     from sqlalchemy import delete, update
 
@@ -127,9 +141,9 @@ async def merge_tags(
     # 避免 UPDATE 时产生 (post_id, target_tag_id) 的重复键
     stmt_conflict = (
         delete(PostTagLink)
-        .where(PostTagLink.tag_id == source_tag_id)
+        .where(PostTagLink.tag_id == source_tag_id)  # type: ignore
         .where(
-            PostTagLink.post_id.in_(
+            PostTagLink.post_id.in_(  # type: ignore
                 select(PostTagLink.post_id).where(PostTagLink.tag_id == target_tag_id)
             )
         )
@@ -139,17 +153,16 @@ async def merge_tags(
     # 2. 更新剩余的关联：source_tag → target_tag
     stmt = (
         update(PostTagLink)
-        .where(PostTagLink.tag_id == source_tag_id)
+        .where(PostTagLink.tag_id == source_tag_id)  # type: ignore
         .values(tag_id=target_tag_id)
     )
     await session.exec(stmt)
 
-    # 删除源标签
+    # 3. 删除源标签（会抛异常如果不存在）
     source_tag = await get_tag_by_id(session, source_tag_id)
-    if source_tag:
-        await session.delete(source_tag)
+    await session.delete(source_tag)
 
-    # 返回目标标签
+    # 4. 返回目标标签（会抛异常如果不存在）
     target_tag = await get_tag_by_id(session, target_tag_id)
     await session.flush()
     return target_tag

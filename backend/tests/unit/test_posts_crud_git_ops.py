@@ -5,7 +5,7 @@ Posts CRUD Git Ops 相关函数单元测试
 """
 
 import pytest
-from app.posts import crud as posts_crud
+from app.posts import cruds as posts_crud
 from app.posts.model import Category, Post, PostStatus, PostType
 from app.users.model import User, UserRole
 

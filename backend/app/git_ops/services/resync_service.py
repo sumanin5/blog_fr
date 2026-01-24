@@ -22,18 +22,15 @@ class ResyncService(BaseGitOpsService):
     """重新同步服务 - 负责单个文章的元数据重新同步"""
 
     async def resync_post_metadata(
-        self, post_id: str, default_user: User = None
+        self, post_id: UUID | str, default_user: User | None = None
     ) -> None:
         """
         重新同步指定文章的元数据（读取磁盘文件 -> 更新数据库）
         如果文件不存在或不是 file-backed，抛出异常。
         """
         # 1. 查找文章
-        if isinstance(post_id, str):
-            try:
-                post_id = UUID(post_id)
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid UUID")
+
+        post_id = UUID(post_id) if isinstance(post_id, str) else post_id
 
         post = await self.session.get(Post, post_id)
         if not post:

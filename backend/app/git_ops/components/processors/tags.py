@@ -36,7 +36,7 @@ class TagsProcessor(FieldProcessor):
         self, session: AsyncSession, tag_names: List[str], auto_create: bool = True
     ) -> List[UUID]:
         """根据标签名称查询或创建标签"""
-        from app.posts import crud as posts_crud
+        from app.posts import cruds as posts_crud
         from slugify import slugify as python_slugify
 
         if not tag_names:

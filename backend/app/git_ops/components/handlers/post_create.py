@@ -17,8 +17,8 @@ async def handle_post_create(
     processed_post_ids: set,
 ):
     """处理文章创建"""
-    from app.posts import service as post_service
-    from app.posts.schema import PostCreate
+    from app.posts import services as post_service
+    from app.posts.schemas import PostCreate
     from app.posts.utils import generate_slug_with_random_suffix
 
     create_dict = await serializer.from_frontmatter(scanned)

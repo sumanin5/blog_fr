@@ -3,13 +3,13 @@ from typing import Optional
 from uuid import UUID
 
 from app.core.exceptions import InsufficientPermissionsError
-from app.posts import crud
+from app.posts import cruds as crud
 from app.posts.exceptions import (
     CategoryNotFoundError,
     SlugConflictError,
 )
 from app.posts.model import Category, PostType
-from app.posts.schema import CategoryCreate, CategoryUpdate
+from app.posts.schemas import CategoryCreate, CategoryUpdate
 from app.users.model import User
 from sqlmodel.ext.asyncio.session import AsyncSession
 

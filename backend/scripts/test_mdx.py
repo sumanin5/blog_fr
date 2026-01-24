@@ -16,8 +16,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from app.core.db import AsyncSessionLocal
 from app.media.model import MediaFile  # noqa: F401
 from app.posts.model import Category, Post, PostStatus, PostType, Tag  # noqa: F401
-from app.posts.schema import PostCreate
-from app.posts.service import create_post
+from app.posts.schemas import PostCreate
+from app.posts.services import create_post
 from app.users.crud import get_user_by_username
 from app.users.model import User  # noqa: F401
 

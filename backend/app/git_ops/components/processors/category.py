@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 from uuid import UUID
 
 from app.git_ops.components.scanner import ScannedPost
+from app.posts.model import PostType
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .base import FieldProcessor
@@ -49,17 +50,17 @@ class CategoryProcessor(FieldProcessor):
         default_slug: str = "uncategorized",
     ) -> Optional[UUID]:
         """根据 slug 查询或创建分类"""
-        from app.posts import crud as posts_crud
+        from app.posts import cruds as posts_crud
         from app.posts.model import Category
 
         if not category_value:
             category_value = default_slug
 
-        if hasattr(post_type, "value"):
-            post_type = post_type.value
+        # 将字符串转换为 PostType 枚举
+        post_type_enum = PostType(post_type)
 
         category = await posts_crud.get_category_by_slug_and_type(
-            session, category_value, post_type
+            session, category_value, post_type_enum
         )
 
         if category:
@@ -70,7 +71,7 @@ class CategoryProcessor(FieldProcessor):
             new_category = Category(
                 name=name,
                 slug=category_value,
-                post_type=post_type,
+                post_type=post_type_enum,
                 description=f"Auto generated from folder {category_value}",
             )
             session.add(new_category)
@@ -87,7 +88,7 @@ class CategoryProcessor(FieldProcessor):
         default_cat = Category(
             name=default_slug.title(),
             slug=default_slug,
-            post_type=post_type,
+            post_type=post_type_enum,
             description="Default Category",
         )
         session.add(default_cat)

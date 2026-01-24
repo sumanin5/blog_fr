@@ -171,7 +171,7 @@ async def test_view_count_not_increment_for_draft(
     session,
 ):
     """测试草稿文章浏览量是否增加（取决于业务逻辑）"""
-    from app.posts import crud
+    from app.posts import cruds as crud
 
     # 获取初始浏览量
     initial_post = await crud.get_post_by_id(session, draft_post.id)
