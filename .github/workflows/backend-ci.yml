@@ -50,6 +50,19 @@ jobs:
         run: |
           uv sync --all-extras
 
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+
+      - name: Run migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/blog_fr_test
+        run: uv run alembic upgrade head
+
       - name: Run tests with coverage
         working-directory: backend
         env:

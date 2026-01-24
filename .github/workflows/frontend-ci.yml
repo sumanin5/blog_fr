@@ -59,7 +59,7 @@ jobs:
         working-directory: frontend
         run: pnpm run build
         env:
-          VITE_API_URL: http://localhost:8000
+          NEXT_PUBLIC_API_URL: http://localhost:8000
 
       - name: Run tests (if available)
         working-directory: frontend
