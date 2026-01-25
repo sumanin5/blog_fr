@@ -1,13 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
   type RowSelectionState,
+  RowData,
 } from "@tanstack/react-table";
+
+declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    className?: string;
+  }
+}
 import {
   Table,
   TableBody,
@@ -24,13 +32,12 @@ interface AdminTableProps<TData, TValue> {
   isLoading?: boolean;
   emptyMessage?: string;
 
-  // 分页相关
-  pagination?: {
-    page: number;
-    pages: number;
-    total: number;
-  };
-  onPageChange?: (page: number) => void;
+  // 现代 TanStack 分页
+  pageCount?: number; // 总页数
+  pageIndex?: number; // 当前页码 (0-indexed)
+  pageSize?: number;
+  totalItems?: number; // 总数据量
+  onPageChange?: (pageIndex: number) => void;
 
   // 选择相关
   selectedRows?: Set<string>;
@@ -43,11 +50,14 @@ export function AdminTable<TData, TValue>({
   columns,
   isLoading,
   emptyMessage = "未找到匹配的数据条目",
-  pagination,
+  pageCount = -1,
+  pageIndex = 0,
+  pageSize = 10,
+  totalItems = 0,
   onPageChange,
   selectedRows,
   onSelectionChange,
-  getRowId = (row: any) => row.id,
+  getRowId = (row: TData) => (row as any).id,
 }: AdminTableProps<TData, TValue>) {
   // 转换 Set<string> -> RowSelectionState
   const rowSelection = React.useMemo(() => {
@@ -62,10 +72,24 @@ export function AdminTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
+    pageCount, // 服务器端总页数
+    manualPagination: true,
     getCoreRowModel: getCoreRowModel(),
     getRowId,
     state: {
       rowSelection,
+      pagination: {
+        pageIndex,
+        pageSize,
+      },
+    },
+    onPaginationChange: (updater) => {
+      if (!onPageChange) return;
+      const nextState =
+        typeof updater === "function"
+          ? updater({ pageIndex, pageSize })
+          : updater;
+      onPageChange(nextState.pageIndex);
     },
     onRowSelectionChange: (updaterOrValue) => {
       if (!onSelectionChange) return;
@@ -109,7 +133,10 @@ export function AdminTable<TData, TValue>({
               >
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      className={header.column.columnDef.meta?.className}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -129,7 +156,10 @@ export function AdminTable<TData, TValue>({
                 data-state={row.getIsSelected() && "selected"}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    className={cell.column.columnDef.meta?.className}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -139,13 +169,13 @@ export function AdminTable<TData, TValue>({
         </Table>
       </div>
 
-      {/* 自动集成：只要有分页信息就渲染分页器 */}
-      {pagination && onPageChange && (
+      {/* 只要有 pageCount (>=0) 就渲染分页器 */}
+      {pageCount !== -1 && onPageChange && (
         <AdminPagination
-          page={pagination.page}
-          pages={pagination.pages}
-          total={pagination.total}
-          onPageChange={onPageChange}
+          page={pageIndex + 1}
+          pages={pageCount}
+          total={totalItems}
+          onPageChange={(p) => onPageChange(p - 1)}
         />
       )}
     </div>

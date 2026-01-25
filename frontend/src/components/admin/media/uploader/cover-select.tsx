@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ImageIcon } from "lucide-react";
 import { CoverUpload } from "./cover-upload";
 import { MediaLibraryDialog } from "../dialogs/media-library-dialog";
 import type { MediaFile } from "@/shared/api/types";
@@ -42,27 +40,13 @@ export function CoverSelect({
 
   return (
     <div className={className}>
-      {/* 上传组件 */}
+      {/* 上传组件 (集成媒体库触发器) */}
       <CoverUpload
         currentCover={currentCover}
         onCoverChange={onCoverChange}
         disabled={disabled}
+        onOpenLibrary={() => setShowMediaLibrary(true)}
       />
-
-      {/* 从媒体库选择按钮 */}
-      <div className="mt-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowMediaLibrary(true)}
-          disabled={disabled}
-          className="w-full h-10 rounded-xl border-dashed border-2 hover:bg-primary/5 hover:border-primary/50 transition-all font-bold italic text-[10px] uppercase tracking-widest"
-        >
-          <ImageIcon className="h-3.5 w-3.5 mr-2" />
-          Fetch from Media Vault
-        </Button>
-      </div>
 
       {/* 媒体库弹窗 */}
       <MediaLibraryDialog

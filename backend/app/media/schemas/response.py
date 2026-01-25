@@ -31,3 +31,14 @@ class ThumbnailRegenerateResponse(BaseModel):
 
     message: str = Field(..., description="处理结果消息")
     thumbnails: dict[str, str] = Field(..., description="新生成的缩略图URL")
+
+
+class MediaStatsResponse(BaseModel):
+    """媒体文件统计概览响应模型"""
+
+    total_files: int = Field(..., description="文件总数")
+    total_size: int = Field(..., description="存储总占用（字节）")
+    by_type: dict[str, int] = Field(..., description="按类型统计")
+    by_usage: dict[str, int] = Field(..., description="按用途统计")
+    public_files: int = Field(..., description="公开文件数量")
+    private_files: int = Field(..., description="私有文件数量")

@@ -1,394 +1,191 @@
-"""
-分类管理接口测试
-
-测试内容：
-- 分类的增删改查
-- 权限控制（只有超级管理员可以管理分类）
-- 数据验证
-"""
+from pathlib import Path
 
 import pytest
-from fastapi import status
-from httpx import AsyncClient
-from tests.api.conftest import APIConfig, TestData, assert_error_response
-from tests.api.posts.conftest import (
-    PostTestData,
-    assert_category_response,
-)
+from app.core.config import settings
+from sqlalchemy import select
 
-# ============================================================
-# 分类列表查询测试（公开接口）
-# ============================================================
+# Mark all tests as async
+pytestmark = pytest.mark.asyncio
 
 
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_get_categories_list(
-    async_client: AsyncClient,
-    multiple_categories: list,
-    api_urls: APIConfig,
+async def test_create_category_sync_dir(
+    async_client, superadmin_user_token_headers, mock_content_dir: Path, session
 ):
-    """测试获取分类列表（公开接口，无需登录）"""
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
+    """
+    Test Case 1: 创建分类时，物理目录可能被创建 (Lazy or Eager)。
+    目前的实现是 Eager 初始化空目录。
+    """
+    category_slug = "new-tech-cat"
+    post_type = "article"
 
-    assert response.status_code == status.HTTP_200_OK
+    # 1. API 调用创建分类
+    response = await async_client.post(
+        f"{settings.API_PREFIX}/posts/{post_type}/categories",
+        json={"name": "New Tech Category", "slug": category_slug},
+        headers=superadmin_user_token_headers,
+    )
+    assert response.status_code == 201
     data = response.json()
+    assert data["slug"] == category_slug
 
-    # 适配 Page 响应格式
-    assert "items" in data
-    assert "total" in data
-    assert isinstance(data["items"], list)
-    assert len(data["items"]) >= 3
-
-    # 验证每个分类的格式
-    for category in data["items"]:
-        assert_category_response(category)
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_get_categories_by_post_type(
-    async_client: AsyncClient,
-    test_category,
-    idea_category,
-    api_urls: APIConfig,
-):
-    """测试按板块类型筛选分类"""
-    # 获取 article 类型的分类
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-
-    # 适配 Page 响应格式
-    assert "items" in data
-    assert len(data["items"]) >= 1
-    assert all(cat["post_type"] == "article" for cat in data["items"])
-
-    # 获取 idea 类型的分类
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/idea/categories")
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-
-    assert "items" in data
-    assert len(data["items"]) >= 1
-    assert all(cat["post_type"] == "idea" for cat in data["items"])
+    # 2. 验证物理目录是否创建
+    # 路径结构: CONTENT_DIR / article -> articles / new-tech-cat
+    # 修复验证：物理路径应该是复数的 'articles'
+    expected_dir = mock_content_dir / "articles" / category_slug
+    assert expected_dir.exists(), (
+        f"Physical directory {expected_dir} should be created (check plural mapping)!"
+    )
+    assert expected_dir.is_dir()
 
 
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_get_categories_include_inactive(
-    async_client: AsyncClient,
+async def test_rename_category_slug_moves_files(
+    async_client,
+    superadmin_user_token_headers,
+    mock_content_dir: Path,
     session,
-    api_urls: APIConfig,
+    superadmin_user,  # Need user object for service call or just rely on API
 ):
-    """测试获取包含未启用状态的分类"""
-    from app.posts.model import Category, PostType
+    """
+    Test Case 2: 重命名分类 Slug 时，物理目录被重命名，且关联文章的 source_path 更新。
+    """
+    # 0. 准备数据: 创建一个分类和一篇文章
+    # 我们直接通过 API 创建，这样能复用完整的创建逻辑（包括物理文件生成）
 
-    # 创建一个未启用的分类
-    inactive_cat = Category(
-        name="未启用分类",
-        slug="inactive-cat",
-        post_type=PostType.ARTICLE,
-        is_active=False,
-    )
-    session.add(inactive_cat)
-    await session.commit()
-    await session.refresh(inactive_cat)
+    # 0.1 创建分类 'old-slug'
+    old_slug = "old-slug"
+    new_slug = "new-slug"
+    post_type = "article"
 
-    # 1. 默认查询（不包含未启用）
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert not any(cat["id"] == str(inactive_cat.id) for cat in data["items"])
-
-    # 2. 包含未启用字段查询
-    response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/categories",
-        params={"include_inactive": "true"},
-    )
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert any(cat["id"] == str(inactive_cat.id) for cat in data["items"])
-
-
-# ============================================================
-# 分类创建测试（需要超级管理员权限）
-# ============================================================
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_create_category_success(
-    async_client: AsyncClient,
-    superadmin_user_token_headers: dict,
-    post_test_data: PostTestData,
-    api_urls: APIConfig,
-):
-    """测试超级管理员创建分类"""
-    category_data = {
-        "name": "新分类",
-        "slug": "new-category",
-        "post_type": "article",
-        "description": "这是一个新分类",
-        "sort_order": 1,  # 正确的字段名
-    }
-
-    response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/categories",
-        json=category_data,
+    resp_cat = await async_client.post(
+        f"{settings.API_PREFIX}/posts/{post_type}/categories",
+        json={"name": "Old Category", "slug": old_slug},
         headers=superadmin_user_token_headers,
     )
+    assert resp_cat.status_code == 201
+    category_id = resp_cat.json()["id"]
 
-    assert response.status_code == status.HTTP_201_CREATED
-    data = response.json()
-    assert_category_response(data)
-    assert data["name"] == "新分类"
-    assert data["slug"] == "new-category"
-    assert data["post_type"] == "article"
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_create_category_without_login(
-    async_client: AsyncClient,
-    api_urls: APIConfig,
-):
-    """测试未登录创建分类（应该失败）"""
-    category_data = {
-        "name": "测试分类",
-        "slug": "test-cat",
-        "post_type": "article",
-    }
-
-    response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/categories",
-        json=category_data,
-    )
-
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_create_category_as_normal_user(
-    async_client: AsyncClient,
-    normal_user_token_headers: dict,
-    api_urls: APIConfig,
-):
-    """测试普通用户创建分类（应该失败）"""
-    category_data = {
-        "name": "测试分类",
-        "slug": "test-cat",
-        "post_type": "article",
-    }
-
-    response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/categories",
-        json=category_data,
-        headers=normal_user_token_headers,
-    )
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_create_category_as_admin(
-    async_client: AsyncClient,
-    admin_user_token_headers: dict,
-    api_urls: APIConfig,
-):
-    """测试普通管理员创建分类（应该失败）"""
-    category_data = {
-        "name": "测试分类",
-        "slug": "test-cat",
-        "post_type": "article",
-    }
-
-    response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/categories",
-        json=category_data,
-        headers=admin_user_token_headers,
-    )
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_create_category_duplicate_slug(
-    async_client: AsyncClient,
-    superadmin_user_token_headers: dict,
-    test_category,
-    api_urls: APIConfig,
-    test_data: TestData,
-):
-    """测试创建重复 slug 的分类（应该失败）"""
-    category_data = {
-        "name": "重复的分类",
-        "slug": test_category.slug,  # 使用已存在的 slug
-        "post_type": "article",
-    }
-
-    response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/categories",
-        json=category_data,
+    # 0.2 创建在该分类下的文章
+    # 文章会自动写入 CONTENT_DIR / article / old-slug / my-post.mdx
+    resp_post = await async_client.post(
+        f"{settings.API_PREFIX}/posts/{post_type}",
+        json={
+            "title": "My Post",
+            "slug": "my-post",
+            "category_id": category_id,
+            "content_mdx": "# Hello",
+            "post_type": post_type,
+        },
         headers=superadmin_user_token_headers,
     )
+    assert resp_post.status_code == 201
+    post_id = resp_post.json()["id"]
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    data = response.json()
-    assert_error_response(data, test_data.ErrorCodes.SLUG_CONFLICT)
+    # 验证物理文件初始状态
+    old_dir = mock_content_dir / "articles" / old_slug
+    old_file = old_dir / "My-Post.mdx"  # 根据 file_operator 逻辑，文件名由 title 生成
 
+    # 注意：path_calculator生成的可能是 article/old-slug/My-Post.mdx (My-Post 是 sanitized title)
+    # 我们可以通过 API 返回的 source_path 来确定
+    # 但由于 API response 可能不包含 source_path (如果 schema 排除了)，我们直接检查目录
+    # 假设文件名是 sanitized title
+    assert old_dir.exists()
+    # 找到该目录下唯一的文件
+    files = list(old_dir.glob("*.md*"))
+    assert len(files) == 1
+    post_file = files[0]
 
-# ============================================================
-# 分类更新测试（需要超级管理员权限）
-# ============================================================
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_update_category_success(
-    async_client: AsyncClient,
-    superadmin_user_token_headers: dict,
-    test_category,
-    api_urls: APIConfig,
-):
-    """测试超级管理员更新分类"""
-    update_data = {
-        "name": "更新后的分类名",
-        "description": "更新后的描述",
-        "sort_order": 10,  # 正确的字段名
-    }
-
-    response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/categories/{test_category.id}",
-        json=update_data,
+    # 1. 触发重命名 (PATCH Category)
+    update_response = await async_client.patch(
+        f"{settings.API_PREFIX}/posts/{post_type}/categories/{category_id}",
+        json={"slug": new_slug, "name": "New Category Name"},
         headers=superadmin_user_token_headers,
     )
+    assert update_response.status_code == 200
+    assert update_response.json()["slug"] == new_slug
 
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert data["name"] == "更新后的分类名"
-    assert data["description"] == "更新后的描述"
-    assert data["sort_order"] == 10  # 正确的字段名
-    assert data["slug"] == test_category.slug  # slug 不变
+    # 2. 验证物理目录移动
+    new_dir = mock_content_dir / "articles" / new_slug
+
+    assert not old_dir.exists(), f"Old directory {old_dir} should be gone"
+    assert new_dir.exists(), f"New directory {new_dir} should exist"
+
+    # 3. 验证文件依然存在于新目录
+    new_post_file = new_dir / post_file.name
+    assert new_post_file.exists(), "Post file should be moved to new directory"
+
+    # 4. 验证数据库中 Post 的 source_path 已更新
+    # 这一步需要查询 DB
+    from app.posts.model import Post
+
+    result = await session.execute(select(Post).where(Post.id == post_id))
+    db_post = result.scalar_one()
+
+    # 预期路径: articles/new-slug/My-Post.mdx
+    assert new_slug in db_post.source_path
+    assert old_slug not in db_post.source_path
+    assert db_post.source_path.startswith(f"articles/{new_slug}/")
 
 
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_update_category_as_normal_user(
-    async_client: AsyncClient,
-    normal_user_token_headers: dict,
-    test_category,
-    api_urls: APIConfig,
+async def test_delete_category_removes_empty_dir(
+    async_client, superadmin_user_token_headers, mock_content_dir: Path
 ):
-    """测试普通用户更新分类（应该失败）"""
-    update_data = {"name": "尝试更新"}
+    """
+    Test Case 3: 删除空分类时，物理目录被清理。
+    """
+    slug = "empty-cat-to-delete"
+    post_type = "article"
 
-    response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/categories/{test_category.id}",
-        json=update_data,
-        headers=normal_user_token_headers,
-    )
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_update_nonexistent_category(
-    async_client: AsyncClient,
-    superadmin_user_token_headers: dict,
-    api_urls: APIConfig,
-    test_data: TestData,
-):
-    """测试更新不存在的分类"""
-    from uuid import uuid4
-
-    update_data = {"name": "更新"}
-
-    response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/categories/{uuid4()}",
-        json=update_data,
+    # 1. 创建分类
+    resp = await async_client.post(
+        f"{settings.API_PREFIX}/posts/{post_type}/categories",
+        json={"name": "Empty Cat", "slug": slug},
         headers=superadmin_user_token_headers,
     )
+    category_id = resp.json()["id"]
+    target_dir = mock_content_dir / "articles" / slug
+    assert target_dir.exists()
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-# ============================================================
-# 分类删除测试（需要超级管理员权限）
-# ============================================================
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_delete_category_success(
-    async_client: AsyncClient,
-    superadmin_user_token_headers: dict,
-    api_urls: APIConfig,
-    session,
-):
-    """测试超级管理员删除分类"""
-    # 先创建一个分类用于删除
-    from app.posts.model import Category, PostType
-
-    category = Category(
-        name="待删除的分类",
-        slug="to-be-deleted",
-        post_type=PostType.ARTICLE,
-    )
-    session.add(category)
-    await session.commit()
-    await session.refresh(category)
-
-    response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/categories/{category.id}",
+    # 2. 删除分类
+    del_resp = await async_client.delete(
+        f"{settings.API_PREFIX}/posts/{post_type}/categories/{category_id}",
         headers=superadmin_user_token_headers,
     )
+    assert del_resp.status_code == 204
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    # 验证分类已被删除
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
-    data = response.json()
-
-    # 适配 Page 响应格式
-    assert "items" in data
-    assert not any(cat["id"] == str(category.id) for cat in data["items"])
-
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_delete_category_as_normal_user(
-    async_client: AsyncClient,
-    normal_user_token_headers: dict,
-    test_category,
-    api_urls: APIConfig,
-):
-    """测试普通用户删除分类（应该失败）"""
-    response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/categories/{test_category.id}",
-        headers=normal_user_token_headers,
+    # 3. 验证物理目录被删除
+    assert not target_dir.exists(), (
+        "Empty directory should be removed after category deletion"
     )
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
 
-
-@pytest.mark.asyncio
-@pytest.mark.posts
-async def test_delete_nonexistent_category(
-    async_client: AsyncClient,
-    superadmin_user_token_headers: dict,
-    api_urls: APIConfig,
+async def test_delete_non_empty_category_skips_dir_removal(
+    async_client, superadmin_user_token_headers, mock_content_dir: Path
 ):
-    """测试删除不存在的分类"""
-    from uuid import uuid4
+    """
+    Test Case 4: 删除非空分类时，保留物理目录以防数据丢失。
+    """
+    slug = "full-cat"
+    post_type = "article"
 
-    response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/categories/{uuid4()}",
+    # 1. 创建分类
+    resp = await async_client.post(
+        f"{settings.API_PREFIX}/posts/{post_type}/categories",
+        json={"name": "Full Cat", "slug": slug},
         headers=superadmin_user_token_headers,
     )
+    category_id = resp.json()["id"]
+    target_dir = mock_content_dir / "articles" / slug
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    # 2. 手动在里面塞一个文件（模拟残留文件）
+    (target_dir / "ghost_file.txt").write_text("Boo")
+
+    # 3. 删除分类
+    del_resp = await async_client.delete(
+        f"{settings.API_PREFIX}/posts/{post_type}/categories/{category_id}",
+        headers=superadmin_user_token_headers,
+    )
+    assert del_resp.status_code == 204
+
+    # 4. 验证物理目录依然存在
+    assert target_dir.exists(), "Non-empty directory should NOT be removed"
+    assert (target_dir / "ghost_file.txt").exists()

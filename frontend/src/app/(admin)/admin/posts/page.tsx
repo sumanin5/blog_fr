@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { useMyPosts, useDeletePost } from "@/shared/hooks/use-posts";
-import { usePostTypes } from "@/shared/hooks/use-post-types";
+import { usePostTypes } from "@/hooks/use-post-types";
+import { usePostsAdmin } from "@/hooks/admin/posts";
+import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
-import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
@@ -13,24 +13,21 @@ import { toast } from "sonner";
 
 export default function MyPostsPage() {
   const { data: postTypes = [] } = usePostTypes();
-  const [activeTab, setActiveTab] = React.useState<PostType | "">("");
-  // 1. 确定当前真正的选中项（如果没选，默认用列表第一个）
-  const currentTab = (activeTab ||
-    postTypes[0]?.value ||
-    "article") as PostType;
+  const [activeTab, setActiveTab] = React.useState<PostType>("article");
 
+  // 1. 使用重构后的超级 Hook
   const {
-    data: posts = [],
+    posts,
     isLoading,
-    refetch,
     isFetching,
-  } = useMyPosts(currentTab);
+    refetch,
+    deletePost,
+    isPending: isDeleting,
+  } = usePostsAdmin(activeTab);
 
-  const deleteMutation = useDeletePost();
-
-  // 自动获取当前类型的中文名字 (例如：从后端拿到的 "文章")
+  // 自动获取当前类型的中文名字
   const typeLabel =
-    postTypes.find((t) => t.value === currentTab)?.label || "内容";
+    postTypes.find((t) => t.value === activeTab)?.label || "内容";
 
   // 增强刷新反馈
   const handleRefresh = async () => {
@@ -55,27 +52,25 @@ export default function MyPostsPage() {
           <p className="text-muted-foreground">管理你创作的所有内容。</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
+          <AdminActionButton
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={isFetching}
+            isLoading={isFetching}
+            icon={RefreshCw}
           >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-            />
             刷新
-          </Button>
-          <Button size="sm" asChild>
-            <Link href={`/admin/posts/new?type=${currentTab}`}>
-              <Plus className="mr-2 h-4 w-4" /> 新建{typeLabel}
-            </Link>
-          </Button>
+          </AdminActionButton>
+          <Link href={`/admin/posts/new?type=${activeTab}` as any}>
+            <AdminActionButton size="sm" icon={Plus}>
+              新建{typeLabel}
+            </AdminActionButton>
+          </Link>
         </div>
       </div>
 
       <Tabs
-        value={currentTab}
+        value={activeTab}
         onValueChange={(v) => setActiveTab(v as PostType)}
       >
         <TabsList className="bg-muted/50 p-1">
@@ -92,12 +87,12 @@ export default function MyPostsPage() {
 
         <div className="mt-6">
           <PostListTable
-            posts={posts}
+            posts={posts as any}
             isLoading={isLoading}
             onDelete={(post) =>
-              deleteMutation.mutate({
+              deletePost({
                 id: post.id,
-                type: post.postType ?? activeTab,
+                type: (post.postType as PostType) || activeTab,
               })
             }
           />

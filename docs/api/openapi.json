@@ -2400,7 +2400,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/MediaStatsResponse"
+                }
               }
             }
           },
@@ -6880,6 +6882,57 @@
         ],
         "title": "MediaFileUploadResponse",
         "description": "文件上传响应模型"
+      },
+      "MediaStatsResponse": {
+        "properties": {
+          "total_files": {
+            "type": "integer",
+            "title": "Total Files",
+            "description": "文件总数"
+          },
+          "total_size": {
+            "type": "integer",
+            "title": "Total Size",
+            "description": "存储总占用（字节）"
+          },
+          "by_type": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Type",
+            "description": "按类型统计"
+          },
+          "by_usage": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Usage",
+            "description": "按用途统计"
+          },
+          "public_files": {
+            "type": "integer",
+            "title": "Public Files",
+            "description": "公开文件数量"
+          },
+          "private_files": {
+            "type": "integer",
+            "title": "Private Files",
+            "description": "私有文件数量"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_files",
+          "total_size",
+          "by_type",
+          "by_usage",
+          "public_files",
+          "private_files"
+        ],
+        "title": "MediaStatsResponse",
+        "description": "媒体文件统计概览响应模型"
       },
       "MediaType": {
         "type": "string",

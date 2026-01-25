@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useUpdatePost } from "@/shared/hooks/use-posts";
+import { usePostsAdmin } from "@/hooks/admin/posts";
 import {
   PostType,
   CategoryResponse,
@@ -16,15 +16,12 @@ interface EditViewProps {
   categories: CategoryResponse[];
 }
 
-export function EditView({ post, postType, categories }: EditViewProps) {
+export function EditView({
+  post,
+  postType,
+}: Omit<EditViewProps, "categories">) {
   const router = useRouter();
-  const mutation = useUpdatePost(post.id, postType);
-
-  React.useEffect(() => {
-    if (mutation.isSuccess) {
-      router.push("/admin/posts");
-    }
-  }, [mutation.isSuccess, router]);
+  const { updatePost, isPending } = usePostsAdmin(postType);
 
   return (
     <div className="h-full">
@@ -32,20 +29,18 @@ export function EditView({ post, postType, categories }: EditViewProps) {
         postType={postType as "article" | "idea"}
         initialData={{
           title: post.title,
-          slug: post.slug,
+          slug: post.slug || "",
           contentMdx: post.content_mdx || "",
-          coverMedia: post.cover_media,
+          coverMedia: post.cover_media as any,
           categoryId: post.category?.id,
-          tags: post.tags?.map((t) => t.name) || [],
-          useServerRendering: post.use_server_rendering,
-          enableJsx: post.enable_jsx,
-          excerpt: post.excerpt,
-          status: post.status,
-          isFeatured: post.is_featured,
         }}
-        categories={categories}
-        onSave={(updated) => mutation.mutate(updated)}
-        isSaving={mutation.isPending}
+        onSave={(updated) =>
+          updatePost(
+            { id: post.id, data: updated, type: postType },
+            { onSuccess: () => router.push("/admin/posts") }
+          )
+        }
+        isSaving={isPending}
       />
     </div>
   );

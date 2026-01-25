@@ -35,7 +35,17 @@ export type UserFilters = ApiData<Raw.GetUsersListData["query"]>;
 
 // 基础实体
 export type MediaFile = ApiData<Raw.MediaFileResponse>;
-export type MediaStats = ApiData<Raw.GetStatsOverviewResponses>;
+
+interface RawMediaStats {
+  totalFiles: number;
+  totalSize: number;
+  byType: Record<string, number>;
+  byUsage: Record<string, number>;
+  publicFiles: number;
+  privateFiles: number;
+}
+
+export type MediaStats = RawMediaStats; // 由于 useMediaStats 已经做了转换，这里直接用 CamelCase 后的类型
 
 // 请求载荷 (Payloads)
 export type MediaUploadPayload = ApiData<Raw.BodyUploadFile>;

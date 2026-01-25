@@ -2,7 +2,6 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { type TagResponse } from "@/shared/api/generated";
-import { type ApiData } from "@/shared/api/transformers";
 import { Button } from "@/components/ui/button";
 import { Tags, Edit2, Trash2, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -15,15 +14,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// 定义本地业务类型，不再依赖转换工具类型
+export interface AdminTag extends TagResponse {
+  postCount?: number;
+}
+
 interface TagColumnsProps {
-  onEdit: (tag: ApiData<TagResponse>) => void;
+  onEdit: (tag: AdminTag) => void;
   onMergeRequest: () => void;
 }
 
 export const getTagColumns = ({
   onEdit,
   onMergeRequest,
-}: TagColumnsProps): ColumnDef<ApiData<TagResponse>>[] => [
+}: TagColumnsProps): ColumnDef<AdminTag>[] => [
   {
     accessorKey: "name",
     header: "名称",
@@ -51,16 +55,25 @@ export const getTagColumns = ({
     accessorKey: "color",
     header: "表现色",
     cell: ({ row }) => {
-      const color = row.original.color || "var(--muted)";
+      const color = row.original.color || "#6b7280";
       return (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           <div
-            className="size-3.5 rounded-full border-2 border-background shadow-sm ring-1 ring-border"
-            style={{ backgroundColor: color }}
-          />
-          <span className="text-[11px] text-muted-foreground font-mono uppercase tracking-tighter">
-            {row.original.color || "No Color"}
-          </span>
+            className="flex items-center gap-2 px-2.5 py-1 rounded-full border shadow-sm transition-all duration-300 hover:shadow-md"
+            style={{
+              backgroundColor: `${color}10`, // 10% opacity background
+              borderColor: `${color}30`, // 20% opacity border
+              color: color,
+            }}
+          >
+            <div
+              className="size-2 rounded-full shadow-inner animate-pulse-slow"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-[10px] font-bold font-mono tracking-wider uppercase">
+              {color}
+            </span>
+          </div>
         </div>
       );
     },

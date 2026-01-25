@@ -114,6 +114,7 @@ export function MediaImage({
       alt={file.altText || file.originalFilename}
       className={cn("bg-muted", className)}
       loading="lazy"
+      onContextMenu={(e) => e.preventDefault()}
     />
   );
 }

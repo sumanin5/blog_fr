@@ -1,51 +1,36 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState } from "react";
 import { type MediaFile } from "@/shared/api/types";
 import { MediaImage } from "./media-image";
 import { cn } from "@/lib/utils";
-import {
-  Check,
-  MoreVertical,
-  Eye,
-  Edit2,
-  RefreshCw,
-  Trash2,
-  Download,
-} from "lucide-react";
+import { Check, Eye, Edit2, RefreshCw, Trash2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MediaCardProps {
   file: MediaFile;
   isSelected?: boolean;
   onToggleSelection?: (id: string) => void;
-  // 即使在挑选模式下，也可能需要预览
   onPreview?: (file: MediaFile) => void;
-  // 管理动作 (可选)
   onRename?: (file: MediaFile) => void;
   onDelete?: (file: MediaFile) => void;
   onRegenerate?: (id: string) => void;
   onDownload?: (file: MediaFile) => void;
-  // 模式控制
   mode?: "management" | "selection";
 }
 
 /**
- * 🃏 媒体资产卡片 (Atomic Component)
- *
- * 基于 Shadcn Card 构建，封装了这一张卡片所有的：
- * 1. 样式布局 (无缝图片 + 底部信息)
- * 2. 交互状态 (选中高亮、悬浮菜单)
- * 3. 核心数据展示
+ * 🃏 媒体资产卡片 (Selection & Management Mode)
+ * 升级版：弃用不稳定的右键菜单，采用更高效的悬浮矩阵 + 双击预览
  */
 export function MediaCard({
   file,
@@ -58,130 +43,203 @@ export function MediaCard({
   onDownload,
   mode = "management",
 }: MediaCardProps) {
-  // 交互处理器
+  const [showActions, setShowActions] = useState(false);
+
   const handleCardClick = () => {
     if (mode === "selection" && onToggleSelection) {
       onToggleSelection(file.id);
-    } else if (onPreview) {
-      onPreview(file);
     }
   };
 
+  const handleDoubleClick = () => {
+    if (onPreview) onPreview(file);
+  };
+
+  const handleCopyLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(file.originalFilename);
+    toast.success("文件名已复制");
+  };
+
+  // 简单的移动端检测 (实际项目中建议使用 useMediaQuery Hook)
+  const handleTouch = () => {
+    setShowActions(true);
+    // 3秒后自动隐藏，模拟原生体验
+    setTimeout(() => setShowActions(false), 3000);
+  };
+
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden transition-all duration-300 cursor-pointer border-border/50",
-        // 选中状态：高亮边框和背景
-        isSelected &&
-          "ring-2 ring-primary border-primary bg-primary/5 shadow-lg shadow-primary/10",
-        // 悬浮状态：轻微上浮和阴影
-        !isSelected &&
-          "hover:shadow-xl hover:border-primary/30 hover:-translate-y-1"
-      )}
-      onClick={handleCardClick}
-    >
-      {/* 1. 顶部勾选区 (仅管理模式或多选模式显示) */}
-      {onToggleSelection && (
-        <div
-          className="absolute top-3 left-3 z-10"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelection(file.id)}
-            className={cn(
-              "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
-              // 未选中时半透明，选中时实心
-              !isSelected &&
-                "bg-white/80 backdrop-blur border-black/10 opacity-0 group-hover:opacity-100 transition-opacity"
-            )}
-          />
-        </div>
-      )}
-
-      {/* 2. 顶部菜单区 (仅管理模式显示) */}
-      {mode === "management" && (
-        <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="size-8 rounded-lg bg-white/90 backdrop-blur shadow-sm hover:bg-white"
-              >
-                <MoreVertical className="size-4 text-foreground/70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-xl">
-              <DropdownMenuItem onClick={() => onPreview?.(file)}>
-                <Eye className="size-4 mr-2" /> 预览资源
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onRename?.(file)}>
-                <Edit2 className="size-4 mr-2" /> 重命名
-              </DropdownMenuItem>
-              {file.mediaType === "image" && (
-                <DropdownMenuItem onClick={() => onRegenerate?.(file.id)}>
-                  <RefreshCw className="size-4 mr-2" /> 刷新缩略图
-                </DropdownMenuItem>
+    <TooltipProvider>
+      <Card
+        className={cn(
+          "group relative overflow-hidden transition-all duration-300 cursor-pointer border-border/50 select-none",
+          file.mediaType === "image" && "aspect-square",
+          isSelected &&
+            "ring-2 ring-primary border-primary bg-primary/5 shadow-lg",
+          !isSelected &&
+            "hover:shadow-xl hover:border-primary/30 hover:-translate-y-1"
+        )}
+        onClick={handleCardClick}
+        onDoubleClick={handleDoubleClick}
+        onTouchStart={handleTouch}
+      >
+        {/* 1. 顶部勾选区 (左上角) */}
+        {onToggleSelection && (
+          <div
+            className="absolute top-3 left-3 z-30"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelection(file.id)}
+              className={cn(
+                "data-[state=checked]:bg-primary transition-all",
+                !isSelected && "opacity-0 group-hover:opacity-100 bg-white/80"
               )}
-              <DropdownMenuItem onClick={() => onDownload?.(file)}>
-                <Download className="size-4 mr-2" /> 下载原件
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => onDelete?.(file)}
-                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+            />
+          </div>
+        )}
+
+        {/* 2. 图片主体与悬浮覆盖层 */}
+        <CardContent className="p-0 h-full relative overflow-hidden">
+          <MediaImage
+            file={file}
+            size="small"
+            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-50"
+          />
+
+          {/* 🚀 核心：悬浮操作条 (仅管理模式下显示) */}
+          {mode === "management" && (
+            <div
+              className={cn(
+                "absolute inset-0 z-20 transition-all duration-300 flex flex-col items-center justify-center gap-3",
+                showActions
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100"
+              )}
+            >
+              <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-background/60 backdrop-blur-xl border border-border shadow-2xl scale-90 group-hover:scale-100 transition-transform">
+                <QuickAction
+                  icon={<Eye className="size-4" />}
+                  label="预览"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPreview?.(file);
+                  }}
+                />
+                <QuickAction
+                  icon={<Download className="size-4" />}
+                  label="下载"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownload?.(file);
+                  }}
+                />
+                <QuickAction
+                  icon={<Edit2 className="size-4" />}
+                  label="重命名"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRename?.(file);
+                  }}
+                />
+                {file.mediaType === "image" && (
+                  <QuickAction
+                    icon={<RefreshCw className="size-4" />}
+                    label="核销缩略图"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRegenerate?.(file.id);
+                    }}
+                  />
+                )}
+                <div className="w-px h-4 bg-border mx-0.5" />
+                <QuickAction
+                  icon={<Trash2 className="size-4 text-destructive" />}
+                  label="永久删除"
+                  variant="destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.(file);
+                  }}
+                />
+              </div>
+              <button
+                onClick={handleCopyLink}
+                className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-[0.2em] bg-accent/20 px-3 py-1 rounded-full backdrop-blur-sm"
               >
-                <Trash2 className="size-4 mr-2" /> 物理移除
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+                Copy Meta
+              </button>
+            </div>
+          )}
 
-      {/* 3. 核心图片区 (无缝嵌入) */}
-      <CardContent className="p-0 aspect-square bg-muted/30 relative">
-        <MediaImage
-          file={file}
-          size="small"
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          fallbackClassName="w-full h-full p-8 opacity-50"
-        />
+          {/* 挑选模式标识 */}
+          {mode === "selection" && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-primary/10 backdrop-blur-[1px]">
+              <div className="bg-primary text-primary-foreground p-2 rounded-full shadow-lg">
+                <Check className="size-6" strokeWidth={3} />
+              </div>
+            </div>
+          )}
+        </CardContent>
 
-        {/* 挑选模式下的覆盖层 */}
-        {mode === "selection" && !isSelected && (
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest border border-white/30 px-3 py-1 rounded-full backdrop-blur-md">
-              Select
-            </span>
+        {/* 3. 底部信息区 */}
+        <CardFooter className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-background/90 via-background/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-30">
+          <div className="w-full text-foreground">
+            <p className="text-[10px] font-bold truncate italic opacity-90">
+              {file.originalFilename}
+            </p>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[8px] font-mono text-muted-foreground uppercase">
+                {file.mediaType}
+              </span>
+              <span className="text-[8px] font-mono text-muted-foreground">
+                {(file.fileSize / 1024 / 1024).toFixed(2)}MB
+              </span>
+            </div>
           </div>
-        )}
+        </CardFooter>
+      </Card>
+    </TooltipProvider>
+  );
+}
 
-        {/* 选中时的对勾标记 (挑选模式) */}
-        {mode === "selection" && isSelected && (
-          <div className="absolute top-3 right-3 size-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg animate-in zoom-in">
-            <Check className="size-3.5" strokeWidth={4} />
-          </div>
-        )}
-      </CardContent>
-
-      {/* 4. 底部信息区 */}
-      <CardFooter className="p-3 flex-col items-start gap-1.5 border-t bg-card/50 backdrop-blur-sm">
-        <p
-          className="text-[11px] font-bold truncate italic w-full text-foreground/90"
-          title={file.originalFilename}
+/**
+ * ⚡ 快捷动作小组件
+ */
+function QuickAction({
+  icon,
+  label,
+  onClick,
+  variant = "default",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: (e: React.MouseEvent) => void;
+  variant?: "default" | "destructive";
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "size-8 rounded-full text-foreground hover:bg-accent/40",
+            variant === "destructive" &&
+              "text-destructive hover:bg-destructive/20 hover:text-destructive"
+          )}
+          onClick={onClick}
         >
-          {file.originalFilename}
-        </p>
-        <div className="flex items-center justify-between w-full">
-          <span className="text-[9px] font-mono font-bold uppercase text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-[4px]">
-            {file.mediaType}
-          </span>
-          <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40 italic">
-            {(file.fileSize / 1024 / 1024).toFixed(2)} MB
-          </span>
-        </div>
-      </CardFooter>
-    </Card>
+          {icon}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        className="text-[10px] font-bold bg-black border-none uppercase tracking-widest px-2 py-1"
+      >
+        {label}
+      </TooltipContent>
+    </Tooltip>
   );
 }

@@ -21,8 +21,7 @@ import {
 } from "lucide-react";
 import { useMediaFiles } from "@/hooks/admin/use-media";
 import { MediaCard } from "../ui/media-card";
-import type { MediaFile } from "@/shared/api/types";
-import type { GetUserFilesData } from "@/shared/api";
+import type { MediaFile, MediaType, FileUsage } from "@/shared/api/types";
 
 interface MediaLibraryDialogProps {
   /**
@@ -44,7 +43,7 @@ interface MediaLibraryDialogProps {
    * 过滤条件
    */
   filter?: {
-    mediaType?: "image" | "video" | "document";
+    mediaType?: MediaType;
     usage?: string;
   };
 
@@ -54,14 +53,6 @@ interface MediaLibraryDialogProps {
   multiple?: boolean;
 }
 
-/**
- * 📚 媒体挑选对话框 (Selector Dialog)
- *
- * 职责：
- * 1. 提供一个精美的界面从已上传的资源中挑选。
- * 2. 支持搜索、分类预览。
- * 3. 结果回调给外部，不负责业务删除/重命名。
- */
 export function MediaLibraryDialog({
   open,
   onClose,
@@ -77,9 +68,9 @@ export function MediaLibraryDialog({
   const { data, isLoading } = useMediaFiles({
     mediaType:
       selectedType === "all"
-        ? (filter?.mediaType as unknown as GetUserFilesData["query"]["media_type"])
-        : (selectedType as unknown as GetUserFilesData["query"]["media_type"]),
-    usage: filter?.usage as unknown as GetUserFilesData["query"]["usage"],
+        ? (filter?.mediaType as MediaType)
+        : (selectedType as MediaType),
+    usage: filter?.usage as FileUsage,
   });
 
   // 2. 搜索逻辑 (前端过滤，后端 API 暂时不支持全文搜索库挑选场景)

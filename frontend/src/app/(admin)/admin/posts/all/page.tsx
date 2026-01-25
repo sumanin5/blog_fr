@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { useAllPosts, useDeletePost } from "@/shared/hooks/use-posts";
+import { usePostsAdmin } from "@/hooks/admin/posts";
+import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
-import { Button } from "@/components/ui/button";
 import { RefreshCw, ShieldAlert, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,14 +22,9 @@ export default function AllPostsPage() {
     }
   }, [user, authLoading, router]);
 
-  const {
-    data: posts = [],
-    isLoading,
-    refetch,
-    isFetching,
-  } = useAllPosts(activeTab, user?.role === "superadmin");
-
-  const deleteMutation = useDeletePost();
+  // 1. 使用超级 Hook (在超级管理员视角下)
+  const { posts, isLoading, refetch, isFetching, deletePost } =
+    usePostsAdmin(activeTab);
 
   // 加载中状态
   if (authLoading) {
@@ -62,23 +57,21 @@ export default function AllPostsPage() {
             超级管理员可查看和管理全站所有用户的博文。
           </p>
         </div>
-        <Button
+        <AdminActionButton
           variant="outline"
           size="sm"
           onClick={() => refetch()}
-          disabled={isFetching}
+          isLoading={isFetching}
+          icon={RefreshCw}
         >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-          />
           刷新
-        </Button>
+        </AdminActionButton>
       </div>
 
       <Tabs
         defaultValue="article"
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "article" | "idea")}
+        onValueChange={(v) => setActiveTab(v as PostType)}
       >
         <TabsList className="grid w-full max-w-[400px] grid-cols-2">
           <TabsTrigger value="article">文章 (Articles)</TabsTrigger>
@@ -87,13 +80,13 @@ export default function AllPostsPage() {
 
         <div className="mt-6">
           <PostListTable
-            posts={posts}
+            posts={posts as any}
             isLoading={isLoading}
             showAuthor={true}
             onDelete={(post) =>
-              deleteMutation.mutate({
+              deletePost({
                 id: post.id,
-                type: post.post_type as PostType,
+                type: post.postType as PostType,
               })
             }
           />

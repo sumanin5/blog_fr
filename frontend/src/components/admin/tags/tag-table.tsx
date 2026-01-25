@@ -1,20 +1,16 @@
 "use client";
 
-import { type TagResponse } from "@/shared/api/generated";
-import { type ApiData } from "@/shared/api/transformers";
 import { AdminTable } from "../common/admin-table";
-import { getTagColumns } from "./tag-columns";
+import { getTagColumns, type AdminTag } from "./tag-columns";
 
 interface TagTableProps {
-  tags: ApiData<TagResponse>[];
+  tags: AdminTag[];
   isLoading: boolean;
-  onEdit: (tag: ApiData<TagResponse>) => void;
+  onEdit: (tag: AdminTag) => void;
   onMergeRequest: () => void;
-  pagination?: {
-    total: number;
-    page: number;
-    pages: number;
-  };
+  pageCount?: number;
+  pageIndex?: number;
+  totalItems?: number;
   onPageChange?: (page: number) => void;
 }
 
@@ -23,7 +19,9 @@ export function TagTable({
   isLoading,
   onEdit,
   onMergeRequest,
-  pagination,
+  pageCount,
+  pageIndex,
+  totalItems,
   onPageChange,
 }: TagTableProps) {
   return (
@@ -31,7 +29,9 @@ export function TagTable({
       data={tags}
       isLoading={isLoading}
       columns={getTagColumns({ onEdit, onMergeRequest })}
-      pagination={pagination}
+      pageCount={pageCount}
+      pageIndex={pageIndex}
+      totalItems={totalItems}
       onPageChange={onPageChange}
       emptyMessage="未找到任何匹配的标签数据"
     />

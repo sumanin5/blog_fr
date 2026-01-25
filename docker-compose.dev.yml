@@ -57,7 +57,8 @@ services:
     # 挂载源代码（热更新）
     volumes:
       - ./backend:/app
-      - ./content:/content
+      - ./.git:/git_root/.git
+      - ./content:/git_root/content
       - /app/.venv
 
     ports:
@@ -69,6 +70,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}
       ENVIRONMENT: ${ENVIRONMENT}
+      CONTENT_DIR: /git_root/content
+      # 解决 Docker 挂载导致的 Git 仓库识别问题
+      GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
+      GIT_CONFIG_PARAMETERS: "'safe.directory=*'"
 
     depends_on:
       db:

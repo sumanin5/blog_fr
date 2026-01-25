@@ -9,7 +9,10 @@ import {
   viewThumbnail,
   getStatsOverview,
 } from "@/shared/api";
-import { denormalizeApiRequest } from "@/shared/api/transformers";
+import {
+  denormalizeApiRequest,
+  normalizeApiResponse,
+} from "@/shared/api/transformers";
 import { mediaKeys } from "./constants";
 import type * as Raw from "@/shared/api/generated/types.gen";
 import type {
@@ -102,7 +105,7 @@ export function useMediaStats() {
     queryKey: mediaKeys.stats(),
     queryFn: async () => {
       const response = await getStatsOverview({ throwOnError: true });
-      return response.data as unknown as MediaStats;
+      return normalizeApiResponse(response.data) as MediaStats;
     },
   });
 }

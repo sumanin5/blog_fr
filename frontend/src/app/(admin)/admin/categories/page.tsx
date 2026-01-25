@@ -1,391 +1,170 @@
 "use client";
 
 import React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  listCategoriesByType,
-  deleteCategoryByType,
-  PostType,
-  createCategoryByType,
-  updateCategoryByType,
-  CategoryResponse,
-} from "@/shared/api/generated";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  RefreshCw,
-  Plus,
-  FolderTree,
-  Trash2,
-  Edit2,
-  ChevronRight,
-  ShieldAlert,
-  Loader2,
-} from "lucide-react";
+import { PostType, CategoryResponse } from "@/shared/api/generated";
+import { RefreshCw, Plus, ShieldAlert, Loader2 } from "lucide-react";
+import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+
+// 新的通用组件和 Hook
+import { AdminTable } from "@/components/admin/common/admin-table";
+import { getCategoryColumns } from "@/components/admin/categories/category-columns";
+import { useCategoriesAdmin } from "@/hooks/admin/categories";
+import { CategoryEditDialog } from "@/components/admin/categories/category-edit-dialog";
+import { CategoryDeleteDialog } from "@/components/admin/categories/category-delete-dialog";
 
 export default function CategoriesPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = React.useState<PostType>("article");
 
-  // 权限检查：如果不是超级管理员，重定向
+  // 1. 使用重构后的超级 Hook
+  const {
+    categories,
+    isLoading,
+    isFetching,
+    refetch,
+    isAuthorized,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    isPending: mutationPending,
+  } = useCategoriesAdmin(activeTab);
+
+  // UI 交互状态
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [editingItem, setEditingItem] = React.useState<CategoryResponse | null>(
+    null
+  );
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
+  // 权限拦截
   React.useEffect(() => {
-    if (!authLoading && user && user.role !== "superadmin") {
-      toast.error("权限不足", {
-        description: "分类运维功能仅对超级管理员开放",
-      });
+    if (!authLoading && user && !isAuthorized) {
+      toast.error("权限不足，请联系系统管理员");
       router.push("/admin/dashboard");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, isAuthorized, router]);
 
-  // Dialog state
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [editingCategory, setEditingCategory] =
-    React.useState<CategoryResponse | null>(null);
+  // 处理保存 (新建或更新)
+  const handleSave = (data: any) => {
+    const onSuccess = () => setEditOpen(false);
 
-  // Form state
-  const [formData, setFormData] = React.useState({
-    name: "",
-    slug: "",
-    description: "",
-    sort_order: 0,
-    is_active: true,
-  });
-
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["admin", "categories", activeTab],
-    queryFn: () =>
-      listCategoriesByType({
-        path: { post_type: activeTab },
-        throwOnError: true,
-      }),
-    enabled: user?.role === "superadmin", // 只有超级管理员才获取数据
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data: typeof formData) =>
-      createCategoryByType({
-        path: { post_type: activeTab },
-        body: { ...data, post_type: activeTab },
-        throwOnError: true,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "categories"] });
-      toast.success("分类创建成功");
-      setIsDialogOpen(false);
-      resetForm();
-    },
-    onError: (err) => toast.error("创建失败：" + (err as any).message),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (data: typeof formData & { id: string }) =>
-      updateCategoryByType({
-        path: { post_type: activeTab, category_id: data.id },
-        body: data,
-        throwOnError: true,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "categories"] });
-      toast.success("分类更新成功");
-      setIsDialogOpen(false);
-      resetForm();
-    },
-    onError: (err) => toast.error("更新失败：" + (err as any).message),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      deleteCategoryByType({
-        path: { post_type: activeTab, category_id: id },
-        throwOnError: true,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "categories"] });
-      toast.success("分类已删除");
-    },
-    onError: () => toast.error("删除失败，可能该分类下仍有文章"),
-  });
-
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      slug: "",
-      description: "",
-      sort_order: 0,
-      is_active: true,
-    });
-    setEditingCategory(null);
-  };
-
-  const handleEdit = (category: CategoryResponse) => {
-    setEditingCategory(category);
-    setFormData({
-      name: category.name,
-      slug: category.slug,
-      description: category.description || "",
-      sort_order: category.sort_order || 0,
-      is_active: category.is_active ?? true,
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingCategory) {
-      updateMutation.mutate({ ...formData, id: editingCategory.id });
+    if (editingItem) {
+      updateCategory({ id: editingItem.id, data }, { onSuccess });
     } else {
-      createMutation.mutate(formData);
+      createCategory({ ...data, postType: activeTab }, { onSuccess });
     }
   };
 
-  // 加载中状态
-  if (authLoading) {
+  // 表格列定义
+  const columns = React.useMemo(
+    () =>
+      getCategoryColumns({
+        onEdit: (cat) => {
+          setEditingItem(cat as CategoryResponse);
+          setEditOpen(true);
+        },
+        onDelete: (id) => setDeletingId(id),
+      }),
+    []
+  );
+
+  if (authLoading || (user && !isAuthorized)) {
     return (
       <div className="flex h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (user?.role !== "superadmin") {
-    return (
-      <div className="flex h-[400px] flex-col items-center justify-center gap-4 text-center">
-        <ShieldAlert className="h-12 w-12 text-destructive opacity-50" />
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">权限不足</h2>
-          <p className="text-muted-foreground">
-            分类运维功能仅对超级管理员开放。
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground italic">
+            正在验证管理权限...
           </p>
         </div>
       </div>
     );
   }
-
-  const categories = data?.data?.items || [];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* 顶部工具栏 */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">分类运维</h1>
-          <p className="text-muted-foreground">
-            管理全站文章和想法的分类层级。
+          <p className="text-muted-foreground text-sm">
+            管理全站内容的分层结构。Slug 变更将自动触发物理资源重命名。
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
+          <AdminActionButton
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            disabled={isFetching}
+            isLoading={isFetching}
+            icon={RefreshCw}
+            className="h-9"
           >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-            />
             刷新
-          </Button>
-          <Button
+          </AdminActionButton>
+          <AdminActionButton
             size="sm"
             onClick={() => {
-              resetForm();
-              setIsDialogOpen(true);
+              setEditingItem(null);
+              setEditOpen(true);
             }}
+            icon={Plus}
+            className="h-9"
           >
-            <Plus className="mr-2 h-4 w-4" /> 新增分类
-          </Button>
+            新增分类
+          </AdminActionButton>
         </div>
       </div>
 
+      {/* 切换面板 */}
       <Tabs
         defaultValue="article"
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as PostType)}
+        className="w-full"
       >
-        <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-          <TabsTrigger value="article">文章分类 (Article)</TabsTrigger>
-          <TabsTrigger value="idea">想法分类 (Idea)</TabsTrigger>
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="article" className="px-8 flex items-center gap-2">
+            文章 (Article)
+          </TabsTrigger>
+          <TabsTrigger value="idea" className="px-8 flex items-center gap-2">
+            想法 (Idea)
+          </TabsTrigger>
         </TabsList>
 
-        <div className="mt-6 rounded-md border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[300px]">名称</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead>排序</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead className="text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    正在加载...
-                  </TableCell>
-                </TableRow>
-              ) : categories.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    暂无分类
-                  </TableCell>
-                </TableRow>
-              ) : (
-                categories.map((cat) => (
-                  <TableRow key={cat.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {cat.parent_id && (
-                          <ChevronRight className="h-3 w-3 text-muted-foreground/50 ml-2" />
-                        )}
-                        <FolderTree className="h-4 w-4 text-primary/60" />
-                        <span className="font-medium">{cat.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {cat.slug}
-                    </TableCell>
-                    <TableCell>{cat.sort_order}</TableCell>
-                    <TableCell>
-                      <Badge variant={cat.is_active ? "default" : "secondary"}>
-                        {cat.is_active ? "已启用" : "停用"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(cat)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => {
-                          if (confirm("确定要删除此分类吗？")) {
-                            deleteMutation.mutate(cat.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+        <div className="mt-4">
+          <AdminTable
+            data={categories}
+            columns={columns}
+            isLoading={isLoading}
+            emptyMessage="当前板块暂无分类"
+          />
         </div>
       </Tabs>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? "编辑分类" : "新增分类"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingCategory ? "修改现有分类信息" : "创建一个新的内容分类"}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">分类名称</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="slug">URL 别名 (Slug)</Label>
-              <Input
-                id="slug"
-                value={formData.slug}
-                onChange={(e) =>
-                  setFormData({ ...formData, slug: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sort_order">排序权重</Label>
-              <Input
-                id="sort_order"
-                type="number"
-                value={formData.sort_order}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    sort_order: parseInt(e.target.value) || 0,
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                数字越小排序越靠前
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="is_active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_active: checked })
-                }
-              />
-              <Label htmlFor="is_active">启用状态</Label>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-              >
-                取消
-              </Button>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                {editingCategory ? "保存修改" : "立即创建"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* 所有的弹窗统一管理 */}
+      <CategoryEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        category={editingItem}
+        onSave={handleSave}
+        isPending={mutationPending}
+      />
+
+      <CategoryDeleteDialog
+        id={deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={async (id) => {
+          await deleteCategory(id);
+          setDeletingId(null);
+        }}
+        isPending={mutationPending}
+      />
     </div>
   );
 }

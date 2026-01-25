@@ -457,6 +457,54 @@ export type MediaFileUploadResponse = {
 };
 
 /**
+ * MediaStatsResponse
+ *
+ * 媒体文件统计概览响应模型
+ */
+export type MediaStatsResponse = {
+    /**
+     * Total Files
+     *
+     * 文件总数
+     */
+    total_files: number;
+    /**
+     * Total Size
+     *
+     * 存储总占用（字节）
+     */
+    total_size: number;
+    /**
+     * By Type
+     *
+     * 按类型统计
+     */
+    by_type: {
+        [key: string]: number;
+    };
+    /**
+     * By Usage
+     *
+     * 按用途统计
+     */
+    by_usage: {
+        [key: string]: number;
+    };
+    /**
+     * Public Files
+     *
+     * 公开文件数量
+     */
+    public_files: number;
+    /**
+     * Private Files
+     *
+     * 私有文件数量
+     */
+    private_files: number;
+};
+
+/**
  * MediaType
  */
 export type MediaType = 'image' | 'video' | 'document' | 'other';
@@ -3101,8 +3149,10 @@ export type GetStatsOverviewResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    200: MediaStatsResponse;
 };
+
+export type GetStatsOverviewResponse = GetStatsOverviewResponses[keyof GetStatsOverviewResponses];
 
 export type GetAllFilesAdminData = {
     body?: never;

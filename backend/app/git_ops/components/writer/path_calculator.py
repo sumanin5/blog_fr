@@ -4,6 +4,12 @@ from typing import Optional, Tuple
 
 from app.posts.model import Post
 
+# 物理目录名称映射表 (Database Value -> Filesystem Folder)
+POST_TYPE_DIR_MAP = {
+    "article": "articles",
+    "idea": "ideas",
+}
+
 
 class PathCalculator:
     """路径计算器 - 负责计算文件在磁盘上的物理路径"""
@@ -21,7 +27,10 @@ class PathCalculator:
             (abs_path, relative_path)
         """
         cat_folder = category_slug if category_slug else "uncategorized"
-        type_folder = post.post_type.value
+
+        # 使用映射表获取物理目录名 (e.g. 'article' -> 'articles')
+        raw_type = post.post_type.value
+        type_folder = POST_TYPE_DIR_MAP.get(raw_type, raw_type)
 
         # 根据是否开启 JSX 决定扩展名
         ext = "mdx" if post.enable_jsx else "md"

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useCreatePost } from "@/shared/hooks/use-posts";
+import { usePostsAdmin } from "@/hooks/admin/posts";
 import { PostEditor } from "@/components/admin/posts/post-editor";
 import { CategoryResponse, PostType } from "@/shared/api/generated";
 
@@ -13,13 +13,7 @@ interface CreateViewProps {
 
 export function CreateView({ postType, categories }: CreateViewProps) {
   const router = useRouter();
-  const mutation = useCreatePost(postType);
-
-  React.useEffect(() => {
-    if (mutation.isSuccess) {
-      router.push("/admin/posts");
-    }
-  }, [mutation.isSuccess, router]);
+  const { createPost, isPending } = usePostsAdmin(postType);
 
   return (
     <div className="h-full">
@@ -30,9 +24,13 @@ export function CreateView({ postType, categories }: CreateViewProps) {
           slug: "",
           contentMdx: "",
         }}
-        categories={categories}
-        onSave={(data) => mutation.mutate(data)}
-        isSaving={mutation.isPending}
+        onSave={(data) =>
+          createPost(
+            { type: postType, data },
+            { onSuccess: () => router.push("/admin/posts") }
+          )
+        }
+        isSaving={isPending}
       />
     </div>
   );

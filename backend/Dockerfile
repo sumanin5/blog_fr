@@ -11,6 +11,9 @@ ENV PYTHONUNBUFFERED=1
 # 设置工作目录
 WORKDIR /app/
 
+# 安装系统依赖 (包括 git)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
 # ==========================================
 # 安装 uv
 # ==========================================
@@ -62,6 +65,9 @@ ENV PYTHONUNBUFFERED=1
 
 # 设置工作目录
 WORKDIR /app/
+
+# 安装系统依赖 (包括 git)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 # ==========================================
 # 安装 uv

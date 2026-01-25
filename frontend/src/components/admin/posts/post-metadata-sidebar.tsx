@@ -13,10 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CategorySelect } from "./category-select";
 import { TagSelect } from "./tag-select";
-import { CoverSelect } from "@/components/admin/media/cover-select";
+import { CoverSelect } from "@/components/admin/media/uploader/cover-select";
 
 import { PostType, PostStatus, CategoryResponse } from "@/shared/api/generated";
-import type { MediaFileResponse } from "@/hooks/admin/use-media";
+import type { MediaFile } from "@/shared/api/types";
 
 // 1. 定义统一的元数据接口
 export interface PostMetadata {
@@ -24,7 +24,7 @@ export interface PostMetadata {
   status: PostStatus;
   categoryId: string;
   tags: string[];
-  cover: MediaFileResponse | null;
+  cover: MediaFile | null;
   excerpt: string;
   isFeatured: boolean;
   enableJsx: boolean;
@@ -85,15 +85,9 @@ export function PostMetadataSidebar({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={POST_STATUS_VALUES.DRAFT}>
-                草稿 (Draft)
-              </SelectItem>
-              <SelectItem value={POST_STATUS_VALUES.PUBLISHED}>
-                发布 (Published)
-              </SelectItem>
-              <SelectItem value={POST_STATUS_VALUES.ARCHIVED}>
-                归档 (Archived)
-              </SelectItem>
+              <SelectItem value="draft">草稿 (Draft)</SelectItem>
+              <SelectItem value="published">发布 (Published)</SelectItem>
+              <SelectItem value="archived">归档 (Archived)</SelectItem>
             </SelectContent>
           </Select>
         </div>

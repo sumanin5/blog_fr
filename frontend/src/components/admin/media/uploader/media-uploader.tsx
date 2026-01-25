@@ -15,6 +15,8 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Button } from "@/components/ui/button";
+import { MEDIA_CONFIG } from "@/hooks/admin/media/constants";
+import { toast } from "sonner";
 
 interface UploadTask {
   file: File;
@@ -36,64 +38,92 @@ export function MediaUploader() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
-      "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"],
-      "video/*": [".mp4", ".webm", ".avi", ".mov"],
-      "application/pdf": [".pdf"],
+      ...MEDIA_CONFIG.ACCEPTED_TYPES.IMAGE,
+      ...MEDIA_CONFIG.ACCEPTED_TYPES.VIDEO,
+      ...MEDIA_CONFIG.ACCEPTED_TYPES.DOCUMENT,
     },
-    maxSize: 10 * 1024 * 1024,
-    onDrop: async (acceptedFiles) => {
-      const tasks: UploadTask[] = acceptedFiles.map((file) => ({
+    maxSize: MEDIA_CONFIG.GLOBAL_MAX_SIZE,
+    validator: (file) => {
+      // 自定义校验逻辑：分类型检查大小
+      const isImage = file.type.startsWith("image/");
+      const isVideo = file.type.startsWith("video/");
+      const limit = isImage
+        ? MEDIA_CONFIG.MAX_SIZE.IMAGE
+        : isVideo
+        ? MEDIA_CONFIG.MAX_SIZE.VIDEO
+        : MEDIA_CONFIG.MAX_SIZE.DOCUMENT; // default fallback
+
+      if (file.size > limit) {
+        return {
+          code: "file-too-large",
+          message: `File is larger than ${(limit / 1024 / 1024).toFixed(0)}MB`,
+        };
+      }
+      return null;
+    },
+    onDropRejected: (fileRejections) => {
+      fileRejections.forEach(({ file, errors }) => {
+        errors.forEach((e) => {
+          toast.error(`文件 ${file.name} 被拒绝`, {
+            description: e.message,
+          });
+        });
+      });
+    },
+    onDrop: (acceptedFiles) => {
+      // 初始化任务并开始并行上传
+      const newTasks: UploadTask[] = acceptedFiles.map((file) => ({
         file,
-        status: "pending",
+        status: "uploading", // 直接开始
         progress: 0,
       }));
-      setUploadTasks(tasks);
+      setUploadTasks(newTasks);
 
-      for (let i = 0; i < tasks.length; i++) {
-        setUploadTasks((prev) =>
-          prev.map((t, idx) =>
-            idx === i ? { ...t, status: "uploading", progress: 50 } : t
-          )
-        );
+      // 并行执行所有上传任务
+      Promise.all(
+        newTasks.map(async (task, index) => {
+          try {
+            await uploadMutation.mutateAsync({
+              file: task.file,
+              usage: "general",
+              isPublic: false,
+            });
 
-        try {
-          await uploadMutation.mutateAsync({
-            file: tasks[i].file,
-            usage: "general",
-            isPublic: false,
+            setUploadTasks((prev) =>
+              prev.map((t, idx) =>
+                idx === index ? { ...t, status: "success", progress: 100 } : t
+              )
+            );
+          } catch (error) {
+            setUploadTasks((prev) =>
+              prev.map((t, idx) =>
+                idx === index
+                  ? {
+                      ...t,
+                      status: "error",
+                      error:
+                        error instanceof Error ? error.message : "上传失败",
+                    }
+                  : t
+              )
+            );
+          }
+        })
+      ).then(() => {
+        // 全部完成后，延迟自动关闭 (仅当无错误时)
+        setTimeout(() => {
+          setUploadTasks((currentTasks) => {
+            const allSuccess = currentTasks.every(
+              (t) => t.status === "success"
+            );
+            if (allSuccess) {
+              setOpen(false);
+              return [];
+            }
+            return currentTasks;
           });
-
-          setUploadTasks((prev) =>
-            prev.map((t, idx) =>
-              idx === i ? { ...t, status: "success", progress: 100 } : t
-            )
-          );
-        } catch (error) {
-          setUploadTasks((prev) =>
-            prev.map((t, idx) =>
-              idx === i
-                ? {
-                    ...t,
-                    status: "error",
-                    error: error instanceof Error ? error.message : "上传失败",
-                  }
-                : t
-            )
-          );
-        }
-      }
-
-      // 全部成功则自动关闭
-      setTimeout(() => {
-        const allCompleted = tasks.every(
-          (t) => t.status === "success" || t.status === "error"
-        );
-        const anyError = tasks.some((t) => t.status === "error");
-        if (allCompleted && !anyError) {
-          setOpen(false);
-          setUploadTasks([]);
-        }
-      }, 2000);
+        }, 1500);
+      });
     },
   });
 

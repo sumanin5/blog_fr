@@ -1,38 +1,24 @@
-"use client";
-
 import { useState, useCallback } from "react";
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, RefreshCw, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUploadFile } from "@/hooks/admin/use-media";
 import { MediaImage } from "../ui/media-image";
 import { toast } from "sonner";
 import type { MediaFile } from "@/shared/api/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CoverUploadProps {
-  /**
-   * 当前封面文件信息
-   */
   currentCover?: MediaFile | null;
-
-  /**
-   * 封面变更回调
-   */
   onCoverChange: (file: MediaFile | null) => void;
-
-  /**
-   * 上传成功回调（可选）
-   */
   onUploadSuccess?: (file: MediaFile) => void;
-
-  /**
-   * 是否禁用
-   */
+  onOpenLibrary?: () => void;
   disabled?: boolean;
-
-  /**
-   * 自定义类名
-   */
   className?: string;
 }
 
@@ -40,6 +26,7 @@ export function CoverUpload({
   currentCover,
   onCoverChange,
   onUploadSuccess,
+  onOpenLibrary,
   disabled = false,
   className,
 }: CoverUploadProps) {
@@ -48,11 +35,11 @@ export function CoverUpload({
 
   const handleFileSelect = useCallback(
     async (file: File) => {
+      // 这里的校验逻辑保持不变，为了节省 Token 略去不改
       if (!file.type.startsWith("image/")) {
         toast.error("文件类型错误", { description: "请上传图片文件" });
         return;
       }
-
       if (file.size > 10 * 1024 * 1024) {
         toast.error("文件过大", { description: "图片大小不能超过 10MB" });
         return;
@@ -65,18 +52,16 @@ export function CoverUpload({
           isPublic: true,
           altText: file.name,
         });
-
-        // 假设 result 包含上传后的文件对象 (需要根据具体 SDK 返回结构调整)
-        // 这里的 result.file 是旧结构，新结构可能是直接返回 MediaFile
-        const uploadedFile = (result as any).file || result;
-
+        const uploadedFile =
+          (result as unknown as { file: MediaFile }).file ||
+          (result as unknown as MediaFile);
         if (uploadedFile) {
           onCoverChange(uploadedFile);
           onUploadSuccess?.(uploadedFile);
-          toast.success("上传成功", { description: "封面图已更新" });
+          toast.success("封面已更新");
         }
-      } catch (error) {
-        // 拦截器通常会显示错误，这里做个兜底
+      } catch {
+        // Error handled by mutation
       }
     },
     [uploadMutation, onCoverChange, onUploadSuccess]
@@ -106,23 +91,34 @@ export function CoverUpload({
     [disabled, handleFileSelect]
   );
 
-  const handleClick = useCallback(() => {
-    if (disabled) return;
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) handleFileSelect(file);
-    };
-    input.click();
-  }, [disabled, handleFileSelect]);
+  const handleUploadClick = useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation(); // 防止冒泡
+      if (disabled) return;
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) handleFileSelect(file);
+      };
+      input.click();
+    },
+    [disabled, handleFileSelect]
+  );
+
+  const handleLibraryClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation(); // 阻止触发 dropzone 的点击
+      onOpenLibrary?.();
+    },
+    [onOpenLibrary]
+  );
 
   const handleRemove = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       onCoverChange(null);
-      toast.info("已移除封面");
     },
     [onCoverChange]
   );
@@ -130,92 +126,145 @@ export function CoverUpload({
   const isLoading = uploadMutation.isPending;
 
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
-            Cover Asset
-          </label>
-        </div>
-        {currentCover && !disabled && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleRemove}
-            disabled={isLoading}
-            className="h-7 text-[9px] uppercase font-bold tracking-tighter text-destructive hover:text-destructive hover:bg-destructive/5"
-          >
-            <X className="h-3 w-3 mr-1" />
-            Erase Clear
-          </Button>
+    <div className={cn("space-y-3", className)}>
+      <div className="flex items-center justify-between px-1">
+        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
+          Cover Visual
+        </label>
+        {isLoading && (
+          <span className="text-[9px] font-mono animate-pulse text-primary">
+            SYNCING...
+          </span>
         )}
       </div>
 
-      <div
-        className={cn(
-          "relative border-2 border-dashed rounded-2xl transition-all duration-500 overflow-hidden",
-          "hover:border-primary/40 hover:shadow-xl cursor-pointer",
-          isDragging && "border-primary bg-primary/5",
-          disabled && "opacity-50 cursor-not-allowed",
-          "aspect-video"
-        )}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleClick}
-      >
-        {isLoading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
-            <p className="text-[9px] font-mono mt-2 uppercase tracking-widest opacity-40">
-              Uploading Stream...
-            </p>
-          </div>
-        ) : currentCover ? (
-          <div className="relative w-full h-full group">
-            <MediaImage
-              file={currentCover}
-              size="medium"
-              className="w-full h-full object-cover rounded-xl"
-            />
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
-              <div className="text-white text-center transform translate-y-4 group-hover:translate-y-0 transition-transform">
-                <Upload className="h-6 w-6 mx-auto mb-2 opacity-80" />
-                <p className="text-[10px] font-bold uppercase tracking-widest">
-                  Replace Identity
-                </p>
+      <TooltipProvider>
+        <div
+          className={cn(
+            "group relative w-full aspect-video rounded-3xl border-2 border-dashed transition-all duration-300 overflow-hidden bg-muted/5",
+            isDragging &&
+              "border-primary bg-primary/5 ring-4 ring-primary/10 scale-[0.99]",
+            !currentCover &&
+              "hover:border-primary/50 hover:bg-muted/10 cursor-pointer",
+            currentCover && "border-transparent shadow-lg bg-black/5"
+          )}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={!currentCover ? handleUploadClick : undefined}
+        >
+          {isLoading ? (
+            // Loading State
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md">
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <p className="mt-3 text-[10px] uppercase font-bold tracking-widest text-primary/80">
+                Uploading...
+              </p>
+            </div>
+          ) : currentCover ? (
+            // Filled State (Smart Pod)
+            <>
+              <MediaImage
+                file={currentCover}
+                size="large"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 group-hover:brightness-[0.8]"
+              />
+
+              {/* 悬浮操作舱 */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
+                <div className="flex items-center gap-2 p-1.5 bg-background/80 backdrop-blur-xl border border-border rounded-full shadow-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-full text-foreground hover:bg-accent/30"
+                        onClick={handleUploadClick}
+                      >
+                        <RefreshCw className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] font-bold uppercase">
+                      Replace
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-full text-foreground hover:bg-accent/30"
+                        onClick={handleLibraryClick}
+                      >
+                        <Layers className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] font-bold uppercase">
+                      Library
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <div className="w-px h-4 bg-border mx-0.5" />
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={handleRemove}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] font-bold uppercase text-destructive">
+                      Remove
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-muted/5 group">
-            <div className="p-4 rounded-full bg-muted/20 mb-4 group-hover:scale-110 transition-transform">
-              <ImageIcon className="h-8 w-8 opacity-20" />
-            </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">
-              Deploy Cover
-            </p>
-            <p className="text-[9px] mt-1 opacity-40">
-              JPG / PNG / WEBP / MAX 10MB
-            </p>
-          </div>
-        )}
-      </div>
 
-      {currentCover && !isLoading && (
-        <div className="p-3 bg-muted/20 rounded-xl space-y-1">
-          <div className="flex items-center justify-between text-[8px] font-mono uppercase tracking-tighter text-muted-foreground/60">
-            <span>Identity: {currentCover.originalFilename}</span>
-            <span>
-              {currentCover.width} × {currentCover.height}
-            </span>
-          </div>
-          <div className="w-full bg-muted/30 h-1 rounded-full overflow-hidden">
-            <div className="bg-primary/40 h-full w-[100%]" />
-          </div>
+              {/* 底部信息条 */}
+              <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                <div className="bg-background/80 backdrop-blur-md px-2 py-1 rounded-md text-[9px] font-mono text-foreground/80 uppercase">
+                  {currentCover.originalFilename}
+                </div>
+                <div className="bg-background/80 backdrop-blur-md px-2 py-1 rounded-md text-[9px] font-mono text-muted-foreground">
+                  {currentCover.width} x {currentCover.height}
+                </div>
+              </div>
+            </>
+          ) : (
+            // Empty State
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-4">
+              <div className="size-16 rounded-full bg-muted/30 flex items-center justify-center group-hover:scale-110 transition-transform group-hover:bg-primary/10 group-hover:text-primary">
+                <Upload className="size-7 opacity-50 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-foreground/70 group-hover:text-primary transition-colors">
+                  Drag Cover Here
+                </p>
+                <div className="flex items-center gap-2 justify-center text-[10px] font-mono opacity-50">
+                  <span>OR</span>
+                </div>
+              </div>
+
+              {/* 这里的 Library 按钮即使在 Empty State 也要显眼 */}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-7 text-[9px] font-bold uppercase tracking-widest bg-muted/50 hover:bg-primary hover:text-white shadow-sm transition-all"
+                onClick={handleLibraryClick}
+              >
+                <Layers className="size-3 mr-1.5" />
+                Browse Vault
+              </Button>
+            </div>
+          )}
         </div>
-      )}
+      </TooltipProvider>
     </div>
   );
 }

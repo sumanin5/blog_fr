@@ -5,6 +5,7 @@ from typing import Annotated
 from app.core.db import get_async_session
 from app.media import crud
 from app.media.routers.api_doc import stats as doc
+from app.media.schemas.response import MediaStatsResponse
 from app.users.dependencies import get_current_active_user
 from app.users.model import User
 from fastapi import APIRouter, Depends
@@ -17,6 +18,7 @@ router = APIRouter()
     "/stats/overview",
     summary="获取用户媒体文件统计概览",
     description=doc.GET_STATS_OVERVIEW_DOC,
+    response_model=MediaStatsResponse,
 )
 async def get_stats_overview(
     current_user: Annotated[User, Depends(get_current_active_user)],

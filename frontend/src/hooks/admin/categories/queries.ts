@@ -2,16 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { listCategoriesByType, PostType } from "@/shared/api/generated";
 
 /**
- * 获取指定类型的分类列表
+ * 后台专用的分类列表查询
  */
-export function useCategories(postType: PostType) {
+export const useCategoriesQuery = (postType: PostType, enabled = true) => {
   return useQuery({
-    queryKey: ["categories", postType],
+    queryKey: ["admin", "categories", postType],
     queryFn: async () => {
       const response = await listCategoriesByType({
         path: { post_type: postType },
+        throwOnError: true,
       });
-      return response.data?.items || [];
+      return response.data;
     },
+    enabled,
   });
-}
+};
