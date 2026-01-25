@@ -36,32 +36,27 @@ export async function getPosts(
   page = 1,
   size = 10,
   categoryId?: string
-): Promise<ApiData<PagePostShortResponse> | null> {
-  try {
-    const { data: response, error } = await listPostsByType({
-      path: {
-        post_type: postType, // ← 路径参数
-      },
-      query: {
-        page,
-        size,
-        category_id: categoryId, // ← 查询参数
-      },
-      client: serverClient, // ← 用服务端 client
-      // 可选：覆盖缓存配置
-      // next: { revalidate: 1800, tags: ['posts', `posts-${page}`] }
-    });
+): Promise<ApiData<PagePostShortResponse>> {
+  const { data: response, error } = await listPostsByType({
+    path: {
+      post_type: postType,
+    },
+    query: {
+      page,
+      size,
+      category_id: categoryId,
+    },
+    client: serverClient,
+  });
 
-    if (error) {
-      console.error("Failed to fetch posts:", error);
-      return null;
-    }
-
-    return response as unknown as ApiData<PagePostShortResponse>;
-  } catch (error) {
-    console.error("Failed to fetch posts:", error);
-    return null;
+  if (error) {
+    // 🚀 让错误冒泡到最近的 error.tsx 边界
+    throw new Error(
+      (error as any)?.error?.message || "无法获取文章列表，请稍后重试"
+    );
   }
+
+  return response as unknown as ApiData<PagePostShortResponse>;
 }
 
 /**
@@ -69,25 +64,19 @@ export async function getPosts(
  */
 export async function getCategories(
   postType: PostType
-): Promise<ApiData<PageCategoryResponse> | null> {
-  try {
-    const { data: response, error } = await listCategoriesByType({
-      path: {
-        post_type: postType, // ← 路径参数
-      },
-      client: serverClient,
-    });
+): Promise<ApiData<PageCategoryResponse>> {
+  const { data: response, error } = await listCategoriesByType({
+    path: {
+      post_type: postType,
+    },
+    client: serverClient,
+  });
 
-    if (error) {
-      console.error("Failed to fetch categories:", error);
-      return null;
-    }
-
-    return response as unknown as ApiData<PageCategoryResponse>;
-  } catch (error) {
-    console.error("Failed to fetch categories:", error);
-    return null;
+  if (error) {
+    throw new Error((error as any)?.error?.message || "无法获取分类列表");
   }
+
+  return response as unknown as ApiData<PageCategoryResponse>;
 }
 
 // 获取文章详情
@@ -95,21 +84,25 @@ export const getPostDetail = cache(
   async (
     postType: string,
     slug: string
-  ): Promise<ApiData<PostDetailResponse> | null> => {
-    try {
-      const { data, error } = await getPostBySlug({
-        client: serverClient,
-        path: {
-          post_type: postType as PostType,
-          slug: slug,
-        },
-      });
+  ): Promise<ApiData<PostDetailResponse>> => {
+    const { data, error } = await getPostBySlug({
+      client: serverClient,
+      path: {
+        post_type: postType as PostType,
+        slug: slug,
+      },
+    });
 
-      if (error || !data) return null;
-      return data as unknown as ApiData<PostDetailResponse>;
-    } catch (error) {
-      console.error(`[API] Failed to get post ${slug}:`, error);
-      return null;
+    if (error) {
+      // 如果后端明确返回 404，由页面决定是显示 404 还是报错
+      // 这里我们选择抛出，让 error.tsx 处理通用错误，或者由 Page 捕获专门处理 notFound
+      throw new Error((error as any)?.error?.message || "文章获取失败");
     }
+
+    if (!data) {
+      throw new Error("未找到文章内容");
+    }
+
+    return data as unknown as ApiData<PostDetailResponse>;
   }
 );

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // 图片优化配置
@@ -33,9 +34,9 @@ const nextConfig: NextConfig = {
 
   // 严格模式
   reactStrictMode: true,
-  experimental: {
-    typedRoutes: true,
-  },
+
+  // Next.js 16+: typedRoutes 从 experimental 移到了最顶层
+  typedRoutes: true,
 
   // 生产优化
   poweredByHeader: false,
@@ -43,8 +44,6 @@ const nextConfig: NextConfig = {
   output: "standalone",
 
   // API 代理配置
-  // 注意：这个 rewrites 是用于客户端请求（浏览器 → Next.js → 后端）
-  // 服务端渲染时不使用，而是直接用 serverClient（见 src/lib/server-api-client.ts）
   async rewrites() {
     return [
       {
@@ -57,4 +56,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry 插件配置
+// 移除了过时的 disableLogger 和 automaticVercelMonitors 以消除 DEPRECATION 警告
+export default withSentryConfig(nextConfig, {
+  org: "your-org-name",
+  project: "blog-fr-frontend",
+
+  // 只在 CI 环境下不输出 Sentry 相关日志
+  silent: !process.env.CI,
+
+  // 优化选项
+  widenClientFileUpload: true,
+
+  // 注意：由于使用了 Turbopack，部分 Webpack 专有的 Tree-shaking 优化暂不可用
+  // Sentry 会在后续版本中提供对 Turbopack 的完全支持
+});

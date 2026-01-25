@@ -170,7 +170,7 @@ export function useAuth() {
 
 ### 3. 服务端渲染 (SSR) 的错误处理
 
-在 Next.js 服务端组件中，错误处理更加简洁：
+在 Next.js 服务端组件中，错误处理应当**化繁为简**。我们不再需要捕获错误并返回空状态，而是直接让错误“冒泡”到最近的错误边界（`error.tsx`）。
 
 ```typescript
 // frontend/src/lib/post-api.ts
@@ -179,24 +179,19 @@ export async function getPosts(
   postType: PostType,
   page = 1,
   size = 10
-): Promise<ApiData<PagePostShortResponse> | null> {
-  try {
-    const { data: response, error } = await listPostsByType({
-      path: { post_type: postType },
-      query: { page, size },
-      client: serverClient,
-    });
+): Promise<ApiData<PagePostShortResponse>> {
+  const { data: response, error } = await listPostsByType({
+    path: { post_type: postType },
+    query: { page, size },
+    client: serverClient,
+  });
 
-    if (error) {
-      console.error("Failed to fetch posts:", error);
-      return null; // ← SSR 中返回 null，让页面显示空状态
-    }
-
-    return response as unknown as ApiData<PagePostShortResponse>;
-  } catch (error) {
-    console.error("Failed to fetch posts:", error);
-    return null;
+  if (error) {
+    // 🚀 核心思想：在服务端直接抛出，由 Next.js 错误边界接管
+    throw new Error((error as any)?.error?.message || "内容加载失败");
   }
+
+  return response as unknown as ApiData<PagePostShortResponse>;
 }
 ```
 
@@ -344,18 +339,15 @@ export default function LoginPage() {
 // frontend/src/app/(blog)/article/[slug]/page.tsx
 
 import { getPostDetail } from "@/lib/post-api";
-import { notFound } from "next/navigation";
+// 注意：如果 getPostDetail 抛出错误，会自动渲染同级或上级的 error.tsx
 
 export default async function ArticlePage({
   params,
 }: {
   params: { slug: string };
 }) {
+  // 这里不需要 try...catch
   const post = await getPostDetail("article", params.slug);
-
-  if (!post) {
-    notFound(); // ← 显示 Next.js 的 404 页面
-  }
 
   return (
     <article>
@@ -368,10 +360,11 @@ export default async function ArticlePage({
 
 **用户体验**:
 
-- 访问不存在的文章 URL
-- 后端返回 404
-- SSR 函数返回 `null`
-- Next.js 显示 404 页面
+- 访问文章详情
+- 如果由于后端宕机或网络问题导致 API 失败
+- `getPostDetail` 抛出异常
+- 用户看到美观的 `error.tsx` 界面，并带有“重试”按钮和错误详情
+- 这比显示一个空白页面或不完整的页面体验更优秀
 
 ### 示例 3: 手动处理特定错误
 

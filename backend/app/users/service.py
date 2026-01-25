@@ -86,11 +86,19 @@ async def authenticate_and_create_token(
     """
     logger.info(f"Login attempt: username={username}")
 
-    # 验证用户凭据
-    user = await crud.authenticate_user(session, username, password)
+    # 1. 查找用户（用户名或邮箱）
+    user = await crud.get_user_by_username(session, username)
     if not user:
-        logger.warning(f"Authentication failed: username={username}")
-        raise InvalidCredentialsError("Incorrect username or password")
+        user = await crud.get_user_by_email(session, username)
+
+    if not user:
+        logger.warning(f"Login failed - user not found: username={username}")
+        raise UserNotFoundError(f"User '{username}' is not registered")
+
+    # 2. 验证密码
+    if not crud.verify_password(password, user.hashed_password):
+        logger.warning(f"Login failed - incorrect password: username={username}")
+        raise InvalidCredentialsError("Incorrect password")
 
     # 检查用户是否激活
     if not user.is_active:

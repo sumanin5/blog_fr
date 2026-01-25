@@ -25,6 +25,7 @@ dependencies = [
     "python-frontmatter>=1.1.0",
     "python-slugify>=8.0.4",
     "scalar-fastapi>=1.5.0",
+    "sentry-sdk[fastapi]>=2.0.0",
     "sqlmodel>=0.0.27",
     "uuid6>=2025.0.1",
     "uvicorn[standard]>=0.38.0",
@@ -39,7 +40,6 @@ dev = [
     "pytest-asyncio>=0.21.0",
 ]
 monitoring = [
-    "sentry-sdk[fastapi]>=2.0.0",
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
     "opentelemetry-instrumentation-fastapi>=0.41b0",
@@ -76,7 +76,7 @@ omit = [
     "*/__pycache__/*",
     "*/venv/*",
     "*/.venv/*",
-    "app/initial_data.py",  # 初始化脚本
+    "app/initial_data.py", # 初始化脚本
 ]
 
 [tool.coverage.report]

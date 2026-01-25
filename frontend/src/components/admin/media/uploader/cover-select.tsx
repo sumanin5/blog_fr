@@ -4,19 +4,19 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ImageIcon } from "lucide-react";
 import { CoverUpload } from "./cover-upload";
-import { MediaLibraryDialog } from "./media-library-dialog";
-import type { MediaFileResponse } from "@/hooks/use-media";
+import { MediaLibraryDialog } from "../dialogs/media-library-dialog";
+import type { MediaFile } from "@/shared/api/types";
 
 interface CoverSelectProps {
   /**
    * 当前封面文件信息
    */
-  currentCover?: MediaFileResponse | null;
+  currentCover?: MediaFile | null;
 
   /**
    * 封面变更回调
    */
-  onCoverChange: (file: MediaFileResponse | null) => void;
+  onCoverChange: (file: MediaFile | null) => void;
 
   /**
    * 是否禁用
@@ -57,10 +57,10 @@ export function CoverSelect({
           size="sm"
           onClick={() => setShowMediaLibrary(true)}
           disabled={disabled}
-          className="w-full"
+          className="w-full h-10 rounded-xl border-dashed border-2 hover:bg-primary/5 hover:border-primary/50 transition-all font-bold italic text-[10px] uppercase tracking-widest"
         >
-          <ImageIcon className="h-4 w-4 mr-2" />
-          从媒体库选择
+          <ImageIcon className="h-3.5 w-3.5 mr-2" />
+          Fetch from Media Vault
         </Button>
       </div>
 

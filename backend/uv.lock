@@ -226,6 +226,7 @@ dependencies = [
     { name = "python-frontmatter" },
     { name = "python-slugify" },
     { name = "scalar-fastapi" },
+    { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "sqlmodel" },
     { name = "uuid6" },
     { name = "uvicorn", extra = ["standard"] },
@@ -245,7 +246,6 @@ monitoring = [
     { name = "opentelemetry-instrumentation-fastapi" },
     { name = "opentelemetry-instrumentation-sqlalchemy" },
     { name = "opentelemetry-sdk" },
-    { name = "sentry-sdk", extra = ["fastapi"] },
 ]
 
 [package.dev-dependencies]
@@ -292,7 +292,7 @@ requires-dist = [
     { name = "python-frontmatter", specifier = ">=1.1.0" },
     { name = "python-slugify", specifier = ">=8.0.4" },
     { name = "scalar-fastapi", specifier = ">=1.5.0" },
-    { name = "sentry-sdk", extras = ["fastapi"], marker = "extra == 'monitoring'", specifier = ">=2.0.0" },
+    { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=2.0.0" },
     { name = "sqlmodel", specifier = ">=0.0.27" },
     { name = "uuid6", specifier = ">=2025.0.1" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.38.0" },

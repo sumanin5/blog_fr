@@ -20,7 +20,7 @@ import { MdxClientRenderer } from "@/components/post/content/renderers/mdx-clien
 import { PostType } from "@/shared/api/generated";
 
 import { CoverSelect } from "@/components/admin/media/cover-select";
-import type { MediaFileResponse } from "@/hooks/use-media";
+import type { MediaFileResponse } from "@/hooks/admin/use-media";
 
 import "@uiw/react-md-editor/markdown-editor.css";
 

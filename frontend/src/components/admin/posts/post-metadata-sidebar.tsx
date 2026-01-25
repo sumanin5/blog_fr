@@ -16,7 +16,7 @@ import { TagSelect } from "./tag-select";
 import { CoverSelect } from "@/components/admin/media/cover-select";
 
 import { PostType, PostStatus, CategoryResponse } from "@/shared/api/generated";
-import type { MediaFileResponse } from "@/hooks/use-media";
+import type { MediaFileResponse } from "@/hooks/admin/use-media";
 
 // 1. 定义统一的元数据接口
 export interface PostMetadata {

@@ -4,11 +4,8 @@ import React from "react";
 import { AdminSidebar } from "@/components/admin/layout/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { AdminHeader } from "@/components/admin/layout/sidebar/admin-header";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 export default function AdminLayout({
   children,
@@ -31,14 +28,17 @@ export default function AdminLayout({
     );
   }
 
-  // 2. 未登录守卫（middleware 会负责重定向，这里仅做组件保护）
+  // 2. 未登录守卫
   if (!user) return null;
+
   // 3. 渲染后台布局
   return (
     <SidebarProvider>
       <div className="flex w-full overflow-hidden bg-background">
-        <AdminSidebar className="mt-16" />
+        <AdminSidebar />
         <SidebarInset className="flex flex-col overflow-hidden">
+          <AdminHeader />
+
           {/* 可滚动的主内容区域 */}
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/20">
             <div className="mx-auto max-w-7xl">{children}</div>

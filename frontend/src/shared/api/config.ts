@@ -7,9 +7,33 @@ import { normalizeApiResponse, denormalizeApiRequest } from "./transformers";
 interface ApiError {
   code: string;
   message: string;
-  details?: any;
+  details?: {
+    validation_errors?: ValidationErrorDetail[];
+    [key: string]: unknown;
+  };
   request_id?: string;
   timestamp?: string;
+}
+
+// 统一的后端错误响应格式
+interface ApiErrorResponse {
+  error: ApiError;
+}
+
+// 类型守卫：判断一个对象是否符合后端定义的错误响应格式
+function isApiErrorResponse(error: unknown): error is ApiErrorResponse {
+  if (typeof error !== "object" || error === null) return false;
+
+  const candidate = error as Record<string, unknown>;
+  if (!("error" in candidate)) return false;
+
+  const innerError = candidate.error as Record<string, unknown>;
+  return (
+    typeof innerError === "object" &&
+    innerError !== null &&
+    typeof innerError.code === "string" &&
+    typeof innerError.message === "string"
+  );
 }
 
 // 定义验证错误的结构
@@ -41,19 +65,33 @@ client.setConfig({
 
   fetch: async (input, init) => {
     const response = await fetch(input, { ...init, cache: "no-store" });
-    // 2. 如果不是 JSON，直接返回
+
+    // 获取响应类型
     const contentType = response.headers.get("content-type");
-    if (!response.ok || !contentType?.includes("application/json")) {
+    const isJson = contentType?.includes("application/json");
+
+    // 1. 如果不是 JSON，直接返回原始 response
+    if (!isJson) {
       return response;
     }
-    const data = await response.json();
-    const normalizedData = normalizeApiResponse(data);
-    const clonedResponse = new Response(JSON.stringify(normalizedData), {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-    });
-    return clonedResponse;
+
+    // 2. 只有是 JSON 时，我们才尝试解析并转换（包括错误响应）
+    try {
+      const data = await response.json();
+
+      // ✅ 关键修复：即便是错误响应 (400, 401, 404等)，也要进行 Case 转换
+      // 这样 interceptor 才能拿到符合 interface 定义的 payload
+      const normalizedData = normalizeApiResponse(data);
+
+      return new Response(JSON.stringify(normalizedData), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    } catch (e) {
+      // JSON 解析失败，返回原始 response
+      return response;
+    }
   },
 });
 
@@ -67,13 +105,28 @@ client.interceptors.request.use((request) => {
       request.headers.set("Authorization", `Bearer ${token}`);
     }
   }
+
+  // 1. 处理 Query 参数 Case 转换
+  // if (request.query) {
+  //   request.query = denormalizeApiRequest(request.query);
+  // }
+
+  // 2. 处理请求体 Case 转换
   if (request.body && typeof request.body === "string") {
     try {
-      const parsed = JSON.parse(request.body);
+      const parsed = JSON.parse(request.body) as Record<string, unknown>;
       const denormalized = denormalizeApiRequest(parsed);
-      (request as any).body = JSON.stringify(denormalized);
-    } catch (error) {
-      // 如果解析失败，保持原样
+
+      /**
+       * 👨‍🚀 解决 TS(2352) 报错方案：
+       * 由于拦截器中的 request 往往是配置对象而非标准 Request 实例，
+       * 且 body 可能在编译期被识别为只读流，我们通过 unknown 中转来实现安全覆盖。
+       */
+      (request as unknown as { body: string }).body =
+        JSON.stringify(denormalized);
+    } catch (e) {
+      // 这里的 e 通常是 JSON 解析失败，可以静默忽略
+      console.warn("[API] Request body parsing failed", e);
     }
   }
   return request;
@@ -95,11 +148,11 @@ client.interceptors.response.use((response) => {
 /**
  * 错误拦截器：专门处理“翻译人话”！
  */
-client.interceptors.error.use((error: any, response) => {
+client.interceptors.error.use((error: unknown, response) => {
   // 只有符合我们后端 ApiErrorResponse 格式的才处理
-  if (error?.error) {
-    // ✨ 直接对应 ApiError 接口
-    const apiError = error.error as ApiError;
+  if (isApiErrorResponse(error)) {
+    // ✨ 现在 apiError 是类型安全的了
+    const apiError = error.error;
     let finalMessage = apiError.message;
 
     // 处理 422 校验错误：把后端返回的字段错误数组拼成一句话
@@ -107,9 +160,7 @@ client.interceptors.error.use((error: any, response) => {
       apiError.code === "VALIDATION_ERROR" &&
       apiError.details?.validation_errors
     ) {
-      const details = (
-        apiError.details.validation_errors as ValidationErrorDetail[]
-      )
+      const details = apiError.details.validation_errors
         .map((err) => `${err.field}: ${err.message}`)
         .join("; ");
       finalMessage = `校验失败: ${details}`;
@@ -120,6 +171,7 @@ client.interceptors.error.use((error: any, response) => {
   }
 
   // 如果不符合后端格式（比如网络断了），就原样抛出原始错误
-  return error;
+  return error as Error;
 });
+
 export { client };

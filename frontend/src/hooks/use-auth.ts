@@ -6,9 +6,9 @@ import {
   registerUser as apiRegister,
   getCurrentUserInfo,
   type BodyLogin,
-  type UserRegister,
-  type UserResponse,
+  type UserRegister as RawUserRegister,
 } from "@/shared/api";
+import type { User, UserLogin, UserRegister } from "@/shared/api/types";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
 
@@ -21,22 +21,28 @@ export const authKeys = {
 };
 
 /**
- * 获取当前用户信息 (Real Implementation)
+ * 获取当前用户信息 (优雅降级模式)
+ * 逻辑：有 Token 就探测身份，报错(401/500等)统统视为“游客”
  */
-async function fetchCurrentUser(): Promise<UserResponse | null> {
-  // 优先检查 Cookies 中的访问令牌
+async function fetchCurrentUser(): Promise<User | null> {
   const token = Cookies.get("access_token");
   if (!token) return null;
 
-  const response = await getCurrentUserInfo({ throwOnError: true });
-  return response.data ?? null;
+  // 使用默认探测模式，不显式抛出异常
+  const response = await getCurrentUserInfo();
+
+  if (response.error) {
+    return null;
+  }
+
+  // 强转为高保真驼峰模型
+  return response.data as unknown as User;
 }
 
 /**
  * 核心 Auth Hook
  */
 export function useAuth() {
-  // 获取 Query Client
   const queryClient = useQueryClient();
 
   // 1. 获取用户信息
@@ -48,22 +54,25 @@ export function useAuth() {
   } = useQuery({
     queryKey: authKeys.currentUser(),
     queryFn: fetchCurrentUser,
-    staleTime: 1000 * 60 * 5, // 5 分钟
+    staleTime: 1000 * 60 * 5,
     retry: false,
   });
 
   // 2. 登录 Mutation
   const loginMutation = useMutation({
-    mutationFn: async (credentials: BodyLogin) => {
+    mutationFn: async (credentials: UserLogin) => {
       const response = await apiLogin({
-        body: credentials,
+        // 安全断言：Camel -> Unknown -> Snake (BodyLogin)
+        body: credentials as unknown as BodyLogin,
         throwOnError: true,
       });
-      if (response.data?.access_token) {
-        localStorage.setItem("access_token", response.data.access_token);
-        Cookies.set("access_token", response.data.access_token, {
-          expires: 7, // 7 天后过期
-          path: "/", // 全站生效
+
+      const { access_token } = response.data || {};
+      if (access_token) {
+        localStorage.setItem("access_token", access_token);
+        Cookies.set("access_token", access_token, {
+          expires: 7,
+          path: "/",
           sameSite: "lax",
         });
         return response.data;
@@ -74,26 +83,20 @@ export function useAuth() {
       toast.success("欢迎回来！");
       queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
     },
-    onError: (error) => {
-      // error.message 已经自动变成了后端给的“用户不存在”或“密码错误”
-      toast.error(error.message);
-    },
+    onError: (error) => toast.error(error.message),
   });
 
   // 3. 注册 Mutation
   const registerMutation = useMutation({
     mutationFn: async (userData: UserRegister) => {
       return await apiRegister({
-        body: userData,
+        // 安全断言：Camel -> Unknown -> Snake (RawUserRegister)
+        body: userData as unknown as RawUserRegister,
         throwOnError: true,
       });
     },
-    onSuccess: () => {
-      toast.success("注册成功！请使用您的新账号登录。");
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
+    onSuccess: () => toast.success("注册成功！请登录"),
+    onError: (error) => toast.error(error.message),
   });
 
   // 4. 登出
