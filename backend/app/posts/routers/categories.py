@@ -114,4 +114,36 @@ async def list_categories_by_type(
 ):
     is_active = None if include_inactive else True
     query = utils.build_categories_query(post_type, is_active=is_active)
-    return await cruds.paginate_query(session, query)
+
+    # 1. 基础分页查询
+    page_result = await cruds.paginate_query(session, query)
+
+    # 2. 聚合统计文章数量
+    if page_result.items:
+        from app.posts.model import Post, PostStatus
+        from sqlalchemy import func, select
+
+        category_ids = [c.id for c in page_result.items]
+
+        # 统计每个分类下已发布的文章数
+        count_stmt = (
+            select(Post.category_id, func.count(Post.id))
+            .where(Post.category_id.in_(category_ids))
+            .where(Post.status == PostStatus.PUBLISHED)
+            .group_by(Post.category_id)
+        )
+
+        count_result = await session.exec(count_stmt)
+        count_map = {row[0]: row[1] for row in count_result.all()}
+
+        # 3. 填充 post_count 并转换为 Response 模型
+        new_items = []
+        for category in page_result.items:
+            # model_validate 会处理 from_attributes=True
+            resp = CategoryResponse.model_validate(category)
+            resp.post_count = count_map.get(category.id, 0)
+            new_items.append(resp)
+
+        page_result.items = new_items
+
+    return page_result

@@ -12,7 +12,6 @@ from app.core.base import Base
 from sqlmodel import JSON, Column, Field, Relationship
 
 if TYPE_CHECKING:
-    from app.posts.model import Category, Post
     from app.users.model import User
 
 
@@ -99,8 +98,11 @@ class MediaFile(Base, table=True):
 
     # 关系字段
     uploader: "User" = Relationship(back_populates="media_files")
-    categories_as_icon: list["Category"] = Relationship(back_populates="icon")
-    posts_as_cover: list["Post"] = Relationship(back_populates="cover_media")
+
+    # 移除未使用的反向关系以避免多重外键路径导致的 Mapper 错误
+    # 如果将来需要查引用，请显式定义 primaryjoin
+    # categories_as_icon: list["Category"] = Relationship(back_populates="icon")
+    # posts_as_cover: list["Post"] = Relationship(back_populates="cover_media")
 
     def __repr__(self) -> str:
         return f"MediaFile(id={self.id!r}, filename={self.original_filename!r}, type={self.media_type!r})"

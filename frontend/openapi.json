@@ -6630,6 +6630,18 @@
             ],
             "title": "Icon Id"
           },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
+          },
           "icon_preset": {
             "anyOf": [
               {
@@ -6711,6 +6723,18 @@
             ],
             "title": "Icon Id"
           },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
+          },
           "icon_preset": {
             "anyOf": [
               {
@@ -6730,13 +6754,37 @@
             "type": "string",
             "format": "uuid",
             "title": "Id"
+          },
+          "cover_media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaFileResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cover_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Image",
+            "description": "获取封面图 URL",
+            "readOnly": true
           }
         },
         "type": "object",
         "required": [
           "name",
           "slug",
-          "id"
+          "id",
+          "cover_image"
         ],
         "title": "CategoryResponse"
       },
@@ -6820,6 +6868,18 @@
               }
             ],
             "title": "Icon Id"
+          },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
           },
           "icon_preset": {
             "anyOf": [

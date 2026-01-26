@@ -8,6 +8,7 @@
  * ✅ 用 @hey-api 生成的函数 + serverClient
  */
 
+import { notFound, redirect } from "next/navigation";
 import { serverClient } from "@/lib/server-api-client";
 import {
   listPostsByType,
@@ -35,7 +36,7 @@ export async function getPosts(
   postType: PostType,
   page = 1,
   size = 10,
-  categoryId?: string
+  categoryId?: string,
 ): Promise<ApiData<PagePostShortResponse>> {
   const { data: response, error } = await listPostsByType({
     path: {
@@ -52,7 +53,7 @@ export async function getPosts(
   if (error) {
     // 🚀 让错误冒泡到最近的 error.tsx 边界
     throw new Error(
-      (error as any)?.error?.message || "无法获取文章列表，请稍后重试"
+      (error as any)?.error?.message || "无法获取文章列表，请稍后重试",
     );
   }
 
@@ -63,7 +64,7 @@ export async function getPosts(
  * 获取分类列表
  */
 export async function getCategories(
-  postType: PostType
+  postType: PostType,
 ): Promise<ApiData<PageCategoryResponse>> {
   const { data: response, error } = await listCategoriesByType({
     path: {
@@ -83,7 +84,7 @@ export async function getCategories(
 export const getPostDetail = cache(
   async (
     postType: string,
-    slug: string
+    slug: string,
   ): Promise<ApiData<PostDetailResponse>> => {
     const { data, error } = await getPostBySlug({
       client: serverClient,
@@ -94,15 +95,36 @@ export const getPostDetail = cache(
     });
 
     if (error) {
-      // 如果后端明确返回 404，由页面决定是显示 404 还是报错
-      // 这里我们选择抛出，让 error.tsx 处理通用错误，或者由 Page 捕获专门处理 notFound
-      throw new Error((error as any)?.error?.message || "文章获取失败");
+      const errAny = error as any;
+      const status = errAny.status || errAny.code || errAny.statusCode;
+      const msg = errAny?.error?.message || errAny?.message || String(error);
+
+      // 明确的 401 信号
+      if (status === 401 || errAny?.error?.code === 401) {
+        redirect("/login" as any);
+      }
+
+      // 明确的 404 信号
+      if (
+        status === 404 ||
+        errAny?.error?.code === 404 ||
+        /not found/i.test(msg)
+      ) {
+        notFound();
+      }
+
+      // 如果有其他明确错误信息，抛出异常
+      if (msg && msg !== "{}" && msg !== "[object Object]") {
+        throw new Error(msg);
+      }
+
+      // Fallthrough: 如果 error 是空对象且 data 为空，将在下面被捕获
     }
 
     if (!data) {
-      throw new Error("未找到文章内容");
+      notFound();
     }
 
     return data as unknown as ApiData<PostDetailResponse>;
-  }
+  },
 );

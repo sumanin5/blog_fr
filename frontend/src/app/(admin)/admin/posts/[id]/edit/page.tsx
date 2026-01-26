@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { usePostDetailQuery } from "@/hooks/admin/posts/queries";
+import { useRouter, notFound } from "next/navigation";
+import { usePostAdmin } from "@/hooks/admin/posts";
 import { useCategoriesQuery } from "@/hooks/admin/categories/queries";
-import { EditView } from "./edit-view";
-import { notFound } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { PostType } from "@/shared/api/generated";
+import { PostEditor } from "@/components/admin/posts/post-editor";
 
 interface PageProps {
   params: Promise<{
@@ -15,20 +15,27 @@ interface PageProps {
 }
 
 export default function EditPostPage({ params }: PageProps) {
-  // 使用 React.use 解包 params promise
+  const router = useRouter();
+  // Unwrap params using React.use for client component compatibility
   const { id } = React.use(params);
 
-  // 1. 获取文章详情 (自动嗅探类型)
+  // 1. 使用超级 Hook 获取文章详情与操作方法
   const {
-    data: post,
+    post,
+    update,
     isLoading: isPostLoading,
-    error: postError,
-  } = usePostDetailQuery(id, true);
+    isSaving,
+    error,
+  } = usePostAdmin(id);
 
   // 2. 获取分类列表 (依赖 postType)
-  const postType = post?.postType as PostType | undefined;
+  // 确保类型归一化
+  const rawType = post?.postType as PostType | undefined;
+  const normalizedType =
+    rawType === "idea" || rawType === "ideas" ? "ideas" : "articles";
+
   const { data: categoriesData, isLoading: isCategoriesLoading } =
-    useCategoriesQuery(postType || "article", !!postType);
+    useCategoriesQuery(normalizedType, !!rawType);
 
   if (isPostLoading || isCategoriesLoading) {
     return (
@@ -38,17 +45,43 @@ export default function EditPostPage({ params }: PageProps) {
     );
   }
 
-  if (postError || !post) {
+  if (error || !post) {
     notFound();
   }
 
   const categories = categoriesData?.items || [];
 
   return (
-    <EditView
-      post={post as any} // 这里 EditView 还没改驼峰，暂时 as any
-      postType={postType!}
-      categories={categories as any}
-    />
+    <div className="h-full">
+      <PostEditor
+        postType={normalizedType}
+        categories={categories}
+        initialData={{
+          title: post.title,
+          slug: post.slug || "",
+          contentMdx: post.contentMdx || "",
+          coverMedia: post.coverMedia,
+          categoryId: post.category?.id,
+          status: post.status,
+          // Tags 需要从对象数组转为字符串数组
+          tags: post.tags?.map((t: any) => t.name) || [],
+          excerpt: post.excerpt,
+          isFeatured: post.isFeatured,
+          enableJsx: post.enableJsx,
+          useServerRendering: post.useServerRendering,
+          metaTitle: post.metaTitle,
+          metaDescription: post.metaDescription,
+          metaKeywords: post.metaKeywords,
+        }}
+        onSave={(data) =>
+          update(data).then(() => {
+            // 保存成功后的逻辑，通常 Stay on page 或者跳转
+            // 这里选择跳转回列表，或者您可以选择留在当前页并弹出 Toast (update 内部已经有 Toast 了)
+            router.push("/admin/posts");
+          })
+        }
+        isSaving={isSaving}
+      />
+    </div>
   );
 }

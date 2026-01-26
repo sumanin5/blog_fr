@@ -8,12 +8,25 @@ import { RefreshCw, ShieldAlert, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
+import { usePostTypes } from "@/hooks/use-post-types";
 import { PostType } from "@/shared/api/generated";
 
 export default function AllPostsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState<PostType>("article");
+
+  // 1. 获取动态板块列表
+  const { data: postTypes = [], isLoading: typesLoading } = usePostTypes();
+
+  // 2. 初始化 activeTab (默认为第一个板块或 articles)
+  const [activeTab, setActiveTab] = React.useState<PostType>("articles");
+
+  // 当板块加载完成后，如果没有选中有效值，默认选中第一个
+  React.useEffect(() => {
+    if (postTypes.length > 0 && !postTypes.find((t) => t.value === activeTab)) {
+      setActiveTab(postTypes[0].value as PostType);
+    }
+  }, [postTypes, activeTab]);
 
   // 权限检查：如果不是超级管理员，重定向
   React.useEffect(() => {
@@ -22,12 +35,12 @@ export default function AllPostsPage() {
     }
   }, [user, authLoading, router]);
 
-  // 1. 使用超级 Hook (在超级管理员视角下)
+  // 3. 使用超级 Hook
   const { posts, isLoading, refetch, isFetching, deletePost } =
     usePostsAdmin(activeTab);
 
-  // 加载中状态
-  if (authLoading) {
+  // 加载中状态 (Auth or Types)
+  if (authLoading || typesLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -69,18 +82,24 @@ export default function AllPostsPage() {
       </div>
 
       <Tabs
-        defaultValue="article"
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as PostType)}
       >
-        <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-          <TabsTrigger value="article">文章 (Articles)</TabsTrigger>
-          <TabsTrigger value="idea">想法 (Ideas)</TabsTrigger>
+        <TabsList className="bg-muted/50 p-1 mb-6 inline-flex h-auto">
+          {postTypes.map((type) => (
+            <TabsTrigger
+              key={type.value}
+              value={type.value}
+              className="data-[state=active]:bg-background data-[state=active]:shadow px-4"
+            >
+              {type.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <div className="mt-6">
           <PostListTable
-            posts={posts as any}
+            posts={posts}
             isLoading={isLoading}
             showAuthor={true}
             onDelete={(post) =>

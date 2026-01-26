@@ -20,6 +20,7 @@ import type {
 } from "@/shared/api/generated/types.gen";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { revalidateTags, revalidatePosts } from "@/app/actions/revalidate";
 
 /**
  * 后台标签管理 Hook
@@ -75,8 +76,10 @@ export function useTagsAdmin(
         body: data.payload as unknown as UpdateTagData["body"],
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      await revalidateTags();
+      await revalidatePosts();
       toast.success("标签更新成功");
     },
     onError: (err: Error) => toast.error(`更新失败: ${err.message}`),
@@ -87,8 +90,9 @@ export function useTagsAdmin(
    */
   const cleanupMutation = useMutation({
     mutationFn: () => deleteOrphanedTags({ throwOnError: true }),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      await revalidateTags();
       const msg = res.data?.message || "清理完成";
       toast.success(msg);
     },
@@ -105,8 +109,10 @@ export function useTagsAdmin(
         body: payload as unknown as MergeTagsData["body"],
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      await revalidateTags();
+      await revalidatePosts();
       toast.success("标签合并成功");
     },
     onError: (err: Error) => toast.error(`合并失败: ${err.message}`),

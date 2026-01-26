@@ -46,7 +46,7 @@ interface PostEditorProps {
 
 export function PostEditor({
   initialData,
-  postType = "article",
+  postType = "articles",
   categories,
   onSave,
   isSaving,
@@ -94,8 +94,8 @@ export function PostEditor({
       {/* 顶部工具栏 */}
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-4">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <Link href={`/admin/posts/${postType}/me` as any}>
+          {}
+          <Link href={{ pathname: "/admin/posts", query: { type: postType } }}>
             <AdminActionButton
               variant="ghost"
               size="sm"
@@ -118,7 +118,7 @@ export function PostEditor({
             loadingText="保存中"
             icon={Save}
           >
-            保存并发布
+            保存更改
           </AdminActionButton>
         </div>
       </div>

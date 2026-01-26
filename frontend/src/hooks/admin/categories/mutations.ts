@@ -14,6 +14,11 @@ import type {
   UpdateCategoryByTypeData,
   DeleteCategoryByTypeData,
 } from "@/shared/api/generated/types.gen";
+import {
+  revalidateCategories,
+  revalidatePosts,
+} from "@/app/actions/revalidate";
+
 import { toast } from "sonner";
 
 /**
@@ -37,8 +42,9 @@ export const useCategoryMutations = (postType: PostType) => {
         body: data as unknown as CreateCategoryByTypeData["body"],
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       invalidate();
+      await revalidateCategories();
       toast.success("分类创建成功");
     },
     onError: (err: Error) => {
@@ -57,8 +63,10 @@ export const useCategoryMutations = (postType: PostType) => {
         body: data as unknown as UpdateCategoryByTypeData["body"],
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       invalidate();
+      await revalidateCategories();
+      await revalidatePosts(); // 文章列表可能展示分类名，故需刷新
       toast.success("分类更新成功");
     },
     onError: (err: Error) => {
@@ -76,8 +84,10 @@ export const useCategoryMutations = (postType: PostType) => {
         } as unknown as DeleteCategoryByTypeData["path"],
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       invalidate();
+      await revalidateCategories();
+      await revalidatePosts();
       toast.success("分类已成功移除");
     },
     onError: (err: Error) => {

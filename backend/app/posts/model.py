@@ -66,8 +66,12 @@ class Category(Base, table=True):
     )
     is_active: bool = Field(default=True, description="是否启用")
     sort_order: int = Field(default=0, description="排序")
+    # ... (existing fields)
     icon_id: Optional[UUID] = Field(
         default=None, foreign_key="media_files.id", description="分类图标ID"
+    )
+    cover_media_id: Optional[UUID] = Field(
+        default=None, foreign_key="media_files.id", description="分类封面图ID"
     )
     icon_preset: Optional[str] = Field(
         default=None, max_length=50, description="图标（预设）"
@@ -94,7 +98,14 @@ class Category(Base, table=True):
     )
     children: list["Category"] = Relationship(back_populates="parent")
     posts: list["Post"] = Relationship(back_populates="category")
-    icon: Optional["MediaFile"] = Relationship()
+
+    # 指向 MediaFile 的关系，需要明确指定 foreign_keys 以消除歧义
+    icon: Optional["MediaFile"] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "Category.icon_id"}
+    )
+    cover_media: Optional["MediaFile"] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "Category.cover_media_id"}
+    )
 
     def __repr__(self) -> str:
         return f"Category(name={self.name!r}, slug={self.slug!r})"

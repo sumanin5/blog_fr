@@ -194,6 +194,10 @@ export type CategoryCreate = {
      */
     icon_id?: string | null;
     /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
+    /**
      * Icon Preset
      */
     icon_preset?: string | null;
@@ -233,6 +237,10 @@ export type CategoryResponse = {
      */
     icon_id?: string | null;
     /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
+    /**
      * Icon Preset
      */
     icon_preset?: string | null;
@@ -241,6 +249,13 @@ export type CategoryResponse = {
      * Id
      */
     id: string;
+    cover_media?: MediaFileResponse | null;
+    /**
+     * Cover Image
+     *
+     * 获取封面图 URL
+     */
+    readonly cover_image: string | null;
 };
 
 /**
@@ -275,6 +290,10 @@ export type CategoryUpdate = {
      * Icon Id
      */
     icon_id?: string | null;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
     /**
      * Icon Preset
      */
@@ -1625,6 +1644,54 @@ export type WebhookResponse = {
 };
 
 /**
+ * CategoryResponse
+ */
+export type CategoryResponseWritable = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Parent Id
+     */
+    parent_id?: string | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+    /**
+     * Sort Order
+     */
+    sort_order?: number;
+    /**
+     * Icon Id
+     */
+    icon_id?: string | null;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
+    /**
+     * Icon Preset
+     */
+    icon_preset?: string | null;
+    post_type?: PostType;
+    /**
+     * Id
+     */
+    id: string;
+    cover_media?: MediaFileResponseWritable | null;
+};
+
+/**
  * MediaFileResponse
  *
  * 媒体文件响应模型
@@ -1767,6 +1834,32 @@ export type MediaFileUploadResponseWritable = {
 };
 
 /**
+ * Page[CategoryResponse]
+ */
+export type PageCategoryResponseWritable = {
+    /**
+     * Items
+     */
+    items: Array<CategoryResponseWritable>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Size
+     */
+    size: number;
+    /**
+     * Pages
+     */
+    pages: number;
+};
+
+/**
  * Page[MediaFileResponse]
  */
 export type PageMediaFileResponseWritable = {
@@ -1884,7 +1977,7 @@ export type PostDetailResponseWritable = {
      */
     cover_media_id?: string | null;
     author?: UserResponse | null;
-    category?: CategoryResponse | null;
+    category?: CategoryResponseWritable | null;
     cover_media?: MediaFileResponseWritable | null;
     /**
      * Tags
@@ -1987,7 +2080,7 @@ export type PostShortResponseWritable = {
      */
     cover_media_id?: string | null;
     author?: UserResponse | null;
-    category?: CategoryResponse | null;
+    category?: CategoryResponseWritable | null;
     cover_media?: MediaFileResponseWritable | null;
     /**
      * Tags

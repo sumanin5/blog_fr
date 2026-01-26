@@ -26,12 +26,12 @@ const POST_TYPE_CONFIG: Record<
   PostType,
   { title: string; description: string; icon: React.ComponentType }
 > = {
-  article: {
+  articles: {
     title: "博客文章",
     description: "深度思考与技术分享",
     icon: BookOpen,
   },
-  idea: {
+  ideas: {
     title: "想法感悟",
     description: "碎片化的灵感、随笔与日常吐槽",
     icon: Lightbulb,
@@ -68,7 +68,7 @@ function generatePostTypeMenuItems(): MenuItem[] {
           icon: MessageSquare,
         },
       ],
-    })
+    }),
   );
 }
 
@@ -80,12 +80,6 @@ export const MenuArray: MenuItem[] = [
     description: "返回首页",
   },
   ...generatePostTypeMenuItems(),
-  {
-    title: "仪表盘",
-    link: "/dashboard",
-    icon: LayoutDashboard,
-    description: "管理你的内容",
-  },
   {
     title: "关于",
     link: "/about",

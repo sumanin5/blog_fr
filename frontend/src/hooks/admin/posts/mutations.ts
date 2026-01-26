@@ -12,6 +12,12 @@ import {
   PostCreate as DomainPostCreate,
   PostUpdate as DomainPostUpdate,
 } from "@/shared/api/types";
+import {
+  revalidatePosts,
+  revalidatePost,
+  revalidateAll,
+} from "@/app/actions/revalidate";
+
 import { toast } from "sonner";
 
 /**
@@ -30,12 +36,13 @@ export const usePostMutations = () => {
     mutationFn: ({ type, data }: { type: PostType; data: DomainPostCreate }) =>
       createPostByType({
         path: { post_type: type },
-        // 我们通过 unknown 中转告诉 TS，数据在运行时会被拦截器处理
         body: data as unknown as PostCreate,
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       invalidate();
+      // Server Action: 刷新列表缓存
+      await revalidatePosts();
       toast.success("文章发布成功！正在处理后台同步...");
     },
     onError: (err: Error) => {
@@ -55,13 +62,20 @@ export const usePostMutations = () => {
       type: PostType;
     }) =>
       updatePostByType({
-        // ✅ 显式 Path 映射
         path: { post_type: type, post_id: id },
         body: data as unknown as PostUpdate,
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
       invalidate();
+      // Server Action: 刷新特定文章和列表
+      // 尝试从返回数据获取 slug，如果还没有生成（理论上更新后会有），则尝试用变量
+      const slug = data.data?.slug || variables.data.slug;
+      if (slug) {
+        await revalidatePost(slug);
+      } else {
+        await revalidatePosts();
+      }
       toast.success("内容已安全保存");
     },
     onError: (err: Error) => {
@@ -76,8 +90,9 @@ export const usePostMutations = () => {
         path: { post_type: type, post_id: id },
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       invalidate();
+      await revalidateAll(); // 删除可能影响分类统计等，索性全刷
       toast.success("文章已从库中移除");
     },
     onError: (err: Error) => {
@@ -89,15 +104,15 @@ export const usePostMutations = () => {
     createPost: (
       args: { type: PostType; data: DomainPostCreate },
       options?: Parameters<typeof createMutation.mutate>[1],
-    ) => createMutation.mutate(args, options),
+    ) => createMutation.mutateAsync(args, options),
     updatePost: (
       args: { id: string; data: DomainPostUpdate; type: PostType },
       options?: Parameters<typeof updateMutation.mutate>[1],
-    ) => updateMutation.mutate(args, options),
+    ) => updateMutation.mutateAsync(args, options),
     deletePost: (
       args: { id: string; type: PostType },
       options?: Parameters<typeof deleteMutation.mutate>[1],
-    ) => deleteMutation.mutate(args, options),
+    ) => deleteMutation.mutateAsync(args, options),
     isPending:
       createMutation.isPending ||
       updateMutation.isPending ||

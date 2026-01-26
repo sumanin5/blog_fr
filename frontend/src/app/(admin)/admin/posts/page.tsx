@@ -5,7 +5,7 @@ import { usePostTypes } from "@/hooks/use-post-types";
 import { usePostsAdmin } from "@/hooks/admin/posts";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { PostType } from "@/shared/api/generated";
@@ -16,7 +16,10 @@ export default function MyPostsPage() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type") as PostType;
 
-  const { data: postTypes = [] } = usePostTypes();
+  const { data: postTypes = [], isLoading: typesLoading } = usePostTypes();
+
+  // 智能默认值：优先取 URL 参数 -> 现有 Tab -> 列表第一个 -> fallback "articles"
+  // 注意：初始渲染时 postTypes 可能为空，所以 fallback 很有必要
   const [activeTab, setActiveTab] = React.useState<PostType>(
     typeParam ||
       (postTypes.length > 0
@@ -24,20 +27,18 @@ export default function MyPostsPage() {
         : ("articles" as PostType)),
   );
 
-  // 当后端数据加载完成且没有 URL 参数时，确保选中第一个
+  // 1. 自动纠正：当板块列表加载完毕后，确保 activeTab 是有效的
+  // 如果当前选中的 tab 不在列表中(且列表不为空)，自动切换到第一个
   React.useEffect(() => {
-    if (
-      !typeParam &&
-      postTypes.length > 0 &&
-      activeTab === ("articles" as PostType)
-    ) {
-      if (!postTypes.find((t) => t.value === "articles")) {
+    if (postTypes.length > 0) {
+      const isValid = postTypes.find((t) => t.value === activeTab);
+      if (!isValid) {
         setActiveTab(postTypes[0].value as PostType);
       }
     }
-  }, [postTypes, typeParam, activeTab]);
+  }, [postTypes, activeTab]);
 
-  // 当 URL 参数变化时，同步更新 Tab
+  // 2. URL 同步：当 URL 参数变化时，更新内部状态
   React.useEffect(() => {
     if (typeParam && typeParam !== activeTab) {
       setActiveTab(typeParam);
@@ -45,8 +46,13 @@ export default function MyPostsPage() {
   }, [typeParam, activeTab]);
 
   // 1. 使用重构后的超级 Hook
-  const { posts, isLoading, isFetching, refetch, deletePost } =
-    usePostsAdmin(activeTab);
+  // mode="type": 使用 /{type}/admin/posts 接口，支持按板块筛选
+  // - 普通用户: 自动只显示自己的文章
+  // - 管理员: 显示所有人的文章（目前管理台设计如此）
+  const { posts, isLoading, isFetching, refetch, deletePost } = usePostsAdmin(
+    activeTab,
+    { mode: "type" },
+  );
 
   // 自动获取当前类型的中文名字
   const typeLabel =
@@ -111,16 +117,22 @@ export default function MyPostsPage() {
         </TabsList>
 
         <div className="mt-6">
-          <PostListTable
-            posts={posts as any}
-            isLoading={isLoading}
-            onDelete={(post) =>
-              deletePost({
-                id: post.id,
-                type: (post.postType as PostType) || activeTab,
-              })
-            }
-          />
+          {typesLoading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <PostListTable
+              posts={posts}
+              isLoading={isLoading}
+              onDelete={(post) =>
+                deletePost({
+                  id: post.id,
+                  type: (post.postType as PostType) || activeTab,
+                })
+              }
+            />
+          )}
         </div>
       </Tabs>
     </div>

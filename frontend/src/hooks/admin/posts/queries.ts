@@ -87,14 +87,14 @@ export const usePostDetailQuery = (id: string, includeMdx = true) => {
       const results = await Promise.allSettled([
         getPostById({
           path: {
-            post_type: "article",
+            post_type: "articles",
             post_id: id,
           } as unknown as GetPostByIdData["path"],
           query: { includeMdx } as unknown as GetPostByIdData["query"],
         }),
         getPostById({
           path: {
-            post_type: "idea",
+            post_type: "ideas",
             post_id: id,
           } as unknown as GetPostByIdData["path"],
           query: { includeMdx } as unknown as GetPostByIdData["query"],

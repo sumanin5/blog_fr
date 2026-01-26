@@ -73,16 +73,23 @@ export default function GitSyncPage() {
         ? "检查中"
         : (preview?.errors?.length || 0) > 0
           ? "异常"
-          : "同步中",
+          : pendingChanges > 0
+            ? "待同步"
+            : "已同步",
       icon: FileCheck,
       color: isFetching
         ? "text-muted-foreground"
         : (preview?.errors?.length || 0) > 0
           ? "text-destructive"
-          : "text-success",
-      description: preview?.errors?.length
-        ? `检测到 ${preview.errors.length} 个同步冲突`
-        : "数据库与 Git 记录完全对齐",
+          : pendingChanges > 0
+            ? "text-warning"
+            : "text-success",
+      description:
+        (preview?.errors?.length || 0) > 0
+          ? `检测到 ${preview?.errors?.length} 个同步冲突`
+          : pendingChanges > 0
+            ? "Git 变更尚未应用，请点击同步"
+            : "数据库与 Git 记录完全对齐",
     },
   ];
 

@@ -33,6 +33,14 @@ export async function revalidateCategories() {
 }
 
 /**
+ * 更新标签缓存
+ */
+export async function revalidateTags() {
+  await updateTag("tags");
+  console.log("✅ 已通过 updateTag 更新标签缓存");
+}
+
+/**
  * 失效所有缓存
  * 用于：大量数据变更后
  * revalidateTag 用于彻底清除缓存
