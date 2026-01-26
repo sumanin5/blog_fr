@@ -7,6 +7,7 @@ import {
   mergeTags,
   deleteOrphanedTags,
 } from "@/shared/api/generated";
+import { denormalizeApiRequest } from "@/shared/api/transformers";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -23,7 +24,7 @@ export function useTagsAdmin(
     queryKey: ["admin", "tags", page, size, search],
     queryFn: async () => {
       const response = await listTags({
-        query: { page, size, search },
+        query: denormalizeApiRequest({ page, size, search }),
         throwOnError: true,
       });
       return response.data;
@@ -79,9 +80,9 @@ export function useTagsAdmin(
   });
 
   const mergeMutation = useMutation({
-    mutationFn: (data: { source_tag_id: string; target_tag_id: string }) =>
+    mutationFn: (data: { sourceTagId: string; targetTagId: string }) =>
       mergeTags({
-        body: data,
+        body: denormalizeApiRequest(data),
         throwOnError: true,
       }),
     onSuccess: () => {

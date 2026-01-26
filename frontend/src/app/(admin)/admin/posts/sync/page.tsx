@@ -68,6 +68,49 @@ export default function GitSyncPage() {
     },
   });
 
+  const pushMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+        }/api/v1/ops/git/push`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // 这里假设你已经处理了 Token
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "请求失败");
+      }
+      return response.json();
+    },
+    onSuccess: (stats) => {
+      toast.success("数据库导出已启动", {
+        description: (
+          <div className="mt-2 space-y-1 text-sm">
+            <p className="text-purple-600">
+              📊 导出: {stats.updated?.length ?? 0} 篇
+            </p>
+            <p className="text-xs text-muted-foreground pt-1">
+              这些文章现在已转化为 MDX 文件并受 Git 管辖。
+            </p>
+          </div>
+        ),
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast.error("导出失败", {
+        description: error.message || "请确认您有管理员权限",
+      });
+    },
+  });
+
   const handleManualSync = () => {
     syncMutation.mutate();
   };
@@ -126,6 +169,21 @@ export default function GitSyncPage() {
               className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
             />
             刷新状态
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => pushMutation.mutate()}
+            disabled={pushMutation.isPending || dbOnlyPosts.length === 0}
+          >
+            <Database
+              className={`mr-2 h-4 w-4 ${
+                pushMutation.isPending ? "animate-spin" : ""
+              }`}
+            />
+            {pushMutation.isPending
+              ? "导出中..."
+              : `导出 ${dbOnlyPosts.length} 篇原生文章`}
           </Button>
           <Button
             size="sm"

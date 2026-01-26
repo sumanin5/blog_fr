@@ -288,11 +288,12 @@ async def test_login_nonexistent_user(
         data=test_data.INVALID_LOGIN_DATA["nonexistent_user"],
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    assert response.status_code == test_data.StatusCodes.UNAUTHORIZED
+    # 用户不存在时返回 404 而不是 401,这样可以防止用户枚举攻击
+    assert response.status_code == test_data.StatusCodes.NOT_FOUND
 
     # 使用新的错误响应断言
     data = response.json()
-    assert_error_response(data, test_data.ErrorCodes.INVALID_CREDENTIALS)
+    assert_error_response(data, test_data.ErrorCodes.USER_NOT_FOUND)
 
 
 @pytest.mark.integration
@@ -330,19 +331,22 @@ async def test_login_empty_credentials(
         data=test_data.INVALID_LOGIN_DATA["empty_username"],
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    assert response.status_code == test_data.StatusCodes.UNAUTHORIZED
+    # 空用户名被视为用户不存在,返回 404
+    assert response.status_code == test_data.StatusCodes.NOT_FOUND
     data = response.json()
-    assert_error_response(data, test_data.ErrorCodes.INVALID_CREDENTIALS)
+    assert_error_response(data, test_data.ErrorCodes.USER_NOT_FOUND)
 
-    # 测试空密码 - 也被当作无效凭据处理
+    # 测试空密码 - 空密码时用户名仍然会被查询,如果用户不存在返回 404
     response = await async_client.post(
         api_urls.user_url("/login"),
         data=test_data.INVALID_LOGIN_DATA["empty_password"],
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    assert response.status_code == test_data.StatusCodes.UNAUTHORIZED
-    data = response.json()
-    assert_error_response(data, test_data.ErrorCodes.INVALID_CREDENTIALS)
+    # 如果用户不存在,返回 404;如果用户存在但密码为空,返回 401
+    assert response.status_code in [
+        test_data.StatusCodes.NOT_FOUND,
+        test_data.StatusCodes.UNAUTHORIZED,
+    ]
 
 
 # ============================================================

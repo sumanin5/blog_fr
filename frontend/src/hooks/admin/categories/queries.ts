@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { listCategoriesByType, PostType } from "@/shared/api/generated";
+import { denormalizeApiRequest } from "@/shared/api/transformers";
 
 /**
  * 后台专用的分类列表查询

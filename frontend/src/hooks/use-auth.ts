@@ -67,7 +67,9 @@ export function useAuth() {
         throwOnError: true,
       });
 
-      const { access_token } = response.data || {};
+      const data = response.data as any;
+      const access_token = data?.access_token || data?.accessToken;
+
       if (access_token) {
         localStorage.setItem("access_token", access_token);
         Cookies.set("access_token", access_token, {
@@ -75,7 +77,7 @@ export function useAuth() {
           path: "/",
           sameSite: "lax",
         });
-        return response.data;
+        return data;
       }
       throw new Error("登录异常：服务器未返回有效的身份凭证");
     },

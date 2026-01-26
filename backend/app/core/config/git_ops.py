@@ -4,7 +4,9 @@ from pydantic import Field
 class GitOpsSettings:
     """GitOps 同步功能相关的配置项"""
 
-    CONTENT_DIR: str = Field(default="/content", description="Git 内容仓库根目录")
+    CONTENT_DIR: str = Field(
+        default="/git_root/content", description="Git 内容仓库根目录"
+    )
     GIT_AUTO_CREATE_CATEGORIES: bool = Field(
         default=True, description="是否自动创建分类"
     )

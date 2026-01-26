@@ -4743,6 +4743,51 @@ export type TriggerSyncResponses = {
 
 export type TriggerSyncResponse = TriggerSyncResponses[keyof TriggerSyncResponses];
 
+export type PushToGitData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ops/git/push';
+};
+
+export type PushToGitErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type PushToGitError = PushToGitErrors[keyof PushToGitErrors];
+
+export type PushToGitResponses = {
+    /**
+     * Successful Response
+     */
+    200: SyncStats;
+};
+
+export type PushToGitResponse = PushToGitResponses[keyof PushToGitResponses];
+
 export type PreviewSyncData = {
     body?: never;
     path?: never;

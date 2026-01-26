@@ -29,6 +29,16 @@ class GitOpsContainer:
         self._preview_service = None
         self._resync_service = None
         self._commit_service = None
+        self._export_service = None
+
+    @property
+    def export_service(self):
+        """获取导出服务（单例）"""
+        if self._export_service is None:
+            from app.git_ops.services import ExportService
+
+            self._export_service = ExportService(self.session, self)
+        return self._export_service
 
     @property
     def sync_service(self):

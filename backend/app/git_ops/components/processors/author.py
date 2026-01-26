@@ -22,15 +22,30 @@ class AuthorProcessor(FieldProcessor):
         session: AsyncSession,
         dry_run: bool = False,
     ) -> None:
-        if not result.get("author_id"):
-            author_value = meta.get("author")
-            if not author_value:
-                raise GitOpsSyncError(
-                    f"Missing required field 'author' or 'author_id' in {scanned.file_path}",
-                    detail="Every post must specify an author",
-                )
+        from app.users import crud as user_crud
 
-            result["author_id"] = await self._resolve_author_id(session, author_value)
+        # 如果 Frontmatter 里有 author_id，先验证它是否有效
+        if result.get("author_id"):
+            existing_user = await user_crud.get_user_by_id(session, result["author_id"])
+            if existing_user:
+                logger.info(
+                    f"✅ Using existing author_id from frontmatter: {result['author_id']}"
+                )
+                return  # ID 有效，直接使用
+            else:
+                logger.warning(
+                    f"⚠️ author_id {result['author_id']} from frontmatter not found in DB, will auto-resolve"
+                )
+                result["author_id"] = None  # 清空无效的 ID
+
+        author_value = meta.get("author")
+        if not author_value:
+            raise GitOpsSyncError(
+                f"Missing required field 'author' or 'author_id' in {scanned.file_path}",
+                detail="Every post must specify an author",
+            )
+
+        result["author_id"] = await self._resolve_author_id(session, author_value)
 
     async def _resolve_author_id(
         self, session: AsyncSession, author_value: str

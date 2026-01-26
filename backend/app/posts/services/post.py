@@ -215,7 +215,15 @@ async def create_post(
     if post_in.category_id:
         category = await crud.get_category_by_id(session, post_in.category_id)
         if not category:
-            raise CategoryNotFoundError()
+            # 🔄 尝试强制刷新 Session 状态，应对 SQLAlchemy 事务可见性问题
+            session.expire_all()
+            category = await crud.get_category_by_id(session, post_in.category_id)
+
+            if not category:
+                logger.error(
+                    f"❌ Create Post Failed: Category {post_in.category_id} not found for type {post_in.post_type}!"
+                )
+                raise CategoryNotFoundError()
         if category.post_type != post_in.post_type:
             raise CategoryTypeMismatchError(
                 f"分类 '{category.name}' (类型:{category.post_type}) 与文章类型 '{post_in.post_type}' 不匹配"

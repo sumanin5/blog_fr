@@ -22,17 +22,33 @@ class CoverProcessor(FieldProcessor):
         session: AsyncSession,
         dry_run: bool = False,
     ) -> None:
-        if not result.get("cover_media_id"):
-            cover_path = meta.get("cover") or meta.get("image")
-            if cover_path:
-                from app.core.config import settings
+        from app.core.config import settings
+        from app.media import crud as media_crud
 
-                result["cover_media_id"] = await self._resolve_cover_media_id(
-                    session,
-                    cover_path,
-                    mdx_file_path=scanned.file_path,
-                    content_dir=Path(settings.CONTENT_DIR),
+        # 如果 Frontmatter 里有 cover_media_id，先验证它是否有效
+        if result.get("cover_media_id"):
+            existing_media = await media_crud.get_media_file(
+                session, result["cover_media_id"]
+            )
+            if existing_media:
+                logger.info(
+                    f"✅ Using existing cover_media_id from frontmatter: {result['cover_media_id']}"
                 )
+                return  # ID 有效，直接使用
+            else:
+                logger.warning(
+                    f"⚠️ cover_media_id {result['cover_media_id']} from frontmatter not found in DB, will auto-resolve"
+                )
+                result["cover_media_id"] = None  # 清空无效的 ID
+
+        cover_path = meta.get("cover") or meta.get("image")
+        if cover_path:
+            result["cover_media_id"] = await self._resolve_cover_media_id(
+                session,
+                cover_path,
+                mdx_file_path=scanned.file_path,
+                content_dir=Path(settings.CONTENT_DIR),
+            )
 
     async def _resolve_cover_media_id(
         self,

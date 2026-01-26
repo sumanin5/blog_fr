@@ -17,6 +17,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+# 必须导入 MediaFile 模型，否则 SQLAlchemy 在初始化 Category 关系时会找不到 'MediaFile'
+import app.media.model  # noqa
 from app.core.db import get_async_session
 from app.git_ops.service import GitOpsService
 from app.users.model import User, UserRole

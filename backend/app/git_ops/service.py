@@ -69,3 +69,9 @@ class GitOpsService:
             message: 提交信息
         """
         return await self.container.commit_service.auto_commit(message)
+
+    async def export_to_git(
+        self, post_id: str = None, default_user: User = None
+    ) -> SyncStats:
+        """执行数据库到 Git 的同步导"""
+        return await self.container.export_service.export_to_git(post_id, default_user)

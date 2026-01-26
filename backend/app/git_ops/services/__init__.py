@@ -5,6 +5,7 @@ GitOps 服务模块
 """
 
 from .commit_service import CommitService
+from .export_service import ExportService
 from .preview_service import PreviewService
 from .resync_service import ResyncService
 from .sync_service import SyncService
@@ -14,4 +15,5 @@ __all__ = [
     "PreviewService",
     "ResyncService",
     "CommitService",
+    "ExportService",
 ]

@@ -41,6 +41,20 @@ async def trigger_sync(
         return await service.sync_incremental(default_user=current_user)
 
 
+@router.post(
+    "/push",
+    response_model=SyncStats,
+    summary="强制将数据库变更推送至 Git",
+    description="扫描所有仅存在于数据库的文章，并将其导出为物理 MDX 文件并执行 Git 提交",
+)
+async def push_to_git(
+    current_user: Annotated[User, Depends(get_current_adminuser)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    service = GitOpsService(session)
+    return await service.export_to_git(default_user=current_user)
+
+
 @router.get(
     "/preview",
     response_model=PreviewResult,
