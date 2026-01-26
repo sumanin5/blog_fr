@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+from app.analytics.router import router as analytics_router
 from app.core.config import settings
 from app.core.customID import custom_generate_unique_id
 from app.core.error_handlers import (
@@ -126,6 +127,11 @@ app.include_router(
     git_ops_router,
     prefix=f"{settings.API_PREFIX}/ops/git",
     tags=["GitOps (Admin Only)"],
+)
+app.include_router(
+    analytics_router,
+    prefix=f"{settings.API_PREFIX}/analytics",
+    tags=["Analytics"],
 )
 
 # ============================================================

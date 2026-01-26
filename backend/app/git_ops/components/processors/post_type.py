@@ -42,7 +42,7 @@ class PostTypeProcessor(FieldProcessor):
         """解析 post_type"""
         post_type_value = derived_type or meta_type
         if not post_type_value:
-            return PostType.ARTICLE
+            return PostType.ARTICLES
 
         post_type_value = post_type_value.lower()
         try:

@@ -23,6 +23,17 @@ def _normalize_status(value: Any) -> Any:
     return value
 
 
+def _normalize_datetime(value: Any) -> Any:
+    """规范化日期时间值 (忽略微秒)"""
+    from datetime import datetime
+
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    return str(value)
+
+
 class PostComparator:
     """Post 对象对比器
 
@@ -50,7 +61,8 @@ class PostComparator:
         "use_server_rendering": ("use_server_rendering", "use_server_rendering", None),
         # 状态字段
         "status": ("status", "status", _normalize_status),
-        "published_at": ("published_at", "published_at", None),
+        "post_type": ("post_type", "post_type", _normalize_status),
+        "published_at": ("published_at", "published_at", _normalize_datetime),
     }
 
     @staticmethod
@@ -80,6 +92,12 @@ class PostComparator:
 
             # 对比
             if old_value != new_value:
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Mismatch detected in field '{change_name}':")
+                logger.warning(f"  Old: {old_value!r} (type: {type(old_value)})")
+                logger.warning(f"  New: {new_value!r} (type: {type(new_value)})")
                 changes.append(change_name)
 
         return changes

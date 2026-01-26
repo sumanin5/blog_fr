@@ -26,7 +26,7 @@ class TestPostComparator:
             content_mdx="# Original Content",
             excerpt="Original excerpt",
             category_id=uuid4(),
-            post_type=PostType.ARTICLE,
+            post_type=PostType.ARTICLES,
             status=PostStatus.PUBLISHED,
         )
 

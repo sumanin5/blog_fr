@@ -6208,10 +6208,236 @@
           }
         }
       }
+    },
+    "/api/v1/analytics/analytics/events": {
+      "post": {
+        "tags": [
+          "Analytics",
+          "analytics"
+        ],
+        "summary": "Log Analytics Event",
+        "description": "Log a new analytics event.\nAutomatically captures User-Agent and IP if not provided in payload.\nLinks to user account if authenticated.",
+        "operationId": "logAnalyticsEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyticsEventCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "AnalyticsEventCreate": {
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "page_path": {
+            "type": "string",
+            "title": "Page Path"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "visitor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visitor Id"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_type",
+          "page_path"
+        ],
+        "title": "AnalyticsEventCreate"
+      },
+      "AnalyticsEventResponse": {
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "page_path": {
+            "type": "string",
+            "title": "Page Path"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "visitor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visitor Id"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_type",
+          "page_path",
+          "id",
+          "created_at"
+        ],
+        "title": "AnalyticsEventResponse"
+      },
       "BatchDeleteRequest": {
         "properties": {
           "file_ids": {
@@ -6417,7 +6643,7 @@
           },
           "post_type": {
             "$ref": "#/components/schemas/PostType",
-            "default": "article"
+            "default": "articles"
           }
         },
         "type": "object",
@@ -6498,7 +6724,7 @@
           },
           "post_type": {
             "$ref": "#/components/schemas/PostType",
-            "default": "article"
+            "default": "articles"
           },
           "id": {
             "type": "string",
@@ -7250,7 +7476,7 @@
           },
           "post_type": {
             "$ref": "#/components/schemas/PostType",
-            "default": "article"
+            "default": "articles"
           },
           "status": {
             "$ref": "#/components/schemas/PostStatus",
@@ -7424,7 +7650,7 @@
           },
           "post_type": {
             "$ref": "#/components/schemas/PostType",
-            "default": "article"
+            "default": "articles"
           },
           "status": {
             "$ref": "#/components/schemas/PostStatus",
@@ -7698,7 +7924,7 @@
           },
           "post_type": {
             "$ref": "#/components/schemas/PostType",
-            "default": "article"
+            "default": "articles"
           },
           "status": {
             "$ref": "#/components/schemas/PostStatus",
@@ -7858,8 +8084,8 @@
       "PostType": {
         "type": "string",
         "enum": [
-          "article",
-          "idea"
+          "articles",
+          "ideas"
         ],
         "title": "PostType",
         "description": "内容类型枚举"
@@ -8949,6 +9175,10 @@
         "description": "查看 GitOps 完整架构文档",
         "url": "https://github.com/your-repo/blob/main/backend/app/git_ops/ARCHITECTURE.md"
       }
+    },
+    {
+      "name": "Analytics",
+      "description": "Data collection and analytics event logging endpoints. Supports automated event tracking using modern Python data analysis tools."
     }
   ]
 }

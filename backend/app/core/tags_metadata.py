@@ -5,6 +5,7 @@ API Tags Metadata - OpenAPI 文档标签描述
 每个模块可以在自己的 router.py 中定义详细的 metadata，然后在这里汇总。
 """
 
+from app.analytics.tag_metadata import ANALYTICS_TAG_METADATA
 from app.git_ops.tag_metadata import GITOPS_TAG_METADATA
 from app.media.tag_metadata import MEDIA_TAGS_METADATA
 from app.posts.tag_metadata import POSTS_TAGS_METADATA
@@ -18,6 +19,7 @@ TAGS_METADATA = [
     *MEDIA_TAGS_METADATA,  # media 的子标签
     *POSTS_TAGS_METADATA,  # posts 的子标签
     GITOPS_TAG_METADATA,
+    ANALYTICS_TAG_METADATA,
 ]
 
 DESCRIPTION = """

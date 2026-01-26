@@ -7,19 +7,21 @@ import {
   updateFile,
   batchDeleteFiles,
   regenerateThumbnails,
-  type BodyUploadFile,
-  type MediaFileUpdate,
-  type BatchDeleteRequest,
 } from "@/shared/api";
-import { denormalizeApiRequest } from "@/shared/api/transformers";
 import { toast } from "sonner";
 import { mediaKeys } from "./constants";
-import type * as Raw from "@/shared/api/generated/types.gen";
 import type {
   MediaUploadPayload,
   MediaUpdatePayload,
   MediaBatchDelete,
 } from "@/shared/api/types";
+import type {
+  UploadFileData,
+  UpdateFileData,
+  DeleteFileData,
+  BatchDeleteFilesData,
+  RegenerateThumbnailsData,
+} from "@/shared/api/generated/types.gen";
 
 /**
  * 上传文件 Mutation
@@ -27,10 +29,10 @@ import type {
 export function useUploadFile() {
   const queryClient = useQueryClient();
   return useMutation({
-    // 依赖全局拦截器自动处理 camelCase -> snake_case
-    mutationFn: async (input: MediaUploadPayload) => {
+    // ✅ 拦截器自动转换 camelCase -> snake_case
+    mutationFn: async (payload: MediaUploadPayload) => {
       const response = await uploadFile({
-        body: input as unknown as BodyUploadFile, // 显式断言：Camel -> Unknown -> Snake
+        body: payload as unknown as UploadFileData["body"],
         throwOnError: true,
       });
       return response.data;
@@ -38,8 +40,9 @@ export function useUploadFile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
       queryClient.invalidateQueries({ queryKey: mediaKeys.stats() });
+      toast.success("资源上传成功");
     },
-    onError: (err: Error) => toast.error("上传错误：" + err.message),
+    onError: (err: Error) => toast.error(`上传失败: ${err.message}`),
   });
 }
 
@@ -51,14 +54,15 @@ export function useUpdateFile() {
   return useMutation({
     mutationFn: async ({
       fileId,
-      data,
+      payload,
     }: {
       fileId: string;
-      data: MediaUpdatePayload;
+      payload: MediaUpdatePayload;
     }) => {
       const result = await updateFile({
-        path: denormalizeApiRequest<Raw.UpdateFileData["path"]>({ fileId }),
-        body: data as unknown as MediaFileUpdate, // 显式断言：Camel -> Unknown -> Snake
+        path: { file_id: fileId } as unknown as UpdateFileData["path"],
+        // ✅ 拦截器自动转换
+        body: payload as unknown as UpdateFileData["body"],
         throwOnError: true,
       });
       return result.data;
@@ -68,7 +72,7 @@ export function useUpdateFile() {
       queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
       toast.success("信息更新成功");
     },
-    onError: (err: Error) => toast.error("更新失败：" + err.message),
+    onError: (err: Error) => toast.error(`更新失败: ${err.message}`),
   });
 }
 
@@ -80,9 +84,7 @@ export function useRegenerateThumbnails() {
   return useMutation({
     mutationFn: async (id: string) => {
       await regenerateThumbnails({
-        path: denormalizeApiRequest<Raw.RegenerateThumbnailsData["path"]>({
-          fileId: id,
-        }),
+        path: { file_id: id } as unknown as RegenerateThumbnailsData["path"],
         throwOnError: true,
       });
       return id;
@@ -90,9 +92,9 @@ export function useRegenerateThumbnails() {
     onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: mediaKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: ["media", "blob", id] });
-      toast.success("缩略图已重绘");
+      toast.success("缩略图已触发重绘");
     },
-    onError: (err: Error) => toast.error("重绘失败：" + err.message),
+    onError: (err: Error) => toast.error(`重绘失败: ${err.message}`),
   });
 }
 
@@ -104,7 +106,7 @@ export function useDeleteFile() {
   return useMutation({
     mutationFn: async (id: string) => {
       await deleteFile({
-        path: denormalizeApiRequest<Raw.DeleteFileData["path"]>({ fileId: id }),
+        path: { file_id: id } as unknown as DeleteFileData["path"],
         throwOnError: true,
       });
       return id;
@@ -113,8 +115,9 @@ export function useDeleteFile() {
       queryClient.invalidateQueries({ queryKey: mediaKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
       queryClient.invalidateQueries({ queryKey: mediaKeys.stats() });
+      toast.success("资源已永久移除");
     },
-    onError: (err: Error) => toast.error("删除失败：" + err.message),
+    onError: (err: Error) => toast.error(`删除失败: ${err.message}`),
   });
 }
 
@@ -124,12 +127,10 @@ export function useDeleteFile() {
 export function useBatchDeleteFiles() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (ids: string[]) => {
-      // 构造符合前端类型的驼峰对象
-      const payload: MediaBatchDelete = { fileIds: ids };
+    mutationFn: async (payload: MediaBatchDelete) => {
       const res = await batchDeleteFiles({
-        // 显式断言：Camel -> Unknown -> Snake
-        body: payload as unknown as BatchDeleteRequest,
+        // ✅ 拦截器自动转换
+        body: payload as unknown as BatchDeleteFilesData["body"],
         throwOnError: true,
       });
       return res.data;
@@ -137,7 +138,8 @@ export function useBatchDeleteFiles() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
       queryClient.invalidateQueries({ queryKey: mediaKeys.stats() });
+      toast.success("批量清理完成");
     },
-    onError: (err: Error) => toast.error("批量操作异常：" + err.message),
+    onError: (err: Error) => toast.error(`批量操作失败: ${err.message}`),
   });
 }

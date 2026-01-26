@@ -38,7 +38,7 @@ async def test_build_posts_query_no_filters():
 @pytest.mark.asyncio
 async def test_build_posts_query_with_post_type():
     """测试按文章类型过滤"""
-    query = build_posts_query(post_type=PostType.ARTICLE)
+    query = build_posts_query(post_type=PostType.ARTICLES)
 
     query_str = str(query)
     assert "posts_post.post_type" in query_str
@@ -107,7 +107,7 @@ async def test_build_posts_query_with_search():
 async def test_build_posts_query_with_multiple_filters():
     """测试多个过滤条件组合"""
     query = build_posts_query(
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         is_featured=True,
         search_query="Python",
@@ -147,7 +147,7 @@ async def test_build_posts_query_ordering():
 @pytest.mark.asyncio
 async def test_build_categories_query_article_type():
     """测试构建文章分类查询"""
-    query = build_categories_query(PostType.ARTICLE)
+    query = build_categories_query(PostType.ARTICLES)
 
     query_str = str(query)
     assert "posts_category" in query_str
@@ -157,7 +157,7 @@ async def test_build_categories_query_article_type():
 @pytest.mark.asyncio
 async def test_build_categories_query_idea_type():
     """测试构建想法分类查询"""
-    query = build_categories_query(PostType.IDEA)
+    query = build_categories_query(PostType.IDEAS)
 
     query_str = str(query)
     assert "posts_category" in query_str
@@ -167,7 +167,7 @@ async def test_build_categories_query_idea_type():
 @pytest.mark.asyncio
 async def test_build_categories_query_filters_active():
     """测试查询只包含激活的分类"""
-    query = build_categories_query(PostType.ARTICLE)
+    query = build_categories_query(PostType.ARTICLES)
 
     query_str = str(query)
     assert "posts_category.is_active" in query_str
@@ -176,7 +176,7 @@ async def test_build_categories_query_filters_active():
 @pytest.mark.asyncio
 async def test_build_categories_query_ordering():
     """测试分类查询排序"""
-    query = build_categories_query(PostType.ARTICLE)
+    query = build_categories_query(PostType.ARTICLES)
 
     query_str = str(query)
     # 应该按 sort_order 和 name 排序
@@ -186,7 +186,7 @@ async def test_build_categories_query_ordering():
 @pytest.mark.asyncio
 async def test_build_categories_query_includes_relationships():
     """测试分类查询包含关联数据"""
-    query = build_categories_query(PostType.ARTICLE)
+    query = build_categories_query(PostType.ARTICLES)
 
     # 验证查询对象被创建
     assert query is not None
@@ -200,7 +200,7 @@ async def test_build_categories_query_includes_relationships():
 @pytest.mark.asyncio
 async def test_build_tags_query_article_type():
     """测试构建文章标签查询"""
-    query = build_tags_query(PostType.ARTICLE)
+    query = build_tags_query(PostType.ARTICLES)
 
     query_str = str(query)
     assert "posts_tag" in query_str
@@ -210,7 +210,7 @@ async def test_build_tags_query_article_type():
 @pytest.mark.asyncio
 async def test_build_tags_query_idea_type():
     """测试构建想法标签查询"""
-    query = build_tags_query(PostType.IDEA)
+    query = build_tags_query(PostType.IDEAS)
 
     query_str = str(query)
     assert "posts_tag" in query_str
@@ -220,7 +220,7 @@ async def test_build_tags_query_idea_type():
 @pytest.mark.asyncio
 async def test_build_tags_query_joins_posts():
     """测试标签查询关联文章表"""
-    query = build_tags_query(PostType.ARTICLE)
+    query = build_tags_query(PostType.ARTICLES)
 
     query_str = str(query)
     # 应该包含 JOIN posts 表
@@ -230,7 +230,7 @@ async def test_build_tags_query_joins_posts():
 @pytest.mark.asyncio
 async def test_build_tags_query_distinct():
     """测试标签查询去重"""
-    query = build_tags_query(PostType.ARTICLE)
+    query = build_tags_query(PostType.ARTICLES)
 
     query_str = str(query)
     # 应该包含 DISTINCT
@@ -240,7 +240,7 @@ async def test_build_tags_query_distinct():
 @pytest.mark.asyncio
 async def test_build_tags_query_ordering():
     """测试标签查询排序"""
-    query = build_tags_query(PostType.ARTICLE)
+    query = build_tags_query(PostType.ARTICLES)
 
     # 应该按标签名称排序
     assert "ORDER BY" in str(query) or "order_by" in str(query)

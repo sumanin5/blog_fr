@@ -83,6 +83,7 @@ export type RegenerateThumbnailsPath = ApiData<
 
 // 基础实体
 export type Post = ApiData<Raw.PostDetailResponse>;
+export type PostDetail = Post;
 export type PostShort = ApiData<Raw.PostShortResponse>;
 export type PostVersion = ApiData<Raw.PostVersionResponse>;
 export type PostTypeInfo = ApiData<Raw.PostTypeResponse>;

@@ -27,12 +27,12 @@ async def test_category_post_count_by_type(
     article_category = Category(
         name="Tech Article",
         slug="tech-article",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
     )
     idea_category = Category(
         name="Tech Idea",
         slug="tech-idea",
-        post_type=PostType.IDEA,
+        post_type=PostType.IDEAS,
     )
     session.add_all([article_category, idea_category])
     await session.commit()
@@ -44,7 +44,7 @@ async def test_category_post_count_by_type(
         title="Article 1",
         slug="article-1",
         content_mdx="# Article 1",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=article_category.id,
@@ -53,7 +53,7 @@ async def test_category_post_count_by_type(
         title="Article 2",
         slug="article-2",
         content_mdx="# Article 2",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=article_category.id,
@@ -64,7 +64,7 @@ async def test_category_post_count_by_type(
         title="Idea 1",
         slug="idea-1",
         content_mdx="# Idea 1",
-        post_type=PostType.IDEA,
+        post_type=PostType.IDEAS,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=idea_category.id,
@@ -74,7 +74,7 @@ async def test_category_post_count_by_type(
     await session.commit()
 
     # 测试 article 类型的分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -88,7 +88,7 @@ async def test_category_post_count_by_type(
         assert tech_article["post_count"] == 2
 
     # 测试 idea 类型的分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/idea/categories")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/ideas/categories")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -113,7 +113,7 @@ async def test_category_with_multiple_posts(
     category = Category(
         name="Programming",
         slug="programming",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
     )
     session.add(category)
     await session.commit()
@@ -126,7 +126,7 @@ async def test_category_with_multiple_posts(
             title=f"Post {i}",
             slug=f"post-{i}",
             content_mdx=f"# Post {i}",
-            post_type=PostType.ARTICLE,
+            post_type=PostType.ARTICLES,
             status=PostStatus.PUBLISHED,
             author_id=normal_user.id,
             category_id=category.id,
@@ -137,7 +137,7 @@ async def test_category_with_multiple_posts(
     await session.commit()
 
     # 测试分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -162,7 +162,7 @@ async def test_category_post_count_with_drafts(
     category = Category(
         name="Mixed Status",
         slug="mixed-status",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
     )
     session.add(category)
     await session.commit()
@@ -173,7 +173,7 @@ async def test_category_post_count_with_drafts(
         title="Published Post",
         slug="published-post",
         content_mdx="# Published",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=category.id,
@@ -184,7 +184,7 @@ async def test_category_post_count_with_drafts(
         title="Draft Post",
         slug="draft-post",
         content_mdx="# Draft",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.DRAFT,
         author_id=normal_user.id,
         category_id=category.id,
@@ -194,7 +194,7 @@ async def test_category_post_count_with_drafts(
     await session.commit()
 
     # 测试分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -220,13 +220,13 @@ async def test_empty_category_post_count(
     empty_category = Category(
         name="Empty Category",
         slug="empty-category",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
     )
     session.add(empty_category)
     await session.commit()
 
     # 测试分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -251,14 +251,14 @@ async def test_category_post_count_with_inactive_filter(
     active_category = Category(
         name="Active Category",
         slug="active-category",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         is_active=True,
     )
     # 创建未启用的分类
     inactive_category = Category(
         name="Inactive Category",
         slug="inactive-category",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         is_active=False,
     )
     session.add_all([active_category, inactive_category])
@@ -271,7 +271,7 @@ async def test_category_post_count_with_inactive_filter(
         title="Active Post",
         slug="active-post",
         content_mdx="# Active",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=active_category.id,
@@ -280,7 +280,7 @@ async def test_category_post_count_with_inactive_filter(
         title="Inactive Post",
         slug="inactive-post",
         content_mdx="# Inactive",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=inactive_category.id,
@@ -289,7 +289,7 @@ async def test_category_post_count_with_inactive_filter(
     await session.commit()
 
     # 测试默认分类列表（只包含启用的）
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/categories")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -301,7 +301,7 @@ async def test_category_post_count_with_inactive_filter(
 
     # 测试包含未启用分类的列表
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/categories?include_inactive=true"
+        f"{api_urls.API_PREFIX}/posts/articles/categories?include_inactive=true"
     )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()

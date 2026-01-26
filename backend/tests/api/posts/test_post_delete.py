@@ -34,7 +34,7 @@ async def test_delete_post_as_author(
         slug="to-delete",
         content_mdx="# 内容",
         content_ast={"type": "root", "children": []},
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.DRAFT,
         author_id=normal_user.id,
     )
@@ -43,14 +43,14 @@ async def test_delete_post_as_author(
     await session.refresh(post)
 
     response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/{post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{post.id}",
         headers=normal_user_token_headers,
     )
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # 验证文章已被删除
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/{post.id}")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/{post.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -68,7 +68,7 @@ async def test_delete_post_without_login(
 ):
     """测试未登录删除文章（应该失败）"""
     response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}"
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -84,7 +84,7 @@ async def test_delete_other_user_post(
 ):
     """测试普通管理员删除他人文章（应该失败）"""
     response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}",
         headers=admin_user_token_headers,
     )
 
@@ -109,7 +109,7 @@ async def test_delete_post_as_superadmin(
         slug="superadmin-delete-test",
         content_mdx="# 内容",
         content_ast={"type": "root", "children": []},
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
     )
@@ -118,7 +118,7 @@ async def test_delete_post_as_superadmin(
     await session.refresh(post)
 
     response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/{post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{post.id}",
         headers=superadmin_user_token_headers,
     )
 
@@ -136,7 +136,7 @@ async def test_delete_nonexistent_post(
     from uuid import uuid4
 
     response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/{uuid4()}",
+        f"{api_urls.API_PREFIX}/posts/articles/{uuid4()}",
         headers=normal_user_token_headers,
     )
 

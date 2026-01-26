@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPostTypes } from "@/shared/api/generated";
+import { getPostTypes } from "@/shared/api";
+import { PostTypeInfo } from "@/shared/api/types";
 
 /**
  * 获取文章类型元数据 (Article, Idea 等)
@@ -10,7 +11,8 @@ export function usePostTypes() {
     queryKey: ["global", "post-types"],
     queryFn: async () => {
       const response = await getPostTypes({ throwOnError: true });
-      return response.data;
+      // 拦截器已处理 Case 转换，此处直接断言为业务模型数组
+      return response.data as unknown as PostTypeInfo[];
     },
     staleTime: Infinity, // 永久缓存，除非手动刷新
   });

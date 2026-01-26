@@ -32,12 +32,12 @@ async def test_create_post_draft(
     post_data = {
         "title": "草稿文章",
         "content_mdx": "# 标题\n\n这是草稿内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -63,13 +63,13 @@ async def test_create_post_published(
     post_data = {
         "title": "已发布文章",
         "content_mdx": "# 标题\n\n这是已发布内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "published",
         "excerpt": "这是摘要",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -98,12 +98,12 @@ async def test_create_post_with_custom_slug(
         "title": "自定义 Slug",
         "slug": "my-custom-slug",
         "content_mdx": "# 标题\n\n内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -131,12 +131,12 @@ async def test_create_post_with_duplicate_slug(
         "title": "第一篇文章",
         "slug": "duplicate-slug",
         "content_mdx": "# 第一篇",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response_1 = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data_1,
         headers=normal_user_token_headers,
     )
@@ -150,12 +150,12 @@ async def test_create_post_with_duplicate_slug(
         "title": "第二篇文章",
         "slug": "duplicate-slug",  # 相同的 slug
         "content_mdx": "# 第二篇",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response_2 = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data_2,
         headers=normal_user_token_headers,
     )
@@ -180,13 +180,13 @@ async def test_create_post_with_category(
     post_data = {
         "title": "带分类的文章",
         "content_mdx": "# 标题\n\n内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "category_id": str(test_category.id),
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -208,13 +208,13 @@ async def test_create_post_with_tags(
     post_data = {
         "title": "带标签的文章",
         "content_mdx": "# 标题\n\n内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "tags": ["Python", "FastAPI", "新标签"],  # 包含已存在和新标签
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -238,19 +238,19 @@ async def test_create_post_as_idea_type(
     post_data = {
         "title": "关于我",
         "content_mdx": "# 关于我\n\n这是关于想法",
-        "post_type": "idea",
+        "post_type": "ideas",
         "status": "published",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/idea",
+        f"{api_urls.API_PREFIX}/posts/ideas",
         json=post_data,
         headers=normal_user_token_headers,
     )
 
     assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
-    assert data["post_type"] == "idea"
+    assert data["post_type"] == "ideas"
 
 
 # ============================================================
@@ -268,12 +268,12 @@ async def test_create_post_without_login(
     post_data = {
         "title": "测试文章",
         "content_mdx": "# 标题\n\n内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
     )
 
@@ -296,11 +296,11 @@ async def test_create_post_missing_required_fields(
     # 缺少 title
     post_data = {
         "content_mdx": "# 标题\n\n内容",
-        "post_type": "article",
+        "post_type": "articles",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -322,13 +322,13 @@ async def test_create_post_with_invalid_category(
     post_data = {
         "title": "测试文章",
         "content_mdx": "# 标题\n\n内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "category_id": str(uuid4()),
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )

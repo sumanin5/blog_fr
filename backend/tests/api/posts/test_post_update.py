@@ -33,7 +33,7 @@ async def test_update_post_as_author(
     }
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}",
         json=update_data,
         headers=normal_user_token_headers,
     )
@@ -58,7 +58,7 @@ async def test_update_post_content(
     }
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}",
         json=update_data,
         headers=normal_user_token_headers,
     )
@@ -83,7 +83,7 @@ async def test_update_post_status(
     }
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{draft_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{draft_post.id}",
         json=update_data,
         headers=normal_user_token_headers,
     )
@@ -109,7 +109,7 @@ async def test_update_post_category(
     new_category = Category(
         name="新分类",
         slug="new-cat",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
     )
     session.add(new_category)
     await session.commit()
@@ -120,7 +120,7 @@ async def test_update_post_category(
     }
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}",
         json=update_data,
         headers=normal_user_token_headers,
     )
@@ -144,7 +144,7 @@ async def test_update_post_tags(
     }
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}",
         json=update_data,
         headers=normal_user_token_headers,
     )
@@ -171,7 +171,7 @@ async def test_update_post_without_login(
     update_data = {"title": "尝试更新"}
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}",
         json=update_data,
     )
 
@@ -190,7 +190,7 @@ async def test_update_other_user_post(
     update_data = {"title": "尝试更新他人文章"}
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}",
         json=update_data,
         headers=admin_user_token_headers,
     )
@@ -210,7 +210,7 @@ async def test_update_post_as_superadmin(
     update_data = {"title": "超级管理员更新"}
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}",
         json=update_data,
         headers=superadmin_user_token_headers,
     )
@@ -233,7 +233,7 @@ async def test_update_nonexistent_post(
     update_data = {"title": "更新"}
 
     response = await async_client.patch(
-        f"{api_urls.API_PREFIX}/posts/article/{uuid4()}",
+        f"{api_urls.API_PREFIX}/posts/articles/{uuid4()}",
         json=update_data,
         headers=normal_user_token_headers,
     )

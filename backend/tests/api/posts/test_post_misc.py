@@ -63,7 +63,7 @@ async def test_get_post_by_slug_wrong_type(
     """测试通过 Slug 获取文章但类型不匹配"""
     # test_post 是 article 类型, 尝试用 idea 路径访问
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/idea/slug/{test_post.slug}"
+        f"{api_urls.API_PREFIX}/posts/ideas/slug/{test_post.slug}"
     )
 
     # 即使 slug 存在，但类型不对也应返回 404

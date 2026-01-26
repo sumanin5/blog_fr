@@ -5,6 +5,74 @@ export type ClientOptions = {
 };
 
 /**
+ * AnalyticsEventCreate
+ */
+export type AnalyticsEventCreate = {
+    /**
+     * Event Type
+     */
+    event_type: string;
+    /**
+     * Page Path
+     */
+    page_path: string;
+    /**
+     * Session Id
+     */
+    session_id?: string | null;
+    /**
+     * Visitor Id
+     */
+    visitor_id?: string | null;
+    /**
+     * Payload
+     */
+    payload?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * AnalyticsEventResponse
+ */
+export type AnalyticsEventResponse = {
+    /**
+     * Event Type
+     */
+    event_type: string;
+    /**
+     * Page Path
+     */
+    page_path: string;
+    /**
+     * Session Id
+     */
+    session_id?: string | null;
+    /**
+     * Visitor Id
+     */
+    visitor_id?: string | null;
+    /**
+     * Payload
+     */
+    payload?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * User Id
+     */
+    user_id?: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * BatchDeleteRequest
  *
  * 批量删除请求模型
@@ -968,7 +1036,7 @@ export type PostStatus = 'draft' | 'published' | 'archived';
  *
  * 内容类型枚举
  */
-export type PostType = 'article' | 'idea';
+export type PostType = 'articles' | 'ideas';
 
 /**
  * PostTypeResponse
@@ -4933,3 +5001,48 @@ export type GithubWebhookResponses = {
 };
 
 export type GithubWebhookResponse = GithubWebhookResponses[keyof GithubWebhookResponses];
+
+export type LogAnalyticsEventData = {
+    body: AnalyticsEventCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/analytics/analytics/events';
+};
+
+export type LogAnalyticsEventErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type LogAnalyticsEventError = LogAnalyticsEventErrors[keyof LogAnalyticsEventErrors];
+
+export type LogAnalyticsEventResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalyticsEventResponse;
+};
+
+export type LogAnalyticsEventResponse = LogAnalyticsEventResponses[keyof LogAnalyticsEventResponses];

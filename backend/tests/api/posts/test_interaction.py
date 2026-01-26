@@ -27,7 +27,7 @@ async def test_like_post_increment(
 
     # 点赞
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}/like"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}/like"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -51,7 +51,7 @@ async def test_like_post_decrement(
 
     # 取消点赞
     response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}/like"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}/like"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -75,7 +75,7 @@ async def test_like_count_non_negative(
 
     # 尝试取消点赞
     response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}/like"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}/like"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -95,7 +95,7 @@ async def test_bookmark_post_increment(
 
     # 收藏
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}/bookmark"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}/bookmark"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -119,7 +119,7 @@ async def test_bookmark_post_decrement(
 
     # 取消收藏
     response = await async_client.delete(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}/bookmark"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}/bookmark"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -140,6 +140,6 @@ async def test_interaction_nonexistent_post(
 
     # 点赞
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/{post_id}/like"
+        f"{api_urls.API_PREFIX}/posts/articles/{post_id}/like"
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND

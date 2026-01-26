@@ -25,7 +25,7 @@ class PostTestData:
         "slug": "test-article-slug",
         "excerpt": "这是文章摘要",
         "content_mdx": "# 标题\n\n这是文章内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "published",
     }
 
@@ -33,7 +33,7 @@ class PostTestData:
     VALID_CATEGORY_DATA = {
         "name": "技术分享",
         "slug": "tech-share",
-        "post_type": "article",
+        "post_type": "articles",
         "description": "技术相关的文章",
     }
 
@@ -62,7 +62,7 @@ async def test_category(session: AsyncSession) -> Category:
     category = Category(
         name="测试分类",
         slug="test-category",
-        post_type=PostType.ARTICLE,  # 使用 Enum 值
+        post_type=PostType.ARTICLES,  # 使用 Enum 值
         description="用于测试的分类",
         order=1,
     )
@@ -78,7 +78,7 @@ async def idea_category(session: AsyncSession) -> Category:
     category = Category(
         name="想法分类",
         slug="idea-category",
-        post_type=PostType.IDEA,
+        post_type=PostType.IDEAS,
         description="用于测试的想法分类",
         order=1,
     )
@@ -96,7 +96,7 @@ async def multiple_categories(session: AsyncSession) -> List[Category]:
         category = Category(
             name=f"分类 {i}",
             slug=f"category-{i}",
-            post_type=PostType.ARTICLE,
+            post_type=PostType.ARTICLES,
             order=i,
             description=f"分类 {i} 的描述",
         )
@@ -176,7 +176,7 @@ async def test_post(
             ],
         },
         toc=[{"id": "ce-shi", "title": "测试", "level": 1}],
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -209,7 +209,7 @@ async def draft_post(
             ],
         },
         toc=[{"id": "cao-gao", "title": "草稿", "level": 1}],
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.DRAFT,
         author_id=normal_user.id,
     )
@@ -232,7 +232,7 @@ async def admin_post(
         excerpt="管理员的文章",
         content_mdx="# 管理员\n\n内容",
         content_ast={"type": "root", "children": []},
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=admin_user.id,
         category_id=test_category.id,
@@ -261,7 +261,7 @@ async def multiple_posts(
             excerpt=f"摘要 {i}",
             content_mdx=f"# 标题 {i}\n\n内容",
             content_ast={"type": "root", "children": []},
-            post_type=PostType.ARTICLE,
+            post_type=PostType.ARTICLES,
             status=PostStatus.PUBLISHED,
             author_id=normal_user.id,
             category_id=test_category.id,
@@ -276,7 +276,7 @@ async def multiple_posts(
         excerpt="管理员的文章",
         content_mdx="# 管理员\n\n内容",
         content_ast={"type": "root", "children": []},
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=admin_user.id,
         category_id=test_category.id,
@@ -304,7 +304,7 @@ async def post_with_tags(
         excerpt="这篇文章有标签",
         content_mdx="# 标题\n\n内容",
         content_ast={"type": "root", "children": []},
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,

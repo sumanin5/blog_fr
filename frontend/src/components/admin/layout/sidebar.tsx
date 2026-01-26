@@ -36,8 +36,8 @@ import {
 const SIDEBAR_CONFIG = {
   personal: [
     { icon: LayoutDashboard, label: "工作台", href: "/admin/dashboard" },
-    { icon: FileText, label: "我的内容", href: "/admin/posts" },
-    { icon: GitBranch, label: "同步状态", href: "/admin/posts/sync" },
+    { icon: FileText, label: "博文管理", href: "/admin/posts" },
+    { icon: GitBranch, label: "同步状态", href: "/admin/sync" },
   ],
   admin: [
     { icon: ShieldCheck, label: "全站内容", href: "/admin/posts/all" },
@@ -52,6 +52,7 @@ export function AdminSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+
   if (!user) return null;
 
   return (
@@ -75,7 +76,7 @@ export function AdminSidebar({
                     isActive={pathname === item.href}
                     tooltip={item.label}
                   >
-                    <Link href={item.href}>
+                    <Link href={item.href as any}>
                       <item.icon className="size-4" />
                       <span className="font-medium">{item.label}</span>
                     </Link>
@@ -115,7 +116,7 @@ export function AdminSidebar({
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarUserFooter user={user as any} logout={logout} />
+        <SidebarUserFooter user={user} logout={logout} />
       </SidebarFooter>
 
       <SidebarRail />

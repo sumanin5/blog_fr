@@ -16,7 +16,7 @@ from sqlmodel import desc, select
 def build_posts_query(
     *,
     post_type: Optional[PostType] = None,
-    status: Optional[PostStatus] = PostStatus.PUBLISHED,
+    status: Optional[PostStatus] = None,
     category_id: Optional[UUID] = None,
     tag_id: Optional[UUID] = None,
     author_id: Optional[UUID] = None,

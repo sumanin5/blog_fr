@@ -2,7 +2,6 @@
 
 import React from "react";
 import { ShieldAlert } from "lucide-react";
-import { toast } from "sonner";
 
 // Hooks
 import { useAuth } from "@/hooks/use-auth";
@@ -101,15 +100,12 @@ export default function TagsPage() {
           onSave={(data) =>
             editingTag &&
             updateMutation.mutate(
-              { id: editingTag.id, ...data },
+              { id: editingTag.id, payload: data },
               {
                 onSuccess: () => {
                   setDialogs((d) => ({ ...d, edit: false }));
-                  toast.success("标签已更新");
                 },
-                onError: (err: unknown) =>
-                  toast.error("更新失败: " + (err as Error).message),
-              }
+              },
             )
           }
         />
@@ -120,15 +116,12 @@ export default function TagsPage() {
           tags={allTags}
           onConfirm={(sourceId, targetId) =>
             mergeMutation.mutate(
-              { source_tag_id: sourceId, target_tag_id: targetId },
+              { sourceTagId: sourceId, targetTagId: targetId },
               {
                 onSuccess: () => {
                   setDialogs((d) => ({ ...d, merge: false }));
-                  toast.success("标签已成功合并");
                 },
-                onError: (err: unknown) =>
-                  toast.error("合并失败: " + (err as Error).message),
-              }
+              },
             )
           }
           isPending={mergeMutation.isPending}
@@ -140,12 +133,9 @@ export default function TagsPage() {
           isPending={cleanupMutation.isPending}
           onConfirm={() =>
             cleanupMutation.mutate(undefined, {
-              onSuccess: (count) => {
+              onSuccess: () => {
                 setDialogs((d) => ({ ...d, cleanup: false }));
-                toast.success(`清理成功，共移除 ${count} 个无用标签`);
               },
-              onError: (err: unknown) =>
-                toast.error("清理失败: " + (err as Error).message),
             })
           }
         />

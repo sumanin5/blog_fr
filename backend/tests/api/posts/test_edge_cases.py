@@ -31,12 +31,12 @@ async def test_create_post_with_very_long_title(
     post_data = {
         "title": long_title,
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -59,12 +59,12 @@ async def test_create_post_with_empty_content(
     post_data = {
         "title": "空内容文章",
         "content_mdx": "",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -87,12 +87,12 @@ async def test_create_post_with_special_characters_in_title(
     post_data = {
         "title": "测试!@#$%^&*()_+-={}[]|\\:;\"'<>,.?/",
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -115,12 +115,12 @@ async def test_create_post_with_emoji_in_title(
     post_data = {
         "title": "测试文章 🚀 📝 ✨",
         "content_mdx": "# 内容 😊",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -145,14 +145,14 @@ async def test_view_count_increment(
     """测试浏览量递增"""
     # 第一次访问
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}"
     )
     assert response.status_code == status.HTTP_200_OK
     first_views = response.json()["view_count"]
 
     # 第二次访问
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}"
     )
     assert response.status_code == status.HTTP_200_OK
     second_views = response.json()["view_count"]
@@ -179,7 +179,7 @@ async def test_view_count_not_increment_for_draft(
 
     # 访问草稿
     await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{draft_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{draft_post.id}",
         headers=normal_user_token_headers,
     )
 
@@ -204,7 +204,7 @@ async def test_get_posts_with_invalid_page(
     """测试无效的分页参数"""
     # 负数页码
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?page=-1&size=10"
+        f"{api_urls.API_PREFIX}/posts/articles?page=-1&size=10"
     )
     # 应该返回错误或使用默认值
     assert response.status_code in [
@@ -214,7 +214,7 @@ async def test_get_posts_with_invalid_page(
 
     # 零页码
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?page=0&size=10"
+        f"{api_urls.API_PREFIX}/posts/articles?page=0&size=10"
     )
     assert response.status_code in [
         status.HTTP_200_OK,
@@ -230,7 +230,7 @@ async def test_get_posts_with_very_large_page_size(
 ):
     """测试超大的分页大小"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?page=1&size=10000"
+        f"{api_urls.API_PREFIX}/posts/articles?page=1&size=10000"
     )
 
     # 应该被限制或返回错误
@@ -253,7 +253,7 @@ async def test_get_posts_page_beyond_total(
 ):
     """测试请求超出总页数的页码"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?page=9999&size=10"
+        f"{api_urls.API_PREFIX}/posts/articles?page=9999&size=10"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -280,13 +280,13 @@ async def test_create_post_with_exactly_20_tags(
     post_data = {
         "title": "20标签文章",
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "tags": tags,
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -309,13 +309,13 @@ async def test_create_post_with_21_tags(
     post_data = {
         "title": "21标签文章",
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "tags": tags,
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -338,13 +338,13 @@ async def test_create_post_with_many_tags(
     post_data = {
         "title": "多标签文章",
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "tags": many_tags,
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -366,13 +366,13 @@ async def test_create_post_with_duplicate_tags(
     post_data = {
         "title": "重复标签文章",
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "tags": ["Python", "Python", "FastAPI", "Python"],  # 重复的标签
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -397,13 +397,13 @@ async def test_create_post_with_50_char_tag_name(
     post_data = {
         "title": "50字符标签测试",
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "tags": [tag_name],
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -427,13 +427,13 @@ async def test_create_post_with_51_char_tag_name(
     post_data = {
         "title": "51字符标签测试",
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "tags": [tag_name],
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -457,13 +457,13 @@ async def test_create_tag_with_very_long_name(
     post_data = {
         "title": "超长标签测试",
         "content_mdx": "# 内容",
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
         "tags": [long_tag_name],
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -502,12 +502,12 @@ async def test_create_post_with_malformed_mdx(
     post_data = {
         "title": "格式错误MDX测试",
         "content_mdx": malformed_mdx,
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -532,12 +532,12 @@ async def test_create_post_with_very_large_content(
     post_data = {
         "title": "超大内容测试",
         "content_mdx": large_content,
-        "post_type": "article",
+        "post_type": "articles",
         "status": "draft",
     }
 
     response = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article",
+        f"{api_urls.API_PREFIX}/posts/articles",
         json=post_data,
         headers=normal_user_token_headers,
     )
@@ -562,7 +562,7 @@ async def test_search_with_empty_query(
     api_urls: APIConfig,
 ):
     """测试空搜索查询"""
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article?search=")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles?search=")
 
     assert response.status_code == status.HTTP_200_OK
     # 空搜索应该返回所有文章
@@ -579,7 +579,7 @@ async def test_search_with_special_characters(
 
     for query in special_queries:
         response = await async_client.get(
-            f"{api_urls.API_PREFIX}/posts/article?search={query}"
+            f"{api_urls.API_PREFIX}/posts/articles?search={query}"
         )
 
         # 不应该引起错误（SQL注入防护）
@@ -603,11 +603,11 @@ async def test_category_slug_conflict_across_post_types(
     category_data = {
         "name": "技术",
         "slug": "tech-slug-conflict",
-        "post_type": "article",
+        "post_type": "articles",
     }
 
     response1 = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/article/categories",
+        f"{api_urls.API_PREFIX}/posts/articles/categories",
         json=category_data,
         headers=superadmin_user_token_headers,
     )
@@ -617,11 +617,11 @@ async def test_category_slug_conflict_across_post_types(
     category_data2 = {
         "name": "技术想法",
         "slug": "tech-slug-conflict",
-        "post_type": "idea",
+        "post_type": "ideas",
     }
 
     response2 = await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/idea/categories",
+        f"{api_urls.API_PREFIX}/posts/ideas/categories",
         json=category_data2,
         headers=superadmin_user_token_headers,
     )

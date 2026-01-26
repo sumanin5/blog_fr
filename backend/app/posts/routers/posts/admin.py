@@ -71,7 +71,7 @@ async def list_all_posts_admin(
 
     query = utils.build_posts_query(
         post_type=None,  # 不限制类型，显示所有板块
-        status=filters.status,  # 允许筛选状态
+        status=filters.status,  # 使用 filters.status (None 时查询构建器会默认处理，我们需要修改 query_builder)
         category_id=filters.category_id,
         tag_id=filters.tag_id,
         author_id=filters.author_id,
@@ -95,7 +95,7 @@ async def get_my_posts(
 ):
     query = utils.build_posts_query(
         post_type=None,  # 不筛选类型，显示所有板块的文章
-        status=filters.status,  # 可以筛选状态
+        status=filters.status,
         author_id=current_user.id,  # 只显示当前用户的
         category_id=filters.category_id,
         tag_id=filters.tag_id,

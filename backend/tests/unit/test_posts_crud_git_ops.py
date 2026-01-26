@@ -36,7 +36,7 @@ class TestPostsCrudGitOps:
         category = Category(
             name="Test Category",
             slug="test-category",
-            post_type=PostType.ARTICLE,
+            post_type=PostType.ARTICLES,
         )
         session.add(category)
         await session.commit()
@@ -54,7 +54,7 @@ class TestPostsCrudGitOps:
                 content_mdx=f"# Post {i}",
                 author_id=test_user.id,
                 category_id=test_category.id,
-                post_type=PostType.ARTICLE,
+                post_type=PostType.ARTICLES,
                 status=PostStatus.PUBLISHED,
                 source_path=f"articles/post-{i}.mdx",
             )
@@ -76,7 +76,7 @@ class TestPostsCrudGitOps:
                 content_mdx=f"# Manual Post {i}",
                 author_id=test_user.id,
                 category_id=test_category.id,
-                post_type=PostType.ARTICLE,
+                post_type=PostType.ARTICLES,
                 status=PostStatus.PUBLISHED,
                 source_path=None,  # 没有 source_path
             )
@@ -173,7 +173,7 @@ class TestPostsCrudGitOps:
             content_mdx="# Content",
             author_id=test_user.id,
             category_id=test_category.id,
-            post_type=PostType.ARTICLE,
+            post_type=PostType.ARTICLES,
             status=PostStatus.PUBLISHED,
             source_path=None,
         )
@@ -196,7 +196,7 @@ class TestPostsCrudGitOps:
             content_mdx="# Content",
             author_id=test_user.id,
             category_id=test_category.id,
-            post_type=PostType.ARTICLE,
+            post_type=PostType.ARTICLES,
             status=PostStatus.PUBLISHED,
             source_path="",  # 空字符串
         )
@@ -221,7 +221,7 @@ class TestPostsCrudGitOps:
                 content_mdx=f"# Post {i}",
                 author_id=test_user.id,
                 category_id=test_category.id,
-                post_type=PostType.ARTICLE,
+                post_type=PostType.ARTICLES,
                 status=PostStatus.PUBLISHED,
                 source_path=f"articles/post-{i}.mdx" if i % 2 == 0 else None,
             )
@@ -252,7 +252,7 @@ class TestPostsCrudGitOps:
                 content_mdx=f"# Post {i}",
                 author_id=test_user.id,
                 category_id=test_category.id,
-                post_type=PostType.ARTICLE,
+                post_type=PostType.ARTICLES,
                 status=PostStatus.PUBLISHED,
                 source_path=path,
             )

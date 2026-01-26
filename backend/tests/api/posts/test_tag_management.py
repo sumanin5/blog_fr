@@ -28,7 +28,7 @@ async def test_get_tags_list(
     api_urls: APIConfig,
 ):
     """测试获取标签列表（公开接口，无需登录）"""
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/tags")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/tags")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()

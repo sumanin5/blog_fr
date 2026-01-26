@@ -37,7 +37,7 @@ async def test_tag_post_count_by_type(
         title="Python Article 1",
         slug="python-article-1",
         content_mdx="# Python",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -46,7 +46,7 @@ async def test_tag_post_count_by_type(
         title="Python Article 2",
         slug="python-article-2",
         content_mdx="# Python",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -59,7 +59,7 @@ async def test_tag_post_count_by_type(
         title="Python Idea 1",
         slug="python-idea-1",
         content_mdx="# Idea",
-        post_type=PostType.IDEA,
+        post_type=PostType.IDEAS,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -70,7 +70,7 @@ async def test_tag_post_count_by_type(
     await session.commit()
 
     # 测试 article 类型的标签列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/tags")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/tags")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -88,7 +88,7 @@ async def test_tag_post_count_by_type(
     assert js_tag["post_count"] == 1
 
     # 测试 idea 类型的标签列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/idea/tags")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/ideas/tags")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -126,7 +126,7 @@ async def test_admin_tag_post_count_all_types(
         title="FullStack Article",
         slug="fullstack-article",
         content_mdx="# Article",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -135,7 +135,7 @@ async def test_admin_tag_post_count_all_types(
         title="FullStack Idea",
         slug="fullstack-idea",
         content_mdx="# Idea",
-        post_type=PostType.IDEA,
+        post_type=PostType.IDEAS,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -184,7 +184,7 @@ async def test_tag_post_count_excludes_drafts(
         title="Django Published",
         slug="django-published",
         content_mdx="# Published",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -196,7 +196,7 @@ async def test_tag_post_count_excludes_drafts(
         title="Django Draft",
         slug="django-draft",
         content_mdx="# Draft",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.DRAFT,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -207,7 +207,7 @@ async def test_tag_post_count_excludes_drafts(
     await session.commit()
 
     # 测试公开接口的标签列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/tags")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/tags")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -246,7 +246,7 @@ async def test_tag_post_count_with_search(
         title="React Native Post",
         slug="react-native-post",
         content_mdx="# React Native",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,
@@ -255,7 +255,7 @@ async def test_tag_post_count_with_search(
         title="React Post",
         slug="react-post",
         content_mdx="# React",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         status=PostStatus.PUBLISHED,
         author_id=normal_user.id,
         category_id=test_category.id,

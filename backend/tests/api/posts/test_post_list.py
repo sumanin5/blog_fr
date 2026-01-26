@@ -28,7 +28,7 @@ async def test_get_posts_list(
     api_urls: APIConfig,
 ):
     """测试获取文章列表（公开接口，无需登录）"""
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -54,7 +54,7 @@ async def test_get_posts_list_pagination(
     """测试文章列表分页"""
     # 第一页，每页 2 条
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?page=1&size=2"
+        f"{api_urls.API_PREFIX}/posts/articles?page=1&size=2"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -65,7 +65,7 @@ async def test_get_posts_list_pagination(
 
     # 第二页
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?page=2&size=2"
+        f"{api_urls.API_PREFIX}/posts/articles?page=2&size=2"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -83,7 +83,7 @@ async def test_get_posts_by_category(
 ):
     """测试按分类筛选文章"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?category_id={test_category.id}"
+        f"{api_urls.API_PREFIX}/posts/articles?category_id={test_category.id}"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -108,7 +108,7 @@ async def test_get_posts_by_tag(
     tag_id = post_with_tags.tags[0].id
 
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?tag_id={tag_id}"
+        f"{api_urls.API_PREFIX}/posts/articles?tag_id={tag_id}"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -133,7 +133,7 @@ async def test_get_posts_by_status(
     """测试按状态筛选文章（需要登录）"""
     # 获取已发布文章（公开接口）
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?status=published"
+        f"{api_urls.API_PREFIX}/posts/articles?status=published"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -142,7 +142,7 @@ async def test_get_posts_by_status(
 
     # 获取草稿文章（需要登录）
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?status=draft",
+        f"{api_urls.API_PREFIX}/posts/articles?status=draft",
         headers=normal_user_token_headers,
     )
 
@@ -161,7 +161,7 @@ async def test_get_posts_list_performance(
     api_urls: APIConfig,
 ):
     """测试列表查询性能优化：不返回正文字段"""
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -185,25 +185,25 @@ async def test_get_posts_by_post_type(
     idea_data = {
         "title": "关于想法",
         "content_mdx": "# 关于\n\n内容",
-        "post_type": "idea",
+        "post_type": "ideas",
         "status": "published",
     }
 
     await async_client.post(
-        f"{api_urls.API_PREFIX}/posts/idea",
+        f"{api_urls.API_PREFIX}/posts/ideas",
         json=idea_data,
         headers=normal_user_token_headers,
     )
 
     # 查询文章类型
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles")
     data = response.json()
-    assert all(post["post_type"] == "article" for post in data["items"])
+    assert all(post["post_type"] == "articles" for post in data["items"])
 
     # 查询想法类型
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/idea")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/ideas")
     data = response.json()
-    assert any(post["post_type"] == "idea" for post in data["items"])
+    assert any(post["post_type"] == "ideas" for post in data["items"])
 
 
 @pytest.mark.asyncio
@@ -215,7 +215,7 @@ async def test_get_posts_search(
 ):
     """测试文章搜索"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article?search={test_post.title}"
+        f"{api_urls.API_PREFIX}/posts/articles?search={test_post.title}"
     )
 
     assert response.status_code == status.HTTP_200_OK

@@ -26,7 +26,7 @@ async def test_git_directory_mapping(
 ):
     """测试 Git 优先的目录映射：路径决定分类和类型，忽略 frontmatter"""
     # 创建测试分类
-    tech_category = Category(name="Tech", slug="tech", post_type=PostType.ARTICLE)
+    tech_category = Category(name="Tech", slug="tech", post_type=PostType.ARTICLES)
     session.add(tech_category)
     await session.commit()
     await session.refresh(tech_category)
@@ -58,7 +58,7 @@ Content
     post = (await session.exec(select(Post).where(Post.title == "Test Post"))).one()
 
     assert post.category_id == tech_cat_id  # 路径优先
-    assert post.post_type == PostType.ARTICLE  # 路径优先
+    assert post.post_type == PostType.ARTICLES  # 路径优先
 
     # 验证回写：文件中应该纠正了错误的值
     file_content = (articles_dir / "test-post.mdx").read_text(encoding="utf-8")
@@ -242,7 +242,7 @@ async def test_metadata_completion(
 ):
     """测试元数据补充：用户只写了必要字段，系统自动补充完整的元数据"""
     # 创建测试分类
-    tech_category = Category(name="Tech", slug="tech", post_type=PostType.ARTICLE)
+    tech_category = Category(name="Tech", slug="tech", post_type=PostType.ARTICLES)
     session.add(tech_category)
     await session.commit()
     await session.refresh(tech_category)
@@ -288,4 +288,4 @@ Content here.
     session.expire_all()
     post = (await session.exec(select(Post).where(Post.title == "Minimal Post"))).one()
     assert post.category_id == tech_cat_id  # 使用之前保存的 ID
-    assert post.post_type == PostType.ARTICLE
+    assert post.post_type == PostType.ARTICLES

@@ -27,7 +27,7 @@ async def test_get_post_by_id(
 ):
     """测试通过 ID 获取文章详情"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -48,7 +48,7 @@ async def test_get_post_by_slug(
 ):
     """测试通过 Slug 获取文章详情"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/slug/{test_post.slug}"
+        f"{api_urls.API_PREFIX}/posts/articles/slug/{test_post.slug}"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -67,7 +67,7 @@ async def test_get_post_with_category(
 ):
     """测试获取包含分类的文章详情"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -87,7 +87,7 @@ async def test_get_post_with_tags(
 ):
     """测试获取包含标签的文章详情"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{post_with_tags.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{post_with_tags.id}"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -109,7 +109,7 @@ async def test_get_post_with_author(
 ):
     """测试获取包含作者信息的文章详情"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -129,7 +129,7 @@ async def test_get_nonexistent_post(
     """测试获取不存在的文章"""
     from uuid import uuid4
 
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/article/{uuid4()}")
+    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/{uuid4()}")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -142,7 +142,7 @@ async def test_get_nonexistent_post_by_slug(
 ):
     """测试通过不存在的 slug 获取文章"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/slug/nonexistent-slug"
+        f"{api_urls.API_PREFIX}/posts/articles/slug/nonexistent-slug"
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -163,7 +163,7 @@ async def test_get_draft_post_as_author(
 ):
     """测试作者访问自己的草稿文章"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{draft_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{draft_post.id}",
         headers=normal_user_token_headers,
     )
 
@@ -181,7 +181,7 @@ async def test_get_draft_post_without_login(
 ):
     """测试未登录访问草稿文章（应该失败）"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{draft_post.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{draft_post.id}"
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -197,7 +197,7 @@ async def test_get_draft_post_as_other_user(
 ):
     """测试其他用户访问草稿文章（普通管理员应该失败）"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{draft_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{draft_post.id}",
         headers=admin_user_token_headers,
     )
 
@@ -214,7 +214,7 @@ async def test_get_draft_post_as_superadmin(
 ):
     """测试超级管理员访问任何草稿文章"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{draft_post.id}",
+        f"{api_urls.API_PREFIX}/posts/articles/{draft_post.id}",
         headers=superadmin_user_token_headers,
     )
 
@@ -237,7 +237,7 @@ async def test_get_post_without_include_mdx(
 ):
     """测试默认不包含 MDX（返回 AST）"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -263,7 +263,7 @@ async def test_get_post_with_include_mdx_true(
 ):
     """测试 include_mdx=true 时返回 MDX"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}?include_mdx=true"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}?include_mdx=true"
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -283,7 +283,7 @@ async def test_get_post_with_include_mdx_false(
 ):
     """测试 include_mdx=false 时返回 AST"""
     response = await async_client.get(
-        f"{api_urls.API_PREFIX}/posts/article/{test_post.id}?include_mdx=false"
+        f"{api_urls.API_PREFIX}/posts/articles/{test_post.id}?include_mdx=false"
     )
 
     assert response.status_code == status.HTTP_200_OK

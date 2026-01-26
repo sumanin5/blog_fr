@@ -16,7 +16,7 @@ async def test_create_category_sync_dir(
     目前的实现是 Eager 初始化空目录。
     """
     category_slug = "new-tech-cat"
-    post_type = "article"
+    post_type = "articles"
 
     # 1. API 调用创建分类
     response = await async_client.post(
@@ -54,7 +54,7 @@ async def test_rename_category_slug_moves_files(
     # 0.1 创建分类 'old-slug'
     old_slug = "old-slug"
     new_slug = "new-slug"
-    post_type = "article"
+    post_type = "articles"
 
     resp_cat = await async_client.post(
         f"{settings.API_PREFIX}/posts/{post_type}/categories",
@@ -133,7 +133,7 @@ async def test_delete_category_removes_empty_dir(
     Test Case 3: 删除空分类时，物理目录被清理。
     """
     slug = "empty-cat-to-delete"
-    post_type = "article"
+    post_type = "articles"
 
     # 1. 创建分类
     resp = await async_client.post(
@@ -165,7 +165,7 @@ async def test_delete_non_empty_category_skips_dir_removal(
     Test Case 4: 删除非空分类时，保留物理目录以防数据丢失。
     """
     slug = "full-cat"
-    post_type = "article"
+    post_type = "articles"
 
     # 1. 创建分类
     resp = await async_client.post(

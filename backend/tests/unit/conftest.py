@@ -62,7 +62,7 @@ def mock_post() -> MagicMock:
     post.id = uuid4()
     post.title = "Test Post"
     post.slug = "test-post"
-    post.post_type = PostType.ARTICLE
+    post.post_type = PostType.ARTICLES
     post.status = PostStatus.PUBLISHED
     post.author_id = uuid4()
     post.category_id = None

@@ -8,12 +8,15 @@ class PathParser:
     """路径解析器 - 从文件路径提取元数据"""
 
     def __init__(self):
-        # 动态构建映射：支持单数和复数(简单+s)
+        # 动态构建映射：支持单数和复数
+        # 无论内部枚举是 "article" 还是 "articles"，都兼容目录名 "article" 和 "articles"
         self.type_mapping = {}
         for t in PostType:
             val = t.value
-            self.type_mapping[val] = val  # 支持单数目录 "article"
-            self.type_mapping[f"{val}s"] = val  # 支持复数目录 "articles"
+            # 去掉可能的末尾 s 获取基准词
+            base = val[:-1] if val.endswith("s") else val
+            self.type_mapping[base] = val  # "article" -> "articles"
+            self.type_mapping[f"{base}s"] = val  # "articles" -> "articles"
 
     def parse(self, rel_path: str) -> Dict[str, Optional[str]]:
         """

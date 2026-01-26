@@ -10,6 +10,8 @@ import {
 } from "@/components/admin/media";
 import { useMediaAdmin } from "@/hooks/admin/use-media-admin";
 import { type MediaType } from "@/shared/api";
+import { AdminActionButton } from "@/components/admin/common/admin-action-button";
+import { RefreshCw } from "lucide-react";
 
 export default function MediaManagementPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -39,9 +41,12 @@ export default function MediaManagementPage() {
     if (selectedFiles.size === 0) return;
     if (!confirm(`确定要删除选中的 ${selectedFiles.size} 个文件吗？`)) return;
 
-    await batchDeleteMutation.mutateAsync(Array.from(selectedFiles), {
-      onSuccess: () => setSelectedFiles(new Set()),
-    });
+    await batchDeleteMutation.mutateAsync(
+      { fileIds: Array.from(selectedFiles) },
+      {
+        onSuccess: () => setSelectedFiles(new Set()),
+      },
+    );
   }, [selectedFiles, batchDeleteMutation]);
 
   return (
@@ -74,14 +79,16 @@ export default function MediaManagementPage() {
                 Browse and control your uploaded assets
               </p>
             </div>
-            <Button
+            <AdminActionButton
               variant="ghost"
               size="sm"
+              icon={RefreshCw}
               className="text-[10px] font-bold uppercase tracking-widest opacity-50 hover:opacity-100"
               onClick={() => refetch()}
+              isLoading={isLoading}
             >
               同步云端
-            </Button>
+            </AdminActionButton>
           </div>
 
           <MediaToolbar
@@ -148,7 +155,7 @@ export default function MediaManagementPage() {
                 onRename={async (id, name) => {
                   await updateMutation.mutateAsync({
                     id,
-                    originalFilename: name,
+                    payload: { originalFilename: name },
                   });
                 }}
                 onRegenerate={async (id) => {
@@ -162,6 +169,3 @@ export default function MediaManagementPage() {
     </div>
   );
 }
-
-// 补齐缺少的 Button 导入
-import { Button } from "@/components/ui/button";

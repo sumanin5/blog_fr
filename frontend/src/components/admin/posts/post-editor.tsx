@@ -9,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MdxClientRenderer } from "@/components/post/content/renderers/mdx-client-renderer";
-import { PostType, PostStatus } from "@/shared/api/generated";
+import { CategoryResponse, PostType, PostStatus } from "@/shared/api/generated";
+import { MediaFile } from "@/shared/api/types";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
-import { useCategoriesAdmin } from "@/hooks/admin/categories";
 import { PostMetadataSidebar, PostMetadata } from "./post-metadata-sidebar";
 
 import "@uiw/react-md-editor/markdown-editor.css";
@@ -26,7 +26,7 @@ export interface PostEditorInitialData {
   title: string;
   slug: string;
   contentMdx: string;
-  coverMedia?: any; // 放宽类型以兼容
+  coverMedia?: MediaFile | null;
   categoryId?: string | null;
   status?: PostStatus;
   tags?: string[];
@@ -39,20 +39,19 @@ export interface PostEditorInitialData {
 interface PostEditorProps {
   initialData: PostEditorInitialData;
   postType?: PostType;
-  onSave: (data: any) => void;
+  categories: CategoryResponse[];
+  onSave: (data: Record<string, unknown>) => void;
   isSaving?: boolean;
 }
 
 export function PostEditor({
   initialData,
   postType = "article",
+  categories,
   onSave,
   isSaving,
 }: PostEditorProps) {
   const { theme } = useTheme();
-
-  // 获取分类列表用于传递给 Sidebar
-  const { categories } = useCategoriesAdmin(postType);
 
   // 核心内容状态
   const [title, setTitle] = useState(initialData.title);
@@ -76,17 +75,17 @@ export function PostEditor({
     onSave({
       title,
       // 核心内容
-      content_mdx: contentMdx,
+      contentMdx,
       // 元数据映射
       slug: metadata.slug,
       status: metadata.status,
-      category_id: metadata.categoryId || null,
+      categoryId: metadata.categoryId || null,
       tags: metadata.tags, //这里只传 tag names，后端会自动处理
       excerpt: metadata.excerpt,
-      cover_media_id: metadata.cover?.id || null,
-      is_featured: metadata.isFeatured,
-      enable_jsx: metadata.enableJsx,
-      use_server_rendering: metadata.useServerRendering,
+      coverMediaId: metadata.cover?.id || null,
+      isFeatured: metadata.isFeatured,
+      enableJsx: metadata.enableJsx,
+      useServerRendering: metadata.useServerRendering,
     });
   };
 
@@ -95,6 +94,7 @@ export function PostEditor({
       {/* 顶部工具栏 */}
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-4">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <Link href={`/admin/posts/${postType}/me` as any}>
             <AdminActionButton
               variant="ghost"
@@ -135,7 +135,7 @@ export function PostEditor({
               placeholder="输入引人入胜的标题..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="text-2xl font-bold h-14 border-none shadow-none px-0 focus-visible:ring-0 bg-transparent"
+              className="resize-none border-none! p-0 text-lg shadow-none focus-visible:ring-0 sm:text-lg md:text-xl lg:text-2xl"
             />
           </div>
 
@@ -144,7 +144,7 @@ export function PostEditor({
             onValueChange={setActiveTab}
             className="flex flex-1 flex-col overflow-hidden"
           >
-            <TabsList className="w-fit bg-transparent p-0 border-b w-full justify-start rounded-none h-auto">
+            <TabsList className="bg-transparent p-0 border-b w-full justify-start rounded-none h-auto">
               <TabsTrigger
                 value="edit"
                 className="gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2"
@@ -177,7 +177,7 @@ export function PostEditor({
                   textareaProps={{
                     placeholder: "使用 Markdown 开始你的创作...",
                   }}
-                  className="!border-none"
+                  className="border-none!"
                 />
               </div>
             </TabsContent>

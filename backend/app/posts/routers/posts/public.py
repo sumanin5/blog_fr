@@ -37,7 +37,15 @@ router = APIRouter(tags=["Posts - Articles"])
     description=GET_POST_TYPES_DOC,
 )
 async def get_post_types():
-    return [{"value": pt.value, "label": pt.value.title()} for pt in PostType]
+    # 映射表可根据需要扩展，未来甚至可以存入数据库或配置中心
+    display_names = {
+        PostType.ARTICLES: "文章",
+        PostType.IDEAS: "想法/随笔",
+    }
+    return [
+        {"value": pt.value, "label": display_names.get(pt, pt.value.title())}
+        for pt in PostType
+    ]
 
 
 # ========================================

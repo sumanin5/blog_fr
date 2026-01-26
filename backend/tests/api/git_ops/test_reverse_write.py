@@ -17,11 +17,11 @@ async def test_create_post_generates_file(
         "slug": "my-new-post",
         "content_mdx": "# Hello World\\nThis is a test post.",
         "status": "published",
-        "post_type": "article",
+        "post_type": "articles",
     }
 
     response = await async_client.post(
-        f"{settings.API_PREFIX}/posts/article",
+        f"{settings.API_PREFIX}/posts/articles",
         json=post_data,
         headers=superadmin_user_token_headers,
     )
@@ -76,7 +76,7 @@ async def test_update_post_updates_file(
     update_data = {"title": "New Title", "content_mdx": "Updated Content"}
 
     response = await async_client.patch(
-        f"{settings.API_PREFIX}/posts/article/{post_id}",
+        f"{settings.API_PREFIX}/posts/articles/{post_id}",
         json=update_data,
         headers=superadmin_user_token_headers,
     )
@@ -117,7 +117,7 @@ async def test_rename_post_moves_file(
 
     # 更新 Slug (Slug 变更不再影响文件名，因为文件名基于 Title)
     response = await async_client.patch(
-        f"{settings.API_PREFIX}/posts/article/{post_id}",
+        f"{settings.API_PREFIX}/posts/articles/{post_id}",
         json={"slug": "new-slug"},
         headers=superadmin_user_token_headers,
     )
@@ -152,7 +152,7 @@ async def test_delete_post_removes_file(
 
     # 删除文章
     response = await async_client.delete(
-        f"{settings.API_PREFIX}/posts/article/{post_id}",
+        f"{settings.API_PREFIX}/posts/articles/{post_id}",
         headers=superadmin_user_token_headers,
     )
     assert response.status_code == 204

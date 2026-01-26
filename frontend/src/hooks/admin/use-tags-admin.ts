@@ -6,15 +6,29 @@ import {
   updateTag,
   mergeTags,
   deleteOrphanedTags,
-} from "@/shared/api/generated";
-import { denormalizeApiRequest } from "@/shared/api/transformers";
+} from "@/shared/api";
+import {
+  TagList,
+  TagFilters,
+  TagUpdate as DomainTagUpdate,
+  TagMergePayload as DomainTagMergePayload,
+} from "@/shared/api/types";
+import type {
+  ListTagsData,
+  UpdateTagData,
+  MergeTagsData,
+} from "@/shared/api/generated/types.gen";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 
+/**
+ * 后台标签管理 Hook
+ * 遵循“全驼峰业务逻辑 + 自动化 API 转换”规范
+ */
 export function useTagsAdmin(
   page: number = 1,
   size: number = 50,
-  search?: string
+  search?: string,
 ) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -23,11 +37,13 @@ export function useTagsAdmin(
   const query = useQuery({
     queryKey: ["admin", "tags", page, size, search],
     queryFn: async () => {
+      const filters: TagFilters = { page, size, search };
       const response = await listTags({
-        query: denormalizeApiRequest({ page, size, search }),
+        // ✅ 拦截器已接管转换，此处只需通过类型断言
+        query: filters as unknown as ListTagsData["query"],
         throwOnError: true,
       });
-      return response.data;
+      return response.data as unknown as TagList;
     },
     enabled:
       !!user?.role && (user.role === "admin" || user.role === "superadmin"),
@@ -43,31 +59,32 @@ export function useTagsAdmin(
         error: "同步失败，请检查网络",
       });
       await promise;
-    } catch (e) {
-      // 这里的错误会被 toast.promise 捕获
+    } catch {
+      // 错误由 toast.promise 统一处理
     }
   };
 
+  /**
+   * 更新标签
+   */
   const updateMutation = useMutation({
-    mutationFn: (data: {
-      id: string;
-      name: string;
-      slug: string;
-      color?: string;
-    }) =>
+    mutationFn: (data: { id: string; payload: DomainTagUpdate }) =>
       updateTag({
-        path: { tag_id: data.id },
-        body: { name: data.name, slug: data.slug, color: data.color },
+        path: { tag_id: data.id } as unknown as UpdateTagData["path"],
+        // ✅ 自动转换 Body，无需 denormalize
+        body: data.payload as unknown as UpdateTagData["body"],
         throwOnError: true,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
       toast.success("标签更新成功");
     },
-    onError: (err: any) =>
-      toast.error("更新失败：" + (err.message || "未知错误")),
+    onError: (err: Error) => toast.error(`更新失败: ${err.message}`),
   });
 
+  /**
+   * 清理孤立标签
+   */
   const cleanupMutation = useMutation({
     mutationFn: () => deleteOrphanedTags({ throwOnError: true }),
     onSuccess: (res) => {
@@ -75,32 +92,31 @@ export function useTagsAdmin(
       const msg = res.data?.message || "清理完成";
       toast.success(msg);
     },
-    onError: (err: any) =>
-      toast.error("清理失败：" + (err.message || "未知错误")),
+    onError: (err: Error) => toast.error(`清理失败: ${err.message}`),
   });
 
+  /**
+   * 合并标签
+   */
   const mergeMutation = useMutation({
-    mutationFn: (data: { sourceTagId: string; targetTagId: string }) =>
+    mutationFn: (payload: DomainTagMergePayload) =>
       mergeTags({
-        body: denormalizeApiRequest(data),
+        // ✅ 自动转换 Body
+        body: payload as unknown as MergeTagsData["body"],
         throwOnError: true,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
       toast.success("标签合并成功");
     },
-    onError: (err: any) =>
-      toast.error("合并失败：" + (err.message || "未知错误")),
+    onError: (err: Error) => toast.error(`合并失败: ${err.message}`),
   });
 
   return {
-    data: query.data,
-    isLoading: query.isLoading,
-    isFetching: query.isFetching,
-    refetch: refetchWithFeedback, // 导出带反馈的函数
+    ...query,
+    refetch: refetchWithFeedback,
     updateMutation,
     cleanupMutation,
     mergeMutation,
-    queryClient,
   };
 }

@@ -169,7 +169,7 @@ async def test_sync_with_post_type(
 title: "Idea Post"
 slug: "idea-post"
 author: "{superadmin_user.username}"
-type: "IDEA"
+type: "IDEAS"
 ---
 
 This is an idea post.
@@ -192,7 +192,7 @@ This is an idea post.
     result = await session.exec(stmt)
     post = result.one()
 
-    assert post.post_type == PostType.IDEA
+    assert post.post_type == PostType.IDEAS
 
 
 @pytest.mark.asyncio
@@ -255,7 +255,7 @@ async def test_sync_with_all_metadata(
 title: "Complete Post"
 slug: "complete-post"
 author: "{superadmin_user.username}"
-type: "ARTICLE"
+type: "ARTICLES"
 status: "PUBLISHED"
 date: "2024-01-15"
 excerpt: "This is a custom excerpt"
@@ -291,7 +291,7 @@ Complete post content.
     await session.refresh(post, attribute_names=["tags"])
 
     assert post.title == "Complete Post"
-    assert post.post_type == PostType.ARTICLE
+    assert post.post_type == PostType.ARTICLES
     assert post.excerpt == "This is a custom excerpt"
     assert post.is_featured is True
     assert post.allow_comments is True

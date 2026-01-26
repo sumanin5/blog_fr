@@ -3,30 +3,42 @@ import {
   listPostsByTypeAdmin,
   listAllPostsAdmin,
   getMyPosts,
-  PostType,
-} from "@/shared/api/generated";
-import { AdminPostFilters, MyPostFilters } from "@/shared/api/types";
+  getPostById,
+} from "@/shared/api";
 import {
-  normalizeApiResponse,
-  denormalizeApiRequest,
-} from "@/shared/api/transformers";
+  AdminPostFilters,
+  MyPostFilters,
+  PostType,
+  AdminPostList,
+  MyPostList,
+  PostDetail,
+} from "@/shared/api/types";
+import type {
+  GetPostByIdData,
+  ListPostsByTypeAdminData,
+  ListAllPostsAdminData,
+  GetMyPostsData,
+} from "@/shared/api/generated/types.gen";
 
 /**
  * 1. 获取指定板块的文章列表 (管理员视角)
  */
 export const usePostsAdminQuery = (
   postType: PostType,
-  filters?: AdminPostFilters
+  filters?: AdminPostFilters,
 ) => {
   return useQuery({
     queryKey: ["admin", "posts", postType, filters],
     queryFn: async () => {
       const response = await listPostsByTypeAdmin({
-        path: denormalizeApiRequest({ post_type: postType }),
-        query: denormalizeApiRequest(filters),
+        path: {
+          post_type: postType,
+        } as unknown as ListPostsByTypeAdminData["path"],
+        // ✅ 拦截器已自动处理，不再手动转换
+        query: filters as unknown as ListPostsByTypeAdminData["query"],
         throwOnError: true,
       });
-      return normalizeApiResponse(response.data);
+      return response.data as unknown as AdminPostList;
     },
   });
 };
@@ -39,10 +51,11 @@ export const useGlobalPostsAdminQuery = (filters?: AdminPostFilters) => {
     queryKey: ["admin", "posts", "all", filters],
     queryFn: async () => {
       const response = await listAllPostsAdmin({
-        query: denormalizeApiRequest(filters),
+        // ✅ 同上，享受自动化
+        query: filters as unknown as ListAllPostsAdminData["query"],
         throwOnError: true,
       });
-      return normalizeApiResponse(response.data);
+      return response.data as unknown as AdminPostList;
     },
   });
 };
@@ -55,10 +68,54 @@ export const useMyPostsQuery = (filters?: MyPostFilters) => {
     queryKey: ["admin", "posts", "me", filters],
     queryFn: async () => {
       const response = await getMyPosts({
-        query: denormalizeApiRequest(filters),
+        // ✅ 逻辑对齐
+        query: filters as unknown as GetMyPostsData["query"],
         throwOnError: true,
       });
-      return normalizeApiResponse(response.data);
+      return response.data as unknown as MyPostList;
     },
+  });
+};
+
+/**
+ * 4. 获取文章详情 (自动探测类型)
+ */
+export const usePostDetailQuery = (id: string, includeMdx = true) => {
+  return useQuery({
+    queryKey: ["admin", "post", id, { includeMdx }],
+    queryFn: async () => {
+      const results = await Promise.allSettled([
+        getPostById({
+          path: {
+            post_type: "article",
+            post_id: id,
+          } as unknown as GetPostByIdData["path"],
+          query: { includeMdx } as unknown as GetPostByIdData["query"],
+        }),
+        getPostById({
+          path: {
+            post_type: "idea",
+            post_id: id,
+          } as unknown as GetPostByIdData["path"],
+          query: { includeMdx } as unknown as GetPostByIdData["query"],
+        }),
+      ]);
+
+      // 🔍 排除 any：直接查找包含数据的成功结果
+      const success = results.find(
+        (r) =>
+          r.status === "fulfilled" &&
+          // value exists on fulfilled result, and data exists on the response
+          !!r.value?.data,
+      );
+
+      if (!success || success.status !== "fulfilled" || !success.value.data) {
+        throw new Error("文章不存在或无法访问");
+      }
+
+      return success.value.data as unknown as PostDetail;
+    },
+    enabled: !!id,
+    retry: 1,
   });
 };

@@ -15,7 +15,7 @@ from .tag import TagResponse
 class PostBase(BaseModel):
     title: str = Field(..., max_length=200)
     slug: Optional[str] = None  # 如果不填，后端自动生成 base-slug-xxxxxx 格式
-    post_type: PostType = PostType.ARTICLE
+    post_type: PostType = PostType.ARTICLES
     status: PostStatus = PostStatus.DRAFT
 
 

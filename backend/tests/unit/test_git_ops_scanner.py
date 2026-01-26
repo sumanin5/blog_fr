@@ -9,21 +9,21 @@ class TestPathParser:
         parser = PathParser()
         # content/articles/tech/post.mdx
         result = parser.parse("articles/tech/post.mdx")
-        assert result["post_type"] == PostType.ARTICLE
+        assert result["post_type"] == PostType.ARTICLES
         assert result["category_slug"] == "tech"
 
     def test_parse_short_path(self):
         parser = PathParser()
         # content/articles/post.mdx
         result = parser.parse("articles/post.mdx")
-        assert result["post_type"] == PostType.ARTICLE
+        assert result["post_type"] == PostType.ARTICLES
         assert result["category_slug"] is None
 
     def test_parse_plural_types(self):
         parser = PathParser()
         # content/ideas/foo.mdx
         result = parser.parse("ideas/foo.mdx")
-        assert result["post_type"] == PostType.IDEA
+        assert result["post_type"] == PostType.IDEAS
 
         # content/til/foo.mdx
         # result = parser.parse("tils/foo.mdx")
@@ -58,7 +58,7 @@ Hello World
         assert scanned.file_path == "articles/python/test.mdx"
         assert scanned.frontmatter["title"] == "Test Post"
         assert scanned.content.strip() == "Hello World"
-        assert scanned.derived_post_type == PostType.ARTICLE
+        assert scanned.derived_post_type == PostType.ARTICLES
         assert scanned.derived_category_slug == "python"
         assert scanned.content_hash is not None
         assert scanned.meta_hash is not None

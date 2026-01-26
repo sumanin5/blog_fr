@@ -14,7 +14,7 @@ class CategoryBase(BaseModel):
     sort_order: int = 0
     icon_id: Optional[UUID] = None
     icon_preset: Optional[str] = None
-    post_type: PostType = PostType.ARTICLE
+    post_type: PostType = PostType.ARTICLES
 
 
 class CategoryCreate(CategoryBase):

@@ -10,12 +10,13 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from app.core.base import Base
+from sqlalchemy import Column
+from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import (
     JSON,
     TEXT,
     Boolean,
-    Column,
     Field,
     Relationship,
     SQLModel,
@@ -30,8 +31,8 @@ if TYPE_CHECKING:
 class PostType(str, Enum):
     """内容类型枚举"""
 
-    ARTICLE = "article"
-    IDEA = "idea"
+    ARTICLES = "articles"
+    IDEAS = "ideas"
 
 
 class PostStatus(str, Enum):
@@ -72,7 +73,15 @@ class Category(Base, table=True):
         default=None, max_length=50, description="图标（预设）"
     )
     post_type: PostType = Field(
-        default=PostType.ARTICLE, index=True, description="所属内容类型"
+        sa_column=Column(
+            SQLAlchemyEnum(
+                PostType, values_callable=lambda obj: [e.value for e in obj]
+            ),
+            index=True,
+            nullable=False,
+            default=PostType.ARTICLES,
+        ),
+        description="所属内容类型",
     )
 
     __table_args__ = (
@@ -114,7 +123,15 @@ class Post(Base, table=True):
     __tablename__ = "posts_post"
 
     post_type: PostType = Field(
-        default=PostType.ARTICLE, index=True, description="内容类型"
+        sa_column=Column(
+            SQLAlchemyEnum(
+                PostType, values_callable=lambda obj: [e.value for e in obj]
+            ),
+            index=True,
+            nullable=False,
+            default=PostType.ARTICLES,
+        ),
+        description="内容类型",
     )
     title: str = Field(max_length=200, description="标题")
     slug: str = Field(max_length=200, unique=True, index=True, description="URL别名")
@@ -141,7 +158,17 @@ class Post(Base, table=True):
     )
 
     # 状态与属性
-    status: PostStatus = Field(default=PostStatus.DRAFT, index=True, description="状态")
+    status: PostStatus = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(
+                PostStatus, values_callable=lambda obj: [e.value for e in obj]
+            ),
+            index=True,
+            nullable=False,
+            default=PostStatus.DRAFT,
+        ),
+        description="状态",
+    )
     is_featured: bool = Field(default=False, description="是否推荐")
     allow_comments: bool = Field(default=True, description="允许评论")
 

@@ -103,7 +103,7 @@ async def resync_test_post(mock_content_dir: Path, session, superadmin_user):
     category = Category(
         name="Tech",
         slug="tech",
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
     )
     session.add(category)
 
@@ -118,7 +118,7 @@ async def resync_test_post(mock_content_dir: Path, session, superadmin_user):
         slug="test-post-resync",
         content_mdx="# Test",
         status=PostStatus.PUBLISHED,
-        post_type=PostType.ARTICLE,
+        post_type=PostType.ARTICLES,
         author_id=author.id,
         category_id=category.id,
         source_path="test-resync.mdx",
@@ -178,8 +178,8 @@ async def resync_base_setup(mock_content_dir: Path, session):
     session.add(user)
 
     # 创建测试分类
-    tech_category = Category(name="Tech", slug="tech", post_type=PostType.ARTICLE)
-    life_category = Category(name="Life", slug="life", post_type=PostType.ARTICLE)
+    tech_category = Category(name="Tech", slug="tech", post_type=PostType.ARTICLES)
+    life_category = Category(name="Life", slug="life", post_type=PostType.ARTICLES)
     session.add_all([tech_category, life_category])
 
     await session.commit()
@@ -222,13 +222,13 @@ async def created_article_post(
         dict: API 响应的文章数据，包含 id, slug, title 等
     """
     response = await async_client.post(
-        f"{settings.API_PREFIX}/posts/article",
+        f"{settings.API_PREFIX}/posts/articles",
         json={
             "title": "Test Article",
             "slug": "test-article",
             "content_mdx": "# Test Content",
             "status": "draft",
-            "post_type": "article",
+            "post_type": "articles",
         },
         headers=superadmin_user_token_headers,
     )

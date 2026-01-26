@@ -80,7 +80,6 @@ client.setConfig({
       const data = await response.json();
 
       // ✅ 关键修复：即便是错误响应 (400, 401, 404等)，也要进行 Case 转换
-      // 这样 interceptor 才能拿到符合 interface 定义的 payload
       const normalizedData = normalizeApiResponse(data);
 
       return new Response(JSON.stringify(normalizedData), {
@@ -88,7 +87,7 @@ client.setConfig({
         statusText: response.statusText,
         headers: response.headers,
       });
-    } catch (e) {
+    } catch {
       // JSON 解析失败，返回原始 response
       return response;
     }
@@ -98,7 +97,16 @@ client.setConfig({
 /**
  * 请求拦截器：自动注入 Token
  */
-client.interceptors.request.use((request) => {
+client.interceptors.request.use((req) => {
+  // 💡 解决 TS(2339) 报错：
+  // 这里的 req 在运行时包含 query/body 属性，但 TS 默认推断为原生 Request 类型。
+  // 我们在入口处将其断言为一个更宽泛的配置对象，避免在逻辑中到处写类型断言。
+  const request = req as unknown as {
+    headers: Headers;
+    query?: Record<string, unknown>;
+    body?: string | unknown;
+  };
+
   if (typeof window !== "undefined") {
     const token = Cookies.get("access_token");
     if (token) {
@@ -107,29 +115,20 @@ client.interceptors.request.use((request) => {
   }
 
   // 1. 处理 Query 参数 Case 转换
-  // if (request.query) {
-  //   request.query = denormalizeApiRequest(request.query);
-  // }
+  if (request.query) {
+    request.query = denormalizeApiRequest(request.query);
+  }
 
   // 2. 处理请求体 Case 转换
   if (request.body && typeof request.body === "string") {
     try {
       const parsed = JSON.parse(request.body) as Record<string, unknown>;
-      const denormalized = denormalizeApiRequest(parsed);
-
-      /**
-       * 👨‍🚀 解决 TS(2352) 报错方案：
-       * 由于拦截器中的 request 往往是配置对象而非标准 Request 实例，
-       * 且 body 可能在编译期被识别为只读流，我们通过 unknown 中转来实现安全覆盖。
-       */
-      (request as unknown as { body: string }).body =
-        JSON.stringify(denormalized);
-    } catch (e) {
-      // 这里的 e 通常是 JSON 解析失败，可以静默忽略
-      console.warn("[API] Request body parsing failed", e);
+      request.body = JSON.stringify(denormalizeApiRequest(parsed));
+    } catch {
+      // 静默忽略
     }
   }
-  return request;
+  return req;
 });
 
 /**

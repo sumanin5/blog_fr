@@ -9,21 +9,44 @@ import { Plus, RefreshCw } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { PostType } from "@/shared/api/generated";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 export default function MyPostsPage() {
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get("type") as PostType;
+
   const { data: postTypes = [] } = usePostTypes();
-  const [activeTab, setActiveTab] = React.useState<PostType>("article");
+  const [activeTab, setActiveTab] = React.useState<PostType>(
+    typeParam ||
+      (postTypes.length > 0
+        ? (postTypes[0].value as PostType)
+        : ("articles" as PostType)),
+  );
+
+  // 当后端数据加载完成且没有 URL 参数时，确保选中第一个
+  React.useEffect(() => {
+    if (
+      !typeParam &&
+      postTypes.length > 0 &&
+      activeTab === ("articles" as PostType)
+    ) {
+      if (!postTypes.find((t) => t.value === "articles")) {
+        setActiveTab(postTypes[0].value as PostType);
+      }
+    }
+  }, [postTypes, typeParam, activeTab]);
+
+  // 当 URL 参数变化时，同步更新 Tab
+  React.useEffect(() => {
+    if (typeParam && typeParam !== activeTab) {
+      setActiveTab(typeParam);
+    }
+  }, [typeParam, activeTab]);
 
   // 1. 使用重构后的超级 Hook
-  const {
-    posts,
-    isLoading,
-    isFetching,
-    refetch,
-    deletePost,
-    isPending: isDeleting,
-  } = usePostsAdmin(activeTab);
+  const { posts, isLoading, isFetching, refetch, deletePost } =
+    usePostsAdmin(activeTab);
 
   // 自动获取当前类型的中文名字
   const typeLabel =
@@ -61,7 +84,9 @@ export default function MyPostsPage() {
           >
             刷新
           </AdminActionButton>
-          <Link href={`/admin/posts/new?type=${activeTab}` as any}>
+          <Link
+            href={{ pathname: "/admin/posts/new", query: { type: activeTab } }}
+          >
             <AdminActionButton size="sm" icon={Plus}>
               新建{typeLabel}
             </AdminActionButton>
