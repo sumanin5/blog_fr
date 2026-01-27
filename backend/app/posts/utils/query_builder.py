@@ -78,12 +78,17 @@ def build_posts_query(
     return stmt
 
 
-def build_categories_query(post_type: PostType, is_active: Optional[bool] = True):
+def build_categories_query(
+    post_type: PostType,
+    is_active: Optional[bool] = True,
+    is_featured: Optional[bool] = None,
+):
     """构建分类查询
 
     Args:
         post_type: 内容类型
         is_active: 是否只显示启用的分类。None 表示显示所有。
+        is_featured: 是否只显示推荐分类。None 表示显示所有。
 
     Returns:
         查询语句
@@ -100,6 +105,9 @@ def build_categories_query(post_type: PostType, is_active: Optional[bool] = True
 
     if is_active is not None:
         stmt = stmt.where(Category.is_active == is_active)
+
+    if is_featured is not None:
+        stmt = stmt.where(Category.is_featured == is_featured)
 
     return stmt
 

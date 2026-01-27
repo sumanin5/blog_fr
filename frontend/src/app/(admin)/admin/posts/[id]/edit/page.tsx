@@ -29,13 +29,10 @@ export default function EditPostPage({ params }: PageProps) {
   } = usePostAdmin(id);
 
   // 2. 获取分类列表 (依赖 postType)
-  // 确保类型归一化
-  const rawType = post?.postType as PostType | undefined;
-  const normalizedType =
-    rawType === "idea" || rawType === "ideas" ? "ideas" : "articles";
+  const normalizedType = (post?.postType as PostType) || "articles";
 
   const { data: categoriesData, isLoading: isCategoriesLoading } =
-    useCategoriesQuery(normalizedType, !!rawType);
+    useCategoriesQuery(normalizedType, !!post?.postType);
 
   if (isPostLoading || isCategoriesLoading) {
     return (

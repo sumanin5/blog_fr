@@ -3317,6 +3317,24 @@
               "title": "Include Inactive"
             },
             "description": "是否包含未启用的分类"
+          },
+          {
+            "name": "is_featured",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "是否只显示推荐分类",
+              "title": "Is Featured"
+            },
+            "description": "是否只显示推荐分类"
           }
         ],
         "responses": {
@@ -6780,7 +6798,7 @@
               }
             ],
             "title": "Cover Image",
-            "description": "获取封面图 URL",
+            "description": "获取封面图 URL（xlarge 尺寸，适合详情页全屏 banner）",
             "readOnly": true
           }
         },
@@ -6791,7 +6809,108 @@
           "id",
           "cover_image"
         ],
-        "title": "CategoryResponse"
+        "title": "CategoryResponse",
+        "description": "完整版分类响应 (包含关联对象和计算属性)"
+      },
+      "CategorySimpleResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Slug"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "default": ""
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          },
+          "icon_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Id"
+          },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
+          },
+          "icon_preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Preset"
+          },
+          "post_type": {
+            "$ref": "#/components/schemas/PostType",
+            "default": "articles"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "slug",
+          "id"
+        ],
+        "title": "CategorySimpleResponse",
+        "description": "精简版分类响应 (用于嵌套在文章列表等场景，避免循环引用和过度查询)"
       },
       "CategoryUpdate": {
         "properties": {
@@ -7799,7 +7918,7 @@
           "category": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CategoryResponse"
+                "$ref": "#/components/schemas/CategorySimpleResponse"
               },
               {
                 "type": "null"
@@ -8073,7 +8192,7 @@
           "category": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CategoryResponse"
+                "$ref": "#/components/schemas/CategorySimpleResponse"
               },
               {
                 "type": "null"

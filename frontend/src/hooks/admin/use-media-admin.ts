@@ -25,6 +25,7 @@ import type {
 } from "@/shared/api/generated/types.gen";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { toSnakeCase } from "@/shared/api/helpers";
 
 /**
  * 👑 媒体中心管理核心 Hook (Admin Version)
@@ -67,13 +68,14 @@ export function useMediaAdmin(filters: AdminMediaFilters = {}) {
    * 更新文件元数据
    */
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string; payload: MediaUpdatePayload }) =>
-      updateFile({
+    mutationFn: (data: { id: string; payload: MediaUpdatePayload }) => {
+      const snakeCasePayload = toSnakeCase(data.payload);
+      return updateFile({
         path: { file_id: data.id } as unknown as UpdateFileData["path"],
-        // ✅ 依赖拦截器自动处理 camelCase -> snake_case
-        body: data.payload as unknown as UpdateFileData["body"],
+        body: snakeCasePayload as unknown as UpdateFileData["body"],
         throwOnError: true,
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mediaKeys.all });
       toast.success("资源元数据已更新");
@@ -101,12 +103,13 @@ export function useMediaAdmin(filters: AdminMediaFilters = {}) {
    * 批量删除
    */
   const batchDeleteMutation = useMutation({
-    mutationFn: (payload: MediaBatchDelete) =>
-      batchDeleteFiles({
-        // ✅ 自动转换 Body
-        body: payload as unknown as BatchDeleteFilesData["body"],
+    mutationFn: (payload: MediaBatchDelete) => {
+      const snakeCasePayload = toSnakeCase(payload);
+      return batchDeleteFiles({
+        body: snakeCasePayload as unknown as BatchDeleteFilesData["body"],
         throwOnError: true,
-      }),
+      });
+    },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: mediaKeys.all });
       const data = res.data as unknown as MediaBatchDeleteResult;

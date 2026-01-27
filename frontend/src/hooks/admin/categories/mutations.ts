@@ -18,6 +18,7 @@ import {
   revalidateCategories,
   revalidatePosts,
 } from "@/app/actions/revalidate";
+import { toSnakeCase } from "@/shared/api/helpers";
 
 import { toast } from "sonner";
 
@@ -34,14 +35,16 @@ export const useCategoryMutations = (postType: PostType) => {
 
   // 创建
   const createMutation = useMutation({
-    mutationFn: (data: DomainCategoryCreate) =>
-      createCategoryByType({
+    mutationFn: (data: DomainCategoryCreate) => {
+      const snakeCaseData = toSnakeCase(data);
+      return createCategoryByType({
         path: {
           post_type: postType,
         } as unknown as CreateCategoryByTypeData["path"],
-        body: data as unknown as CreateCategoryByTypeData["body"],
+        body: snakeCaseData as unknown as CreateCategoryByTypeData["body"],
         throwOnError: true,
-      }),
+      });
+    },
     onSuccess: async () => {
       invalidate();
       await revalidateCategories();
@@ -54,15 +57,17 @@ export const useCategoryMutations = (postType: PostType) => {
 
   // 更新
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: DomainCategoryUpdate }) =>
-      updateCategoryByType({
+    mutationFn: ({ id, data }: { id: string; data: DomainCategoryUpdate }) => {
+      const snakeCaseData = toSnakeCase(data);
+      return updateCategoryByType({
         path: {
           post_type: postType,
           category_id: id,
         } as unknown as UpdateCategoryByTypeData["path"],
-        body: data as unknown as UpdateCategoryByTypeData["body"],
+        body: snakeCaseData as unknown as UpdateCategoryByTypeData["body"],
         throwOnError: true,
-      }),
+      });
+    },
     onSuccess: async () => {
       invalidate();
       await revalidateCategories();

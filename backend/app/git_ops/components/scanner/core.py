@@ -40,6 +40,10 @@ class MDXScanner:
             meta_str = json.dumps(post.metadata, sort_keys=True, default=str)
             path_info = self.path_parser.parse(rel_path)
 
+            # 检测是否为分类元数据文件
+            is_index = Path(rel_path).name.lower() == "index.md"
+            is_category_index = is_index and bool(path_info.get("category_slug"))
+
             return ScannedPost(
                 file_path=str(rel_path),
                 content_hash=calc_hash(raw_content),
@@ -49,6 +53,7 @@ class MDXScanner:
                 updated_at=full_path.stat().st_mtime,
                 derived_post_type=path_info.get("post_type"),
                 derived_category_slug=path_info.get("category_slug"),
+                is_category_index=is_category_index,
             )
         except Exception as e:
             # 附带文件路径上下文，符合全局错误处理规范

@@ -95,16 +95,14 @@ client.setConfig({
 });
 
 /**
- * 请求拦截器：自动注入 Token
+ * 请求拦截器：自动注入 Token 和转换 Query 参数
  */
 client.interceptors.request.use((req) => {
   // 💡 解决 TS(2339) 报错：
   // 这里的 req 在运行时包含 query/body 属性，但 TS 默认推断为原生 Request 类型。
-  // 我们在入口处将其断言为一个更宽泛的配置对象，避免在逻辑中到处写类型断言。
   const request = req as unknown as {
     headers: Headers;
     query?: Record<string, unknown>;
-    body?: string | unknown;
   };
 
   if (typeof window !== "undefined") {
@@ -114,20 +112,15 @@ client.interceptors.request.use((req) => {
     }
   }
 
-  // 1. 处理 Query 参数 Case 转换
+  // ✅ 转换 Query 参数 (camelCase -> snake_case)
+  // Query 参数是普通对象，可以安全转换
   if (request.query) {
     request.query = denormalizeApiRequest(request.query);
   }
 
-  // 2. 处理请求体 Case 转换
-  if (request.body && typeof request.body === "string") {
-    try {
-      const parsed = JSON.parse(request.body) as Record<string, unknown>;
-      request.body = JSON.stringify(denormalizeApiRequest(parsed));
-    } catch {
-      // 静默忽略
-    }
-  }
+  // ⚠️ 注意：我们不在这里转换 body，因为 body 可能是 ReadableStream
+  // Body 的转换逻辑在调用 SDK 之前完成（在 mutations.ts 里）
+
   return req;
 });
 

@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from app.git_ops.components.serializer import PostSerializer
 from app.git_ops.exceptions import FileOpsError, GitOpsConfigurationError
@@ -95,3 +95,42 @@ class FileWriter:
             raise FileOpsError(
                 "Unexpected error during post delete", path=str(abs_path), detail=str(e)
             ) from e
+
+    async def write_category(self, category: Any) -> Path:
+        """将分类元数据写入 index.md"""
+        try:
+            target_path = self.path_calculator.calculate_category_path(category)
+
+            # 构建 metadata
+            meta = {"title": category.name, "hidden": not category.is_active}
+            if category.icon_preset:
+                meta["icon"] = category.icon_preset
+            if category.sort_order != 0:
+                meta["order"] = category.sort_order
+
+            # Cover 处理 (如果有 media ID，尝试获取 path? 这里暂时只处理 path 类 cover)
+            # 由于反向解析 media_id 到 path 比较复杂，这里暂时略过 cover_media_id 的反写，
+            # 或者仅当 cover_media_id 为空但有 old metadata 时保留?
+            # 简单起见，如果 category 有 cover_image_path 字段最好，但没有。
+            # 目前只支持: 只有当用户手动在 index.md 写了 cover，Sync 进 DB。
+            # DB -> File: 如果前端选了图，生成 file? 暂不支持反写 cover path，防止覆盖 git 的 path。
+            # 妥协：暂时不反写 cover，除非 category 模型里存了 string path。
+            # 但用户改了 Description 是必须存的。
+
+            # 使用 frontmatter 库生成
+            import frontmatter
+
+            post_obj = frontmatter.Post(category.description or "", **meta)
+            content = frontmatter.dumps(post_obj)
+
+            # 确保目录存在
+            if not target_path.parent.exists():
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+
+            await self.file_operator.write_file(target_path, content)
+            logger.info(f"Wrote category index: {target_path}")
+            return target_path
+
+        except Exception as e:
+            logger.error(f"Failed to write category index: {e}")
+            raise FileOpsError("Failed to write category index", detail=str(e)) from e

@@ -111,9 +111,12 @@ async def list_categories_by_type(
     include_inactive: Annotated[
         bool, Query(description="是否包含未启用的分类")
     ] = False,
+    is_featured: Annotated[bool | None, Query(description="是否只显示推荐分类")] = None,
 ):
     is_active = None if include_inactive else True
-    query = utils.build_categories_query(post_type, is_active=is_active)
+    query = utils.build_categories_query(
+        post_type, is_active=is_active, is_featured=is_featured
+    )
 
     # 1. 基础分页查询
     page_result = await cruds.paginate_query(session, query)

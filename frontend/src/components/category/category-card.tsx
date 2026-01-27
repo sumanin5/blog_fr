@@ -10,6 +10,7 @@ import {
 import { ArrowRight, FileText, Folder } from "lucide-react";
 import { Category } from "@/shared/api/types";
 import { cn } from "@/lib/utils";
+import { getThumbnailUrl } from "@/lib/media-utils";
 
 interface CategoryCardProps {
   category: Category;
@@ -18,9 +19,10 @@ interface CategoryCardProps {
 
 export function CategoryCard({ category, postType }: CategoryCardProps) {
   const postCount = category.postCount ?? 0;
+  const coverImageUrl = getThumbnailUrl(category.coverMediaId, "large");
 
   // 有封面图模式
-  if (category.coverImage) {
+  if (coverImageUrl) {
     return (
       <Link
         href={`/posts/${postType}/categories/${category.slug}`}
@@ -34,7 +36,7 @@ export function CategoryCard({ category, postType }: CategoryCardProps) {
           {/* 背景图片 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={category.coverImage}
+            src={coverImageUrl}
             alt={category.name}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />

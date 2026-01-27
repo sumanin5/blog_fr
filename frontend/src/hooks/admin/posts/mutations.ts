@@ -17,6 +17,7 @@ import {
   revalidatePost,
   revalidateAll,
 } from "@/app/actions/revalidate";
+import { toSnakeCase } from "@/shared/api/helpers";
 
 import { toast } from "sonner";
 
@@ -33,12 +34,20 @@ export const usePostMutations = () => {
 
   // 创建文章
   const createMutation = useMutation({
-    mutationFn: ({ type, data }: { type: PostType; data: DomainPostCreate }) =>
-      createPostByType({
+    mutationFn: ({
+      type,
+      data,
+    }: {
+      type: PostType;
+      data: DomainPostCreate;
+    }) => {
+      const snakeCaseData = toSnakeCase(data);
+      return createPostByType({
         path: { post_type: type },
-        body: data as unknown as PostCreate,
+        body: snakeCaseData as unknown as PostCreate,
         throwOnError: true,
-      }),
+      });
+    },
     onSuccess: async () => {
       invalidate();
       // Server Action: 刷新列表缓存
@@ -60,12 +69,17 @@ export const usePostMutations = () => {
       id: string;
       data: DomainPostUpdate;
       type: PostType;
-    }) =>
-      updatePostByType({
+    }) => {
+      // ⚠️ 手动转换 camelCase -> snake_case
+      // 因为拦截器无法处理 ReadableStream 类型的 body
+      const snakeCaseData = toSnakeCase(data);
+
+      return updatePostByType({
         path: { post_type: type, post_id: id },
-        body: data as unknown as PostUpdate,
+        body: snakeCaseData as unknown as PostUpdate,
         throwOnError: true,
-      }),
+      });
+    },
     onSuccess: async (data, variables) => {
       invalidate();
       // Server Action: 刷新特定文章和列表

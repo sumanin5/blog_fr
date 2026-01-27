@@ -1,46 +1,18 @@
-import Image from "next/image";
-import Link from "next/link";
+import { HeroCarousel } from "@/components/home/hero-carousel";
+import { FeaturedCategories } from "@/components/home/featured-categories";
+import { LatestContentSections } from "@/components/home/latest-posts";
 
 export default function Home() {
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-8 sm:p-20">
-      <main className="flex flex-col items-center gap-8">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <div className="flex flex-col items-center gap-4 text-center">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            Welcome to <span className="text-primary">BLOG_FR</span>
-          </h1>
-          <p className="max-w-[600px] text-muted-foreground text-lg">
-            A modern blogging platform built with Next.js 15, FastAPI, and
-            Tailwind CSS v4. High performance, SEO optimized, and developer
-            friendly.
-          </p>
-        </div>
+    <div className="flex flex-col min-h-screen">
+      {/* 1. 全屏轮播图 (精选文章) */}
+      <HeroCarousel />
 
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <Link
-            className="flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-8 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-            href="/posts"
-          >
-            阅读博客
-          </Link>
-          <a
-            className="flex h-12 items-center justify-center rounded-full border border-solid border-black/8 px-8 transition-colors hover:border-transparent hover:bg-black/4 dark:border-white/14.5 dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      {/* 2. 精选分类 (卡片式轮播) */}
+      <FeaturedCategories />
+
+      {/* 3. 最新内容列表 (配置化渲染) */}
+      <LatestContentSections />
     </div>
   );
 }

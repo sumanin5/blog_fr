@@ -17,7 +17,7 @@ from app.users import crud
 from app.users.exceptions import InactiveUserError, InvalidCredentialsError
 from app.users.model import User
 from app.users.schema import TokenPayload
-from fastapi import Depends, Path
+from fastapi import Depends, Path, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -40,13 +40,19 @@ oauth2_scheme = OAuth2PasswordBearer(
 async def get_current_user(
     token: Annotated[str | None, Depends(oauth2_scheme)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    request: Request,
 ) -> User:
     """
     获取当前登录用户
 
+    支持两种认证方式：
+    1. Authorization header: Bearer <token>
+    2. Cookie: access_token=<token>
+
     Args:
         session: 异步数据库会话
-        token: JWT token
+        token: JWT token (from Authorization header)
+        request: FastAPI Request 对象
 
     Returns:
         当前用户对象
@@ -54,7 +60,11 @@ async def get_current_user(
     Raises:
         InvalidCredentialsError: 如果 token 无效或用户不存在
     """
-    # 🛡️ 防御性检查：如果 token 是 None，说明没有提供认证
+    # 🛡️ 防御性检查：如果 Authorization header 没有 token，尝试从 Cookie 读取
+    if token is None:
+        token = request.cookies.get("access_token")
+
+    # 如果两种方式都没有 token，则认证失败
     if token is None:
         raise InvalidCredentialsError(
             "No authentication token provided. Please login to access this resource."
@@ -126,6 +136,7 @@ async def get_current_active_user(
 async def get_optional_current_user(
     token: Annotated[str | None, Depends(oauth2_scheme)] = None,
     session: Annotated[AsyncSession, Depends(get_async_session)] = None,
+    request: Request = None,
 ) -> User | None:
     """
     获取可选的当前用户（用于公开接口的权限控制）
@@ -141,6 +152,7 @@ async def get_optional_current_user(
     Args:
         token: JWT token（可选）
         session: 数据库会话
+        request: FastAPI Request 对象
 
     Returns:
         当前用户对象或 None
@@ -148,13 +160,17 @@ async def get_optional_current_user(
     Raises:
         InvalidCredentialsError: 如果提供了 token 但无效
     """
-    # 如果没有 token，直接返回 None（游客访问）
+    # 如果没有 token，尝试从 Cookie 读取
+    if token is None and request is not None:
+        token = request.cookies.get("access_token")
+
+    # 如果两种方式都没有 token，直接返回 None（游客访问）
     if token is None:
         logger.debug("No token provided, treating as guest access")
         return None
 
     # 如果有 token，则复用 get_current_user 的验证逻辑
-    user = await get_current_user(token, session)
+    user = await get_current_user(token, session, request)
     return user
 
 

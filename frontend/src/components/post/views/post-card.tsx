@@ -15,9 +15,10 @@ import { cn } from "@/lib/utils";
 
 interface PostCardProps {
   post: ApiData<PostShortResponse>;
+  postType?: PostType | string;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, postType }: PostCardProps) {
   // 保持一致的日期格式化
   const formatDate = (dateString: string) => {
     const d = new Date(dateString);
@@ -25,31 +26,21 @@ export function PostCard({ post }: PostCardProps) {
   };
 
   const authorName = post.author?.fullName || post.author?.username || "Admin";
+  // 优先使用传入的 postType，否则使用 post 对象中的，最后默认为 articles
+  const type = (postType || post.postType || "articles") as PostType;
 
   const coverUrl =
     post.coverMedia?.thumbnails?.medium ||
     post.coverMedia?.thumbnails?.small ||
     post.coverMedia?.fileUrl;
 
-  const DetailLink = ({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <Link
-      href={routes.postDetailSlug(post.postType as PostType, post.slug)}
-      className={cn("group block h-full outline-hidden", className)}
-    >
-      {children}
-    </Link>
-  );
+  const linkHref = routes.postDetailSlug(type, post.slug);
+  const cardClassName = "group block h-full outline-hidden";
 
   // 模式 A: 有封面图 - 视觉冲击力
   if (coverUrl) {
     return (
-      <DetailLink>
+      <Link href={linkHref} className={cardClassName}>
         <Card className="flex flex-col h-full overflow-hidden border-0 bg-card transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group-hover:ring-1 ring-primary/20">
           {/* 图片区域 */}
           <div className="relative h-56 w-full overflow-hidden">
@@ -110,13 +101,13 @@ export function PostCard({ post }: PostCardProps) {
             </div>
           </CardFooter>
         </Card>
-      </DetailLink>
+      </Link>
     );
   }
 
   // 模式 B: 无封面图 - 纯文字/文档风格
   return (
-    <DetailLink>
+    <Link href={linkHref} className={cardClassName}>
       <Card className="flex flex-col h-full overflow-hidden bg-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-l-4 border-l-primary/40 hover:border-l-primary group-hover:border-t group-hover:border-r group-hover:border-b">
         <CardHeader className="p-6 pb-2">
           {/* 顶部元信息 */}
@@ -168,6 +159,6 @@ export function PostCard({ post }: PostCardProps) {
           </div>
         </CardFooter>
       </Card>
-    </DetailLink>
+    </Link>
   );
 }

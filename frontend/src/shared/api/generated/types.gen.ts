@@ -206,6 +206,8 @@ export type CategoryCreate = {
 
 /**
  * CategoryResponse
+ *
+ * 完整版分类响应 (包含关联对象和计算属性)
  */
 export type CategoryResponse = {
     /**
@@ -257,9 +259,58 @@ export type CategoryResponse = {
     /**
      * Cover Image
      *
-     * 获取封面图 URL
+     * 获取封面图 URL（xlarge 尺寸，适合详情页全屏 banner）
      */
     readonly cover_image: string | null;
+};
+
+/**
+ * CategorySimpleResponse
+ *
+ * 精简版分类响应 (用于嵌套在文章列表等场景，避免循环引用和过度查询)
+ */
+export type CategorySimpleResponse = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Parent Id
+     */
+    parent_id?: string | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+    /**
+     * Sort Order
+     */
+    sort_order?: number;
+    /**
+     * Icon Id
+     */
+    icon_id?: string | null;
+    /**
+     * Cover Media Id
+     */
+    cover_media_id?: string | null;
+    /**
+     * Icon Preset
+     */
+    icon_preset?: string | null;
+    post_type?: PostType;
+    /**
+     * Id
+     */
+    id: string;
 };
 
 /**
@@ -876,7 +927,7 @@ export type PostDetailResponse = {
      */
     cover_media_id?: string | null;
     author?: UserResponse | null;
-    category?: CategoryResponse | null;
+    category?: CategorySimpleResponse | null;
     cover_media?: MediaFileResponse | null;
     /**
      * Tags
@@ -1031,7 +1082,7 @@ export type PostShortResponse = {
      */
     cover_media_id?: string | null;
     author?: UserResponse | null;
-    category?: CategoryResponse | null;
+    category?: CategorySimpleResponse | null;
     cover_media?: MediaFileResponse | null;
     /**
      * Tags
@@ -1649,6 +1700,8 @@ export type WebhookResponse = {
 
 /**
  * CategoryResponse
+ *
+ * 完整版分类响应 (包含关联对象和计算属性)
  */
 export type CategoryResponseWritable = {
     /**
@@ -1985,7 +2038,7 @@ export type PostDetailResponseWritable = {
      */
     cover_media_id?: string | null;
     author?: UserResponse | null;
-    category?: CategoryResponseWritable | null;
+    category?: CategorySimpleResponse | null;
     cover_media?: MediaFileResponseWritable | null;
     /**
      * Tags
@@ -2088,7 +2141,7 @@ export type PostShortResponseWritable = {
      */
     cover_media_id?: string | null;
     author?: UserResponse | null;
-    category?: CategoryResponseWritable | null;
+    category?: CategorySimpleResponse | null;
     cover_media?: MediaFileResponseWritable | null;
     /**
      * Tags
@@ -3669,6 +3722,12 @@ export type ListCategoriesByTypeData = {
          * 是否包含未启用的分类
          */
         include_inactive?: boolean;
+        /**
+         * Is Featured
+         *
+         * 是否只显示推荐分类
+         */
+        is_featured?: boolean | null;
     };
     url: '/api/v1/posts/{post_type}/categories';
 };

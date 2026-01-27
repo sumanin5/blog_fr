@@ -14,7 +14,7 @@ async def get_category_by_slug_and_type(
     stmt = (
         select(Category)
         .where(and_(Category.slug == slug, Category.post_type == post_type))
-        .options(selectinload(Category.icon))  # type: ignore
+        .options(selectinload(Category.icon), selectinload(Category.cover_media))  # type: ignore
     )
     result = await session.exec(stmt)
     return result.one_or_none()
@@ -24,7 +24,11 @@ async def get_category_by_id(
     session: AsyncSession, category_id: UUID, post_type: Optional[PostType] = None
 ) -> Optional[Category]:
     """根据 ID 获取分类，可选带板块验证确保逻辑隔离"""
-    stmt = select(Category).where(Category.id == category_id)
+    stmt = (
+        select(Category)
+        .where(Category.id == category_id)
+        .options(selectinload(Category.icon), selectinload(Category.cover_media))
+    )
     if post_type:
         stmt = stmt.where(Category.post_type == post_type)
 
@@ -47,9 +51,10 @@ async def get_category_by_slug(
 async def create_category(session: AsyncSession, category: Category) -> Category:
     """创建分类"""
     session.add(category)
-    await session.flush()
+    await session.commit()
     await session.refresh(category)
-    return category
+    # Re-fetch to load relationships
+    return await get_category_by_id(session, category.id)  # type: ignore
 
 
 async def update_category(
@@ -59,9 +64,10 @@ async def update_category(
     for field, value in update_data.items():
         setattr(category, field, value)
     session.add(category)
-    await session.flush()
+    await session.commit()
     await session.refresh(category)
-    return category
+    # Re-fetch to load relationships
+    return await get_category_by_id(session, category.id)  # type: ignore
 
 
 async def delete_category(session: AsyncSession, category: Category) -> None:

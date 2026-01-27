@@ -1,13 +1,13 @@
 """文件访问路由（查看/下载）"""
 
-from typing import Annotated
+from typing import Annotated, Optional
 from uuid import UUID
 
 from app.core.db import get_async_session
 from app.media.dependencies import get_cache_headers
 from app.media.routers.api_doc import access as doc
 from app.media.services import access as access_service
-from app.users.dependencies import get_current_active_user
+from app.users.dependencies import get_current_active_user, get_optional_current_user
 from app.users.model import User
 from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
@@ -49,8 +49,9 @@ async def view_file(
 async def view_thumbnail(
     file_id: UUID,
     size: str,
-    current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    # Allow public access for thumbnails (service layer should handle public/private check)
+    current_user: Annotated[Optional[User], Depends(get_optional_current_user)] = None,
 ):
     thumbnail_path, media_file = await access_service.get_thumbnail_for_view(
         session, file_id, size, current_user

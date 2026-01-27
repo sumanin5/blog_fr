@@ -1,3 +1,4 @@
+import { normalizeApiResponse } from "@/shared/api/transformers";
 import { useQuery } from "@tanstack/react-query";
 import {
   listPostsByTypeAdmin,
@@ -38,7 +39,7 @@ export const usePostsAdminQuery = (
         query: filters as unknown as ListPostsByTypeAdminData["query"],
         throwOnError: true,
       });
-      return response.data as unknown as AdminPostList;
+      return normalizeApiResponse<AdminPostList>(response.data);
     },
   });
 };
@@ -55,7 +56,7 @@ export const useGlobalPostsAdminQuery = (filters?: AdminPostFilters) => {
         query: filters as unknown as ListAllPostsAdminData["query"],
         throwOnError: true,
       });
-      return response.data as unknown as AdminPostList;
+      return normalizeApiResponse<AdminPostList>(response.data);
     },
   });
 };
@@ -72,7 +73,7 @@ export const useMyPostsQuery = (filters?: MyPostFilters) => {
         query: filters as unknown as GetMyPostsData["query"],
         throwOnError: true,
       });
-      return response.data as unknown as MyPostList;
+      return normalizeApiResponse<MyPostList>(response.data);
     },
   });
 };
@@ -113,7 +114,7 @@ export const usePostDetailQuery = (id: string, includeMdx = true) => {
         throw new Error("文章不存在或无法访问");
       }
 
-      return success.value.data as unknown as PostDetail;
+      return normalizeApiResponse<PostDetail>(success.value.data);
     },
     enabled: !!id,
     retry: 1,

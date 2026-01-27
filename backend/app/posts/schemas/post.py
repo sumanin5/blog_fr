@@ -8,7 +8,7 @@ from app.posts.model import PostStatus, PostType
 from app.users.schema import UserResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .category import CategoryResponse
+from .category import CategorySimpleResponse
 from .tag import TagResponse
 
 
@@ -154,7 +154,7 @@ class PostShortResponse(PostBase):
 
     # 关联对象（需要预加载）
     author: Optional["UserResponse"] = None  # 作者信息
-    category: Optional[CategoryResponse] = None
+    category: Optional[CategorySimpleResponse] = None
     cover_media: Optional[MediaFileResponse] = None  # 封面对象
     tags: List[TagResponse] = []
     cover_media: Optional["MediaFileResponse"] = None  # 封面图完整信息

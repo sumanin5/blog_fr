@@ -60,6 +60,7 @@ class Category(Base, table=True):
     name: str = Field(max_length=100, description="分类名称")
     slug: str = Field(max_length=100, index=True, description="URL别名")
     # ... 其他字段保持不变
+    excerpt: str = Field(default="", max_length=100, description="摘要")
     description: str = Field(default="", description="分类描述")
     parent_id: Optional[UUID] = Field(
         default=None, foreign_key="posts_category.id", description="父分类ID"
@@ -76,6 +77,7 @@ class Category(Base, table=True):
     icon_preset: Optional[str] = Field(
         default=None, max_length=50, description="图标（预设）"
     )
+    is_featured: bool = Field(default=False, description="是否在首页推荐")
     post_type: PostType = Field(
         sa_column=Column(
             SQLAlchemyEnum(

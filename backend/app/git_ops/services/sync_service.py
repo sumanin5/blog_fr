@@ -13,6 +13,7 @@ from app.git_ops.components import (
     handle_post_update,
     revalidate_nextjs_cache,
 )
+from app.git_ops.components.handlers.category_sync import handle_category_sync
 from app.git_ops.exceptions import GitError, collect_errors
 from app.git_ops.schema import SyncStats
 from app.posts import cruds as post_crud
@@ -145,6 +146,18 @@ class SyncService(BaseGitOpsService):
 
                 # 情况 B: 文件新增或修改
                 scanned = await self.scanner.scan_file(file_rel_path)
+
+                # 情况 C: 分类元数据同步 (index.md)
+                if scanned.is_category_index:
+                    await handle_category_sync(
+                        self.session,
+                        scanned,
+                        operating_user,
+                        self.content_dir,
+                    )
+                    stats.updated.append(file_rel_path)
+                    continue
+
                 matched_post, is_move = await self.serializer.match_post(
                     scanned, existing_posts
                 )
@@ -223,6 +236,17 @@ class SyncService(BaseGitOpsService):
         # 3. 处理每个文件
         for file_path, scanned in scanned_map.items():
             async with collect_errors(stats, f"Syncing {file_path}"):
+                # 分类元数据同步 (index.md)
+                if scanned.is_category_index:
+                    await handle_category_sync(
+                        self.session,
+                        scanned,
+                        operating_user,
+                        self.content_dir,
+                    )
+                    stats.updated.append(file_path)
+                    continue
+
                 matched_post, is_move = await self.serializer.match_post(
                     scanned, existing_posts
                 )

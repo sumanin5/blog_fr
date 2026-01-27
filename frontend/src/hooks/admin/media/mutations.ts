@@ -22,6 +22,7 @@ import type {
   BatchDeleteFilesData,
   RegenerateThumbnailsData,
 } from "@/shared/api/generated/types.gen";
+import { toSnakeCase } from "@/shared/api/helpers";
 
 /**
  * 上传文件 Mutation
@@ -31,8 +32,9 @@ export function useUploadFile() {
   return useMutation({
     // ✅ 拦截器自动转换 camelCase -> snake_case
     mutationFn: async (payload: MediaUploadPayload) => {
+      const snakeCasePayload = toSnakeCase(payload);
       const response = await uploadFile({
-        body: payload as unknown as UploadFileData["body"],
+        body: snakeCasePayload as unknown as UploadFileData["body"],
         throwOnError: true,
       });
       return response.data;
@@ -59,10 +61,10 @@ export function useUpdateFile() {
       fileId: string;
       payload: MediaUpdatePayload;
     }) => {
+      const snakeCasePayload = toSnakeCase(payload);
       const result = await updateFile({
         path: { file_id: fileId } as unknown as UpdateFileData["path"],
-        // ✅ 拦截器自动转换
-        body: payload as unknown as UpdateFileData["body"],
+        body: snakeCasePayload as unknown as UpdateFileData["body"],
         throwOnError: true,
       });
       return result.data;

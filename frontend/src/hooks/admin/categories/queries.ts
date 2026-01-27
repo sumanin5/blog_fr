@@ -17,8 +17,8 @@ export const useCategoriesQuery = (postType: PostType, enabled = true) => {
           post_type: postType,
         },
         query: {
-          include_inactive: true, // 后台默认看到所有分类
-        },
+          includeInactive: true, // 后台默认看到所有分类（拦截器会转换为 include_inactive）
+        } as any,
       });
 
       if (response.error) {

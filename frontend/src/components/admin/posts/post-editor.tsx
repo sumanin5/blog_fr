@@ -74,13 +74,11 @@ export function PostEditor({
   const handleSave = () => {
     onSave({
       title,
-      // 核心内容
       contentMdx,
-      // 元数据映射
       slug: metadata.slug,
       status: metadata.status,
       categoryId: metadata.categoryId || null,
-      tags: metadata.tags, //这里只传 tag names，后端会自动处理
+      tags: metadata.tags,
       excerpt: metadata.excerpt,
       coverMediaId: metadata.cover?.id || null,
       isFeatured: metadata.isFeatured,

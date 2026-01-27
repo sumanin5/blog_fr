@@ -21,6 +21,7 @@ import type {
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { revalidateTags, revalidatePosts } from "@/app/actions/revalidate";
+import { toSnakeCase } from "@/shared/api/helpers";
 
 /**
  * 后台标签管理 Hook
@@ -69,13 +70,14 @@ export function useTagsAdmin(
    * 更新标签
    */
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string; payload: DomainTagUpdate }) =>
-      updateTag({
+    mutationFn: (data: { id: string; payload: DomainTagUpdate }) => {
+      const snakeCasePayload = toSnakeCase(data.payload);
+      return updateTag({
         path: { tag_id: data.id } as unknown as UpdateTagData["path"],
-        // ✅ 自动转换 Body，无需 denormalize
-        body: data.payload as unknown as UpdateTagData["body"],
+        body: snakeCasePayload as unknown as UpdateTagData["body"],
         throwOnError: true,
-      }),
+      });
+    },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
       await revalidateTags();
@@ -103,12 +105,13 @@ export function useTagsAdmin(
    * 合并标签
    */
   const mergeMutation = useMutation({
-    mutationFn: (payload: DomainTagMergePayload) =>
-      mergeTags({
-        // ✅ 自动转换 Body
-        body: payload as unknown as MergeTagsData["body"],
+    mutationFn: (payload: DomainTagMergePayload) => {
+      const snakeCasePayload = toSnakeCase(payload);
+      return mergeTags({
+        body: snakeCasePayload as unknown as MergeTagsData["body"],
         throwOnError: true,
-      }),
+      });
+    },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
       await revalidateTags();

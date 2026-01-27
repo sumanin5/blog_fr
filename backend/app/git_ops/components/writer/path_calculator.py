@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from app.posts.model import Post
 
@@ -17,7 +17,7 @@ class PathCalculator:
     def __init__(self, content_dir: Path):
         self.content_dir = content_dir
 
-    def calculate_target_path(
+    async def calculate_target_path(
         self, post: Post, category_slug: Optional[str] = None
     ) -> Tuple[Path, str]:
         """
@@ -44,6 +44,12 @@ class PathCalculator:
         target_abs_path = self.content_dir / relative_dir / filename
 
         return target_abs_path, target_relative_path
+
+    def calculate_category_path(self, category: Any) -> Path:
+        """计算分类 index.md 的物理路径"""
+        raw_type = category.post_type.value
+        type_folder = POST_TYPE_DIR_MAP.get(raw_type, raw_type)
+        return self.content_dir / type_folder / category.slug / "index.md"
 
     def _sanitize_filename(self, filename: str) -> str:
         """清理文件名，保留可读性但剔除非法字符"""

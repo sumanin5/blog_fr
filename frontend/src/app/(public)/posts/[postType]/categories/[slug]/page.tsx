@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HeroWrapper } from "@/components/layout/hero-wrapper";
+import { MdxServerRenderer } from "@/components/post/content/renderers/mdx-server-renderer";
+import { getThumbnailUrl } from "@/lib/media-utils";
 
 import { Category, CategoryList } from "@/shared/api/types";
 
@@ -50,6 +52,7 @@ export default async function CategoryPage({
   });
 
   const posts = postsRes.data?.items || [];
+  const coverImageUrl = getThumbnailUrl(category.coverMediaId, "xlarge");
 
   return (
     <HeroWrapper>
@@ -57,11 +60,11 @@ export default async function CategoryPage({
         {/* 分类头部：封面 + 标题 */}
         <Card className="relative mb-10 overflow-hidden group p-0 border-0">
           {/* 封面背景层 */}
-          {category.coverImage ? (
+          {coverImageUrl ? (
             <div className="h-48 md:h-72 w-full relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={category.coverImage}
+                src={coverImageUrl}
                 alt={category.name}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
@@ -95,14 +98,20 @@ export default async function CategoryPage({
             </h1>
 
             {category.description && (
-              <p
+              <div
                 className={cn(
-                  "text-lg max-w-2xl text-pretty",
-                  category.coverImage ? "opacity-90" : "text-muted-foreground",
+                  "mt-4 text-base md:text-lg max-w-none text-pretty prose dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1",
+                  category.coverImage
+                    ? "text-white prose-headings:text-white prose-strong:text-white"
+                    : "text-muted-foreground",
                 )}
               >
-                {category.description}
-              </p>
+                <MdxServerRenderer
+                  mdx={category.description}
+                  toc={[]}
+                  articleClassName=""
+                />
+              </div>
             )}
           </div>
         </Card>

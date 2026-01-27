@@ -7,6 +7,7 @@ from uuid import UUID
 from app.core.config import settings
 from app.core.exceptions import InsufficientPermissionsError
 from app.git_ops.components.writer.path_calculator import POST_TYPE_DIR_MAP
+from app.git_ops.components.writer.writer import FileWriter
 from app.posts import cruds as crud
 from app.posts.exceptions import (
     CategoryNotFoundError,
@@ -69,8 +70,13 @@ async def create_category(
         if not category_dir.exists():
             category_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"Initialized physical directory for category: {category_dir}")
+
+            # Write index.md
+            writer = FileWriter(session=session)
+            await writer.write_category(db_category)
+
     except Exception as e:
-        logger.warning(f"Failed to create physical directory for category: {e}")
+        logger.warning(f"Failed to create physical directory/index for category: {e}")
         # 不阻断主流程
 
     logger.info(
@@ -184,6 +190,13 @@ async def update_category(
                 f"Failed to sync physical directory rename: {e}", exc_info=True
             )
             # 物理操作失败不回滚数据库，这也是为什么这是 Side Effect
+
+    # Write index.md (update content/metadata)
+    try:
+        writer = FileWriter(session=session)
+        await writer.write_category(db_category)
+    except Exception as e:
+        logger.warning(f"Failed to update category index.md: {e}")
 
     logger.info(f"分类更新成功: {db_category.name} by user {current_user.id}")
     return db_category

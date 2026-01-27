@@ -68,6 +68,6 @@ def check_file_access(media_file: MediaFile, current_user: User) -> bool:
 
     return (
         media_file.is_public
-        or media_file.uploader_id == current_user.id
-        or current_user.is_superadmin
+        or (current_user is not None and media_file.uploader_id == current_user.id)
+        or (current_user is not None and current_user.is_superadmin)
     )
