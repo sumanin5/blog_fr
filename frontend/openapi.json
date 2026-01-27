@@ -6765,6 +6765,11 @@
               }
             ]
           },
+          "post_count": {
+            "type": "integer",
+            "title": "Post Count",
+            "default": 0
+          },
           "cover_image": {
             "anyOf": [
               {

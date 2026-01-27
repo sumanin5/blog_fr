@@ -251,6 +251,10 @@ export type CategoryResponse = {
     id: string;
     cover_media?: MediaFileResponse | null;
     /**
+     * Post Count
+     */
+    post_count?: number;
+    /**
      * Cover Image
      *
      * 获取封面图 URL
@@ -1689,6 +1693,10 @@ export type CategoryResponseWritable = {
      */
     id: string;
     cover_media?: MediaFileResponseWritable | null;
+    /**
+     * Post Count
+     */
+    post_count?: number;
 };
 
 /**

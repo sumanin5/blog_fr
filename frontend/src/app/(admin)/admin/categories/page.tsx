@@ -19,7 +19,7 @@ import { CategoryDeleteDialog } from "@/components/admin/categories/category-del
 export default function CategoriesPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState<PostType>("article");
+  const [activeTab, setActiveTab] = React.useState<PostType>("articles");
 
   // 1. 使用重构后的超级 Hook
   const {
@@ -37,7 +37,7 @@ export default function CategoriesPage() {
   // UI 交互状态
   const [editOpen, setEditOpen] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState<CategoryResponse | null>(
-    null
+    null,
   );
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
@@ -70,7 +70,7 @@ export default function CategoriesPage() {
         },
         onDelete: (id) => setDeletingId(id),
       }),
-    []
+    [],
   );
 
   if (authLoading || (user && !isAuthorized)) {
@@ -123,16 +123,19 @@ export default function CategoriesPage() {
 
       {/* 切换面板 */}
       <Tabs
-        defaultValue="article"
+        defaultValue="articles"
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as PostType)}
         className="w-full"
       >
         <TabsList className="bg-muted/50 p-1">
-          <TabsTrigger value="article" className="px-8 flex items-center gap-2">
+          <TabsTrigger
+            value="articles"
+            className="px-8 flex items-center gap-2"
+          >
             文章 (Article)
           </TabsTrigger>
-          <TabsTrigger value="idea" className="px-8 flex items-center gap-2">
+          <TabsTrigger value="ideas" className="px-8 flex items-center gap-2">
             想法 (Idea)
           </TabsTrigger>
         </TabsList>

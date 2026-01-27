@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { listCategoriesByType } from "@/shared/api";
-import { PostType, CategoryList } from "@/shared/api/types";
-import type { ListCategoriesByTypeData } from "@/shared/api/generated/types.gen";
+import { listCategoriesByType } from "@/shared/api/generated/sdk.gen";
+import { PostType } from "@/shared/api/generated/types.gen";
+import { CategoryList } from "@/shared/api/types";
+import { serverClient } from "@/lib/server-api-client";
 
 /**
  * 后台专用的分类列表查询
@@ -11,13 +12,21 @@ export const useCategoriesQuery = (postType: PostType, enabled = true) => {
     queryKey: ["admin", "categories", postType],
     queryFn: async () => {
       const response = await listCategoriesByType({
+        client: serverClient,
         path: {
           post_type: postType,
-        } as unknown as ListCategoriesByTypeData["path"],
-        throwOnError: true,
+        },
+        query: {
+          include_inactive: true, // 后台默认看到所有分类
+        },
       });
-      // 拦截器已处理转换，直接断言为业务模型
-      return response.data as unknown as CategoryList;
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      // 这里返回的是 Page[CategoryResponse]，已经在拦截器中转换成了 CamelCase 的 CategoryList
+      return response.data as CategoryList;
     },
     enabled,
   });

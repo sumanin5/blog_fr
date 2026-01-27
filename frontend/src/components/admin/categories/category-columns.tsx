@@ -18,31 +18,55 @@ export const getCategoryColumns = ({
   onDelete,
 }: CategoryColumnsProps): ColumnDef<ApiData<CategoryResponse>>[] => [
   {
+    accessorKey: "coverImage",
+    header: "封面",
+    cell: ({ row }) => {
+      const cover = row.original.coverImage;
+      return cover ? (
+        <div className="relative h-10 w-16 overflow-hidden rounded-md border bg-muted">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={cover} alt="" className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div className="h-10 w-16 rounded-md border border-dashed flex items-center justify-center bg-muted/30">
+          <span className="text-[10px] text-muted-foreground">无</span>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "name",
     header: "名称",
     cell: ({ row }) => {
       const cat = row.original;
       return (
         <div className="flex items-center gap-2">
-          {cat.parentId && (
-            <ChevronRight className="h-3 w-3 text-muted-foreground/50 ml-2" />
-          )}
           <FolderTree className="h-4 w-4 text-primary/60" />
-          <span className="font-medium">{cat.name}</span>
+          <div className="flex flex-col">
+            <span className="font-medium">{cat.name}</span>
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {cat.slug}
+            </span>
+          </div>
         </div>
       );
     },
   },
   {
-    accessorKey: "slug",
-    header: "Slug",
+    accessorKey: "postCount",
+    header: "文章数",
     cell: ({ row }) => (
-      <span className="font-mono text-xs">{row.getValue("slug")}</span>
+      <Badge variant="outline" className="font-mono bg-primary/5 text-primary">
+        {row.original.postCount || 0}
+      </Badge>
     ),
   },
   {
     accessorKey: "sortOrder",
     header: "排序",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">{row.getValue("sortOrder")}</span>
+    ),
   },
   {
     accessorKey: "isActive",
@@ -50,7 +74,10 @@ export const getCategoryColumns = ({
     cell: ({ row }) => {
       const isActive = row.getValue("isActive") as boolean;
       return (
-        <Badge variant={isActive ? "default" : "secondary"}>
+        <Badge
+          variant={isActive ? "default" : "secondary"}
+          className={isActive ? "bg-emerald-500 hover:bg-emerald-600" : ""}
+        >
           {isActive ? "已启用" : "停用"}
         </Badge>
       );

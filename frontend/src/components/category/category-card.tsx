@@ -8,24 +8,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ArrowRight, FileText, Folder } from "lucide-react";
-import type { CategoryResponse } from "@/shared/api/generated/types.gen";
+import { Category } from "@/shared/api/types";
 import { cn } from "@/lib/utils";
 
-// 临时扩展类型，等待 SDK 生成
-interface CategoryWithCount extends CategoryResponse {
-  post_count?: number;
-}
-
 interface CategoryCardProps {
-  category: CategoryWithCount;
+  category: Category;
   postType: string;
 }
 
 export function CategoryCard({ category, postType }: CategoryCardProps) {
-  const postCount = category.post_count ?? 0;
+  const postCount = category.postCount ?? 0;
 
   // 有封面图模式
-  if (category.cover_image) {
+  if (category.coverImage) {
     return (
       <Link
         href={`/posts/${postType}/categories/${category.slug}`}
@@ -39,7 +34,7 @@ export function CategoryCard({ category, postType }: CategoryCardProps) {
           {/* 背景图片 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={category.cover_image}
+            src={category.coverImage}
             alt={category.name}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
@@ -58,7 +53,7 @@ export function CategoryCard({ category, postType }: CategoryCardProps) {
                   variant="secondary"
                   className="backdrop-blur-md bg-secondary/50 hover:bg-secondary/70 border-0"
                 >
-                  {category.icon_preset || "Topic"}
+                  {category.iconPreset || "Topic"}
                 </Badge>
               </div>
               <CardTitle className="text-3xl font-bold tracking-tight text-foreground drop-shadow-sm">
@@ -95,7 +90,7 @@ export function CategoryCard({ category, postType }: CategoryCardProps) {
         <CardHeader className="relative pb-2 px-8 pt-8">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary text-3xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300 shadow-xs">
-              {category.icon_preset || <Folder className="w-6 h-6" />}
+              {category.iconPreset || <Folder className="w-6 h-6" />}
             </div>
 
             <div className="opacity-50 group-hover:opacity-100 transition-opacity">
