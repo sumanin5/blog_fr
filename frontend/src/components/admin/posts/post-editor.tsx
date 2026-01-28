@@ -9,8 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MdxClientRenderer } from "@/components/post/content/renderers/mdx-client-renderer";
-import { CategoryResponse, PostType, PostStatus } from "@/shared/api/generated";
-import { MediaFile } from "@/shared/api/types";
+import { PostType, PostStatus } from "@/shared/api/generated";
+import { MediaFile, Category } from "@/shared/api/types";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { PostMetadataSidebar, PostMetadata } from "./post-metadata-sidebar";
 
@@ -39,7 +39,7 @@ export interface PostEditorInitialData {
 interface PostEditorProps {
   initialData: PostEditorInitialData;
   postType?: PostType;
-  categories: CategoryResponse[];
+  categories: Category[];
   onSave: (data: Record<string, unknown>) => void;
   isSaving?: boolean;
 }

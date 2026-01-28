@@ -63,7 +63,9 @@ export type AdminMediaList = ApiData<Raw.PageMediaFileResponse>;
 export type PublicMediaList = ApiData<Raw.PageMediaFileResponse>;
 export type PageMedia = ApiData<Raw.PageMediaFileResponse>;
 
-export type MediaFilters = ApiData<Raw.GetUserFilesData["query"]>;
+export type MediaFilters = ApiData<Raw.GetUserFilesData["query"]> & {
+  mimeType?: string;
+};
 export type AdminMediaFilters = ApiData<Raw.GetAllFilesAdminData["query"]>;
 export type MediaSearchFilters = ApiData<Raw.SearchFilesData["query"]>;
 

@@ -74,7 +74,9 @@ async def test_category_post_count_by_type(
     await session.commit()
 
     # 测试 article 类型的分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/articles/categories"
+    )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -137,7 +139,9 @@ async def test_category_with_multiple_posts(
     await session.commit()
 
     # 测试分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/articles/categories"
+    )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -194,7 +198,9 @@ async def test_category_post_count_with_drafts(
     await session.commit()
 
     # 测试分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/articles/categories"
+    )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -203,9 +209,9 @@ async def test_category_post_count_with_drafts(
     mixed = next((c for c in items if c["name"] == "Mixed Status"), None)
     assert mixed is not None
     if "post_count" in mixed:
-        # post_count 应该包含所有文章（包括草稿）
-        # 注意：这取决于业务逻辑，如果只想计算已发布的，需要修改实现
-        assert mixed["post_count"] == 2
+        # post_count 只统计已发布的文章,不包含草稿
+        # 业务逻辑: 前端展示时只显示已发布文章数量
+        assert mixed["post_count"] == 1  # 只有 1 篇已发布,1 篇草稿不计入
 
 
 @pytest.mark.asyncio
@@ -226,7 +232,9 @@ async def test_empty_category_post_count(
     await session.commit()
 
     # 测试分类列表
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/articles/categories"
+    )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]
@@ -289,7 +297,9 @@ async def test_category_post_count_with_inactive_filter(
     await session.commit()
 
     # 测试默认分类列表（只包含启用的）
-    response = await async_client.get(f"{api_urls.API_PREFIX}/posts/articles/categories")
+    response = await async_client.get(
+        f"{api_urls.API_PREFIX}/posts/articles/categories"
+    )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     items = data["items"]

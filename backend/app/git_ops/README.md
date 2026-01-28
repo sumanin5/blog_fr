@@ -2,14 +2,36 @@
 
 ## 📖 概述
 
-GitOps 模块是一个**内容同步引擎**，实现了从文件系统（Git 仓库）到数据库的自动化内容管理流程。它允许博客内容以 Markdown/MDX 文件的形式存储在 Git 中，通过扫描和解析这些文件，自动同步到数据库中。
+GitOps 模块是一个**双向内容同步引擎**，实现了文件系统（Git 仓库）与数据库之间的自动化内容管理流程。它支持：
+
+- **Git → DB 同步**: 将 Markdown/MDX 文件同步到数据库
+- **DB → Git 导出**: 将数据库文章导出为 MDX 文件
 
 ### 核心理念
 
 - **Infrastructure as Code (IaC)** - 内容即代码
-- **Single Source of Truth** - Git 仓库作为内容的唯一真实来源
-- **声明式管理** - 文件系统状态决定数据库状态
+- **Bidirectional Sync** - 双向同步，灵活管理
+- **声明式管理** - 文件系统状态与数据库状态保持一致
 - **版本控制友好** - 所有内容变更可追溯、可回滚
+
+### 同步方向
+
+```mermaid
+flowchart LR
+    subgraph "Git 仓库"
+        F[MDX 文件<br>content/]
+    end
+
+    subgraph "数据库"
+        D[(PostgreSQL)]
+    end
+
+    F -->|sync<br>Git → DB| D
+    D -->|push<br>DB → Git| F
+
+    style F fill:#fff4e6
+    style D fill:#e1f5ff
+```
 
 ---
 
@@ -19,7 +41,7 @@ GitOps 模块是一个**内容同步引擎**，实现了从文件系统（Git �
 git_ops/
 ├── __init__.py           # 模块入口
 ├── components/           # 核心业务组件
-│   ├── handlers/         # 业务处理逻辑 (创建/更新/验证)
+│   ├── handlers/         # 业务处理逻辑 (创建/更新/分类同步)
 │   ├── processors/       # 字段处理器 (Pipeline 模式)
 │   ├── scanner/          # 文件扫描器
 │   ├── writer/           # 文件写入器
@@ -31,7 +53,8 @@ git_ops/
 ├── services/             # 服务层（职责单一）
 │   ├── __init__.py       # 服务导出
 │   ├── base.py           # 服务基类
-│   ├── sync_service.py   # 同步服务
+│   ├── sync_service.py   # 同步服务 (Git → DB)
+│   ├── export_service.py # 导出服务 (DB → Git) ⭐
 │   ├── preview_service.py # 预览服务
 │   ├── resync_service.py # 重新同步服务
 │   ├── commit_service.py # 提交服务
@@ -80,7 +103,8 @@ git_ops/
 
 **管理的服务**（延迟加载 + 单例）:
 
-- `sync_service`: SyncService - 同步服务
+- `sync_service`: SyncService - 同步服务 (Git → DB)
+- `export_service`: ExportService - 导出服务 (DB → Git) ⭐
 - `preview_service`: PreviewService - 预览服务
 - `resync_service`: ResyncService - 重新同步服务
 - `commit_service`: CommitService - 提交服务
@@ -134,13 +158,16 @@ class GitOpsService:
 
 ### 4. `services/` - 服务层
 
-将原来 481 行的 `service.py` 拆分为多个职责单一的服务类：
+职责单一的服务类：
 
-- **`base.py`**: 服务基类，提供共享逻辑（如 `_get_operating_user`）
-- **`sync_service.py`** (~280 行): 负责全量和增量同步
-- **`preview_service.py`** (~80 行): 负责同步预览（Dry Run）
-- **`resync_service.py`** (~80 行): 负责重新同步单个文章
-- **`commit_service.py`** (~30 行): 负责 Git 提交和推送
+| 服务             | 文件                  | 职责                           |
+| ---------------- | --------------------- | ------------------------------ |
+| `SyncService`    | `sync_service.py`     | 全量和增量同步 (Git → DB)      |
+| `ExportService`  | `export_service.py`   | 导出数据库文章 (DB → Git) ⭐   |
+| `PreviewService` | `preview_service.py`  | 同步预览（Dry Run）            |
+| `ResyncService`  | `resync_service.py`   | 重新同步单个文章元数据         |
+| `CommitService`  | `commit_service.py`   | Git 提交和推送                 |
+| `BaseGitOpsService` | `base.py`          | 服务基类，提供共享逻辑         |
 
 每个服务继承自 `BaseGitOpsService`，通过容器获取依赖。
 
@@ -173,48 +200,88 @@ class GitOpsService:
 
 ## 🔄 核心流程
 
+### API 端点概览
+
+| 端点                              | 方法 | 服务              | 说明                     |
+| --------------------------------- | ---- | ----------------- | ------------------------ |
+| `/ops/git/sync`                   | POST | `SyncService`     | 增量同步（默认）         |
+| `/ops/git/sync?force_full=true`   | POST | `SyncService`     | 强制全量同步             |
+| `/ops/git/push`                   | POST | `ExportService`   | 导出数据库文章到 Git     |
+| `/ops/git/preview`                | GET  | `PreviewService`  | 预览同步变更（Dry Run）  |
+| `/ops/git/posts/{id}/resync-metadata` | POST | `ResyncService` | 重新同步单篇元数据       |
+| `/ops/git/webhook`                | POST | `SyncService`     | GitHub Webhook 入口      |
+
 ### 全量同步流程 (sync_all)
 
-1. **触发**: 管理员调用 API `/ops/git/sync?force_full=true` 或 Webhook 触发。
-2. **门面**: `GitOpsService.sync_all()` 创建 `GitOpsContainer`。
-3. **委托**: 委托给 `container.sync_service.sync_all()`。
-4. **准备**: `SyncService` 确定操作用户（默认 Superadmin）。
-5. **Pull**: 使用 `container.git_client` 尝试 `git pull` 更新本地文件（失败则警告，不中断）。
-6. **扫描**: 使用 `container.scanner` 扫描所有 `.md`/`.mdx` 文件，计算哈希。
-7. **对比**: 查询数据库中 `source_path` 不为空的文章。
-8. **处理**:
-   - **新增**: 文件存在但数据库无记录 -> `handle_post_create`
-   - **更新**: 文件与数据库均存在 -> `handle_post_update`
-   - **删除**: 数据库有记录但文件不存在 -> `post_service.delete_post`
-9. **回写 (可选)**: 如果是新创建的文章，使用 `container.writer` 将生成的 UUID 回写到文件的 Frontmatter。
-10. **缓存**: 刷新 Next.js 前端缓存。
+```mermaid
+flowchart LR
+    A[Git Pull] --> B[扫描文件]
+    B --> C[对比数据库]
+    C --> D{匹配结果}
+    D -->|新增| E[handle_post_create]
+    D -->|更新| F[handle_post_update]
+    D -->|删除| G[delete_post]
+    E --> H[回写 ID]
+    F --> H
+    G --> I[刷新缓存]
+    H --> I
+```
+
+1. **触发**: 管理员调用 API `/ops/git/sync?force_full=true`
+2. **Pull**: 使用 `git_client` 拉取最新代码
+3. **扫描**: 使用 `scanner` 扫描所有 MDX 文件
+4. **对比**: 查询数据库已同步文章
+5. **处理**: 新增/更新/删除
+6. **回写**: 将生成的 UUID 回写到 Frontmatter
+7. **缓存**: 刷新 Next.js 前端缓存
 
 ### 增量同步流程 (sync_incremental)
 
-1. **触发**: 管理员调用 API `/ops/git/sync` (默认) 或 Webhook 触发。
-2. **门面**: `GitOpsService.sync_incremental()` 创建 `GitOpsContainer`。
-3. **委托**: 委托给 `container.sync_service.sync_incremental()`。
-4. **状态检查**: 读取 `content/.gitops_last_sync` 文件获取上次同步的 Commit Hash。
-5. **差异获取**: 使用 `container.git_client.get_changed_files()` 获取变更文件列表。
-6. **增量处理**: 仅处理变更列表中的文件（新增/修改/删除）。
-7. **智能回退**: 如果没有 Hash 记录或获取 Diff 失败，自动降级为全量同步。
-8. **更新状态**: 保存当前 Commit Hash 到 `.gitops_last_sync`。
+```mermaid
+flowchart LR
+    A[读取上次 Hash] --> B{存在?}
+    B -->|否| C[全量同步]
+    B -->|是| D[Git Pull]
+    D --> E[获取变更文件]
+    E --> F[处理变更]
+    F --> G[保存当前 Hash]
+```
+
+1. **读取状态**: 从 `.gitops_last_sync` 获取上次 Commit Hash
+2. **差异获取**: 使用 `git_client.get_changed_files()` 获取变更
+3. **增量处理**: 仅处理变更的文件
+4. **智能回退**: 无记录则降级为全量同步
+
+### 导出同步流程 (export_to_git) ⭐
+
+```mermaid
+flowchart LR
+    A[查询数据库] --> B[过滤文章]
+    B --> C[生成 MDX]
+    C --> D[写入文件]
+    D --> E[更新 source_path]
+    E --> F[Git Commit]
+    F --> G[Git Push]
+```
+
+1. **触发**: 管理员调用 API `/ops/git/push`
+2. **查询**: 获取需要导出的文章（无 source_path 的新文章）
+3. **写入**: 使用 `FileWriter` 生成 MDX 文件
+4. **关联**: 更新数据库的 `source_path` 字段
+5. **提交**: Git add + commit + push
 
 ### 预览流程 (preview_sync)
 
-1. **触发**: 管理员调用 API `/ops/git/preview`。
-2. **门面**: `GitOpsService.preview_sync()` 创建 `GitOpsContainer`。
-3. **委托**: 委托给 `container.preview_service.preview_sync()`。
-4. **Dry Run**: 扫描文件并对比数据库，但不执行任何写操作。
-5. **返回预览**: 返回 `PreviewResult`，包含待创建、更新、删除的文章列表。
+1. **触发**: 调用 API `/ops/git/preview`
+2. **Dry Run**: 扫描文件并对比，不执行写操作
+3. **返回**: `PreviewResult` 包含待创建/更新/删除的文章列表
 
 ### 重新同步流程 (resync_post_metadata)
 
-1. **触发**: 管理员调用 API `/ops/git/posts/{post_id}/resync-metadata`。
-2. **门面**: `GitOpsService.resync_post_metadata()` 创建 `GitOpsContainer`。
-3. **委托**: 委托给 `container.resync_service.resync_post_metadata()`。
-4. **单篇同步**: 重新读取指定文章的 Frontmatter，更新数据库。
-5. **用途**: 修复 frontmatter 错误、补全缺失的元数据。
+1. **触发**: 调用 API `/ops/git/posts/{post_id}/resync-metadata`
+2. **读取**: 重新读取指定文章的 MDX 文件
+3. **更新**: 将 Frontmatter 同步到数据库
+4. **用途**: 修复 frontmatter 错误、补全元数据
 
 ---
 
@@ -250,10 +317,13 @@ class GitOpsContainer:
         # 核心组件：容器创建并持有
         self.scanner = MDXScanner(content_dir)
         self.serializer = PostSerializer(session)
+        self.writer = FileWriter(content_dir)
         self.git_client = GitClient(content_dir)
 
         # 服务层：延迟加载
         self._sync_service = None
+        self._export_service = None
+        # ... 其他服务
 
     @property
     def sync_service(self):
@@ -261,20 +331,40 @@ class GitOpsContainer:
         if self._sync_service is None:
             self._sync_service = SyncService(self.session, self)
         return self._sync_service
+
+    @property
+    def export_service(self):
+        if self._export_service is None:
+            self._export_service = ExportService(self.session, self)
+        return self._export_service
 ```
 
 ### 调用流程
 
-```
-用户代码
-    ↓
-GitOpsService (门面)
-    ↓
-GitOpsContainer (容器)
-    ↓
-具体服务 (SyncService, PreviewService, etc.)
-    ↓
-核心组件 (Scanner, Serializer, GitClient)
+```mermaid
+flowchart TB
+    A[用户代码 / API 路由] --> B[GitOpsService 门面]
+    B --> C[GitOpsContainer 容器]
+    C --> D[具体服务]
+    D --> E[核心组件]
+
+    subgraph Services[服务层 - 延迟加载]
+        D1[SyncService]
+        D2[ExportService]
+        D3[PreviewService]
+        D4[ResyncService]
+        D5[CommitService]
+    end
+
+    subgraph Components[核心组件 - 立即创建]
+        E1[MDXScanner]
+        E2[PostSerializer]
+        E3[FileWriter]
+        E4[GitClient]
+    end
+
+    D --> D1 & D2 & D3 & D4 & D5
+    D1 & D2 & D3 & D4 & D5 --> E1 & E2 & E3 & E4
 ```
 
 ### 核心优势
@@ -284,6 +374,7 @@ GitOpsContainer (容器)
 3. **延迟加载**: 只在第一次访问时才创建服务
 4. **易于测试**: 可以 mock 整个容器或单个组件
 5. **集中管理**: 修改依赖关系只需改一处
+6. **双向同步**: 支持 Git → DB 和 DB → Git 两个方向
 
 ### 测试示例
 
@@ -294,7 +385,7 @@ mock_container.scanner.scan_all.return_value = []
 service = SyncService(session, mock_container)
 
 # 或者只 mock 某个组件
-container = GitOpsContainer(session)
+container = GitOpsContainer(session, content_dir)
 container.scanner = mock_scanner
 service = SyncService(session, container)
 ```
@@ -305,7 +396,29 @@ service = SyncService(session, container)
 
 ### 为什么删除了 `error_handler.py`?
 
-为了保持代码的 Pythonic 和简洁性，我们移除了过度封装的 `safe_operation` 和 `handle_sync_error` 函数。现在的错误处理直接在各个服务中使用原生的 `try...except` 块，这样控制流更加清晰，开发者能直观地看到错误是如何被捕获、记录日志并添加到统计信息中的。
+为了保持代码的 Pythonic 和简洁性，我们移除了过度封装的 `safe_operation` 和 `handle_sync_error` 函数。现在的错误处理采用 **`collect_errors` 上下文管理器**，这是一种优雅的封装方式，既保持了代码的清晰性，又避免了大量重复的 try-except 块。
+
+```python
+# exceptions.py 中定义
+@asynccontextmanager
+async def collect_errors(stats: SyncStats, context: str = ""):
+    """收集错误但不中断流程"""
+    try:
+        yield
+    except GitOpsError as e:
+        stats.errors.append(str(e))
+        logger.warning(f"GitOps error in {context}: {e}")
+    except Exception as e:
+        stats.errors.append(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error in {context}: {e}", exc_info=True)
+
+# 服务中使用
+async def sync_all(self) -> SyncStats:
+    for file_path in files:
+        async with collect_errors(stats, f"processing {file_path}"):
+            await self._process_single_file(file_path)
+    return stats
+```
 
 ### 为什么要拆分服务？
 
@@ -322,15 +435,18 @@ service = SyncService(session, container)
 
 ### 错误处理采用什么模式？
 
-GitOps 模块采用**显式的 try-except 块**进行错误处理，移除了过度封装的装饰器。这种方式更加 Pythonic，控制流更清晰。
+GitOps 模块采用 **`collect_errors` 上下文管理器** 进行错误处理。这种方式具有以下优点：
+
+- **简洁**: 避免在每个操作中重复写 try-except 块
+- **非阻塞**: 单个文件处理失败不影响其他文件
+- **可追踪**: 所有错误都被收集到 `stats.errors` 列表中返回
 
 **错误分类**:
 
-- **配置错误**: 直接抛出，中断流程
-- **业务逻辑错误**: 记录日志，跳过当前文件，继续处理其他文件
-- **系统错误**: 记录完整堆栈，跳过当前文件
+- **`GitOpsError`**: 业务逻辑错误，记录 warning 日志
+- **其他异常**: 意外错误，记录完整堆栈信息
 
-**全局异常处理**: 项目在 FastAPI 层实现了统一的全局异常处理器（`app/core/error_handlers.py`），这是一个标准且优秀的模式，提供统一的错误响应格式、环境隔离和全链路追踪。
+**全局异常处理**: 项目在 FastAPI 层实现了统一的全局异常处理器（`app/core/error_handlers.py`），提供统一的错误响应格式、环境隔离和全链路追踪。
 
 详见 [ARCHITECTURE.md](./ARCHITECTURE.md#-错误处理模式)。
 
@@ -345,5 +461,5 @@ GitOps 模块采用**显式的 try-except 块**进行错误处理，移除了过
 
 ---
 
-**最后更新**: 2026-01-24
-**文档版本**: 3.3.0 (依赖注入容器重构 + 错误处理说明)
+**最后更新**: 2026-01-28
+**文档版本**: 3.4.0 (双向同步文档更新 + 流程图增强)

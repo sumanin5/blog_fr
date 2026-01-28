@@ -26,6 +26,9 @@ build/
 # ==========================================
 .vscode/
 .idea/
+.kiro/
+.qoder/
+.zed/
 *.swp
 *.swo
 

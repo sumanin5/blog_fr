@@ -9,6 +9,7 @@ from app.git_ops.exceptions import collect_errors
 from app.git_ops.schema import SyncStats
 from app.posts.model import Post
 from app.users.model import User
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from .base import BaseGitOpsService
@@ -20,7 +21,10 @@ class ExportService(BaseGitOpsService):
     """导出服务 - 负责同步数据库文章到 Git 仓库"""
 
     async def export_to_git(
-        self, post_id: Optional[str] = None, default_user: User = None
+        self,
+        post_id: Optional[str] = None,
+        default_user: User = None,
+        force_export: bool = False,
     ) -> SyncStats:
         """
         执行数据库到 Git 的导出。
@@ -32,15 +36,47 @@ class ExportService(BaseGitOpsService):
         stats = SyncStats()
         operating_user = await self._get_operating_user(default_user)
 
-        # 1. 确定需要导出的文章范围
+        # 1. 查询所有相关文章
+        # 直接查出所有文章，在内存中过滤，避免 SQL NULL/Empty String 问题
+        statement = select(Post).options(
+            selectinload(Post.category),
+            selectinload(Post.tags),
+            selectinload(Post.author),
+        )
+
         if post_id:
-            statement = select(Post).where(Post.id == post_id)
-        else:
-            # 查找所有 source_path 为空的文章（仅存在于数据库）
-            statement = select(Post).where(Post.source_path == None)
+            statement = statement.where(Post.id == post_id)
 
         results = await self.session.execute(statement)
-        posts_to_export = results.scalars().all()
+        all_posts = results.scalars().all()
+
+        # DEBUG: 打印所有文章的 source_path
+        logger.info(f"[EXPORT DEBUG] Total posts in DB: {len(all_posts)}")
+        for p in all_posts:
+            logger.info(
+                f"[EXPORT DEBUG] Post '{p.title}' (id={p.id}): "
+                f"source_path={repr(p.source_path)}, "
+                f"is_none={p.source_path is None}, "
+                f"is_empty={p.source_path == ''}"
+            )
+
+        # 2. 在内存中过滤
+        posts_to_export = []
+        for post in all_posts:
+            # 如果指定了 ID 或 强制导出，则包含
+            if post_id or force_export:
+                posts_to_export.append(post)
+                logger.info(f"[EXPORT DEBUG] Including '{post.title}' (forced/by_id)")
+                continue
+
+            # 否则只导出 source_path 为空的文章
+            if not post.source_path or post.source_path.strip() == "":
+                posts_to_export.append(post)
+                logger.info(f"[EXPORT DEBUG] Including '{post.title}' (no source_path)")
+
+        logger.info(
+            f"[EXPORT DEBUG] Posts to export after filtering: {len(posts_to_export)}"
+        )
 
         if not posts_to_export:
             logger.info("No articles found to export.")

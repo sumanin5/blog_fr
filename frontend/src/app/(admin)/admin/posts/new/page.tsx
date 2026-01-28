@@ -2,10 +2,10 @@
 
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useCategoriesQuery } from "@/hooks/admin/categories/queries";
 import { usePostsAdmin } from "@/hooks/admin/posts";
 import { PostEditor } from "@/components/admin/posts/post-editor";
-import { listCategoriesByType, PostType } from "@/shared/api/generated";
+import { PostType } from "@/shared/api/generated";
 import { Loader2 } from "lucide-react";
 
 export default function NewPostPage() {
@@ -20,17 +20,11 @@ export default function NewPostPage() {
 
   const { createPost, isPending: isCreating } = usePostsAdmin(postType);
 
-  // Fetch categories on client side
-  const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
-    queryKey: ["admin", "categories", postType],
-    queryFn: async () => {
-      const res = await listCategoriesByType({
-        path: { post_type: postType },
-        query: { include_inactive: true },
-      });
-      return res.data?.items || [];
-    },
-  });
+  // Fetch categories using the consistent hook
+  const { data: categoriesData, isLoading: isLoadingCategories } =
+    useCategoriesQuery(postType);
+
+  const categories = categoriesData?.items || [];
 
   if (isLoadingCategories) {
     return (
@@ -52,7 +46,7 @@ export default function NewPostPage() {
         }}
         onSave={(data) =>
           createPost(
-            { type: postType, data },
+            { type: postType, data: data as any },
             { onSuccess: () => router.push("/admin/posts") },
           )
         }

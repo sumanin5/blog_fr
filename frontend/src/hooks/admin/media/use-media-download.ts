@@ -3,8 +3,6 @@
 import { downloadFile, type MediaFile } from "@/shared/api";
 import { toast } from "sonner";
 import { useCallback } from "react";
-import { denormalizeApiRequest } from "@/shared/api/transformers";
-import * as Raw from "@/shared/api/generated/types.gen";
 
 /**
  * 📥 全局下载 Hook
@@ -14,9 +12,7 @@ export function useMediaDownload() {
   const handleDownload = useCallback(async (file: MediaFile) => {
     try {
       const response = await downloadFile({
-        path: denormalizeApiRequest<Raw.ViewFileData["path"]>({
-          fileId: file.id,
-        }),
+        path: { file_id: file.id },
         parseAs: "blob",
         throwOnError: true,
       });

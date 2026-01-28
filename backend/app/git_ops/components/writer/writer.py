@@ -52,9 +52,10 @@ class FileWriter:
             content = self.serializer.dump_to_string(post, tags, category_slug)
 
             # 2. 计算新路径
-            target_abs_path, target_relative_path = (
-                self.path_calculator.calculate_target_path(post, category_slug)
-            )
+            (
+                target_abs_path,
+                target_relative_path,
+            ) = await self.path_calculator.calculate_target_path(post, category_slug)
 
             # 3. 处理重命名/移动
             if old_post and old_post.source_path:

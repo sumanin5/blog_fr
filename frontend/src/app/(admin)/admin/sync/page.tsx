@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { PostType } from "@/shared/api/generated";
 
 export default function GitSyncPage() {
   const {
@@ -33,6 +34,7 @@ export default function GitSyncPage() {
     syncMutation,
     pushMutation,
     preview,
+    deletePost,
   } = useGitSync();
 
   const handleSync = (forceFull: boolean = false) => {
@@ -195,7 +197,16 @@ export default function GitSyncPage() {
           <h2 className="text-xl font-semibold">Git 追踪列表</h2>
         </div>
 
-        <PostListTable posts={gitManagedPosts} isLoading={isLoading} />
+        <PostListTable
+          posts={gitManagedPosts}
+          isLoading={isLoading}
+          onDelete={(post) =>
+            deletePost({
+              id: post.id,
+              type: (post.postType as PostType) || "articles",
+            })
+          }
+        />
 
         {gitManagedPosts.length > 0 && (
           <div className="flex items-center gap-2 rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-info">

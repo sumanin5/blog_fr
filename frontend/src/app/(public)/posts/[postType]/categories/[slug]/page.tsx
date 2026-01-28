@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HeroWrapper } from "@/components/layout/hero-wrapper";
 import { MdxServerRenderer } from "@/components/post/content/renderers/mdx-server-renderer";
-import { getThumbnailUrl } from "@/lib/media-utils";
+import { getThumbnailUrl, getMediaUrl } from "@/lib/media-utils";
 
 import { Category, CategoryList } from "@/shared/api/types";
 
@@ -53,6 +53,8 @@ export default async function CategoryPage({
 
   const posts = postsRes.data?.items || [];
   const coverImageUrl = getThumbnailUrl(category.coverMediaId, "xlarge");
+  // @ts-expect-error: icon is Media ID
+  const iconUrl = getMediaUrl(category.icon);
 
   return (
     <HeroWrapper>
@@ -88,8 +90,17 @@ export default async function CategoryPage({
                 Category
               </Badge>
               {/* 图标（如果有） */}
-              {category.iconPreset && (
-                <span className="text-lg">{category.iconPreset}</span>
+              {iconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={iconUrl}
+                  alt={category.name}
+                  className="w-8 h-8 object-contain"
+                />
+              ) : (
+                category.iconPreset && (
+                  <span className="text-lg">{category.iconPreset}</span>
+                )
               )}
             </div>
 

@@ -83,18 +83,14 @@ Content here.
         f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
     )
 
-    assert response.status_code == 200
+    # 当同步过程中只有错误而没有成功操作时,API 返回 400
+    assert response.status_code == 400
     data = response.json()
 
-    # 应该有错误
-    assert len(data["added"]) == 0
-    assert len(data["errors"]) == 1
-    error_msg = (
-        data["errors"][0]["message"]
-        if isinstance(data["errors"][0], dict)
-        else data["errors"][0]
-    )
-    assert "Missing required field 'author'" in error_msg
+    # 验证错误信息(错误响应格式: {"error": {"code": ..., "message": ...}})
+    assert "error" in data
+    assert "Sync failed" in data["error"]["message"]
+    assert "Missing required field 'author'" in data["error"]["message"]
 
     # 验证文章未创建
     session.expire_all()
@@ -132,18 +128,14 @@ Content here.
         f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
     )
 
-    assert response.status_code == 200
+    # 当同步过程中只有错误而没有成功操作时,API 返回 400
+    assert response.status_code == 400
     data = response.json()
 
-    # 应该有错误
-    assert len(data["added"]) == 0
-    assert len(data["errors"]) == 1
-    error_msg = (
-        data["errors"][0]["message"]
-        if isinstance(data["errors"][0], dict)
-        else data["errors"][0]
-    )
-    assert "Author not found" in error_msg
+    # 验证错误信息(错误响应格式: {"error": {"code": ..., "message": ...}})
+    assert "error" in data
+    assert "Sync failed" in data["error"]["message"]
+    assert "Author not found" in data["error"]["message"]
 
     # 验证文章未创建
     session.expire_all()

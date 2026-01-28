@@ -52,6 +52,7 @@ class CategoryResponse(CategorySimpleResponse):
     """完整版分类响应 (包含关联对象和计算属性)"""
 
     cover_media: Optional[MediaFileResponse] = None
+    icon: Optional[MediaFileResponse] = None
     post_count: int = 0
 
     @computed_field

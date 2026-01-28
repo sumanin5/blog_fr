@@ -55,8 +55,6 @@ async def create_category(
     # 创建分类
     db_category = Category(**category_in.model_dump())
     db_category = await crud.create_category(session, db_category)
-    await session.commit()
-    await session.refresh(db_category)
 
     # [Sync] 物理副作用：尝试创建空目录（可选，增强体验）
     try:
@@ -129,10 +127,6 @@ async def update_category(
 
     # 更新分类
     db_category = await crud.update_category(session, db_category, update_data)
-
-    # 立即提交以确保 DB 状态一致，然后再处理物理文件
-    await session.commit()
-    await session.refresh(db_category)
 
     # [Sync] 物理副作用：如果要改名 (Slug 变更)，执行目录移动
     new_slug = db_category.slug
@@ -237,7 +231,7 @@ async def delete_category(
     await crud.delete_category(session, db_category)
     await session.commit()
 
-    # [Sync] 物理副作用：尝试删除空目录
+    # [Sync] 物理副作用：尝试删除分类目录和 index.md
     try:
         base_dir = Path(settings.CONTENT_DIR)
 
@@ -247,13 +241,22 @@ async def delete_category(
 
         category_dir = base_dir / type_folder / target_slug
 
-        # 只有目录存在且为空时才删除，防止误删还没来得及同步到 DB 的文件
         if category_dir.exists() and category_dir.is_dir():
+            # 1. 先删除 index.md (分类元数据文件)
+            index_file = category_dir / "index.md"
+            if index_file.exists():
+                index_file.unlink()
+                logger.info(f"Removed category index file: {index_file}")
+
+            # 2. 检查目录是否为空,如果为空则删除
             if not any(category_dir.iterdir()):  # 检查是否为空
                 category_dir.rmdir()
                 logger.info(f"Removed empty physical directory: {category_dir}")
             else:
-                logger.warning(f"Skipped deleting non-empty directory: {category_dir}")
+                logger.warning(
+                    f"Skipped deleting non-empty directory: {category_dir} "
+                    f"(contains {len(list(category_dir.iterdir()))} items)"
+                )
     except Exception as e:
         logger.warning(f"Failed to cleanup physical directory: {e}")
 

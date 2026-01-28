@@ -39,12 +39,16 @@ async def get_user_files(
         Optional[MediaType], Query(description="媒体类型过滤")
     ] = None,
     usage: Annotated[Optional[FileUsage], Query(description="用途过滤")] = None,
+    mime_type: Annotated[
+        Optional[str], Query(description="MIME类型过滤 (如: image/svg+xml)")
+    ] = None,
 ):
     query = utils.build_user_media_query(
         user_id=current_user.id,
         q=q,
         media_type=media_type,
         usage=usage,
+        mime_type=mime_type,
     )
     return await crud.paginate_query(session, query, params)
 

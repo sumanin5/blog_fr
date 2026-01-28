@@ -31,6 +31,10 @@ class PreviewService(BaseGitOpsService):
 
         # 3. 对比差异
         for file_path, scanned in scanned_map.items():
+            # 跳过分类元数据文件，它们不属于文章同步逻辑
+            if scanned.is_category_index:
+                continue
+
             async with collect_errors(result, f"Previewing {file_path}"):
                 matched_post, is_move = await self.serializer.match_post(
                     scanned, existing_posts

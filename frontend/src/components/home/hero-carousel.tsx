@@ -1,198 +1,215 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import * as React from "react";
 import Link from "next/link";
-import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  FolderOpen,
+} from "lucide-react";
+import { useFeaturedCategories } from "@/hooks/use-featured-categories";
+import { getThumbnailUrl, getMediaUrl } from "@/lib/media-utils";
+import { type Category } from "@/shared/api/types";
 
-import { listPostsByType } from "@/shared/api/generated/sdk.gen";
-import { PostType } from "@/shared/api/generated/types.gen";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getThumbnailUrl } from "@/lib/media-utils";
 import { cn } from "@/lib/utils";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
+
+// --- Mock Data ---
+const MOCK_CATEGORIES = [
+  {
+    id: "mock-1",
+    name: "全栈开发",
+    slug: "full-stack",
+    excerpt:
+      "探索现代 Web 开发技术栈，从 React Server Components 到高性能后端架构。",
+    cover_image_mock:
+      "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2000",
+  },
+  {
+    id: "mock-2",
+    name: "人工智能",
+    slug: "ai-llm",
+    excerpt:
+      "深入理解 LLM 原理、Prompt Engineering 以及 AI Agent 在实际业务中的应用。",
+    cover_image_mock:
+      "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=2000",
+  },
+  {
+    id: "mock-3",
+    name: "数字生活",
+    slug: "digital-life",
+    excerpt: "分享提升工作效率的工具、方法论以及构建数字花园的思考与实践。",
+    cover_image_mock:
+      "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=2000",
+  },
+];
 
 export function HeroCarousel() {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, duration: 25 }, [
-    Autoplay({ delay: 5000, stopOnInteraction: false }),
-  ]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [api, setApi] = React.useState<CarouselApi>();
+  const [current, setCurrent] = React.useState(0);
 
-  // 获取精选文章
-  const { data: postsData, isLoading } = useQuery({
-    queryKey: ["posts", "articles", "featured"],
-    queryFn: () =>
-      listPostsByType({
-        path: { post_type: "articles" },
-        query: { is_featured: true, size: 5 },
-      }),
-  });
+  // 1. 使用专用的 Hook 获取数据
+  const { data: categoriesData, isLoading } = useFeaturedCategories();
 
-  const slides = postsData?.data?.items || [];
+  // 2. 处理数据
+  // Hook 返回的已经是 CategoryList，可以直接取 items
+  const featuredCategories = categoriesData?.items || [];
 
-  const scrollPrev = useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev();
-  }, [emblaApi]);
+  // 3. 决定是否使用 Mock
+  // 只有当加载完成且没有数据时才使用 Mock
+  const isUsingMock = featuredCategories.length === 0 && !isLoading;
+  const slides = isUsingMock ? MOCK_CATEGORIES : featuredCategories;
 
-  const scrollNext = useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext();
-  }, [emblaApi]);
-
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on("select", onSelect);
-    emblaApi.on("reInit", onSelect);
-  }, [emblaApi, onSelect]);
+  React.useEffect(() => {
+    if (!api) return;
+    setCurrent(api.selectedScrollSnap());
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
 
   if (isLoading) {
     return <CarouselSkeleton />;
   }
 
-  if (slides.length === 0) {
-    return null; // 如果没有精选文章，不显示轮播
-  }
+  // 如果既没 API 数据也没 Mock (理论上不可能)，则不渲染
+  if (slides.length === 0) return null;
 
   return (
-    <div className="relative group w-full h-[85vh] min-h-[600px] overflow-hidden">
-      {/* 轮播主体 */}
-      <div className="absolute inset-0 z-0 h-full w-full" ref={emblaRef}>
-        <div className="flex h-full w-full touch-pan-y">
-          {slides.map((post) => (
-            <div
-              className="relative min-w-0 flex-[0_0_100%] h-full w-full"
-              key={post.id}
-            >
-              <CarouselSlide post={post} />
-            </div>
+    <section className="relative w-full bg-background">
+      <Carousel
+        setApi={setApi}
+        opts={{ loop: true }}
+        plugins={[Autoplay({ delay: 6000, stopOnInteraction: false })]}
+        className="w-full"
+      >
+        <CarouselContent className="h-[60vh] min-h-[500px] ml-0">
+          {slides.map((cat) => {
+            // 类型断言：根据 isUsingMock 区分类型
+            const category = cat as Category | (typeof MOCK_CATEGORIES)[number];
+            const coverUrl = isUsingMock
+              ? (category as (typeof MOCK_CATEGORIES)[number]).cover_image_mock
+              : getThumbnailUrl(
+                  (category as Category).coverMediaId,
+                  "xlarge",
+                ) || MOCK_CATEGORIES[0].cover_image_mock;
+
+            const realCategory = !isUsingMock ? (category as Category) : null;
+            const iconUrl = getMediaUrl(realCategory?.iconId);
+
+            return (
+              <CarouselItem
+                key={category.id}
+                className="pl-0 h-full w-full basis-full"
+              >
+                <div className="relative h-full w-full overflow-hidden group">
+                  {/* 背景图：使用 absolute inset-0 确保铺满 */}
+                  <div className="absolute inset-0 z-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={coverUrl}
+                      alt={category.name}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    {/* 遮罩：适配浅色/深色模式，统一使用深色遮罩保证文字可读性，
+                      或者可以使用 from-background/90 来跟随主题 */}
+                    <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+                    <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent" />
+                  </div>
+
+                  {/* 内容容器 */}
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center text-white">
+                    <div className="max-w-3xl space-y-6 animate-in fade-in zoom-in-95 duration-700">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1 text-sm font-medium text-primary-foreground/90 backdrop-blur-sm border border-primary/20">
+                        {iconUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={iconUrl}
+                            alt="icon"
+                            className="h-4 w-4 object-contain"
+                          />
+                        ) : (
+                          <FolderOpen className="h-4 w-4" />
+                        )}
+                        Featured Topic
+                      </span>
+
+                      <h1 className="text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl drop-shadow-md text-white">
+                        {category.name}
+                      </h1>
+
+                      <p className="max-w-xl mx-auto text-lg text-white/80 md:text-xl line-clamp-2">
+                        {category.excerpt}
+                      </p>
+
+                      <div className="pt-4">
+                        <Button
+                          asChild
+                          size="lg"
+                          className="rounded-full text-lg h-12 px-8 shadow-lg"
+                        >
+                          <Link
+                            href={`/posts/articles/categories/${category.slug}`}
+                          >
+                            浏览专栏 <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+            );
+          })}
+        </CarouselContent>
+
+        {/* 指示器和控制按钮 */}
+        <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-20">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              className={cn(
+                "h-2 rounded-full transition-all duration-300 shadow-sm",
+                current === idx
+                  ? "w-8 bg-primary"
+                  : "w-2 bg-primary/30 hover:bg-primary/50",
+              )}
+              onClick={() => api?.scrollTo(idx)}
+            />
           ))}
         </div>
-      </div>
 
-      {/* 左右导航按钮 (悬停显示) */}
-      <div className="absolute inset-x-4 top-1/2 z-20 flex -translate-y-1/2 justify-between opacity-0 transition-opacity duration-300 md:group-hover:opacity-100 pointer-events-none">
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
-          className="h-12 w-12 rounded-full border-white/20 bg-black/20 text-white backdrop-blur-sm transition-transform hover:scale-110 hover:bg-black/40 pointer-events-auto"
-          onClick={scrollPrev}
+          className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/20 text-white hover:bg-background/40 hover:text-white hidden md:flex border-0"
+          onClick={() => api?.scrollPrev()}
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-8 w-8" />
         </Button>
+
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
-          className="h-12 w-12 rounded-full border-white/20 bg-black/20 text-white backdrop-blur-sm transition-transform hover:scale-110 hover:bg-black/40 pointer-events-auto"
-          onClick={scrollNext}
+          className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/20 text-white hover:bg-background/40 hover:text-white hidden md:flex border-0"
+          onClick={() => api?.scrollNext()}
         >
-          <ChevronRight className="h-6 w-6" />
+          <ChevronRight className="h-8 w-8" />
         </Button>
-      </div>
-
-      {/* 底部指示器 */}
-      <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 gap-2">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            className={cn(
-              "h-2 rounded-full transition-all duration-300",
-              selectedIndex === index
-                ? "w-8 bg-primary"
-                : "w-2 bg-white/50 hover:bg-white/80",
-            )}
-            onClick={() => emblaApi?.scrollTo(index)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CarouselSlide({ post }: { post: any }) {
-  const coverUrl = getThumbnailUrl(post.cover_media_id, "xlarge");
-
-  return (
-    <div className="relative h-full w-full">
-      {/* 背景图片 */}
-      {coverUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={coverUrl}
-          alt={post.title}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : (
-        <div className="absolute inset-0 h-full w-full bg-linear-to-br from-gray-900 to-gray-800" />
-      )}
-
-      {/* 渐变遮罩 */}
-      <div className="absolute inset-0 bg-linear-to-t from-background via-background/40 to-transparent" />
-      <div className="absolute inset-0 bg-black/20" />
-
-      {/* 内容区域 */}
-      <div className="container relative z-10 flex h-full flex-col justify-end pb-24 md:pb-32">
-        <div className="max-w-3xl space-y-4 animate-in fade-in slide-in-from-bottom-5 duration-500">
-          <div className="flex gap-2">
-            {post.category && (
-              <Badge
-                variant="secondary"
-                className="bg-primary/20 hover:bg-primary/30 text-primary-foreground backdrop-blur-md border-0"
-              >
-                {post.category.name}
-              </Badge>
-            )}
-            <Badge
-              variant="outline"
-              className="text-white border-white/30 backdrop-blur-md"
-            >
-              {new Date(post.published_at).toLocaleDateString()}
-            </Badge>
-          </div>
-
-          <h2 className="text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl text-shadow-lg">
-            {post.title}
-          </h2>
-
-          {post.excerpt && (
-            <p className="line-clamp-2 text-lg text-gray-200 md:text-xl max-w-2xl text-shadow-sm">
-              {post.excerpt}
-            </p>
-          )}
-
-          <div className="pt-4">
-            <Button
-              asChild
-              size="lg"
-              className="rounded-full px-8 text-lg font-medium shadow-lg hover:shadow-primary/50 transition-all duration-300"
-            >
-              <Link href={`/posts/articles/${post.slug}`}>
-                阅读文章 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </Carousel>
+    </section>
   );
 }
 
 function CarouselSkeleton() {
-  return (
-    <div className="w-full h-[500px] md:h-[600px] bg-muted animate-pulse relative">
-      <div className="container h-full flex flex-col justify-end pb-24">
-        <Skeleton className="h-8 w-24 mb-4" />
-        <Skeleton className="h-16 w-3/4 mb-4" />
-        <Skeleton className="h-6 w-1/2 mb-8" />
-        <Skeleton className="h-12 w-40 rounded-full" />
-      </div>
-    </div>
-  );
+  return <Skeleton className="w-full h-[60vh] min-h-[500px]" />;
 }

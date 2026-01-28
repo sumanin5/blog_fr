@@ -13,7 +13,7 @@ graph TB
     end
 
     subgraph "API 层"
-        B[GitOps Router<br>/ops/git/sync]
+        B[GitOps Router<br>/ops/git/*]
     end
 
     subgraph "业务编排层 (Service)"
@@ -26,6 +26,7 @@ graph TB
         S2[PreviewService<br>预览服务]
         S3[ResyncService<br>重新同步服务]
         S4[CommitService<br>提交服务]
+        S5[ExportService<br>导出服务]
     end
 
     subgraph "核心组件层 (Components)"
@@ -49,25 +50,15 @@ graph TB
 
     B -->|创建| C
     C -->|创建| Container
-    Container -->|延迟加载| S1
-    Container -->|延迟加载| S2
-    Container -->|延迟加载| S3
-    Container -->|延迟加载| S4
+    Container -->|延迟加载| S1 & S2 & S3 & S4 & S5
 
-    C -->|委托| S1
-    C -->|委托| S2
-    C -->|委托| S3
-    C -->|委托| S4
+    C -->|委托| S1 & S2 & S3 & S4 & S5
 
-    Container -->|提供| D
-    Container -->|提供| F
-    Container -->|提供| I
-    Container -->|提供| J
+    Container -->|提供| D & F & I & J
 
-    S1 -->|使用| D
-    S1 -->|使用| F
-    S1 -->|使用| J
+    S1 -->|使用| D & F & J
     S1 -->|调用| H
+    S5 -->|使用| I & J
 
     H -->|序列化/反序列化| F
     F -->|验证| E
@@ -79,10 +70,25 @@ graph TB
     D -->|读取| M
     I -->|写入| M
     J -->|命令行| M
-    D -->|读取| L
-    H -->|写入| L
-    I -->|命令行| L
+
+    style Container fill:#e1f5ff,stroke:#0077cc
+    style S1 fill:#e8f5e9,stroke:#2e7d32
+    style S2 fill:#e8f5e9,stroke:#2e7d32
+    style S3 fill:#e8f5e9,stroke:#2e7d32
+    style S4 fill:#e8f5e9,stroke:#2e7d32
+    style S5 fill:#e8f5e9,stroke:#2e7d32
 ```
+
+### API 端点概览
+
+| 端点                              | 方法   | 服务              | 说明                     |
+| --------------------------------- | ------ | ----------------- | ------------------------ |
+| `/ops/git/sync`                   | POST   | `SyncService`     | 触发同步（默认增量）     |
+| `/ops/git/sync?force_full=true`   | POST   | `SyncService`     | 强制全量同步             |
+| `/ops/git/push`                   | POST   | `ExportService`   | 导出数据库文章到 Git     |
+| `/ops/git/preview`                | GET    | `PreviewService`  | 预览同步变更（Dry Run）  |
+| `/ops/git/posts/{id}/resync-metadata` | POST | `ResyncService` | 重新同步单篇文章元数据   |
+| `/ops/git/webhook`                | POST   | `SyncService`     | GitHub Webhook 入口      |
 
 ---
 
@@ -120,10 +126,35 @@ GitOpsContainer
 │   ├── writer: FileWriter           # 文件写入器
 │   └── git_client: GitClient        # Git 客户端
 └── 服务层（延迟加载 + 单例）
-    ├── sync_service: SyncService       # 同步服务
+    ├── sync_service: SyncService       # 同步服务 (Git → DB)
     ├── preview_service: PreviewService # 预览服务
     ├── resync_service: ResyncService   # 重新同步服务
-    └── commit_service: CommitService   # 提交服务
+    ├── commit_service: CommitService   # 提交服务
+    └── export_service: ExportService   # 导出服务 (DB → Git)
+```
+
+#### 容器初始化流程
+
+```mermaid
+sequenceDiagram
+    participant Router
+    participant Facade as GitOpsService
+    participant Container as GitOpsContainer
+    participant Components as 核心组件
+
+    Router->>Facade: 创建 GitOpsService(session)
+    activate Facade
+    Facade->>Container: 创建 GitOpsContainer(session)
+    activate Container
+    Container->>Components: 立即创建 scanner
+    Container->>Components: 立即创建 serializer
+    Container->>Components: 立即创建 writer
+    Container->>Components: 立即创建 git_client
+    Container-->>Facade: 容器就绪
+    deactivate Container
+
+    Note over Container: 服务层尚未创建<br>（延迟加载）
+    deactivate Facade
 ```
 
 #### 优势
@@ -181,13 +212,16 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 
 ### 6. 服务拆分与职责单一
 
-将原来 481 行的 `service.py` 拆分为多个职责单一的服务类：
+将原来的 `service.py` 拆分为多个职责单一的服务类：
 
-- **SyncService** (~280 行): 负责全量和增量同步
-- **PreviewService** (~80 行): 负责同步预览（Dry Run）
-- **ResyncService** (~80 行): 负责重新同步单个文章
-- **CommitService** (~30 行): 负责 Git 提交和推送
-- **GitOpsService** (~70 行): 门面模式，协调各个子服务
+| 服务             | 行数 | 职责                           |
+| ---------------- | ---- | ------------------------------ |
+| `SyncService`    | ~300 | 全量和增量同步 (Git → DB)      |
+| `PreviewService` | ~80  | 同步预览（Dry Run）            |
+| `ResyncService`  | ~80  | 重新同步单个文章的元数据       |
+| `CommitService`  | ~30  | Git 提交和推送                 |
+| `ExportService`  | ~120 | 导出数据库文章到 Git (DB → Git)|
+| `GitOpsService`  | ~70  | 门面模式，协调各个子服务       |
 
 每个服务继承自 `BaseGitOpsService`，通过容器获取依赖。
 
@@ -200,7 +234,121 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 
 ## 🔄 同步流程详解
 
-### 完整同步 (`sync_all`)
+### 全量同步流程图 (`sync_all`)
+
+```mermaid
+flowchart TB
+    Start([开始]) --> Init[创建 GitOpsService]
+    Init --> Container[创建 GitOpsContainer]
+    Container --> Delegate[委托给 SyncService]
+
+    subgraph SyncService["SyncService.sync_all()"]
+        Lock{获取同步锁} -->|已锁定| Wait[等待锁释放]
+        Wait --> Lock
+        Lock -->|获取成功| Pull[Git Pull]
+
+        Pull -->|失败| LogWarn[记录警告<br>继续同步]
+        Pull -->|成功| Scan
+        LogWarn --> Scan
+
+        Scan[扫描所有 MDX 文件] --> Query[查询数据库<br>已同步文章]
+        Query --> Loop{遍历文件}
+
+        Loop -->|下一个| Match[匹配策略]
+        Match --> MatchResult{匹配结果}
+
+        MatchResult -->|未找到| Create[handle_post_create]
+        MatchResult -->|找到| Update[handle_post_update]
+        MatchResult -->|分类索引| CategorySync[handle_category_sync]
+
+        Create --> WriteBack[回写 ID 到文件]
+        Update --> WriteBack
+        CategorySync --> Loop
+        WriteBack --> Loop
+
+        Loop -->|完成| Delete[检测删除]
+        Delete --> Cache[刷新 Next.js 缓存]
+        Cache --> SaveHash[保存 Commit Hash]
+    end
+
+    SaveHash --> Return([返回 SyncStats])
+
+    style Container fill:#e1f5ff
+    style Create fill:#d4edda
+    style Update fill:#fff3cd
+    style Delete fill:#f8d7da
+```
+
+### 增量同步流程图 (`sync_incremental`)
+
+```mermaid
+flowchart TB
+    Start([开始]) --> LoadHash[读取上次同步 Hash]
+    LoadHash --> HasHash{存在记录?}
+
+    HasHash -->|否| Fallback[回退到全量同步]
+    Fallback --> End
+
+    HasHash -->|是| Pull[Git Pull]
+    Pull --> GetCurrent[获取当前 Hash]
+    GetCurrent --> Compare{Hash 相同?}
+
+    Compare -->|是| NoChange[无变更，跳过]
+    NoChange --> End
+
+    Compare -->|否| GetDiff[获取变更文件列表]
+    GetDiff -->|失败| Fallback
+
+    GetDiff -->|成功| Process[处理变更文件]
+
+    subgraph Process["处理变更"]
+        Loop{遍历变更} -->|下一个| Check{文件状态}
+        Check -->|删除| DoDelete[删除对应文章]
+        Check -->|新增/修改| DoSync[同步文章]
+        DoDelete --> Loop
+        DoSync --> Loop
+        Loop -->|完成| Done[处理完成]
+    end
+
+    Done --> SaveHash[保存当前 Hash]
+    SaveHash --> Cache[刷新缓存]
+    Cache --> End([返回 SyncStats])
+
+    style Fallback fill:#fff3cd
+    style NoChange fill:#d4edda
+```
+
+### 导出同步流程图 (`export_to_git`)
+
+```mermaid
+flowchart TB
+    Start([开始]) --> Query[查询数据库文章]
+    Query --> Filter{过滤条件}
+
+    Filter -->|指定 ID| Single[单篇导出]
+    Filter -->|无 source_path| NoPath[新文章导出]
+    Filter -->|force_export| All[全部导出]
+
+    Single --> Process
+    NoPath --> Process
+    All --> Process
+
+    subgraph Process["处理导出"]
+        Loop{遍历文章} -->|下一个| Write[FileWriter.write_post]
+        Write --> UpdateDB[更新 source_path]
+        UpdateDB --> Loop
+        Loop -->|完成| Done[导出完成]
+    end
+
+    Done --> Commit[Git Add + Commit]
+    Commit --> Push[Git Push]
+    Push --> End([返回 SyncStats])
+
+    style Write fill:#d4edda
+    style Commit fill:#e1f5ff
+```
+
+### 完整同步步骤说明
 
 1. **初始化**: `GitOpsService` 创建 `GitOpsContainer`，容器初始化所有核心组件。
 2. **委托**: `GitOpsService.sync_all()` 委托给 `container.sync_service.sync_all()`。
@@ -211,31 +359,9 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
    - 遍历扫描到的文件。
    - **匹配策略**: 使用 `container.serializer` 匹配，优先通过 `source_path` 匹配，其次通过 `slug` 匹配（检测文件重命名/移动）。
    - **更新/创建**: 根据匹配结果调用 `handle_post_update` 或 `handle_post_create`。
-   - **异常捕获**: 每个文件的处理都在独立的 `try...except` 块中。
+   - **错误处理**: 使用 `collect_errors` 上下文管理器捕获错误。
 7. **删除检测**: 遍历数据库中的文章，如果在本次扫描中未找到对应的文件，则执行删除。
 8. **统计与响应**: 返回包含新增、更新、删除、错误列表的 `SyncStats` 对象。
-
-### 增量同步 (`sync_incremental`)
-
-从 v3.2.0 开始，系统默认采用**增量同步**策略，显著提升性能：
-
-1. **委托**: `GitOpsService.sync_incremental()` 委托给 `container.sync_service.sync_incremental()`。
-2. **状态记录**: 在 `content/.gitops_last_sync` 文件中持久化存储上一次成功同步的 Git Commit Hash。
-3. **差异获取**: 使用 `container.git_client.get_changed_files()` 获取变更文件列表。
-4. **增量处理**: 仅处理变更列表中的文件（新增/修改/删除）。
-5. **智能回退**: 如果本地没有 Hash 记录或获取 Diff 失败，自动降级为全量扫描模式 `sync_all`。
-
-### 预览同步 (`preview_sync`)
-
-1. **委托**: `GitOpsService.preview_sync()` 委托给 `container.preview_service.preview_sync()`。
-2. **Dry Run**: 扫描文件并对比数据库，但不执行任何写操作。
-3. **返回预览**: 返回 `PreviewResult`，包含待创建、更新、删除的文章列表。
-
-### 重新同步 (`resync_post_metadata`)
-
-1. **委托**: `GitOpsService.resync_post_metadata()` 委托给 `container.resync_service.resync_post_metadata()`。
-2. **单篇同步**: 重新读取指定文章的 Frontmatter，更新数据库。
-3. **用途**: 修复 frontmatter 错误、补全缺失的元数据。
 
 ---
 
@@ -264,14 +390,37 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 
 ### Processor Pipeline 执行顺序
 
-1. **ContentProcessor**: 处理内容和 title
-2. **PostTypeProcessor**: 确定 post_type（路径优先）
-3. **AuthorProcessor**: 解析 author（数据库查询）
-4. **CoverProcessor**: 解析 cover（数据库查询）
-5. **CategoryProcessor**: 解析 category（路径优先 + 数据库查询）
-6. **TagsProcessor**: 解析 tags（数据库查询 + 自动创建）
+```mermaid
+flowchart LR
+    Input[Frontmatter 原始数据] --> P1
 
----
+    subgraph Pipeline["Processor Pipeline"]
+        P1[ContentProcessor<br>处理 content 和 title] --> P2
+        P2[PostTypeProcessor<br>确定 post_type] --> P3
+        P3[AuthorProcessor<br>解析 author] --> P4
+        P4[CoverProcessor<br>解析 cover] --> P5
+        P5[CategoryProcessor<br>解析 category] --> P6
+        P6[TagsProcessor<br>解析 tags]
+    end
+
+    P6 --> Output[Post 字典]
+
+    style P1 fill:#fff4e6
+    style P2 fill:#fff4e6
+    style P3 fill:#e1f5ff
+    style P4 fill:#e1f5ff
+    style P5 fill:#e1f5ff
+    style P6 fill:#e1f5ff
+```
+
+| 序号 | Processor           | 职责                                     | 依赖                |
+| ---- | ------------------- | ---------------------------------------- | ------------------- |
+| 1    | `ContentProcessor`  | 处理 content_mdx 和 title fallback       | -                   |
+| 2    | `PostTypeProcessor` | 确定 post_type（路径优先）               | -                   |
+| 3    | `AuthorProcessor`   | 解析 author_id（数据库查询）             | -                   |
+| 4    | `CoverProcessor`    | 解析 cover_media_id（数据库查询）        | -                   |
+| 5    | `CategoryProcessor` | 解析 category_id（路径优先 + 自动创建）  | post_type           |
+| 6    | `TagsProcessor`     | 解析 tag_ids（数据库查询 + 自动创建）    | -                   |
 
 ---
 
@@ -354,6 +503,81 @@ service = SyncService(session, container)
 ---
 
 ## 🛡️ 错误处理模式
+
+### 错误处理架构图
+
+```mermaid
+flowchart TB
+    subgraph "业务层错误"
+        E1[GitOpsConfigurationError<br>配置错误]
+        E2[GitOpsSyncError<br>同步错误]
+        E3[ScanError<br>扫描错误]
+        E4[FrontmatterValidationError<br>验证错误]
+        E5[GitError<br>Git 操作错误]
+    end
+
+    subgraph "处理策略"
+        H1[直接抛出<br>中断流程]
+        H2[collect_errors<br>记录并继续]
+        H3[记录日志<br>跳过文件]
+    end
+
+    subgraph "结果"
+        R1[HTTP 500 响应]
+        R2[SyncStats.errors]
+        R3[继续处理下一个]
+    end
+
+    E1 --> H1 --> R1
+    E2 --> H2 --> R2
+    E3 --> H2 --> R2
+    E4 --> H2 --> R2
+    E5 --> H3 --> R3
+
+    style E1 fill:#f8d7da
+    style H1 fill:#f8d7da
+    style H2 fill:#fff3cd
+    style H3 fill:#d4edda
+```
+
+### `collect_errors` 上下文管理器
+
+项目使用 `collect_errors` 上下文管理器统一处理同步过程中的错误：
+
+```python
+@asynccontextmanager
+async def collect_errors(stats: ErrorCollector, context: str):
+    """捕获并记录 GitOps 操作中的错误"""
+    try:
+        yield
+    except GitOpsError as e:
+        # 业务预期内的错误
+        error_record = SyncError(
+            context=context,
+            code=e.error_code,
+            message=e.message,
+            details=e.details,
+            timestamp=datetime.now(),
+        )
+        stats.errors.append(error_record)
+        logger.warning(f"GitOps Error: [{context}] {e.message}")
+    except Exception as e:
+        # 未预期的系统错误
+        error_record = SyncError(
+            context=context,
+            code="INTERNAL_ERROR",
+            message=f"Unexpected error: {e}",
+            details={"traceback": traceback.format_exc()[-500:]},
+            timestamp=datetime.now(),
+        )
+        stats.errors.append(error_record)
+        logger.exception(f"Unexpected Error: [{context}]")
+
+# 使用示例
+for scanned in scanned_posts:
+    async with collect_errors(stats, f"Syncing {scanned.file_path}"):
+        await process_file(scanned)  # 错误会被捕获，不会中断循环
+```
 
 ### 显式错误处理策略
 
@@ -474,5 +698,5 @@ for scanned in scanned_posts:
 
 ---
 
-**最后更新**: 2026-01-24
-**版本**: 3.3.0 (依赖注入容器重构 + 错误处理说明)
+**最后更新**: 2026-01-28
+**版本**: 3.4.0 (添加 ExportService + 详细流程图)

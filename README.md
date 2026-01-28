@@ -2,11 +2,10 @@
 
 [![Stack](https://img.shields.io/badge/Stack-FastAPI%20%2B%20Next.js%2016-blue.svg)](https://github.com/sumanin5/blog_fr)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.13%2B-blue)](https://www.python.org/)
-[![Node](https://img.shields.io/badge/Node-20%2B-green)](https://nodejs.org/)
-[![Backend CI](https://github.com/sumanin5/blog_fr/workflows/Backend%20CI/badge.svg)](https://github.com/sumanin5/blog_fr/actions)
-[![Frontend CI](https://github.com/sumanin5/blog_fr/workflows/Frontend%20CI/badge.svg)](https://github.com/sumanin5/blog_fr/actions)
-[![codecov](https://codecov.io/gh/sumanin5/blog_fr/branch/main/graph/badge.svg)](https://codecov.io/gh/sumanin5/blog_fr)
+[![Python](https://img.shields.io/badge/Python-3.13%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Node](https://img.shields.io/badge/Node-20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-9%2B-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![uv](https://img.shields.io/badge/uv-Package%20Manager-blueviolet)](https://github.com/astral-sh/uv)
 
 **Blog FR** 是一个基于 **FastAPI** 和 **Next.js 16** 构建的现代全栈博客系统。它集成了高性能后端、React Server Components 以及丰富的 MDX 渲染能力，旨在提供极致的写作与阅读体验。
 
@@ -14,19 +13,19 @@
 
 ## ✨ 核心特性
 
-- 🎨 **现代设计**: 基于 Tailwind CSS 4 和 Shadcn UI 的高级 UI 系统，支持深色/浅色模式切换与响应式布局。
-- 📝 **增强型 MDX**: 支持 MDX 渲染，集成 Mermaid 图表、代码高亮、数学公式（KaTeX）以及幻灯片演示。
+- 🎨 **现代设计**: Tailwind CSS 4 + shadcn/ui，深色/浅色模式切换，响应式布局
+- 📝 **增强型 MDX**: Mermaid 图表、代码高亮 (highlight.js)、数学公式 (KaTeX)
 - ⚡ **混合渲染架构**:
-  - **SSR (服务端渲染)**: 用于博客文章和内容页面，提供最佳 SEO 和首屏加载速度
-  - **CSR (客户端渲染)**: 用于用户交互界面，提供流畅的 SPA 体验
-  - **后端**: 使用 FastAPI + SQLModel (SQLAlchemy + Pydantic)，支持异步操作与高效并发
-- 🔗 **OpenAPI 驱动**: 自动生成类型安全的前端 SDK，实现端到端类型安全
-- 🖼️ **媒体管理**: 自动生成缩略图，支持多种图片格式，优化加载速度
-- 🔍 **SEO 友好**: 语义化 HTML、动态元数据生成与 OpenGraph 标签优化
-- 🐳 **容器化部署**: 完整的 Docker & Docker Compose 配置，一键启动开发与生产环境
-- 🧪 **质量保证**: 集成 Pytest 和测试覆盖率工具
-- 🔄 **GitOps 内容同步**: 基于依赖注入容器的自动化内容管理，支持增量同步和全量同步
-- 🛡️ **企业级错误处理**: 统一的全局异常处理器，提供标准化的错误响应格式和全链路追踪
+  - **SSR**: 博客文章页面，最佳 SEO 和首屏加载
+  - **CSR**: 管理后台，流畅的 SPA 体验
+  - **后端**: FastAPI + SQLModel，异步高性能
+- 🔗 **OpenAPI 驱动**: hey-api 自动生成类型安全的前端 SDK
+- 🖼️ **媒体管理**: 多规格缩略图自动生成，SVG 图标支持
+- 🔍 **SEO 友好**: 语义化 HTML、动态元数据、OpenGraph 标签
+- 🐳 **容器化部署**: Docker Compose 一键启动开发/生产环境
+- 🧪 **质量保证**: Pytest 测试框架 + 代码覆盖率
+- 🔄 **GitOps 同步**: 依赖注入容器模式，支持增量/全量同步
+- 🛡️ **统一错误处理**: 标准化错误响应格式 + 全链路追踪
 
 ---
 

@@ -243,7 +243,6 @@ pytest -s
    ```
 
 3. **环境隔离**
-
    - **开发环境**: 返回详细的报错信息和 Traceback，方便调试
    - **生产环境**: 隐藏敏感信息，只返回通用错误消息，防止信息泄露
 
@@ -299,21 +298,43 @@ async def get_post(post_id: str):
 
 ## 🗂️ 项目结构
 
-```
+```text
 backend/
 ├── app/
-│   ├── main.py          # FastAPI 应用入口
-│   ├── models.py        # 数据库模型 (SQLModel)
-│   ├── schemas.py       # 请求/响应数据模型
-│   ├── api/
-│   │   └── routes/      # API 路由
-│   └── db/
-│       └── session.py   # 数据库会话
-├── tests/               # 单元测试
-├── alembic/             # 数据库迁移
-├── Dockerfile           # 多阶段构建
-├── pyproject.toml       # 项目配置 + 依赖
-└── README.md            # 本文件
+│   ├── main.py              # FastAPI 应用入口
+│   ├── core/                # 核心模块 (配置、安全、异常处理)
+│   │   ├── config.py        # 配置管理
+│   │   ├── security.py      # JWT 认证
+│   │   ├── exceptions.py    # 自定义异常
+│   │   └── error_handlers.py# 全局异常处理器
+│   ├── users/               # 用户模块
+│   │   ├── models.py        # 用户数据模型
+│   │   ├── schemas.py       # 请求/响应模型
+│   │   ├── cruds.py         # CRUD 操作
+│   │   └── router.py        # API 路由
+│   ├── posts/               # 文章模块
+│   │   ├── models/          # 文章、分类、标签模型
+│   │   ├── schemas/         # 请求/响应模型
+│   │   ├── cruds/           # CRUD 操作
+│   │   ├── services/        # 业务逻辑
+│   │   └── router.py        # API 路由
+│   ├── media/               # 媒体模块
+│   │   ├── models.py        # 媒体文件模型
+│   │   ├── schemas.py       # 请求/响应模型
+│   │   ├── services/        # 上传、缩略图处理
+│   │   └── routers/         # API 路由
+│   ├── git_ops/             # GitOps 同步模块
+│   │   ├── container.py     # 依赖注入容器
+│   │   ├── services/        # 同步、预览、导出服务
+│   │   └── components/      # 扫描器、序列化器、Git 客户端
+│   └── middleware/          # 中间件 (请求 ID、CORS)
+├── tests/                   # Pytest 测试
+│   ├── api/                 # API 集成测试
+│   └── unit/                # 单元测试
+├── alembic/                 # 数据库迁移
+├── Dockerfile               # 多阶段构建
+├── pyproject.toml           # 项目配置 + 依赖 (uv)
+└── README.md                # 本文件
 ```
 
 ---

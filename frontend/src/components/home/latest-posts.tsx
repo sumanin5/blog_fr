@@ -25,8 +25,8 @@ const SECTIONS: SectionConfig[] = [
     postType: "articles",
     title: "Articles",
     highlight: "Latest",
-    linkText: "浏览归档",
-    limit: 6,
+    linkText: "浏览文章",
+    limit: 3,
   },
   {
     postType: "ideas",
@@ -74,7 +74,7 @@ function PostSection({ config }: { config: SectionConfig }) {
 
   return (
     <section className={cn("py-16 md:py-24 transition-colors", bgClass)}>
-      <div className="container">
+      <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8 md:mb-12">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl flex items-center gap-2">
             <span className="text-primary">{highlight}</span> {title}
@@ -104,7 +104,7 @@ function PostSection({ config }: { config: SectionConfig }) {
 function PostsSkeleton() {
   return (
     <section className="py-16 md:py-24">
-      <div className="container">
+      <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-4 w-24" />

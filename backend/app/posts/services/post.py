@@ -29,46 +29,44 @@ async def _sync_to_disk(
     """
     辅助函数：将文章同步写入到物理磁盘（反向同步）
     """
-    try:
-        from app.git_ops.components.writer import FileWriter
+    """
+    辅助函数：将文章同步写入到物理磁盘（反向同步）
+    """
+    from app.git_ops.components.writer import FileWriter
 
-        # 重新查询以确保加载所有关系（Tags, Category）
-        # 使用 select IN 预加载（虽然 crud.get_post_by_id 应该已经做了，但再次确保）
-        post = await crud.get_post_by_id(session, post_id)
+    # 重新查询以确保加载所有关系（Tags, Category）
+    # 使用 select IN 预加载（虽然 crud.get_post_by_id 应该已经做了，但再次确保）
+    post = await crud.get_post_by_id(session, post_id)
 
-        writer = FileWriter(session=session)
+    writer = FileWriter(session=session)
 
-        # 准备数据
-        tag_names = [t.name for t in post.tags]
-        category_slug = post.category.slug if post.category else "uncategorized"
+    # 准备数据
+    tag_names = [t.name for t in post.tags]
+    category_slug = post.category.slug if post.category else "uncategorized"
 
-        # 构造一个临时的 old_post 对象用于传递 source_path
-        # 只需要 source_path 字段
-        old_post_stub = None
-        if old_source_path:
-            old_post_stub = type("PostStub", (), {"source_path": old_source_path})()
+    # 构造一个临时的 old_post 对象用于传递 source_path
+    # 只需要 source_path 字段
+    old_post_stub = None
+    if old_source_path:
+        old_post_stub = type("PostStub", (), {"source_path": old_source_path})()
 
-        # 执行写入
-        relative_path = await writer.write_post(
-            post,
-            old_post=old_post_stub,  # type: ignore
-            category_slug=category_slug,
-            tags=tag_names,
+    # 执行写入
+    relative_path = await writer.write_post(
+        post,
+        old_post=old_post_stub,  # type: ignore
+        category_slug=category_slug,
+        tags=tag_names,
+    )
+
+    # 如果计算出的路径与当前数据库记录不一致，更新数据库
+    if post.source_path != relative_path:
+        logger.info(
+            f"Updating source_path for post {post.id}: {post.source_path} -> {relative_path}"
         )
-
-        # 如果计算出的路径与当前数据库记录不一致，更新数据库
-        if post.source_path != relative_path:
-            logger.info(
-                f"Updating source_path for post {post.id}: {post.source_path} -> {relative_path}"
-            )
-            post.source_path = relative_path
-            session.add(post)
-            await session.commit()
-            await session.refresh(post)
-
-    except Exception as e:
-        logger.error(f"Failed to sync post {post_id} to disk: {e}")
-        # 不抛出异常，以免阻断 API 响应
+        post.source_path = relative_path
+        session.add(post)
+        await session.commit()
+        await session.refresh(post)
 
 
 async def generate_unique_slug(

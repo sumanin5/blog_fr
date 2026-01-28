@@ -34,11 +34,24 @@ async def trigger_sync(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     force_full: Annotated[bool, Query(description="是否强制全量同步")] = False,
 ):
+    from app.git_ops.exceptions import GitOpsSyncError
+
     service = GitOpsService(session)
+
     if force_full:
-        return await service.sync_all(default_user=current_user)
+        result = await service.sync_all(default_user=current_user)
     else:
-        return await service.sync_incremental(default_user=current_user)
+        result = await service.sync_incremental(default_user=current_user)
+
+    # 如果没有任何实质性变更且存在报错，则抛出异常触发全局处理
+    if result.errors and not (result.added or result.updated or result.deleted):
+        first_error = result.errors[0]
+        raise GitOpsSyncError(
+            message=f"Sync failed: {first_error.message}",
+            detail=str(first_error.details) if first_error.details else "",
+        )
+
+    return result
 
 
 @router.post(
@@ -51,8 +64,20 @@ async def push_to_git(
     current_user: Annotated[User, Depends(get_current_adminuser)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
+    from app.git_ops.exceptions import GitOpsSyncError
+
     service = GitOpsService(session)
-    return await service.export_to_git(default_user=current_user)
+    result = await service.export_to_git(default_user=current_user)
+
+    # 如果没有任何更新成功，且存在错误，则抛出异常以便全局处理器捕获
+    if result.errors and not result.updated:
+        first_error = result.errors[0]
+        raise GitOpsSyncError(
+            message=f"Export failed: {first_error.message}",
+            detail=str(first_error.details) if first_error.details else "",
+        )
+
+    return result
 
 
 @router.get(

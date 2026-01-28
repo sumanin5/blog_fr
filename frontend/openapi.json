@@ -1262,6 +1262,24 @@
             "description": "用途过滤"
           },
           {
+            "name": "mime_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "MIME类型过滤 (如: image/svg+xml)",
+              "title": "Mime Type"
+            },
+            "description": "MIME类型过滤 (如: image/svg+xml)"
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -6614,53 +6632,7 @@
             "title": "Description",
             "default": ""
           },
-          "parent_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parent Id"
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active",
-            "default": true
-          },
-          "sort_order": {
-            "type": "integer",
-            "title": "Sort Order",
-            "default": 0
-          },
-          "icon_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Icon Id"
-          },
-          "cover_media_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cover Media Id"
-          },
-          "icon_preset": {
+          "excerpt": {
             "anyOf": [
               {
                 "type": "string"
@@ -6669,42 +6641,7 @@
                 "type": "null"
               }
             ],
-            "title": "Icon Preset"
-          },
-          "post_type": {
-            "$ref": "#/components/schemas/PostType",
-            "default": "articles"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "slug"
-        ],
-        "title": "CategoryCreate"
-      },
-      "CategoryResponse": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 100,
-            "title": "Name"
-          },
-          "slug": {
-            "type": "string",
-            "maxLength": 100,
-            "title": "Slug"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
+            "title": "Excerpt",
             "default": ""
           },
           "parent_id": {
@@ -6764,6 +6701,121 @@
             ],
             "title": "Icon Preset"
           },
+          "is_featured": {
+            "type": "boolean",
+            "title": "Is Featured",
+            "default": false
+          },
+          "post_type": {
+            "$ref": "#/components/schemas/PostType",
+            "default": "articles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "slug"
+        ],
+        "title": "CategoryCreate"
+      },
+      "CategoryResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Slug"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "default": ""
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt",
+            "default": ""
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          },
+          "icon_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Id"
+          },
+          "cover_media_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Media Id"
+          },
+          "icon_preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Preset"
+          },
+          "is_featured": {
+            "type": "boolean",
+            "title": "Is Featured",
+            "default": false
+          },
           "post_type": {
             "$ref": "#/components/schemas/PostType",
             "default": "articles"
@@ -6774,6 +6826,16 @@
             "title": "Id"
           },
           "cover_media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaFileResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "icon": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/MediaFileResponse"
@@ -6836,6 +6898,18 @@
             "title": "Description",
             "default": ""
           },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt",
+            "default": ""
+          },
           "parent_id": {
             "anyOf": [
               {
@@ -6893,6 +6967,11 @@
             ],
             "title": "Icon Preset"
           },
+          "is_featured": {
+            "type": "boolean",
+            "title": "Is Featured",
+            "default": false
+          },
           "post_type": {
             "$ref": "#/components/schemas/PostType",
             "default": "articles"
@@ -6946,6 +7025,17 @@
               }
             ],
             "title": "Description"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excerpt"
           },
           "parent_id": {
             "anyOf": [
@@ -7015,6 +7105,17 @@
               }
             ],
             "title": "Icon Preset"
+          },
+          "is_featured": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Featured"
           },
           "post_type": {
             "anyOf": [
@@ -7943,6 +8044,16 @@
             "title": "Tags",
             "default": []
           },
+          "is_featured": {
+            "type": "boolean",
+            "title": "Is Featured",
+            "default": false
+          },
+          "allow_comments": {
+            "type": "boolean",
+            "title": "Allow Comments",
+            "default": true
+          },
           "git_hash": {
             "anyOf": [
               {
@@ -8002,6 +8113,39 @@
             "items": {},
             "type": "array",
             "title": "Toc"
+          },
+          "meta_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Title"
+          },
+          "meta_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Description"
+          },
+          "meta_keywords": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Keywords"
           },
           "versions": {
             "items": {
@@ -8216,6 +8360,16 @@
             "type": "array",
             "title": "Tags",
             "default": []
+          },
+          "is_featured": {
+            "type": "boolean",
+            "title": "Is Featured",
+            "default": false
+          },
+          "allow_comments": {
+            "type": "boolean",
+            "title": "Allow Comments",
+            "default": true
           },
           "git_hash": {
             "anyOf": [

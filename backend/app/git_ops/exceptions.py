@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Protocol
 
 from app.core.exceptions import BaseAppException
@@ -117,44 +118,50 @@ async def collect_errors(
     stats: ErrorCollector, context: str, extra_info: Optional[Dict[str, Any]] = None
 ):
     """
-    上下文管理器：捕获并记录 GitOps 操作中的非致命错误。
+    上下文管理器：捕获并记录 GitOps 操作中的错误。
+    力求让捕获的错误与全局异常处理器的信息量对齐。
     """
     try:
         yield
     except GitOpsError as e:
-        # 业务预期内的错误 (Git, Scan, Sync 等)
+        # 业务预期内的错误
         error_record = SyncError(
-            context=context, code=e.error_code, message=e.message, details=e.details
+            context=context,
+            code=e.error_code,
+            message=e.message,
+            details=e.details,
+            timestamp=datetime.now(),
         )
         stats.errors.append(error_record)
-        log_msg = f"GitOps Business Error: [{context}] {e.error_code} - {e.message}"
 
-        if e.status_code >= 500:
-            logger.error(
-                log_msg,
-                extra={
-                    "error_code": e.error_code,
-                    "details": e.details,
-                    **(extra_info or {}),
-                },
-            )
+        log_msg = f"GitOps Business Error: [{context}] {e.error_code} - {e.message}"
+        # 根据 status_code 决定日志等级
+        if getattr(e, "status_code", 500) >= 500:
+            logger.error(log_msg, extra={"details": e.details, **(extra_info or {})})
         else:
-            logger.warning(
-                log_msg,
-                extra={
-                    "error_code": e.error_code,
-                    "details": e.details,
-                    **(extra_info or {}),
-                },
-            )
+            logger.warning(log_msg, extra={"details": e.details, **(extra_info or {})})
+
     except Exception as e:
+        # 未预期的系统错误 (如之前遇到的 RuntimeWarning 或 缺少 await)
+        import traceback
+
+        detail_msg = f"{type(e).__name__}: {str(e)}"
+
         error_record = SyncError(
             context=context,
             code="INTERNAL_ERROR",
-            message=str(e),
+            message=f"Unexpected error: {detail_msg}",
+            details={
+                "exception_type": type(e).__name__,
+                "traceback": traceback.format_exc().split("\n")[
+                    -5:
+                ],  # 保留最后几行堆栈
+            },
+            timestamp=datetime.now(),
         )
         stats.errors.append(error_record)
+
         logger.exception(
-            f"GitOps Sync Unexpected Error: [{context}] {str(e)}",
+            f"GitOps Unexpected Error: [{context}] {detail_msg}",
             extra={"error_code": "INTERNAL_ERROR", **(extra_info or {})},
         )

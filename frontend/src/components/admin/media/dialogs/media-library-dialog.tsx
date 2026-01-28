@@ -4,52 +4,29 @@ import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Search,
-  Image as ImageIcon,
-  Video,
-  FileText,
-  Loader2,
-} from "lucide-react";
-import { useMediaFiles } from "@/hooks/admin/use-media";
-import { MediaCard } from "../ui/media-card";
+import { Input } from "@/components/ui/input";
+import { AdminActionButton } from "@/components/admin/common/admin-action-button";
+import { Image as ImageIcon, Upload, Loader2, Filter } from "lucide-react";
+import { AdminSearchInput } from "@/components/admin/common/admin-search-input";
+import { useMediaFiles, useUploadFile } from "@/hooks/admin/use-media";
+import { MediaCard } from "@/components/admin/media/ui/media-card";
+import { toast } from "sonner";
 import type { MediaFile, MediaType, FileUsage } from "@/shared/api/types";
 
 interface MediaLibraryDialogProps {
-  /**
-   * 是否打开
-   */
   open: boolean;
-
-  /**
-   * 关闭回调
-   */
   onClose: () => void;
-
-  /**
-   * 选择文件回调
-   */
   onSelect: (file: MediaFile) => void;
-
-  /**
-   * 过滤条件
-   */
   filter?: {
     mediaType?: MediaType;
     usage?: string;
+    mimeType?: string;
   };
-
-  /**
-   * 是否允许多选
-   */
   multiple?: boolean;
 }
 
@@ -61,33 +38,74 @@ export function MediaLibraryDialog({
   multiple = false,
 }: MediaLibraryDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<string>("all");
+
+  // 自动锁定 Tab：如果 filter 指定了 mediaType (或 mimeType暗示了类型)，则锁定
+  const lockedType =
+    filter?.mediaType ||
+    (filter?.mimeType?.startsWith("image") ? "image" : undefined);
+  const showTabs = !lockedType;
+
+  // 初始化 Tab 状态
+  const [selectedType, setSelectedType] = useState<string>(lockedType || "all");
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
-  // 1. 获取用户文件列表 (受控于 selectedType)
+  // 1. 获取文件列表
   const { data, isLoading } = useMediaFiles({
-    mediaType:
-      selectedType === "all"
-        ? (filter?.mediaType as MediaType)
-        : (selectedType as MediaType),
+    mediaType: (lockedType ||
+      (selectedType === "all" ? undefined : selectedType)) as MediaType,
     usage: filter?.usage as FileUsage,
+    mimeType: filter?.mimeType,
   });
 
-  // 2. 搜索逻辑 (前端过滤，后端 API 暂时不支持全文搜索库挑选场景)
+  // 2. 搜索逻辑
   const filteredFiles = useMemo(() => {
     const items = data?.items || [];
     if (!searchQuery) return items;
 
     const query = searchQuery.toLowerCase();
     return items.filter(
-      (file) =>
+      (file: MediaFile) =>
         file.originalFilename.toLowerCase().includes(query) ||
         file.description?.toLowerCase().includes(query) ||
-        file.tags?.some((tag) => tag.toLowerCase().includes(query))
+        file.tags?.some((tag: string) => tag.toLowerCase().includes(query)),
     );
   }, [data, searchQuery]);
 
-  // 处理文件选择
+  // 3. 上传逻辑
+  const { mutateAsync: uploadFile, isPending: isUploading } = useUploadFile();
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await uploadFile({
+        file,
+        usage: lockedType === "image" ? "cover" : "general",
+        isPublic: true,
+      });
+
+      // Auto-select the uploaded file
+      // API normally returns the file object directly or nested
+      const uploadedFile = (res as any).file || res;
+
+      toast.success("Uploaded successfully");
+
+      if (multiple) {
+        // In multiple mode, just add to selection
+        const newSelected = new Set(selectedFiles);
+        newSelected.add(uploadedFile.id);
+        setSelectedFiles(newSelected);
+      } else {
+        // In single mode, select and close
+        onSelect(uploadedFile);
+        onClose();
+      }
+    } catch {
+      // Error is handled by UI toast usually
+      toast.error("Upload failed");
+    }
+  };
+
+  // 4. 选择逻辑
   const handleSelectFile = (file: MediaFile) => {
     if (multiple) {
       const newSelected = new Set(selectedFiles);
@@ -104,141 +122,127 @@ export function MediaLibraryDialog({
   };
 
   const handleConfirmMultiple = () => {
-    const selected = filteredFiles.filter((file) => selectedFiles.has(file.id));
-    selected.forEach((file) => onSelect(file));
+    const selected = filteredFiles.filter((file: MediaFile) =>
+      selectedFiles.has(file.id),
+    );
+    selected.forEach((file: MediaFile) => onSelect(file));
     onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl h-[85vh] flex flex-col rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
-        {/* 精美 Header */}
-        <div className="p-8 pb-4 border-b bg-muted/20">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="text-2xl font-black italic uppercase tracking-tight text-primary/80 flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10">
-                <ImageIcon className="size-5 text-primary" />
-              </div>
-              全域媒体索引库
-            </DialogTitle>
-            <DialogDescription className="text-[10px] font-mono uppercase tracking-widest opacity-60">
-              Select assets from the digital inventory{" "}
-              {multiple && "/ MULTI-SELECT ENABLED"}
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent className="max-w-5xl h-[85vh] flex flex-col rounded-3xl border-none shadow-2xl p-0 overflow-hidden bg-background">
+        {/* Header Area */}
+        <div className="p-6 border-b bg-muted/30 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <DialogTitle className="text-xl font-black italic uppercase tracking-tight flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                  <ImageIcon className="size-4" />
+                </div>
+                {lockedType ? `${lockedType} LIBRARY` : "MEDIA INVENTORY"}
+              </DialogTitle>
+              <DialogDescription className="text-[10px] font-mono uppercase tracking-widest opacity-60 ml-1">
+                {multiple ? "Multi-Select Mode" : "Select an asset to use"}
+              </DialogDescription>
+            </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            {/* In-Dialog Upload Action */}
+            <div className="relative group">
+              <AdminActionButton
+                variant="outline"
+                size="sm"
+                className="rounded-full shadow-sm border-dashed border-2 hover:border-primary hover:text-primary transition-all text-xs font-bold uppercase tracking-wider"
+                disabled={isUploading}
+                isLoading={isUploading}
+                loadingText="Uploading"
+                icon={isUploading ? undefined : Upload}
+              >
+                Upload New
+              </AdminActionButton>
               <Input
-                placeholder="搜索文件名、描述或标签..."
+                type="file"
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={handleFileUpload}
+                accept={lockedType === "image" ? "image/*" : undefined}
+                disabled={isUploading}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <div className="flex-1 w-full">
+              <AdminSearchInput
+                placeholder="Filter media assets..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-11 bg-background border-none rounded-xl shadow-inner italic"
+                onChange={setSearchQuery}
+                totalCount={filteredFiles.length}
               />
             </div>
 
-            <Tabs
-              value={selectedType}
-              onValueChange={setSelectedType}
-              className="w-fit"
-            >
-              <TabsList className="bg-background p-1 rounded-xl h-11 border">
-                <TabsTrigger
-                  value="all"
-                  className="rounded-lg px-6 uppercase text-[10px] font-bold"
-                >
-                  全部
-                </TabsTrigger>
-                <TabsTrigger
-                  value="image"
-                  className="rounded-lg px-6 uppercase text-[10px] font-bold"
-                >
-                  图片
-                </TabsTrigger>
-                <TabsTrigger
-                  value="video"
-                  className="rounded-lg px-6 uppercase text-[10px] font-bold"
-                >
-                  视频
-                </TabsTrigger>
-                <TabsTrigger
-                  value="document"
-                  className="rounded-lg px-6 uppercase text-[10px] font-bold"
-                >
-                  文档
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {showTabs && (
+              <Tabs
+                value={selectedType}
+                onValueChange={setSelectedType}
+                className="w-auto"
+              >
+                <TabsList className="h-10 bg-background border p-1 rounded-lg">
+                  {["all", "image", "video", "document"].map((t) => (
+                    <TabsTrigger
+                      key={t}
+                      value={t}
+                      className="text-[10px] font-bold uppercase px-4 rounded-md"
+                    >
+                      {t}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            )}
           </div>
         </div>
 
-        {/* 内容网格 */}
-        <ScrollArea className="flex-1 p-8">
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-6 bg-muted/5 min-h-0">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full py-32 space-y-4">
-              <Loader2 className="h-10 w-10 animate-spin text-primary/40" />
-              <p className="text-[10px] font-mono uppercase tracking-[0.2em] opacity-40">
-                Syncing Assets...
-              </p>
+            <div className="flex h-full items-center justify-center flex-col gap-3 opacity-50">
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <p className="text-xs font-mono uppercase">Loading Assets...</p>
             </div>
           ) : filteredFiles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-32 text-muted-foreground bg-muted/10 rounded-3xl border-2 border-dashed">
-              <ImageIcon className="h-12 w-12 mb-4 opacity-10" />
-              <p className="text-xs font-bold italic tracking-widest opacity-40 uppercase">
-                No Matches Found
-              </p>
+            <div className="flex h-full flex-col items-center justify-center text-muted-foreground gap-4">
+              <div className="p-4 bg-muted/30 rounded-full">
+                <Filter className="size-8 opacity-20" />
+              </div>
+              <p className="text-sm font-medium">No assets found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-8">
-              {filteredFiles.map((file) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {filteredFiles.map((file: MediaFile) => (
                 <MediaCard
                   key={file.id}
                   file={file}
                   isSelected={selectedFiles.has(file.id)}
-                  onToggleSelection={
-                    multiple ? (id) => handleSelectFile(file) : undefined
-                  }
-                  onPreview={() => !multiple && handleSelectFile(file)}
+                  onToggleSelection={() => handleSelectFile(file)}
                   mode="selection"
+                  onPreview={() => handleSelectFile(file)} // 双击也可以选择
                 />
               ))}
             </div>
           )}
-        </ScrollArea>
-
-        {/* 底部控制 */}
-        <div className="p-6 border-t bg-muted/5 flex items-center justify-between">
-          <div>
-            {multiple && selectedFiles.size > 0 && (
-              <p className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">
-                Selected Units: {selectedFiles.size} / Global Buffer Ready
-              </p>
-            )}
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              className="rounded-full text-[10px] uppercase font-bold tracking-widest"
-            >
-              Cancel
-            </Button>
-            {multiple ? (
-              <Button
-                onClick={handleConfirmMultiple}
-                disabled={selectedFiles.size === 0}
-                className="rounded-full px-8 font-bold uppercase tracking-widest shadow-lg shadow-primary/20"
-              >
-                Authorize Assets
-              </Button>
-            ) : (
-              <div className="text-[9px] font-mono text-muted-foreground uppercase italic self-center">
-                Close dialog to abort
-              </div>
-            )}
-          </div>
         </div>
+
+        {/* Footer for Multiple Selection */}
+        {multiple && selectedFiles.size > 0 && (
+          <div className="p-4 border-t bg-background flex justify-between items-center">
+            <span className="text-xs font-medium text-muted-foreground">
+              {selectedFiles.size} assets selected
+            </span>
+            <AdminActionButton onClick={handleConfirmMultiple} size="sm">
+              Confirm Selection
+            </AdminActionButton>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

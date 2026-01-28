@@ -100,7 +100,11 @@ def build_categories_query(
         # 将 Enum 类型显式转换为字符串后再进行 lower() 比较
         .where(func.lower(cast(Category.post_type, String)) == post_type.value.lower())
         .order_by(Category.sort_order.asc(), Category.name.asc())
-        .options(selectinload(Category.parent), selectinload(Category.icon))
+        .options(
+            selectinload(Category.parent),
+            selectinload(Category.icon),
+            selectinload(Category.cover_media),
+        )
     )
 
     if is_active is not None:

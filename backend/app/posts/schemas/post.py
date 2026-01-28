@@ -157,7 +157,10 @@ class PostShortResponse(PostBase):
     category: Optional[CategorySimpleResponse] = None
     cover_media: Optional[MediaFileResponse] = None  # 封面对象
     tags: List[TagResponse] = []
-    cover_media: Optional["MediaFileResponse"] = None  # 封面图完整信息
+
+    # 属性
+    is_featured: bool = False
+    allow_comments: bool = True
 
     # 追踪信息
     git_hash: Optional[str] = None
@@ -191,6 +194,11 @@ class PostDetailResponse(PostShortResponse):
     # 追踪信息
     git_hash: Optional[str] = None
     source_path: Optional[str] = None
+
+    # SEO 字段
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    meta_keywords: Optional[str] = None
 
     # 版本记录
     versions: List[PostVersionResponse] = []

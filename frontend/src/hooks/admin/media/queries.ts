@@ -14,15 +14,9 @@ import { mediaKeys } from "./constants";
 import type {
   GetUserFilesData,
   GetAllFilesAdminData,
-  GetFileDetailData,
-  ViewFileData,
-  ViewThumbnailData,
 } from "@/shared/api/generated/types.gen";
 import type {
   MediaFile,
-  MediaStats,
-  UserMediaList,
-  AdminMediaList,
   MediaFilters,
   AdminMediaFilters,
 } from "@/shared/api/types";
@@ -45,7 +39,7 @@ export function useMediaBlob(
             path: {
               file_id: file.id,
               size,
-            } as unknown as ViewThumbnailData["path"],
+            },
             parseAs: "blob",
             throwOnError: true,
           });
@@ -56,7 +50,7 @@ export function useMediaBlob(
       }
 
       const response = await viewFile({
-        path: { file_id: file.id } as unknown as ViewFileData["path"],
+        path: { file_id: file.id },
         parseAs: "blob",
         throwOnError: true,
       });
@@ -75,12 +69,18 @@ export function useMediaFiles(filters?: MediaFilters) {
   return useQuery({
     queryKey: mediaKeys.userList(filters),
     queryFn: async () => {
+      // 强制手动映射，防止类型定义滞后导致参数被丢弃
+      // 尤其是当拦截器可能不处理未定义在 schema 中的字段时
+      const queryParams = {
+        ...filters,
+        mime_type: filters?.mimeType,
+      };
+
       const response = await getUserFiles({
-        // ✅ 业务层直接传驼峰 filters，拦截器会自动进行 snake_case 转换
-        query: filters as unknown as GetUserFilesData["query"],
+        query: queryParams as unknown as GetUserFilesData["query"],
         throwOnError: true,
       });
-      return response.data as unknown as UserMediaList;
+      return normalizeApiResponse(response.data);
     },
   });
 }
@@ -97,7 +97,7 @@ export function useAllMediaAdmin(filters?: AdminMediaFilters) {
         query: filters as unknown as GetAllFilesAdminData["query"],
         throwOnError: true,
       });
-      return response.data as unknown as AdminMediaList;
+      return normalizeApiResponse(response.data);
     },
   });
 }
@@ -111,7 +111,7 @@ export function useMediaStats() {
     queryFn: async () => {
       const response = await getStatsOverview({ throwOnError: true });
       // 注意：stats 由于其结构的特殊性，仍需 normalize 处理，或者确保拦截器已转换全量响应
-      return normalizeApiResponse(response.data) as MediaStats;
+      return normalizeApiResponse(response.data);
     },
   });
 }
@@ -125,10 +125,10 @@ export function useMediaFile(fileId: string | null) {
     queryFn: async () => {
       if (!fileId) return null;
       const response = await getFileDetail({
-        path: { file_id: fileId } as unknown as GetFileDetailData["path"],
+        path: { file_id: fileId },
         throwOnError: true,
       });
-      return response.data as unknown as MediaFile;
+      return normalizeApiResponse(response.data);
     },
     enabled: !!fileId,
   });

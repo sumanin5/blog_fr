@@ -84,7 +84,8 @@ async def test_handle_category_sync_update(session, mock_admin_user):
     assert category.description == "Updated Desc"
     assert category.is_active is False  # hidden=True
 
-    # Verify DB
+    # Verify DB (需要先 commit,因为 handle_category_sync 不会自动提交)
+    await session.commit()
     await session.refresh(category)
     assert category.name == "Updated Name"
 

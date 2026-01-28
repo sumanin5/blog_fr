@@ -47,9 +47,9 @@ sequenceDiagram
     SyncSvc->>DB: 查询所有已同步文章<br/>(source_path IS NOT NULL)
     DB-->>SyncSvc: List[Post]
 
-    loop 遍历扫描到的文件
+    loop 遍历扫描到的文件 (collect_errors)
         SyncSvc->>Serializer: match_post(scanned, db_posts)
-        Serializer-->>SyncSvc: (matched_post, is_renamed)
+        Serializer-->>SyncSvc: (matched_post, is_move)
 
         alt 文章不存在（新增）
             SyncSvc->>Handler: handle_post_create()
@@ -70,9 +70,12 @@ sequenceDiagram
             DB-->>PostSvc: updated_post
             PostSvc-->>Handler: updated_post
             Handler-->>SyncSvc: 添加到 stats.updated
+        else 分类索引文件
+            SyncSvc->>Handler: handle_category_sync()
+            Handler-->>SyncSvc: 更新分类元数据
         end
 
-        Note over SyncSvc: 每个文件的处理都在<br/>独立的 try-except 块中<br/>错误不会中断整体流程
+        Note over SyncSvc: collect_errors 捕获错误<br/>记录到 stats.errors<br/>继续处理下一个文件
     end
 
     loop 检测删除的文章
@@ -83,6 +86,8 @@ sequenceDiagram
         PostSvc-->>SyncSvc: 添加到 stats.deleted
     end
 
+    SyncSvc->>SyncSvc: 保存当前 Commit Hash
+    SyncSvc->>SyncSvc: 刷新 Next.js 缓存
     SyncSvc-->>Facade: SyncStats
     Facade-->>Router: SyncStats
     Router-->>User: JSON Response
@@ -255,55 +260,70 @@ flowchart TB
 
 ### 错误处理策略
 
-1. **配置错误** (`GitOpsConfigurationError`)
-
-   - 示例: content 目录不存在
-   - 处理: 直接抛出，中断流程
-   - 原因: 无法继续执行
-
-2. **业务逻辑错误** (`GitOpsSyncError`)
-
-   - 示例: 必填字段缺失、author 不存在
-   - 处理: 记录错误，跳过当前文件，继续处理其他文件
-   - 原因: 单个文件的错误不应影响整体同步
-
-3. **系统错误** (`Exception`)
-   - 示例: 数据库连接失败、文件读取权限问题
-   - 处理: 记录完整堆栈，跳过当前文件
-   - 原因: 确保单个文件的崩溃不会影响其他文件
-
-### 错误处理代码示例
+项目使用 `collect_errors` 上下文管理器统一处理错误：
 
 ```python
-# 在 SyncService.sync_all 中
-for scanned in scanned_posts:
-    try:
-        # 处理文件
-        matched_post, is_renamed = await self.serializer.match_post(...)
-
+# 实际代码中的使用方式
+for file_path, scanned in scanned_map.items():
+    async with collect_errors(stats, f"Syncing {file_path}"):
+        # 如果这里抛出异常，会被 collect_errors 捕获
+        # 记录到 stats.errors，然后继续处理下一个文件
+        matched_post, is_move = await self.serializer.match_post(...)
         if matched_post:
             await handle_post_update(...)
         else:
             await handle_post_create(...)
+```
 
-    except GitOpsSyncError as e:
-        # 业务逻辑错误：记录并继续
-        logger.error(f"同步文件失败: {scanned.file_path} - {e}")
-        stats.errors.append({
-            "file": str(scanned.file_path),
-            "error": str(e),
-            "type": "sync_error"
-        })
+| 错误类型                     | 处理方式               | 结果                 |
+| ---------------------------- | ---------------------- | -------------------- |
+| `GitOpsConfigurationError`   | 直接抛出，中断流程     | HTTP 500 响应        |
+| `GitOpsSyncError`            | 记录到 stats.errors    | 继续处理下一个       |
+| `ScanError`                  | 记录到 stats.errors    | 继续处理下一个       |
+| `Exception`                  | 记录堆栈到 stats.errors| 继续处理下一个       |
 
-    except Exception as e:
-        # 系统错误：记录堆栈并继续
-        logger.exception(f"处理文件时发生未预期错误: {scanned.file_path}")
-        stats.errors.append({
-            "file": str(scanned.file_path),
-            "error": str(e),
-            "type": "unexpected_error",
-            "traceback": traceback.format_exc()
-        })
+---
+
+## 📤 导出同步流程 (`export_to_git`)
+
+```mermaid
+sequenceDiagram
+    participant User as 管理员
+    participant Router as GitOps Router
+    participant Facade as GitOpsService
+    participant ExportSvc as ExportService
+    participant Writer as FileWriter
+    participant GitClient as GitClient
+    participant DB as PostgreSQL
+    participant FS as 文件系统
+
+    User->>Router: POST /ops/git/push
+    Router->>Facade: export_to_git()
+    Facade->>ExportSvc: export_to_git()
+
+    ExportSvc->>DB: 查询需要导出的文章
+    Note over ExportSvc: 过滤条件:<br/>- 指定 ID<br/>- 无 source_path<br/>- force_export
+    DB-->>ExportSvc: List[Post]
+
+    loop 遍历文章 (collect_errors)
+        ExportSvc->>Writer: write_post(post)
+        Writer->>Writer: 生成 Frontmatter
+        Writer->>Writer: 计算文件路径
+        Writer->>FS: 写入 MDX 文件
+        FS-->>Writer: 成功
+        Writer-->>ExportSvc: source_path
+
+        ExportSvc->>DB: 更新 post.source_path
+        ExportSvc->>ExportSvc: 添加到 stats.updated
+    end
+
+    ExportSvc->>GitClient: add(["."])
+    ExportSvc->>GitClient: commit(message)
+    ExportSvc->>GitClient: push()
+
+    ExportSvc-->>Facade: SyncStats
+    Facade-->>Router: SyncStats
+    Router-->>User: JSON Response
 ```
 
 ---
@@ -384,8 +404,9 @@ async def scan_all(self) -> List[ScannedPost]:
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - 整体架构设计
 - [DEPENDENCY_INJECTION_EXPLAINED.md](./DEPENDENCY_INJECTION_EXPLAINED.md) - 依赖注入详解
 - [README.md](./README.md) - 模块使用指南
+- [services/README.md](./services/README.md) - 服务层详细文档
 
 ---
 
-**最后更新**: 2026-01-24
-**文档版本**: 1.0.0
+**最后更新**: 2026-01-28
+**文档版本**: 2.0.0 (添加 ExportService 流程 + collect_errors 说明)

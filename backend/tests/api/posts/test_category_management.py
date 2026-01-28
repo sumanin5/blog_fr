@@ -82,16 +82,17 @@ async def test_rename_category_slug_moves_files(
 
     # 验证物理文件初始状态
     old_dir = mock_content_dir / "articles" / old_slug
-    old_file = old_dir / "My-Post.mdx"  # 根据 file_operator 逻辑，文件名由 title 生成
 
     # 注意：path_calculator生成的可能是 article/old-slug/My-Post.mdx (My-Post 是 sanitized title)
     # 我们可以通过 API 返回的 source_path 来确定
     # 但由于 API response 可能不包含 source_path (如果 schema 排除了)，我们直接检查目录
     # 假设文件名是 sanitized title
     assert old_dir.exists()
-    # 找到该目录下唯一的文件
-    files = list(old_dir.glob("*.md*"))
-    assert len(files) == 1
+    # 找到该目录下的文章文件(排除 index.md,它是分类元数据)
+    files = [f for f in old_dir.glob("*.md*") if f.name != "index.md"]
+    assert len(files) == 1, (
+        f"Expected 1 post file, found {len(files)}: {[f.name for f in files]}"
+    )
     post_file = files[0]
 
     # 1. 触发重命名 (PATCH Category)

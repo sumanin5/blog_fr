@@ -15,6 +15,8 @@ import { createClient, type Client } from "@/shared/api/generated/client";
 import { settings } from "@/config/settings";
 import { normalizeApiResponse } from "@/shared/api/transformers";
 
+import { cookies } from "next/headers";
+
 /**
  * 创建服务端 API 客户端实例
  *
@@ -22,24 +24,38 @@ import { normalizeApiResponse } from "@/shared/api/transformers";
  * 1. 使用服务端的 baseUrl（内网地址）
  * 2. 自动转换响应数据 snake_case → camelCase
  * 3. 配置 ISR 缓存和标签
- * 4. 不需要 Token（服务端内部通信）
+ * 4. 自动注入 Token（如果有）
  */
 export const serverClient = createClient({
   baseUrl: settings.BACKEND_INTERNAL_URL,
 }) as Client;
 
 /**
- * 自定义 fetch 方法：添加 ISR 缓存和自动转换
+ * 自定义 fetch 方法：添加 ISR 缓存、Token 注入和自动转换
  */
 serverClient.setConfig({
   fetch: async (input, init) => {
+    // 动态获取 Token
+    let token = undefined;
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get("access_token")?.value;
+    } catch {
+      // 这里的 try-catch 是为了防止在一些非请求生命周期中调用报错(如构建时)
+      // 但对于服务端组件渲染，它是正常的
+    }
+
+    // 构造新的 Headers
+    const headers = new Headers(init?.headers);
+    headers.set("Content-Type", "application/json"); // 确保默认有 Content-Type
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
     // 执行请求
     const response = await fetch(input, {
       ...init,
-      headers: {
-        "Content-Type": "application/json",
-        ...init?.headers,
-      },
+      headers: headers,
       // ✅ Next.js ISR 配置：默认缓存 1 小时
       next: {
         revalidate: 3600,
@@ -65,7 +81,7 @@ serverClient.setConfig({
           statusText: response.statusText,
           headers: new Headers(response.headers),
         });
-      } catch (error) {
+      } catch {
         // JSON 解析失败，返回原始响应
         return response;
       }

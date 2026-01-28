@@ -615,3 +615,65 @@ async def test_get_user_files_sorting_by_creation_time(
     assert files[-1]["original_filename"] in ["first.jpg", "second.jpg"], (
         "最旧的文件应该在后面"
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.media
+async def test_get_user_files_filter_by_mime_type(
+    async_client: AsyncClient,
+    normal_user_token_headers: dict,
+    sample_image_data: bytes,
+    api_urls: APIConfig,
+):
+    """测试按 MIME 类型过滤"""
+    # 1. 上传 PNG
+    files_png = {"file": ("image.png", sample_image_data, "image/png")}
+    await async_client.post(
+        api_urls.media_url("/upload"),
+        files=files_png,
+        data={"usage": "general"},
+        headers=normal_user_token_headers,
+    )
+
+    # 2. 上传 SVG (构造最小 SVG 内容)
+    # 注意：如果不设置正确的 Content-Type，FastAPI 可能无法识别或验证
+    svg_content = (
+        b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"></svg>'
+    )
+    files_svg = {"file": ("icon.svg", svg_content, "image/svg+xml")}
+    await async_client.post(
+        api_urls.media_url("/upload"),
+        files=files_svg,
+        data={"usage": "icon"},
+        headers=normal_user_token_headers,
+    )
+
+    # 3. 过滤 SVG (模糊匹配)
+    response_svg = await async_client.get(
+        api_urls.media_url("/"),
+        params={"mime_type": "svg"},
+        headers=normal_user_token_headers,
+    )
+    assert response_svg.status_code == status.HTTP_200_OK
+    result_svg = response_svg.json()
+    assert result_svg["total"] >= 1
+    # 验证返回列表中的所有项目都包含 'svg'
+    for item in result_svg["items"]:
+        assert "svg" in item["mime_type"], (
+            f"Expected svg mime type, got {item['mime_type']}"
+        )
+
+    # 4. 过滤 PNG (精确/模糊匹配)
+    response_png = await async_client.get(
+        api_urls.media_url("/"),
+        params={"mime_type": "image/png"},
+        headers=normal_user_token_headers,
+    )
+    assert response_png.status_code == status.HTTP_200_OK
+    result_png = response_png.json()
+    assert result_png["total"] >= 1
+    # 验证返回列表中的所有项目都包含 'png'
+    for item in result_png["items"]:
+        assert "png" in item["mime_type"], (
+            f"Expected png mime type, got {item['mime_type']}"
+        )

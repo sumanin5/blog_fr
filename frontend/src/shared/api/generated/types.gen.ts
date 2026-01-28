@@ -178,6 +178,10 @@ export type CategoryCreate = {
      */
     description?: string | null;
     /**
+     * Excerpt
+     */
+    excerpt?: string | null;
+    /**
      * Parent Id
      */
     parent_id?: string | null;
@@ -201,6 +205,10 @@ export type CategoryCreate = {
      * Icon Preset
      */
     icon_preset?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
     post_type?: PostType;
 };
 
@@ -223,6 +231,10 @@ export type CategoryResponse = {
      */
     description?: string | null;
     /**
+     * Excerpt
+     */
+    excerpt?: string | null;
+    /**
      * Parent Id
      */
     parent_id?: string | null;
@@ -246,12 +258,17 @@ export type CategoryResponse = {
      * Icon Preset
      */
     icon_preset?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
     post_type?: PostType;
     /**
      * Id
      */
     id: string;
     cover_media?: MediaFileResponse | null;
+    icon?: MediaFileResponse | null;
     /**
      * Post Count
      */
@@ -283,6 +300,10 @@ export type CategorySimpleResponse = {
      */
     description?: string | null;
     /**
+     * Excerpt
+     */
+    excerpt?: string | null;
+    /**
      * Parent Id
      */
     parent_id?: string | null;
@@ -306,6 +327,10 @@ export type CategorySimpleResponse = {
      * Icon Preset
      */
     icon_preset?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
     post_type?: PostType;
     /**
      * Id
@@ -330,6 +355,10 @@ export type CategoryUpdate = {
      */
     description?: string | null;
     /**
+     * Excerpt
+     */
+    excerpt?: string | null;
+    /**
      * Parent Id
      */
     parent_id?: string | null;
@@ -353,6 +382,10 @@ export type CategoryUpdate = {
      * Icon Preset
      */
     icon_preset?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean | null;
     post_type?: PostType | null;
 };
 
@@ -934,6 +967,14 @@ export type PostDetailResponse = {
      */
     tags?: Array<TagResponse>;
     /**
+     * Is Featured
+     */
+    is_featured?: boolean;
+    /**
+     * Allow Comments
+     */
+    allow_comments?: boolean;
+    /**
      * Git Hash
      */
     git_hash?: string | null;
@@ -963,6 +1004,18 @@ export type PostDetailResponse = {
      * Toc
      */
     toc: Array<unknown>;
+    /**
+     * Meta Title
+     */
+    meta_title?: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description?: string | null;
+    /**
+     * Meta Keywords
+     */
+    meta_keywords?: string | null;
     /**
      * Versions
      */
@@ -1088,6 +1141,14 @@ export type PostShortResponse = {
      * Tags
      */
     tags?: Array<TagResponse>;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
+    /**
+     * Allow Comments
+     */
+    allow_comments?: boolean;
     /**
      * Git Hash
      */
@@ -1717,6 +1778,10 @@ export type CategoryResponseWritable = {
      */
     description?: string | null;
     /**
+     * Excerpt
+     */
+    excerpt?: string | null;
+    /**
      * Parent Id
      */
     parent_id?: string | null;
@@ -1740,12 +1805,17 @@ export type CategoryResponseWritable = {
      * Icon Preset
      */
     icon_preset?: string | null;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
     post_type?: PostType;
     /**
      * Id
      */
     id: string;
     cover_media?: MediaFileResponseWritable | null;
+    icon?: MediaFileResponseWritable | null;
     /**
      * Post Count
      */
@@ -2045,6 +2115,14 @@ export type PostDetailResponseWritable = {
      */
     tags?: Array<TagResponse>;
     /**
+     * Is Featured
+     */
+    is_featured?: boolean;
+    /**
+     * Allow Comments
+     */
+    allow_comments?: boolean;
+    /**
      * Git Hash
      */
     git_hash?: string | null;
@@ -2074,6 +2152,18 @@ export type PostDetailResponseWritable = {
      * Toc
      */
     toc: Array<unknown>;
+    /**
+     * Meta Title
+     */
+    meta_title?: string | null;
+    /**
+     * Meta Description
+     */
+    meta_description?: string | null;
+    /**
+     * Meta Keywords
+     */
+    meta_keywords?: string | null;
     /**
      * Versions
      */
@@ -2147,6 +2237,14 @@ export type PostShortResponseWritable = {
      * Tags
      */
     tags?: Array<TagResponse>;
+    /**
+     * Is Featured
+     */
+    is_featured?: boolean;
+    /**
+     * Allow Comments
+     */
+    allow_comments?: boolean;
     /**
      * Git Hash
      */
@@ -2772,6 +2870,12 @@ export type GetUserFilesData = {
          * 用途过滤
          */
         usage?: FileUsage | null;
+        /**
+         * Mime Type
+         *
+         * MIME类型过滤 (如: image/svg+xml)
+         */
+        mime_type?: string | null;
         /**
          * Page
          */

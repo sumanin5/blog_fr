@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { PostType, CategoryResponse } from "@/shared/api/generated";
+import { PostType } from "@/shared/api/generated";
+import { Category } from "@/shared/api/types";
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ interface CategorySelectProps {
   postType: PostType;
   value?: string;
   onValueChange: (value: string) => void;
-  categories: CategoryResponse[];
+  categories: Category[];
   isLoading?: boolean;
   className?: string;
 }

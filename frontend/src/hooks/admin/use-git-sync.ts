@@ -9,6 +9,7 @@ import {
 } from "@/shared/api/types";
 import { toast } from "sonner";
 import React from "react";
+import { usePostMutations } from "./posts/mutations";
 
 /**
  * 🔄 Git 同步与运维核心 Hook
@@ -162,6 +163,8 @@ export function useGitSync() {
     },
   });
 
+  const { deletePost } = usePostMutations();
+
   return {
     ...query,
     posts: allPosts,
@@ -174,5 +177,6 @@ export function useGitSync() {
     },
     syncMutation,
     pushMutation,
+    deletePost,
   };
 }

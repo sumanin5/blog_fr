@@ -83,14 +83,32 @@ async def get_tag_by_id(session: AsyncSession, tag_id: UUID) -> Tag:
 
 async def get_or_create_tag(session: AsyncSession, name: str, slug: str) -> Tag:
     """获取或创建标签 (用于同步 MDX 标签)"""
-    stmt = select(Tag).where(Tag.name == name)
+    from sqlalchemy import or_
+
+    # 1. 优先通过 Slug 或 Name 寻找现有标签
+    # 这是关键：必须同时检查两者，特别是 Slug，因为它是唯一索引且由 Name 生成
+    stmt = select(Tag).where(or_(Tag.slug == slug, Tag.name == name))
     result = await session.exec(stmt)
     tag = result.one_or_none()
 
     if not tag:
         tag = Tag(name=name, slug=slug)
         session.add(tag)
-        await session.flush()  # 获取 ID 但不提交事务
+        try:
+            await session.flush()
+        except Exception as e:
+            # 防御性处理：如果在并发或极端情况下 flush 失败，回退并重新查询
+            await session.rollback()
+            stmt = select(Tag).where(or_(Tag.slug == slug, Tag.name == name))
+            result = await session.exec(stmt)
+            tag = result.one_or_none()
+
+            if not tag:
+                from app.core.exceptions import DatabaseError
+
+                raise DatabaseError(
+                    message=f"无法创建或获取标签: '{name}' (slug: {slug})。可能是由于数据库约束冲突或数据非法。",
+                ) from e
     return tag
 
 

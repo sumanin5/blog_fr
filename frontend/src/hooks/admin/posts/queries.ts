@@ -6,14 +6,7 @@ import {
   getMyPosts,
   getPostById,
 } from "@/shared/api";
-import {
-  AdminPostFilters,
-  MyPostFilters,
-  PostType,
-  AdminPostList,
-  MyPostList,
-  PostDetail,
-} from "@/shared/api/types";
+import { AdminPostFilters, MyPostFilters, PostType } from "@/shared/api/types";
 import type {
   GetPostByIdData,
   ListPostsByTypeAdminData,
@@ -34,12 +27,12 @@ export const usePostsAdminQuery = (
       const response = await listPostsByTypeAdmin({
         path: {
           post_type: postType,
-        } as unknown as ListPostsByTypeAdminData["path"],
+        },
         // ✅ 拦截器已自动处理，不再手动转换
         query: filters as unknown as ListPostsByTypeAdminData["query"],
         throwOnError: true,
       });
-      return normalizeApiResponse<AdminPostList>(response.data);
+      return normalizeApiResponse(response.data);
     },
   });
 };
@@ -56,7 +49,7 @@ export const useGlobalPostsAdminQuery = (filters?: AdminPostFilters) => {
         query: filters as unknown as ListAllPostsAdminData["query"],
         throwOnError: true,
       });
-      return normalizeApiResponse<AdminPostList>(response.data);
+      return normalizeApiResponse(response.data);
     },
   });
 };
@@ -73,7 +66,7 @@ export const useMyPostsQuery = (filters?: MyPostFilters) => {
         query: filters as unknown as GetMyPostsData["query"],
         throwOnError: true,
       });
-      return normalizeApiResponse<MyPostList>(response.data);
+      return normalizeApiResponse(response.data);
     },
   });
 };
@@ -90,15 +83,19 @@ export const usePostDetailQuery = (id: string, includeMdx = true) => {
           path: {
             post_type: "articles",
             post_id: id,
-          } as unknown as GetPostByIdData["path"],
-          query: { includeMdx } as unknown as GetPostByIdData["query"],
+          },
+          query: {
+            include_mdx: includeMdx,
+          } as unknown as GetPostByIdData["query"],
         }),
         getPostById({
           path: {
             post_type: "ideas",
             post_id: id,
-          } as unknown as GetPostByIdData["path"],
-          query: { includeMdx } as unknown as GetPostByIdData["query"],
+          },
+          query: {
+            include_mdx: includeMdx,
+          } as unknown as GetPostByIdData["query"],
         }),
       ]);
 
@@ -114,7 +111,7 @@ export const usePostDetailQuery = (id: string, includeMdx = true) => {
         throw new Error("文章不存在或无法访问");
       }
 
-      return normalizeApiResponse<PostDetail>(success.value.data);
+      return normalizeApiResponse(success.value.data);
     },
     enabled: !!id,
     retry: 1,

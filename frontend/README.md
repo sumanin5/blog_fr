@@ -1,36 +1,152 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎨 Blog FR - Frontend
 
-## Getting Started
+基于 **Next.js 16 (App Router)** 和 **React 19** 构建的现代博客前端。
 
-First, run the development server:
+---
+
+## ✨ 核心特性
+
+- ⚡ **混合渲染**: SSR 用于内容页面 (SEO 优化)，CSR 用于管理后台 (交互流畅)
+- 🎨 **现代 UI**: Tailwind CSS 4 + shadcn/ui，支持深色/浅色模式切换
+- 📝 **MDX 渲染**: 支持 Mermaid 图表、代码高亮、KaTeX 数学公式
+- 🔗 **类型安全**: 基于 OpenAPI 自动生成的 TypeScript SDK
+- 🔄 **状态管理**: TanStack Query v5 + React Context
+
+---
+
+## 🛠️ 技术栈
+
+| 技术               | 说明                        |
+| ------------------ | --------------------------- |
+| Next.js 16         | React 全栈框架 (App Router) |
+| React 19           | UI 库                       |
+| TypeScript         | 类型系统                    |
+| Tailwind CSS 4     | 原子化 CSS 框架             |
+| shadcn/ui          | 可定制组件库                |
+| TanStack Query     | 服务端状态管理              |
+| hey-api/openapi-ts | API SDK 自动生成            |
+| next-themes        | 主题切换                    |
+
+---
+
+## 🚀 快速开始
+
+### 1. 安装依赖
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 配置环境变量
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+主要配置项：
 
-## Learn More
+- `NEXT_PUBLIC_API_URL`: 后端 API 地址 (浏览器端)
+- `BACKEND_INTERNAL_URL`: 后端 API 地址 (服务器端，用于 SSR)
 
-To learn more about Next.js, take a look at the following resources:
+### 3. 启动开发服务器
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+访问 [http://localhost:3000](http://localhost:3000)
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📦 常用命令
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| 命令                | 说明                           |
+| ------------------- | ------------------------------ |
+| `pnpm dev`          | 启动开发服务器 (含热更新)      |
+| `pnpm build`        | 构建生产版本                   |
+| `pnpm start`        | 启动生产服务器                 |
+| `pnpm lint`         | ESLint 代码检查                |
+| `pnpm api:generate` | 从 OpenAPI 生成 TypeScript SDK |
+
+---
+
+## 🗂️ 项目结构
+
+```text
+frontend/
+├── src/
+│   ├── app/                    # Next.js App Router 页面
+│   │   ├── (public)/           # 公开页面 (博客、分类等)
+│   │   └── (admin)/            # 管理后台 (需登录)
+│   ├── components/             # React 组件
+│   │   ├── ui/                 # shadcn/ui 基础组件
+│   │   ├── home/               # 首页组件 (轮播图、最新文章)
+│   │   ├── admin/              # 管理后台专用组件
+│   │   └── ...
+│   ├── hooks/                  # 自定义 Hooks
+│   │   ├── admin/              # 管理后台 Hooks (CRUD 操作)
+│   │   └── ...                 # 公共 Hooks
+│   ├── shared/api/             # API 层
+│   │   ├── generated/          # 自动生成的 SDK
+│   │   ├── types.ts            # 领域模型类型定义
+│   │   └── transformers.ts     # snake_case ↔ camelCase 转换
+│   ├── lib/                    # 工具函数
+│   └── config/                 # 配置文件
+├── public/                     # 静态资源
+├── scripts/                    # 脚本工具
+│   └── generate-api.sh         # API SDK 生成脚本
+└── package.json
+```
+
+---
+
+## 🔗 API SDK 生成
+
+项目使用 `@hey-api/openapi-ts` 从后端 OpenAPI 规范自动生成类型安全的 SDK。
+
+```bash
+# 后端 API 变更后，运行此命令更新前端类型
+pnpm api:generate
+
+# 或使用脚本
+./scripts/generate-api.sh
+```
+
+生成的代码位于 `src/shared/api/generated/`。
+
+---
+
+## 🎨 UI 开发
+
+### 添加 shadcn/ui 组件
+
+```bash
+pnpm dlx shadcn@latest add button
+pnpm dlx shadcn@latest add card
+```
+
+### 主题切换
+
+项目使用 `next-themes` 实现深色/浅色模式：
+
+```tsx
+import { useTheme } from "next-themes";
+
+const { theme, setTheme } = useTheme();
+setTheme("dark"); // 或 "light" 或 "system"
+```
+
+---
+
+## 📚 相关文档
+
+- [Next.js 文档](https://nextjs.org/docs)
+- [Tailwind CSS 文档](https://tailwindcss.com/docs)
+- [shadcn/ui 文档](https://ui.shadcn.com)
+- [TanStack Query 文档](https://tanstack.com/query)
+
+---
+
+## 📄 许可证
+
+MIT

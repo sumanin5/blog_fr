@@ -15,8 +15,8 @@ import { CategorySelect } from "./category-select";
 import { TagSelect } from "./tag-select";
 import { CoverSelect } from "@/components/admin/media/uploader/cover-select";
 
-import { PostType, PostStatus, CategoryResponse } from "@/shared/api/generated";
-import type { MediaFile } from "@/shared/api/types";
+import { PostType, PostStatus } from "@/shared/api/generated";
+import type { MediaFile, Category } from "@/shared/api/types";
 
 // 1. 定义统一的元数据接口
 export interface PostMetadata {
@@ -33,7 +33,7 @@ export interface PostMetadata {
 
 interface PostMetadataSidebarProps {
   postType: "article" | "idea";
-  categories: CategoryResponse[];
+  categories: Category[];
   // 2. 合并为一个数据对象
   metadata: PostMetadata;
   // 3. 合并为一个变更回调
