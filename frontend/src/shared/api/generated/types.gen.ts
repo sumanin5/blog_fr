@@ -17,6 +17,14 @@ export type AnalyticsEventCreate = {
      */
     page_path: string;
     /**
+     * Referrer
+     */
+    referrer?: string | null;
+    /**
+     * Post Id
+     */
+    post_id?: string | null;
+    /**
      * Session Id
      */
     session_id?: string | null;
@@ -30,6 +38,50 @@ export type AnalyticsEventCreate = {
     payload?: {
         [key: string]: unknown;
     } | null;
+    /**
+     * Is Bot
+     */
+    is_bot?: boolean | null;
+    /**
+     * Browser Family
+     */
+    browser_family?: string | null;
+    /**
+     * Os Family
+     */
+    os_family?: string | null;
+    /**
+     * Device Family
+     */
+    device_family?: string | null;
+    /**
+     * Ip Address
+     */
+    ip_address?: string | null;
+    /**
+     * Country
+     */
+    country?: string | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Region
+     */
+    region?: string | null;
+    /**
+     * Latitude
+     */
+    latitude?: number | null;
+    /**
+     * Longitude
+     */
+    longitude?: number | null;
+    /**
+     * Duration
+     */
+    duration?: number | null;
 };
 
 /**
@@ -44,6 +96,14 @@ export type AnalyticsEventResponse = {
      * Page Path
      */
     page_path: string;
+    /**
+     * Referrer
+     */
+    referrer?: string | null;
+    /**
+     * Post Id
+     */
+    post_id?: string | null;
     /**
      * Session Id
      */
@@ -67,9 +127,79 @@ export type AnalyticsEventResponse = {
      */
     user_id?: string | null;
     /**
+     * Is Bot
+     */
+    is_bot: boolean;
+    /**
+     * Browser Family
+     */
+    browser_family?: string | null;
+    /**
+     * Os Family
+     */
+    os_family?: string | null;
+    /**
+     * Device Family
+     */
+    device_family?: string | null;
+    /**
+     * Ip Address
+     */
+    ip_address?: string | null;
+    /**
+     * Country
+     */
+    country?: string | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Region
+     */
+    region?: string | null;
+    /**
+     * Latitude
+     */
+    latitude?: number | null;
+    /**
+     * Longitude
+     */
+    longitude?: number | null;
+    /**
+     * Duration
+     */
+    duration?: number | null;
+    /**
      * Created At
      */
     created_at: string;
+};
+
+/**
+ * AnalyticsStatsOverview
+ */
+export type AnalyticsStatsOverview = {
+    /**
+     * Total Pv
+     */
+    total_pv: number;
+    /**
+     * Total Uv
+     */
+    total_uv: number;
+    /**
+     * Today Pv
+     */
+    today_pv: number;
+    /**
+     * Today Uv
+     */
+    today_uv: number;
+    /**
+     * Bot Percentage
+     */
+    bot_percentage: number;
 };
 
 /**
@@ -387,6 +517,24 @@ export type CategoryUpdate = {
      */
     is_featured?: boolean | null;
     post_type?: PostType | null;
+};
+
+/**
+ * DailyTrend
+ */
+export type DailyTrend = {
+    /**
+     * Date
+     */
+    date: string;
+    /**
+     * Pv
+     */
+    pv: number;
+    /**
+     * Uv
+     */
+    uv: number;
 };
 
 /**
@@ -1550,6 +1698,24 @@ export type TokenResponse = {
      * 令牌类型
      */
     token_type?: string;
+};
+
+/**
+ * TopPostStat
+ */
+export type TopPostStat = {
+    /**
+     * Post Id
+     */
+    post_id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Views
+     */
+    views: number;
 };
 
 /**
@@ -4343,6 +4509,56 @@ export type GetMyPostsResponses = {
 
 export type GetMyPostsResponse = GetMyPostsResponses[keyof GetMyPostsResponses];
 
+export type GetPostDetailAdminData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/admin/posts/{post_id}';
+};
+
+export type GetPostDetailAdminErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetPostDetailAdminError = GetPostDetailAdminErrors[keyof GetPostDetailAdminErrors];
+
+export type GetPostDetailAdminResponses = {
+    /**
+     * Successful Response
+     */
+    200: PostDetailResponse;
+};
+
+export type GetPostDetailAdminResponse = GetPostDetailAdminResponses[keyof GetPostDetailAdminResponses];
+
 export type PreviewPostData = {
     body: PostPreviewRequest;
     path?: never;
@@ -5270,7 +5486,7 @@ export type LogAnalyticsEventData = {
     body: AnalyticsEventCreate;
     path?: never;
     query?: never;
-    url: '/api/v1/analytics/analytics/events';
+    url: '/api/v1/analytics/events';
 };
 
 export type LogAnalyticsEventErrors = {
@@ -5310,3 +5526,154 @@ export type LogAnalyticsEventResponses = {
 };
 
 export type LogAnalyticsEventResponse = LogAnalyticsEventResponses[keyof LogAnalyticsEventResponses];
+
+export type GetAnalyticsOverviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/analytics/stats/overview';
+};
+
+export type GetAnalyticsOverviewErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetAnalyticsOverviewError = GetAnalyticsOverviewErrors[keyof GetAnalyticsOverviewErrors];
+
+export type GetAnalyticsOverviewResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalyticsStatsOverview;
+};
+
+export type GetAnalyticsOverviewResponse = GetAnalyticsOverviewResponses[keyof GetAnalyticsOverviewResponses];
+
+export type GetAnalyticsTrendData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Days
+         *
+         * 统计天数 (7, 15, 30 或 90)
+         */
+        days?: number;
+    };
+    url: '/api/v1/analytics/stats/trend';
+};
+
+export type GetAnalyticsTrendErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetAnalyticsTrendError = GetAnalyticsTrendErrors[keyof GetAnalyticsTrendErrors];
+
+export type GetAnalyticsTrendResponses = {
+    /**
+     * Response Getanalyticstrend
+     *
+     * Successful Response
+     */
+    200: Array<DailyTrend>;
+};
+
+export type GetAnalyticsTrendResponse = GetAnalyticsTrendResponses[keyof GetAnalyticsTrendResponses];
+
+export type GetAnalyticsTopPostsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/analytics/stats/top-posts';
+};
+
+export type GetAnalyticsTopPostsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetAnalyticsTopPostsError = GetAnalyticsTopPostsErrors[keyof GetAnalyticsTopPostsErrors];
+
+export type GetAnalyticsTopPostsResponses = {
+    /**
+     * Response Getanalyticstopposts
+     *
+     * Successful Response
+     */
+    200: Array<TopPostStat>;
+};
+
+export type GetAnalyticsTopPostsResponse = GetAnalyticsTopPostsResponses[keyof GetAnalyticsTopPostsResponses];

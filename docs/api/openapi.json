@@ -4408,6 +4408,105 @@
         }
       }
     },
+    "/api/v1/posts/admin/posts/{post_id}": {
+      "get": {
+        "tags": [
+          "Posts - Articles"
+        ],
+        "summary": "获取文章详情（管理后台，跨板块）",
+        "description": "通过ID获取文章详情，无需指定板块类型。非管理员只能访问自己的文章。",
+        "operationId": "getPostDetailAdmin",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Post Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/posts/preview": {
       "post": {
         "tags": [
@@ -6245,14 +6344,13 @@
         }
       }
     },
-    "/api/v1/analytics/analytics/events": {
+    "/api/v1/analytics/events": {
       "post": {
         "tags": [
-          "Analytics",
-          "analytics"
+          "Analytics"
         ],
-        "summary": "Log Analytics Event",
-        "description": "Log a new analytics event.\nAutomatically captures User-Agent and IP if not provided in payload.\nLinks to user account if authenticated.",
+        "summary": "记录分析事件",
+        "description": "记录新的分析事件（PageView 或自定义事件）。\n\n## 功能描述\n- 自动识别爬虫 (Bot Detection)。\n- 自动解析 User-Agent 获取浏览器、操作系统及设备类型。\n- 自动提取访客 IP 地址（如果 Payload 中未提供）。\n- 如果用户已登录，自动关联用户 ID。\n\n## 请求体说明\n- `event_type`: 事件类型，如 `page_view`, `click` 等。\n- `page_path`: 发生事件的页面路径。\n- `referrer`: 来源页面 URL。\n- `post_id`: (可选) 关联的文章 UUID。\n- `visitor_id`: 访客唯一标识（通常存储在 LocalStorage）。\n- `session_id`: 会话唯一标识。\n- `payload`: 自定义 JSON 数据。\n\n## 注意事项\n- 这是一个公开接口，前端应在路由切换或关键交互时调用。\n- 爬虫发起的请求会被内部标记，但在返回体中会体现识结果。",
         "operationId": "logAnalyticsEvent",
         "requestBody": {
           "content": {
@@ -6342,6 +6440,305 @@
           }
         ]
       }
+    },
+    "/api/v1/analytics/stats/overview": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "全站流量概览",
+        "description": "获取全站流量概览数据。\n\n## 权限\n- 仅限 **超级管理员** 访问。\n\n## 返回值说明\n- `total_pv/uv`: 历史累计去重统计（排除爬虫）。\n- `today_pv/uv`: 今日实时统计（排除爬虫）。\n- `bot_percentage`: 全站流量中机器人/爬虫的占比。\n\n## 错误码\n- `401 Unauthorized`: 未登录。\n- `403 Forbidden`: 权限不足。",
+        "operationId": "getAnalyticsOverview",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsStatsOverview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/analytics/stats/trend": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "流量趋势分析",
+        "description": "获取每日流量趋势折线图数据。\n\n## 权限\n- 仅限 **超级管理员** 访问。\n\n## 查询参数\n- `days`: 统计天数，支持 `7`, `15`, `30`, `90` 等（默认 7）。\n\n## 返回值\n返回一个按日期排序的数组，包含每日的 PV 和 UV。",
+        "operationId": "getAnalyticsTrend",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "description": "统计天数 (7, 15, 30 或 90)",
+              "default": 7,
+              "title": "Days"
+            },
+            "description": "统计天数 (7, 15, 30 或 90)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyTrend"
+                  },
+                  "title": "Response Getanalyticstrend"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/stats/top-posts": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "热门内容排行",
+        "description": "获取文章阅读量排行榜。\n\n## 权限\n- 仅限 **超级管理员** 访问。\n\n## 查询参数\n- `limit`: 返回数量限制（默认 10）。\n\n## 注意事项\n- 该排行已自动排除爬虫流量，反映真实的读者偏好。\n- 仅包含已关联 `post_id` 的事件。",
+        "operationId": "getAnalyticsTopPosts",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopPostStat"
+                  },
+                  "title": "Response Getanalyticstopposts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6355,6 +6752,29 @@
           "page_path": {
             "type": "string",
             "title": "Page Path"
+          },
+          "referrer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referrer"
+          },
+          "post_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Id"
           },
           "session_id": {
             "anyOf": [
@@ -6389,6 +6809,128 @@
               }
             ],
             "title": "Payload"
+          },
+          "is_bot": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Bot"
+          },
+          "browser_family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Browser Family"
+          },
+          "os_family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os Family"
+          },
+          "device_family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Family"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration",
+            "default": 0
           }
         },
         "type": "object",
@@ -6407,6 +6949,29 @@
           "page_path": {
             "type": "string",
             "title": "Page Path"
+          },
+          "referrer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referrer"
+          },
+          "post_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Id"
           },
           "session_id": {
             "anyOf": [
@@ -6459,6 +7024,121 @@
             ],
             "title": "User Id"
           },
+          "is_bot": {
+            "type": "boolean",
+            "title": "Is Bot"
+          },
+          "browser_family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Browser Family"
+          },
+          "os_family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os Family"
+          },
+          "device_family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Family"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration",
+            "default": 0
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -6470,9 +7150,43 @@
           "event_type",
           "page_path",
           "id",
+          "is_bot",
           "created_at"
         ],
         "title": "AnalyticsEventResponse"
+      },
+      "AnalyticsStatsOverview": {
+        "properties": {
+          "total_pv": {
+            "type": "integer",
+            "title": "Total Pv"
+          },
+          "total_uv": {
+            "type": "integer",
+            "title": "Total Uv"
+          },
+          "today_pv": {
+            "type": "integer",
+            "title": "Today Pv"
+          },
+          "today_uv": {
+            "type": "integer",
+            "title": "Today Uv"
+          },
+          "bot_percentage": {
+            "type": "number",
+            "title": "Bot Percentage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_pv",
+          "total_uv",
+          "today_pv",
+          "today_uv",
+          "bot_percentage"
+        ],
+        "title": "AnalyticsStatsOverview"
       },
       "BatchDeleteRequest": {
         "properties": {
@@ -7130,6 +7844,29 @@
         },
         "type": "object",
         "title": "CategoryUpdate"
+      },
+      "DailyTrend": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "pv": {
+            "type": "integer",
+            "title": "Pv"
+          },
+          "uv": {
+            "type": "integer",
+            "title": "Uv"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "pv",
+          "uv"
+        ],
+        "title": "DailyTrend"
       },
       "ErrorDetail": {
         "properties": {
@@ -9098,6 +9835,30 @@
         "title": "TokenResponse",
         "description": "JWT Token 响应模型"
       },
+      "TopPostStat": {
+        "properties": {
+          "post_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Post Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "views": {
+            "type": "integer",
+            "title": "Views"
+          }
+        },
+        "type": "object",
+        "required": [
+          "post_id",
+          "title",
+          "views"
+        ],
+        "title": "TopPostStat"
+      },
       "UserListResponse": {
         "properties": {
           "total": {
@@ -9516,7 +10277,7 @@
     },
     {
       "name": "Analytics",
-      "description": "Data collection and analytics event logging endpoints. Supports automated event tracking using modern Python data analysis tools."
+      "description": "\n### 🚀 流量分析与行为追踪 (Analytics)\n\n提供全方位的网站流量监测与访客行为分析能力。\n\n**核心功能：**\n*   **事件上报 (`POST /events`)**：记录页面访问 (PV)、独立访客 (UV) 及自定义交互事件。集成智能机器人识别算法并自动解析浏览器、操作系统等设备画像。\n*   **数据概览 (`GET /stats/overview`)**：可视化仪表盘的核心指标，包括累计及今日 PV/UV、爬虫流量占比等。\n*   **趋势分析 (`GET /stats/trend`)**：提供 7天 / 15天 / 30天 等不同时段的流量趋势折线数据，支持灵活的时间档位。\n*   **内容洞察 (`GET /stats/top-posts`)**：精准追踪热门文章，支持排除爬虫后的真实用户阅读量统计。\n\n> ⚠️ 所有统计类 (Stats) 接口均需 **超级管理员 (Superuser)** 权限访问。\n"
     }
   ]
 }

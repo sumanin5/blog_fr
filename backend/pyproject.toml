@@ -29,6 +29,7 @@ dependencies = [
     "sqlmodel>=0.0.27",
     "uuid6>=2025.0.1",
     "uvicorn[standard]>=0.38.0",
+    "user-agents>=2.2.0",
 ]
 
 [project.optional-dependencies]
@@ -62,7 +63,7 @@ markers = [
     "media: mark test as a media module test",
     "posts: mark test as a posts module test",
     "git_ops: mark test as a git_ops module test",
-
+    "analytics: mark test as an analytics module test",
 ]
 
 # ==========================================

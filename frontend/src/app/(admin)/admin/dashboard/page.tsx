@@ -1,121 +1,171 @@
 "use client";
 
-import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
-import { getMyPosts } from "@/shared/api/generated";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, Eye, MessageSquare, Loader2 } from "lucide-react";
-import { DashboardRecentPosts } from "@/components/admin/dashboard/recent-posts";
+import React, { useMemo, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import {
+  Activity,
+  Users,
+  Eye,
+  MousePointerClick,
+  RefreshCw,
+  ShieldAlert,
+  Bot,
+} from "lucide-react";
+
+// Mock Data
+import { generateMockData, calculateStats } from "@/lib/mock/analytics";
+
+// Traffic Pulse Components
+import { TrafficOverviewCharts } from "@/components/admin/dashboard/traffic-pulse/TrafficOverviewCharts";
+import { ContentPerformanceTable } from "@/components/admin/dashboard/traffic-pulse/ContentPerformanceTable";
+import { UserBehaviorAnalytics } from "@/components/admin/dashboard/traffic-pulse/UserBehaviorAnalytics";
+import { RealTimeSessionTable } from "@/components/admin/dashboard/traffic-pulse/RealTimeSessionTable";
+import { BotTrafficMonitor } from "@/components/admin/dashboard/traffic-pulse/BotTrafficMonitor";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // 获取用户的文章统计
-  const { data: myPosts, isLoading } = useQuery({
-    queryKey: ["dashboard", "my-posts-count"],
-    queryFn: () =>
-      getMyPosts({
-        query: { limit: 1, offset: 0 }, // 只获取总数
-        throwOnError: true,
-      }),
-    enabled: !!user,
-  });
+  // Generating mock data just once for now, or on refresh
+  const { sessions, articles } = useMemo(
+    () => generateMockData(),
+    [isRefreshing],
+  );
+  const stats = useMemo(() => calculateStats(sessions), [sessions]);
 
-  const totalPosts = myPosts?.data?.total ?? 0;
-
-  const statCards = [
-    {
-      label: "我的文章",
-      value: totalPosts,
-      icon: FileText,
-      color: "text-blue-500",
-      description: "已发布的文章数量",
-    },
-    {
-      label: "全站阅读",
-      value: "即将上线",
-      icon: Eye,
-      color: "text-green-500",
-      description: "功能开发中",
-    },
-    {
-      label: "评论数",
-      value: "即将上线",
-      icon: MessageSquare,
-      color: "text-purple-500",
-      description: "功能开发中",
-    },
-    {
-      label: "活跃用户",
-      value: user?.role === "superadmin" ? "管理员" : "普通用户",
-      icon: Users,
-      color: "text-orange-500",
-      description: "当前角色",
-    },
-  ];
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    // Simulate network request
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 800);
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          你好, {user?.username}
-        </h1>
-        <p className="text-muted-foreground">欢迎回到博客管理系统。</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">数据分析总览</h2>
+          <p className="text-muted-foreground mt-1">
+            实时追踪用户行为、内容表现与流量来源 (TrafficPulse v1.0)
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            刷新数据
+          </Button>
+        </div>
       </div>
 
-      {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.label}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              {isLoading && stat.label === "我的文章" ? (
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stat.description}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="overview" className="gap-2">
+            <Activity className="h-4 w-4" />
+            总览仪表盘
+          </TabsTrigger>
+          <TabsTrigger value="users" className="gap-2">
+            <Users className="h-4 w-4" />
+            用户分析
+          </TabsTrigger>
+          <TabsTrigger value="bots" className="gap-2">
+            <Bot className="h-4 w-4" />
+            爬虫监控
+          </TabsTrigger>
+        </TabsList>
 
-      {/* 最近更新和系统公告 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>最近更新</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DashboardRecentPosts />
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>系统公告</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>这是一个现代化的博文管理系统，支持：</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>MDX 格式文章编辑</li>
-                <li>实时预览功能</li>
-                <li>Git 同步管理</li>
-                <li>媒体文件管理</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="overview" className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  总访问量 (Total Visits)
+                </CardTitle>
+                <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalVisits}</div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-emerald-500 font-bold">+12.5%</span>{" "}
+                  过去 24 小时
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  真实用户 (Real Users)
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.realUserCount}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.uniqueIPs} 独立 IP
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  爬虫请求 (Bot Hits)
+                </CardTitle>
+                <Bot className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.crawlerCount}</div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-emerald-500 font-bold">Low</span> 占比{" "}
+                  {stats.botTrafficPercent.toFixed(1)}%
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  平均停留时长
+                </CardTitle>
+                <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {Math.round(stats.avgSessionDuration)}s
+                </div>
+                <p className="text-xs text-muted-foreground">有效会话</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <TrafficOverviewCharts sessions={sessions} />
+          <ContentPerformanceTable articles={articles} />
+        </TabsContent>
+
+        <TabsContent value="users" className="space-y-6">
+          <UserBehaviorAnalytics sessions={sessions} />
+          <div className="pt-6 border-t">
+            <RealTimeSessionTable sessions={sessions} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="bots" className="space-y-6">
+          <BotTrafficMonitor sessions={sessions} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

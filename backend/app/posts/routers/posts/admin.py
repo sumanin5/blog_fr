@@ -1,10 +1,12 @@
 from typing import Annotated
+from uuid import UUID
 
 from app.core.db import get_async_session
 from app.posts import cruds, utils
 from app.posts.dependencies import PostFilterParams
 from app.posts.model import PostType
 from app.posts.schemas import (
+    PostDetailResponse,
     PostShortResponse,
 )
 from app.users.dependencies import get_current_active_user
@@ -103,3 +105,30 @@ async def get_my_posts(
         search_query=filters.search,
     )
     return await cruds.paginate_query(session, query, params)
+
+
+@router.get(
+    "/admin/posts/{post_id}",
+    response_model=PostDetailResponse,
+    summary="获取文章详情（管理后台，跨板块）",
+    description="通过ID获取文章详情，无需指定板块类型。非管理员只能访问自己的文章。",
+)
+async def get_post_detail_admin(
+    post_id: UUID,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    from app.core.exceptions import InsufficientPermissionsError
+    from app.posts.schemas import PostDetailResponse
+
+    # 直接通过 ID 获取，不限类型
+    post = await cruds.get_post_by_id(session, post_id)
+
+    # 权限检查
+    # 1. 超级管理员可访问所有
+    # 2. 普通用户只能访问自己的（或者我们可以放宽到所有已发布的？但在管理端通常是管理上下文）
+    # 参考 list_all_posts_admin 的逻辑，普通用户只能看到自己的列表，所以详情也应保持一致
+    if not current_user.is_superadmin and post.author_id != current_user.id:
+        raise InsufficientPermissionsError("无权访问此文章")
+
+    return PostDetailResponse.model_validate(post)

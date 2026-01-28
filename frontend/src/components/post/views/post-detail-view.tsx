@@ -4,6 +4,8 @@ import { TableOfContents } from "@/components/mdx/utils/table-of-contents";
 import { PostDetailResponse } from "@/shared/api/generated/types.gen";
 import { ApiData } from "@/shared/api/transformers";
 
+import { ArticleTracker } from "@/components/analytics/ArticleTracker";
+
 interface TocItem {
   id: string;
   title: string;
@@ -17,6 +19,7 @@ interface PostDetailViewProps {
 export async function PostDetailView({ post }: PostDetailViewProps) {
   return (
     <div className="container mx-auto px-4 py-8">
+      <ArticleTracker postId={post.id} />
       {/* 浮动目录按钮 */}
       {post.toc && post.toc.length > 0 && (
         <TableOfContents

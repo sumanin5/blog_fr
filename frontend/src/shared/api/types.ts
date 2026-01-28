@@ -162,6 +162,29 @@ export type UserRole = Raw.UserRole;
 export type ErrorDetail = ApiData<Raw.ErrorDetail>;
 
 // ============================================
+// 6. 流量分析 (Analytics)
+// ============================================
+
+// 基础实体 & 统计
+export type AnalyticsOverview = ApiData<Raw.AnalyticsStatsOverview>;
+export type AnalyticsDailyTrend = ApiData<Raw.DailyTrend>;
+export type AnalyticsTopPost = ApiData<Raw.TopPostStat>;
+
+// 请求载荷 (Payloads)
+export type AnalyticsEventPayload = ApiData<Raw.AnalyticsEventCreate>;
+
+// 响应结果
+export type AnalyticsEventResult = ApiData<Raw.AnalyticsEventResponse>;
+
+// 指令参数 (SDK Data Wrappers)
+export type {
+  LogAnalyticsEventData,
+  GetAnalyticsOverviewData,
+  GetAnalyticsTrendData,
+  GetAnalyticsTopPostsData,
+} from "./generated/types.gen";
+
+// ============================================
 // 🛠️ Data 类透传 (用于 SDK 路径参数校验)
 // ============================================
 export type {

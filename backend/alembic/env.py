@@ -15,13 +15,11 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 # os.path.dirname(...) -> /home/tomy/blog_fr/backend
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+from app.analytics.model import AnalyticsEvent  # noqa: F401
 from app.core.base import Base  # 导入你的 Base 模型
 from app.core.config import settings  # 导入 Pydantic settings
 from app.media.model import MediaFile  # noqa: F401
 from app.posts.model import Post  # noqa: F401
-
-# --- 导入你所有的模型 ---
-# 每当你创建一个新的模型文件，都需要在这里添加导入，否则 Alembic 无法自动发现它
 from app.users.model import User  # noqa: F401
 
 # from app.posts.model import Post # 示例：以后有新模型就加在这里

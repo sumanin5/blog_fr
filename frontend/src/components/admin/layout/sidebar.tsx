@@ -35,11 +35,11 @@ import {
 
 const SIDEBAR_CONFIG = {
   personal: [
-    { icon: LayoutDashboard, label: "工作台", href: "/admin/dashboard" },
     { icon: FileText, label: "博文管理", href: "/admin/posts" },
     { icon: GitBranch, label: "同步状态", href: "/admin/sync" },
   ],
   admin: [
+    { icon: LayoutDashboard, label: "数据中台", href: "/admin/dashboard" }, // 工作台 -> 数据中台
     { icon: ShieldCheck, label: "全站内容", href: "/admin/posts/all" },
     { icon: FolderTree, label: "分类运维", href: "/admin/categories" },
     { icon: Tags, label: "标签治理", href: "/admin/tags" },
@@ -102,7 +102,7 @@ export function AdminSidebar({
                       isActive={pathname === item.href}
                       tooltip={item.label}
                     >
-                      <Link href={item.href}>
+                      <Link href={item.href as any}>
                         <item.icon className="size-4" />
                         <span className="font-medium">{item.label}</span>
                       </Link>

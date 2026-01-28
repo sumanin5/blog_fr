@@ -14,6 +14,7 @@ import {
   listPostsByType,
   listCategoriesByType,
   getPostBySlug,
+  getPostDetailAdmin,
 } from "@/shared/api/generated/sdk.gen";
 import type {
   PagePostShortResponse,
@@ -124,6 +125,41 @@ export const getPostDetail = cache(
     if (!data) {
       notFound();
     }
+
+    return data as unknown as ApiData<PostDetailResponse>;
+    return data as unknown as ApiData<PostDetailResponse>;
+  },
+);
+
+// 管理端-通过ID获取文章详情
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - getPostDetailAdmin is generated
+import { getPostDetailAdmin } from "@/shared/api/generated/sdk.gen";
+
+export const getAdminPostDetail = cache(
+  async (postId: string): Promise<ApiData<PostDetailResponse>> => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const { data, error } = await getPostDetailAdmin({
+      client: serverClient,
+      path: {
+        post_id: postId,
+      },
+    });
+
+    if (error) {
+      const errAny = error as any;
+      const status = errAny.status || errAny.code || errAny.statusCode;
+      // 明确的 401 信号
+      if (status === 401 || errAny?.error?.code === 401) {
+        redirect("/login" as any);
+      }
+      if (status === 404) notFound();
+
+      throw new Error((error as any)?.error?.message || "无法获取文章详情");
+    }
+
+    if (!data) notFound();
 
     return data as unknown as ApiData<PostDetailResponse>;
   },

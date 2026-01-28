@@ -1,6 +1,7 @@
-import Metadata from "next";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 import { Toaster } from "@/components/ui/sonner";
 import "@/app/globals.css";
 
@@ -32,6 +33,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+          <AnalyticsTracker />
           {children}
           {auth}
           <Toaster richColors closeButton position="top-right" />

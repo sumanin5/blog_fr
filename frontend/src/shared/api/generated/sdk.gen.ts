@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, BookmarkPostData, BookmarkPostErrors, BookmarkPostResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, GithubWebhookData, GithubWebhookErrors, GithubWebhookResponses, LikePostData, LikePostErrors, LikePostResponses, ListAllPostsAdminData, ListAllPostsAdminErrors, ListAllPostsAdminResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeAdminData, ListPostsByTypeAdminErrors, ListPostsByTypeAdminResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LogAnalyticsEventData, LogAnalyticsEventErrors, LogAnalyticsEventResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, PreviewSyncData, PreviewSyncErrors, PreviewSyncResponses, PushToGitData, PushToGitErrors, PushToGitResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, ResyncPostMetadataData, ResyncPostMetadataErrors, ResyncPostMetadataResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, TriggerSyncData, TriggerSyncErrors, TriggerSyncResponses, UnbookmarkPostData, UnbookmarkPostErrors, UnbookmarkPostResponses, UnlikePostData, UnlikePostErrors, UnlikePostResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
+import type { BatchDeleteFilesData, BatchDeleteFilesErrors, BatchDeleteFilesResponses, BookmarkPostData, BookmarkPostErrors, BookmarkPostResponses, CreateCategoryByTypeData, CreateCategoryByTypeErrors, CreateCategoryByTypeResponses, CreatePostByTypeData, CreatePostByTypeErrors, CreatePostByTypeResponses, DeleteCategoryByTypeData, DeleteCategoryByTypeErrors, DeleteCategoryByTypeResponses, DeleteCurrentUserAccountData, DeleteCurrentUserAccountErrors, DeleteCurrentUserAccountResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteOrphanedTagsData, DeleteOrphanedTagsErrors, DeleteOrphanedTagsResponses, DeletePostByTypeData, DeletePostByTypeErrors, DeletePostByTypeResponses, DeleteUserByIdData, DeleteUserByIdErrors, DeleteUserByIdResponses, DownloadFileData, DownloadFileErrors, DownloadFileResponses, GetAllFilesAdminData, GetAllFilesAdminErrors, GetAllFilesAdminResponses, GetAnalyticsOverviewData, GetAnalyticsOverviewErrors, GetAnalyticsOverviewResponses, GetAnalyticsTopPostsData, GetAnalyticsTopPostsErrors, GetAnalyticsTopPostsResponses, GetAnalyticsTrendData, GetAnalyticsTrendErrors, GetAnalyticsTrendResponses, GetCurrentUserInfoData, GetCurrentUserInfoErrors, GetCurrentUserInfoResponses, GetFileDetailData, GetFileDetailErrors, GetFileDetailResponses, GetMyPostsData, GetMyPostsErrors, GetMyPostsResponses, GetPostByIdData, GetPostByIdErrors, GetPostByIdResponses, GetPostBySlugData, GetPostBySlugErrors, GetPostBySlugResponses, GetPostDetailAdminData, GetPostDetailAdminErrors, GetPostDetailAdminResponses, GetPostTypesData, GetPostTypesErrors, GetPostTypesResponses, GetPublicFilesData, GetPublicFilesErrors, GetPublicFilesResponses, GetStatsOverviewData, GetStatsOverviewErrors, GetStatsOverviewResponses, GetUserByIdData, GetUserByIdErrors, GetUserByIdResponses, GetUserFilesData, GetUserFilesErrors, GetUserFilesResponses, GetUsersListData, GetUsersListErrors, GetUsersListResponses, GithubWebhookData, GithubWebhookErrors, GithubWebhookResponses, LikePostData, LikePostErrors, LikePostResponses, ListAllPostsAdminData, ListAllPostsAdminErrors, ListAllPostsAdminResponses, ListCategoriesByTypeData, ListCategoriesByTypeErrors, ListCategoriesByTypeResponses, ListPostsByTypeAdminData, ListPostsByTypeAdminErrors, ListPostsByTypeAdminResponses, ListPostsByTypeData, ListPostsByTypeErrors, ListPostsByTypeResponses, ListTagsByTypeData, ListTagsByTypeErrors, ListTagsByTypeResponses, ListTagsData, ListTagsErrors, ListTagsResponses, LogAnalyticsEventData, LogAnalyticsEventErrors, LogAnalyticsEventResponses, LoginData, LoginErrors, LoginResponses, MergeTagsData, MergeTagsErrors, MergeTagsResponses, PreviewPostData, PreviewPostErrors, PreviewPostResponses, PreviewSyncData, PreviewSyncErrors, PreviewSyncResponses, PushToGitData, PushToGitErrors, PushToGitResponses, ReadRootData, ReadRootErrors, ReadRootResponses, RegenerateThumbnailsData, RegenerateThumbnailsErrors, RegenerateThumbnailsResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, ResyncPostMetadataData, ResyncPostMetadataErrors, ResyncPostMetadataResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, ToggleFilePublicityData, ToggleFilePublicityErrors, ToggleFilePublicityResponses, TriggerSyncData, TriggerSyncErrors, TriggerSyncResponses, UnbookmarkPostData, UnbookmarkPostErrors, UnbookmarkPostResponses, UnlikePostData, UnlikePostErrors, UnlikePostResponses, UpdateCategoryByTypeData, UpdateCategoryByTypeErrors, UpdateCategoryByTypeResponses, UpdateCurrentUserInfoData, UpdateCurrentUserInfoErrors, UpdateCurrentUserInfoResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdatePostByTypeData, UpdatePostByTypeErrors, UpdatePostByTypeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserByIdData, UpdateUserByIdErrors, UpdateUserByIdResponses, UploadFileData, UploadFileErrors, UploadFileResponses, ViewFileData, ViewFileErrors, ViewFileResponses, ViewThumbnailData, ViewThumbnailErrors, ViewThumbnailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -1922,6 +1922,17 @@ export const getMyPosts = <ThrowOnError extends boolean = false>(options?: Optio
 });
 
 /**
+ * 获取文章详情（管理后台，跨板块）
+ *
+ * 通过ID获取文章详情，无需指定板块类型。非管理员只能访问自己的文章。
+ */
+export const getPostDetailAdmin = <ThrowOnError extends boolean = false>(options: Options<GetPostDetailAdminData, ThrowOnError>) => (options.client ?? client).get<GetPostDetailAdminResponses, GetPostDetailAdminErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/posts/admin/posts/{post_id}',
+    ...options
+});
+
+/**
  * 文章实时预览
  *
  * 预览 MDX 内容（实时渲染）
@@ -2778,18 +2789,99 @@ export const resyncPostMetadata = <ThrowOnError extends boolean = false>(options
 export const githubWebhook = <ThrowOnError extends boolean = false>(options?: Options<GithubWebhookData, ThrowOnError>) => (options?.client ?? client).post<GithubWebhookResponses, GithubWebhookErrors, ThrowOnError>({ url: '/api/v1/ops/git/webhook', ...options });
 
 /**
- * Log Analytics Event
+ * 记录分析事件
  *
- * Log a new analytics event.
- * Automatically captures User-Agent and IP if not provided in payload.
- * Links to user account if authenticated.
+ * 记录新的分析事件（PageView 或自定义事件）。
+ *
+ * ## 功能描述
+ * - 自动识别爬虫 (Bot Detection)。
+ * - 自动解析 User-Agent 获取浏览器、操作系统及设备类型。
+ * - 自动提取访客 IP 地址（如果 Payload 中未提供）。
+ * - 如果用户已登录，自动关联用户 ID。
+ *
+ * ## 请求体说明
+ * - `event_type`: 事件类型，如 `page_view`, `click` 等。
+ * - `page_path`: 发生事件的页面路径。
+ * - `referrer`: 来源页面 URL。
+ * - `post_id`: (可选) 关联的文章 UUID。
+ * - `visitor_id`: 访客唯一标识（通常存储在 LocalStorage）。
+ * - `session_id`: 会话唯一标识。
+ * - `payload`: 自定义 JSON 数据。
+ *
+ * ## 注意事项
+ * - 这是一个公开接口，前端应在路由切换或关键交互时调用。
+ * - 爬虫发起的请求会被内部标记，但在返回体中会体现识结果。
  */
 export const logAnalyticsEvent = <ThrowOnError extends boolean = false>(options: Options<LogAnalyticsEventData, ThrowOnError>) => (options.client ?? client).post<LogAnalyticsEventResponses, LogAnalyticsEventErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/analytics/analytics/events',
+    url: '/api/v1/analytics/events',
     ...options,
     headers: {
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * 全站流量概览
+ *
+ * 获取全站流量概览数据。
+ *
+ * ## 权限
+ * - 仅限 **超级管理员** 访问。
+ *
+ * ## 返回值说明
+ * - `total_pv/uv`: 历史累计去重统计（排除爬虫）。
+ * - `today_pv/uv`: 今日实时统计（排除爬虫）。
+ * - `bot_percentage`: 全站流量中机器人/爬虫的占比。
+ *
+ * ## 错误码
+ * - `401 Unauthorized`: 未登录。
+ * - `403 Forbidden`: 权限不足。
+ */
+export const getAnalyticsOverview = <ThrowOnError extends boolean = false>(options?: Options<GetAnalyticsOverviewData, ThrowOnError>) => (options?.client ?? client).get<GetAnalyticsOverviewResponses, GetAnalyticsOverviewErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/analytics/stats/overview',
+    ...options
+});
+
+/**
+ * 流量趋势分析
+ *
+ * 获取每日流量趋势折线图数据。
+ *
+ * ## 权限
+ * - 仅限 **超级管理员** 访问。
+ *
+ * ## 查询参数
+ * - `days`: 统计天数，支持 `7`, `15`, `30`, `90` 等（默认 7）。
+ *
+ * ## 返回值
+ * 返回一个按日期排序的数组，包含每日的 PV 和 UV。
+ */
+export const getAnalyticsTrend = <ThrowOnError extends boolean = false>(options?: Options<GetAnalyticsTrendData, ThrowOnError>) => (options?.client ?? client).get<GetAnalyticsTrendResponses, GetAnalyticsTrendErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/analytics/stats/trend',
+    ...options
+});
+
+/**
+ * 热门内容排行
+ *
+ * 获取文章阅读量排行榜。
+ *
+ * ## 权限
+ * - 仅限 **超级管理员** 访问。
+ *
+ * ## 查询参数
+ * - `limit`: 返回数量限制（默认 10）。
+ *
+ * ## 注意事项
+ * - 该排行已自动排除爬虫流量，反映真实的读者偏好。
+ * - 仅包含已关联 `post_id` 的事件。
+ */
+export const getAnalyticsTopPosts = <ThrowOnError extends boolean = false>(options?: Options<GetAnalyticsTopPostsData, ThrowOnError>) => (options?.client ?? client).get<GetAnalyticsTopPostsResponses, GetAnalyticsTopPostsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/analytics/stats/top-posts',
+    ...options
 });
