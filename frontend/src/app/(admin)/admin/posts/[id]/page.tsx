@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PostDetailView } from "@/components/post/views/post-detail-view";
+import { PostDetailView } from "@/components/public/post/views/post-detail-view";
 import { getAdminPostDetail } from "@/lib/post-api";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

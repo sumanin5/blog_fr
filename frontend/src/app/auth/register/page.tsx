@@ -1,21 +1,8 @@
-"use client";
+import { checkAuthGate } from "@/app/auth/check-gate";
+import { RegisterView } from "./view";
 
-import { motion } from "framer-motion";
-import { RegisterForm } from "@/components/auth/register-form";
+export default async function RegisterPage() {
+  await checkAuthGate();
 
-export default function RegisterPage() {
-  return (
-    <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md"
-      >
-        <div className="border-border bg-card/50 rounded-2xl border p-8 shadow-xl backdrop-blur-md">
-          <RegisterForm />
-        </div>
-      </motion.div>
-    </div>
-  );
+  return <RegisterView />;
 }

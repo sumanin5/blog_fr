@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon, Globe } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -29,6 +29,9 @@ export interface PostMetadata {
   isFeatured: boolean;
   enableJsx: boolean;
   useServerRendering: boolean;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
 }
 
 interface PostMetadataSidebarProps {
@@ -174,6 +177,57 @@ export function PostMetadataSidebar({
             onCheckedChange={(checked) =>
               updateField({ useServerRendering: checked })
             }
+          />
+        </div>
+      </div>
+
+      <div className="h-px bg-border" />
+
+      {/* SEO 设置 */}
+      <div className="space-y-4 pb-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Globe className="size-4" />
+          <h3 className="text-sm font-semibold uppercase tracking-wider">
+            SEO 设置
+          </h3>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="metaTitle" className="text-xs">
+            SEO 标题 (Meta Title)
+          </Label>
+          <Input
+            id="metaTitle"
+            placeholder="如果不填则默认为文章标题"
+            value={metadata.metaTitle}
+            onChange={(e) => updateField({ metaTitle: e.target.value })}
+            className="h-8 text-xs"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="metaDescription" className="text-xs">
+            SEO 描述 (Meta Description)
+          </Label>
+          <textarea
+            id="metaDescription"
+            className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder="简短的描述以提高搜索点击率..."
+            value={metadata.metaDescription}
+            onChange={(e) => updateField({ metaDescription: e.target.value })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="metaKeywords" className="text-xs">
+            SEO 关键词 (Meta Keywords)
+          </Label>
+          <Input
+            id="metaKeywords"
+            placeholder="关键词，以英文逗号分隔"
+            value={metadata.metaKeywords}
+            onChange={(e) => updateField({ metaKeywords: e.target.value })}
+            className="h-8 text-xs"
           />
         </div>
       </div>

@@ -120,7 +120,12 @@ async def list_tags_by_type(
     post_type: Annotated[PostType, Path(description="板块类型")],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     params: Annotated[Params, Depends()],
+    sort: Annotated[
+        str, Query(description="排序方式 (name/usage)", pattern="^(name|usage)$")
+    ] = "usage",
 ):
     from app.posts.cruds import tag as tag_crud
 
-    return await tag_crud.list_tags_with_count(session, params, post_type=post_type)
+    return await tag_crud.list_tags_with_count(
+        session, params, post_type=post_type, sort_by_usage=(sort == "usage")
+    )

@@ -1,19 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Activity,
   Users,
-  Eye,
   MousePointerClick,
   RefreshCw,
   ShieldAlert,
@@ -25,6 +18,7 @@ import {
   useAnalyticsSessions,
   useAnalyticsTopPosts,
 } from "@/hooks/admin/use-analytics-stats";
+import { AnalyticsDashboard } from "@/shared/api/types";
 
 // Traffic Pulse Components
 import { TrafficOverviewCharts } from "@/components/admin/dashboard/traffic-pulse/TrafficOverviewCharts";
@@ -64,16 +58,18 @@ export default function DashboardPage() {
   const isLoading = loadingDash || loadingSessions || loadingPosts;
 
   // Safe Accessors
-  const stats = dashboard || {
-    totalVisits: 0,
-    realUserCount: 0,
-    uniqueIPs: 0,
-    crawlerCount: 0,
-    botTrafficPercent: 0,
-    avgSessionDuration: 0,
-    deviceStats: [],
-    hourlyTraffic: [],
-  };
+  const stats =
+    dashboard ||
+    ({
+      totalVisits: 0,
+      realUserCount: 0,
+      uniqueIPs: 0,
+      crawlerCount: 0,
+      botTrafficPercent: 0,
+      avgSessionDuration: 0,
+      deviceStats: [],
+      hourlyTraffic: [],
+    } as unknown as AnalyticsDashboard);
 
   const sessions = sessionsData?.items || [];
   const articles = topPosts || [];
@@ -183,8 +179,8 @@ export default function DashboardPage() {
           </div>
 
           <TrafficOverviewCharts
-            deviceStats={stats.deviceStats}
-            hourlyTraffic={stats.hourlyTraffic}
+            deviceStats={stats.deviceStats as any}
+            hourlyTraffic={stats.hourlyTraffic as any}
           />
           <ContentPerformanceTable articles={articles} />
         </TabsContent>

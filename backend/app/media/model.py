@@ -87,7 +87,7 @@ class MediaFile(Base, table=True):
     )
 
     # 是否共享
-    is_public: bool = Field(default=False, description="是否共享")
+    is_public: bool = Field(default=True, description="是否共享")
 
     # 统计信息
     view_count: int = Field(default=0, ge=0, description="查看次数")

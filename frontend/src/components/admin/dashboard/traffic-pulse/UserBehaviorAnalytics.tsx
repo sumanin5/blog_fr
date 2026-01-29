@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { UserSession, UserType } from "@/types/analytics";
+import { AnalyticsSessionItem } from "@/shared/api/types";
 import {
   Card,
   CardHeader,

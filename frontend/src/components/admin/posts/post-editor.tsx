@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MdxClientRenderer } from "@/components/post/content/renderers/mdx-client-renderer";
+import { MdxClientRenderer } from "@/components/public/post/content/renderers/mdx-client-renderer";
 import { PostType, PostStatus } from "@/shared/api/generated";
 import { MediaFile, Category } from "@/shared/api/types";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
@@ -34,6 +34,9 @@ export interface PostEditorInitialData {
   isFeatured?: boolean;
   enableJsx?: boolean;
   useServerRendering?: boolean;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
 }
 
 interface PostEditorProps {
@@ -69,6 +72,9 @@ export function PostEditor({
     isFeatured: initialData.isFeatured || false,
     enableJsx: initialData.enableJsx || false,
     useServerRendering: initialData.useServerRendering || false,
+    metaTitle: initialData.metaTitle || "",
+    metaDescription: initialData.metaDescription || "",
+    metaKeywords: initialData.metaKeywords || "",
   });
 
   const handleSave = () => {
@@ -84,6 +90,9 @@ export function PostEditor({
       isFeatured: metadata.isFeatured,
       enableJsx: metadata.enableJsx,
       useServerRendering: metadata.useServerRendering,
+      metaTitle: metadata.metaTitle,
+      metaDescription: metadata.metaDescription,
+      metaKeywords: metadata.metaKeywords,
     });
   };
 

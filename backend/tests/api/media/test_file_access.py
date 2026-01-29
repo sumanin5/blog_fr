@@ -179,7 +179,7 @@ async def test_view_private_file_access_denied(
     # 未认证用户尝试访问
     response = await async_client.get(api_urls.media_url(f"/{file_id}/view"))
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.asyncio
@@ -213,7 +213,7 @@ async def test_view_file_without_auth(
     # 未认证访问
     response = await async_client.get(api_urls.media_url(f"/{file_id}/view"))
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.asyncio

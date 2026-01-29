@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { FolderTree, Eye, FileText, LayoutTemplate } from "lucide-react";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MdxClientRenderer } from "@/components/post/content/renderers/mdx-client-renderer";
+import { MdxClientRenderer } from "@/components/public/post/content/renderers/mdx-client-renderer";
 import { MediaSelectField } from "@/components/admin/media/fields/media-select-field";
 import type { MediaFile } from "@/shared/api/types";
 import { Category } from "@/shared/api/types";
@@ -281,7 +281,6 @@ export function CategoryEditDialog({
                           setFormData({ ...formData, icon: file })
                         }
                         accept="image/svg+xml"
-                        // @ts-expect-error - mimeType filter support added manually
                         libraryFilter={{ mimeType: "image/svg+xml" }}
                         className="size-24"
                       />

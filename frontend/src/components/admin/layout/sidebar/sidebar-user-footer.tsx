@@ -124,7 +124,10 @@ export function SidebarUserFooter({ user, logout }: SidebarUserFooterProps) {
             </DropdownMenuSub>
 
             <DropdownMenuItem asChild>
-              <Link href="/admin/settings" className="w-full flex items-center">
+              <Link
+                href={"/admin/settings" as any}
+                className="w-full flex items-center"
+              >
                 <Settings className="mr-2 size-4" />
                 系统配置
               </Link>

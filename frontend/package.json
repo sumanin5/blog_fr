@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "type-check": "tsc --noEmit",
     "api:generate": "openapi-ts -i openapi.json -o src/shared/api/generated -c @hey-api/client-fetch"
   },
   "dependencies": {
@@ -34,8 +36,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "embla-carousel-autoplay": "^8.6.0",
-    "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.24.11",
     "highlight.js": "^11.11.1",
     "html-react-parser": "^5.1.19",

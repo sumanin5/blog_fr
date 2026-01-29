@@ -1,6 +1,6 @@
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
-import { GlobalBackground } from "@/components/layout/global-background";
+import { Header } from "@/components/public/layout/header";
+import { Footer } from "@/components/public/layout/footer";
+import { GlobalBackground } from "@/components/public/layout/global-background";
 
 export default function PublicLayout({
   children,

@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { PostType, CategoryResponse } from "@/shared/api/generated";
-import { RefreshCw, Plus, ShieldAlert, Loader2 } from "lucide-react";
+import { PostType } from "@/shared/api/generated";
+import { Category } from "@/shared/api/types";
+import { RefreshCw, Plus, Loader2 } from "lucide-react";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,9 +37,7 @@ export default function CategoriesPage() {
 
   // UI 交互状态
   const [editOpen, setEditOpen] = React.useState(false);
-  const [editingItem, setEditingItem] = React.useState<CategoryResponse | null>(
-    null,
-  );
+  const [editingItem, setEditingItem] = React.useState<Category | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
   // 权限拦截
@@ -65,7 +64,7 @@ export default function CategoriesPage() {
     () =>
       getCategoryColumns({
         onEdit: (cat) => {
-          setEditingItem(cat as CategoryResponse);
+          setEditingItem(cat as Category);
           setEditOpen(true);
         },
         onDelete: (id) => setDeletingId(id),

@@ -3101,6 +3101,19 @@
             "description": "板块类型"
           },
           {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(name|usage)$",
+              "description": "排序方式 (name/usage)",
+              "default": "usage",
+              "title": "Sort"
+            },
+            "description": "排序方式 (name/usage)"
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,

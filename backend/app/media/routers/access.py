@@ -24,8 +24,8 @@ router = APIRouter()
 )
 async def view_file(
     file_id: UUID,
-    current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    current_user: Annotated[Optional[User], Depends(get_optional_current_user)] = None,
 ):
     file_path, media_file = await access_service.get_file_for_view(
         session, file_id, current_user

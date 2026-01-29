@@ -134,8 +134,7 @@ export const RealTimeSessionTable: React.FC<RealTimeSessionTableProps> = ({
 
   const renderHeader = (col: ColumnDef<AnalyticsSessionItem>) => {
     if (typeof col.header === "function") {
-      // @ts-expect-error - 避开复杂的 HeaderContext 类型
-      return col.header({});
+      return (col.header as any)({});
     }
     return col.header as React.ReactNode;
   };
@@ -145,8 +144,7 @@ export const RealTimeSessionTable: React.FC<RealTimeSessionTableProps> = ({
     session: AnalyticsSessionItem,
   ) => {
     if (typeof col.cell === "function") {
-      // @ts-expect-error - 避开复杂的 CellContext 类型
-      return col.cell({
+      return (col.cell as any)({
         row: { original: session },
       });
     }

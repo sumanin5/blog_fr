@@ -1,6 +1,6 @@
 import { Metadata } from "next";
-import { PostListView } from "@/components/post/views/post-list-view";
-import { getPosts, getCategories } from "@/lib/post-api";
+import { PostListView } from "@/components/public/post/views/post-list-view";
+import { getPosts, getHotTags } from "@/lib/post-api";
 import type { PostType } from "@/shared/api/generated/types.gen";
 
 interface PostsPageProps {
@@ -9,35 +9,21 @@ interface PostsPageProps {
   }>;
   searchParams: Promise<{
     page?: string;
-    category?: string;
+    tag?: string;
   }>;
 }
-
-export async function generateMetadata({
-  params,
-}: PostsPageProps): Promise<Metadata> {
-  const { postType } = await params;
-  const title = postType === "article" ? "博客文章" : "想法感悟";
-  return {
-    title: `${title} | Blog FR`,
-    description:
-      postType === "article"
-        ? "探索技术世界，构建优秀项目。分享关于 FastAPI, Next.js, 以及全栈开发的深度实践."
-        : "记录碎碎念、灵感碎片与生活感悟。",
-  };
-}
-
 export default async function PostsPage({
   params,
   searchParams,
 }: PostsPageProps) {
   const { postType } = await params;
-  const { page: pageStr, category: categoryId } = await searchParams;
+  const { page: pageStr, tag: tagId } = await searchParams;
   const page = pageStr ? parseInt(pageStr, 10) : 1;
 
-  const [initialData, categoriesData] = await Promise.all([
-    getPosts(postType, page, 10, categoryId),
-    getCategories(postType),
+  // 获取热门标签代替分类
+  const [initialData, tagsData] = await Promise.all([
+    getPosts(postType, page, 10, undefined, tagId),
+    getHotTags(postType, 3),
   ]);
 
   if (!initialData) {
@@ -52,8 +38,8 @@ export default async function PostsPage({
   return (
     <PostListView
       initialData={initialData}
-      categories={categoriesData?.items || []}
-      currentCategory={categoryId}
+      tags={tagsData?.items || []}
+      currentTag={tagId}
       page={page}
       postType={postType}
     />

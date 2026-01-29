@@ -35,7 +35,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
   async function registerAction(
     _prevState: RegisterState | null,
-    formData: FormData
+    formData: FormData,
   ): Promise<RegisterState> {
     const rawData = {
       username: (formData.get("username") as string) || "",
@@ -94,7 +94,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         onSuccess();
       }
       const timer = setTimeout(() => {
-        router.push(state.redirectTo!);
+        router.push(state.redirectTo as any);
       }, 1000);
       return () => clearTimeout(timer);
     }

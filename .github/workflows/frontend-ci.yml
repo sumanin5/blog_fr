@@ -5,21 +5,56 @@ on:
     branches: [main, develop]
     paths:
       - "frontend/**"
+      - "backend/**" # Trigger on backend changes too since we integration test
       - ".github/workflows/frontend-ci.yml"
   pull_request:
     branches: [main, develop]
     paths:
       - "frontend/**"
+      - "backend/**"
 
 jobs:
   test:
-    name: Test Frontend
+    name: Test Frontend (Integration)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ----------------------------------------------
+      # 1. Setup Backend Environment (Test Server)
+      # ----------------------------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          $HOME/.cargo/bin/uv sync --frozen
+
+      - name: Start Backend Test Server
+        working-directory: backend
+        run: |
+          echo "Starting Test Server..."
+          # Start in background using uv run
+          nohup $HOME/.cargo/bin/uv run python scripts/run_test_server.py > ../test_server.log 2>&1 &
+
+          # Wait for server to start
+          echo "Waiting for server to be ready..."
+          sleep 10
+
+          # Verify connection (optional but good for debugging)
+          curl -v http://localhost:8001/docs || echo "Server startup failed or still loading"
+
+      # ----------------------------------------------
+      # 2. Setup Frontend Environment
+      # ----------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -43,10 +78,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
+      # ----------------------------------------------
+      # 3. Run Checks & Tests
+      # ----------------------------------------------
       - name: Type check
         working-directory: frontend
         run: pnpm run type-check || true
@@ -55,12 +93,21 @@ jobs:
         working-directory: frontend
         run: pnpm run lint || true
 
-      - name: Build
+      - name: Run Integration Tests
+        working-directory: frontend
+        env:
+          # Point to the background test server
+          VITE_API_BASE_URL: http://localhost:8001
+        run: |
+           pnpm run test
+
+      - name: Build (Production Check)
         working-directory: frontend
         run: pnpm run build
         env:
+          # Build time env vars
           NEXT_PUBLIC_API_URL: http://localhost:8000
 
-      - name: Run tests (if available)
-        working-directory: frontend
-        run: pnpm run test || echo "No tests configured yet"
+      - name: Dump Backend Logs (on failure)
+        if: failure()
+        run: cat test_server.log

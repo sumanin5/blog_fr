@@ -12,29 +12,34 @@ import "./config";
 
 export * from "./generated";
 export * from "./types";
+export type {
+  AnalyticsSessionDetail,
+  SessionEvent,
+  DeviceStats,
+  CategoryCreate,
+  CategoryUpdate,
+  PostCreate,
+  PostUpdate,
+  TagUpdate,
+  UserRegister,
+  UserUpdate,
+  SyncError,
+  ErrorDetail,
+} from "./types";
 
 // 解决星号导出冲突：当下划线版本与驼峰版本同名时，手动指定导出
 export type {
   BatchDeleteFilesData,
-  CategoryCreate,
-  CategoryUpdate,
-  ErrorDetail,
   FileUsage,
   GetAllFilesAdminData,
   GetUserFilesData,
   MediaType,
-  PostCreate,
   PostPreviewRequest,
   PostStatus,
   PostType,
-  PostUpdate,
-  SyncError,
-  TagUpdate,
   UpdateFileData,
   UploadFileData,
-  UserRegister,
   UserRole,
-  UserUpdate,
 } from "./generated";
 
 // 导出基础配置（来自生成的 client，但已被 config.ts 修改）

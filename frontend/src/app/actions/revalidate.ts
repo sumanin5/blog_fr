@@ -10,7 +10,8 @@ import { revalidateTag, revalidatePath, updateTag } from "next/cache";
 export async function revalidatePosts() {
   await updateTag("posts");
   await updateTag("posts-list");
-  console.log("✅ 已通过 updateTag 更新文章缓存");
+  await revalidatePath("/", "page"); // Refresh Home Page
+  console.log("✅ 已通过 updateTag 更新文章缓存 + 首页刷新");
 }
 
 /**
@@ -20,7 +21,8 @@ export async function revalidatePosts() {
 export async function revalidatePost(slug: string) {
   await updateTag(`post-${slug}`);
   await updateTag("posts");
-  console.log(`✅ 已通过 updateTag 更新文章缓存: ${slug}`);
+  await revalidatePath("/", "page"); // Refresh Home Page potentially showing this post
+  console.log(`✅ 已通过 updateTag 更新文章缓存: ${slug} + 首页刷新`);
 }
 
 /**
@@ -29,7 +31,8 @@ export async function revalidatePost(slug: string) {
  */
 export async function revalidateCategories() {
   await updateTag("categories");
-  console.log("✅ 已通过 updateTag 更新分类缓存");
+  await revalidatePath("/", "page"); // Refresh Home Page
+  console.log("✅ 已通过 updateTag 更新分类缓存 + 首页刷新");
 }
 
 /**
@@ -37,6 +40,7 @@ export async function revalidateCategories() {
  */
 export async function revalidateTags() {
   await updateTag("tags");
+  // Tags rarely change home page layout directly, but safe to add if needed.
   console.log("✅ 已通过 updateTag 更新标签缓存");
 }
 
@@ -53,12 +57,14 @@ export async function revalidateAll() {
     await (revalidateTag as any)("posts", profile);
     await (revalidateTag as any)("posts-list", profile);
     await (revalidateTag as any)("categories", profile);
-    console.log("✅ 已使用 revalidateTag 清除所有缓存");
+    await revalidatePath("/", "page");
+    console.log("✅ 已使用 revalidateTag 清除所有缓存 + 首页刷新");
   } catch (err) {
     // 如果运行时不支持第二个参数，退回到 updateTag
     await updateTag("posts");
     await updateTag("posts-list");
     await updateTag("categories");
+    await revalidatePath("/", "page");
     console.log("✅ revalidateTag 失败，已降级使用 updateTag");
   }
 }

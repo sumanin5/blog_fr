@@ -1,13 +1,4 @@
-import {
-  Home,
-  BookOpen,
-  LayoutDashboard,
-  Info,
-  Lightbulb,
-  FileText,
-  Tags,
-  MessageSquare,
-} from "lucide-react";
+import { Home, BookOpen, Info, Lightbulb, FileText } from "lucide-react";
 import type React from "react";
 import type { PostType } from "@/shared/api";
 
@@ -45,7 +36,7 @@ function generatePostTypeMenuItems(): MenuItem[] {
   return (Object.entries(POST_TYPE_CONFIG) as [PostType, MenuItem][]).map(
     ([postType, config]) => ({
       title: config.title,
-      link: `/posts/${postType}`,
+      link: `/posts/${postType}/categories`,
       description: config.description,
       icon: config.icon,
       items: [
@@ -54,18 +45,6 @@ function generatePostTypeMenuItems(): MenuItem[] {
           link: `/posts/${postType}`,
           description: `浏览所有${config.title}`,
           icon: FileText,
-        },
-        {
-          title: "分类探索",
-          link: `/posts/${postType}/categories`,
-          description: "按分类筛选感兴趣的内容",
-          icon: Tags,
-        },
-        {
-          title: "标签云",
-          link: `/posts/${postType}/tags`,
-          description: "更细粒度的标签导航",
-          icon: MessageSquare,
         },
       ],
     }),

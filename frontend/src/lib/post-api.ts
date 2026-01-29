@@ -15,12 +15,14 @@ import {
   listCategoriesByType,
   getPostBySlug,
   getPostDetailAdmin,
+  listTagsByType,
 } from "@/shared/api/generated/sdk.gen";
 import type {
   PagePostShortResponse,
   PageCategoryResponse,
   PostDetailResponse,
   PostType,
+  PageTagResponse,
 } from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
 import { cache } from "react";
@@ -38,6 +40,7 @@ export async function getPosts(
   page = 1,
   size = 10,
   categoryId?: string,
+  tagId?: string,
 ): Promise<ApiData<PagePostShortResponse>> {
   const { data: response, error } = await listPostsByType({
     path: {
@@ -47,8 +50,11 @@ export async function getPosts(
       page,
       size,
       category_id: categoryId,
+      tag_id: tagId,
     },
     client: serverClient,
+    // @ts-ignore
+    next: { tags: ["posts", "posts-list"] },
   });
 
   if (error) {
@@ -56,6 +62,35 @@ export async function getPosts(
     throw new Error(
       (error as any)?.error?.message || "无法获取文章列表，请稍后重试",
     );
+  }
+
+  return response as unknown as ApiData<PagePostShortResponse>;
+}
+
+/**
+ * 获取精选/推荐文章
+ */
+export async function getFeaturedPosts(
+  postType: PostType,
+  limit = 3,
+): Promise<ApiData<PagePostShortResponse>> {
+  const { data: response, error } = await listPostsByType({
+    path: {
+      post_type: postType,
+    },
+    query: {
+      is_featured: true,
+      size: limit,
+      page: 1,
+    },
+    client: serverClient,
+    // @ts-ignore
+    next: { tags: ["posts", "posts-list"] },
+  });
+
+  if (error) {
+    console.error(`Failed to fetch featured ${postType}:`, error);
+    return { items: [], total: 0, page: 1, size: limit, pages: 0 } as any;
   }
 
   return response as unknown as ApiData<PagePostShortResponse>;
@@ -72,6 +107,8 @@ export async function getCategories(
       post_type: postType,
     },
     client: serverClient,
+    // @ts-ignore
+    next: { tags: ["categories"] },
   });
 
   if (error) {
@@ -79,6 +116,35 @@ export async function getCategories(
   }
 
   return response as unknown as ApiData<PageCategoryResponse>;
+}
+
+/**
+ * 获取热门标签（Top N）
+ */
+export async function getHotTags(
+  postType: PostType,
+  limit = 3,
+): Promise<ApiData<PageTagResponse>> {
+  const { data: response, error } = await listTagsByType({
+    path: {
+      post_type: postType,
+    },
+    query: {
+      page: 1,
+      size: limit,
+      sort: "usage",
+    },
+    client: serverClient,
+    // @ts-ignore
+    next: { tags: ["tags"] },
+  });
+
+  if (error) {
+    console.error("Failed to fetch tags:", error);
+    return { items: [], total: 0, page: 1, size: limit, pages: 0 } as any;
+  }
+
+  return response as unknown as ApiData<PageTagResponse>;
 }
 
 // 获取文章详情
@@ -93,6 +159,8 @@ export const getPostDetail = cache(
         post_type: postType as PostType,
         slug: slug,
       },
+      // @ts-ignore
+      next: { tags: ["posts", `post-${slug}`] },
     });
 
     if (error) {

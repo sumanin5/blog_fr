@@ -27,17 +27,43 @@ async def list_tags_with_count(
     params: Params,
     search: str | None = None,
     post_type: Optional[PostType] = None,
+    sort_by_usage: bool = False,
 ) -> Page[Tag]:
     """获取标签列表并附加文章关联数"""
     from app.posts.model import Post, PostTagLink
 
     # 1. 基础查询
     stmt = select(Tag)
+
     if post_type:
-        stmt = stmt.join(Tag.posts).where(Post.post_type == post_type).distinct()  # type: ignore
+        # 如果指定了 post_type，必须 join PostTagLink 和 Post
+        stmt = stmt.join(Tag.posts).where(Post.post_type == post_type)
+
     if search:
         stmt = stmt.where(Tag.name.ilike(f"%{search}%"))  # type: ignore
-    stmt = stmt.order_by(Tag.name)
+
+    # 使用 GROUP BY 代替 DISTINCT，以支持在 ORDER BY 中使用聚合/子查询
+    stmt = stmt.group_by(Tag.id)
+
+    if sort_by_usage:
+        # 按使用频率排序（热门标签）
+        from sqlalchemy import desc
+
+        # 构建子查询计算每个标签的文章数
+        # 注意：必须使用 scalar_subquery() 才能在 order_by 中使用
+        count_sub = select(func.count(PostTagLink.post_id)).where(
+            PostTagLink.tag_id == Tag.id
+        )  # type: ignore
+
+        if post_type:
+            count_sub = count_sub.join(Post, PostTagLink.post_id == Post.id).where(
+                Post.post_type == post_type
+            )
+
+        stmt = stmt.order_by(desc(count_sub.scalar_subquery()), Tag.name)
+    else:
+        # 默认按名称排序
+        stmt = stmt.order_by(Tag.name)
 
     # 2. 分页
     page = await paginate_query(session, stmt, params)
@@ -45,7 +71,9 @@ async def list_tags_with_count(
     if not page.items:
         return page
 
-    # 3. 聚合查询计数
+    # 3. 聚合查询计数 (填充当前页的计数)
+    # 虽然如果是 sort_by_usage，我们在排序时已经算过一次，但为了保持返回结构一致且避免 N+1 问题，
+    # 我们还是对当前页的 item 进行一次批量 count 查询来填充 post_count 字段。
     tag_ids = [tag.id for tag in page.items]
     count_stmt = select(PostTagLink.tag_id, func.count(PostTagLink.post_id)).where(  # type: ignore
         PostTagLink.tag_id.in_(tag_ids)  # type: ignore

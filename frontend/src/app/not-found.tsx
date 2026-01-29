@@ -121,15 +121,15 @@ export default function NotFound() {
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                 {[
                   { icon: "🏠", label: "首页", path: "/" },
-                  { icon: "📝", label: "博客", path: "/posts" },
+                  { icon: "📝", label: "文章", path: "/posts/articles" },
+                  { icon: "💡", label: "想法", path: "/posts/ideas" },
                   { icon: "👤", label: "关于", path: "/about" },
                   { icon: "📊", label: "仪表盘", path: "/admin/dashboard" },
-                  { icon: "✨", label: "收藏集", path: "/collections" },
-                  { icon: "📚", label: "归档", path: "/archives" },
+                  { icon: "🔍", label: "搜索", path: "/search" },
                 ].map((item) => (
                   <Link
                     key={item.path}
-                    href={item.path}
+                    href={item.path as any}
                     className="group relative overflow-hidden rounded-lg border border-border/50 bg-background/50 p-3 transition-all hover:border-primary/50 hover:bg-background/80"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -170,7 +170,7 @@ export default function NotFound() {
                   className="w-full justify-start"
                   asChild
                 >
-                  <Link href="/posts">
+                  <Link href={"/posts/articles" as any}>
                     <FileText className="mr-2 h-4 w-4" />
                     浏览所有文章
                   </Link>

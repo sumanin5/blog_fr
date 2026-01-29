@@ -4142,6 +4142,12 @@ export type ListTagsByTypeData = {
     };
     query?: {
         /**
+         * Sort
+         *
+         * 排序方式 (name/usage)
+         */
+        sort?: string;
+        /**
          * Page
          */
         page?: number;

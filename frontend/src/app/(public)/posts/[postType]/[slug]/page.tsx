@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PostDetailView } from "@/components/post/views/post-detail-view";
+import { PostDetailView } from "@/components/public/post/views/post-detail-view";
 import { getPostDetail } from "@/lib/post-api";
 
 import { PostType } from "@/shared/api/generated";

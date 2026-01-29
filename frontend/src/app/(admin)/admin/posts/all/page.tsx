@@ -8,7 +8,7 @@ import { RefreshCw, ShieldAlert, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
-import { usePostTypes } from "@/hooks/use-post-types";
+import { usePostTypes } from "@/hooks/use-posts";
 import { PostType } from "@/shared/api/generated";
 
 export default function AllPostsPage() {

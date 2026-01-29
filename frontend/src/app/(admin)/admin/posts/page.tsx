@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { usePostTypes } from "@/hooks/use-post-types";
+import { usePostTypes } from "@/hooks/use-posts";
 import { usePostsAdmin } from "@/hooks/admin/posts";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { PostListTable } from "@/components/admin/posts/post-list-table";

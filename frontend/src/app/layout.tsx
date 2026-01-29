@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
-import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
+import { AnalyticsTracker } from "@/components/admin/analytics/AnalyticsTracker";
 import { Toaster } from "@/components/ui/sonner";
 import "@/app/globals.css";
 

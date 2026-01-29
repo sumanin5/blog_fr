@@ -52,14 +52,22 @@ serverClient.setConfig({
       headers.set("Authorization", `Bearer ${token}`);
     }
 
+    // 合并 Next.js 配置
+    const initNext = (init as any)?.next || {};
+    const defaultRevalidate = 3600;
+
+    // 合并 tags: 始终包含 'api'，加上调用方传入的 tags
+    const tags = Array.from(new Set([...(initNext.tags || []), "api"]));
+
     // 执行请求
     const response = await fetch(input, {
       ...init,
       headers: headers,
-      // ✅ Next.js ISR 配置：默认缓存 1 小时
+      // ✅ Next.js ISR 配置
       next: {
-        revalidate: 3600,
-        tags: ["api"],
+        ...initNext,
+        revalidate: initNext.revalidate ?? defaultRevalidate,
+        tags: tags,
       },
     });
 
