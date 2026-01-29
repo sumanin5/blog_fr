@@ -170,6 +170,15 @@ export type AnalyticsOverview = ApiData<Raw.AnalyticsStatsOverview>;
 export type AnalyticsDailyTrend = ApiData<Raw.DailyTrend>;
 export type AnalyticsTopPost = ApiData<Raw.TopPostStat>;
 
+export type AnalyticsDashboard = ApiData<Raw.DashboardStats>;
+
+export type AnalyticsSessionList = ApiData<Raw.PageSessionListItem>;
+export type AnalyticsSessionItem = ApiData<Raw.SessionListItem>;
+export type AnalyticsSessionDetail = ApiData<Raw.AnalyticsSessionDetail>;
+export type SessionEvent = ApiData<Raw.SessionEvent>;
+
+export type DeviceStats = ApiData<Raw.DeviceStats>;
+
 // 请求载荷 (Payloads)
 export type AnalyticsEventPayload = ApiData<Raw.AnalyticsEventCreate>;
 
@@ -182,6 +191,9 @@ export type {
   GetAnalyticsOverviewData,
   GetAnalyticsTrendData,
   GetAnalyticsTopPostsData,
+  GetAnalyticsDashboardData,
+  GetAnalyticsSessionsData,
+  GetAnalyticsSessionDetailData,
 } from "./generated/types.gen";
 
 // ============================================

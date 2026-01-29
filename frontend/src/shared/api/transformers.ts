@@ -17,10 +17,11 @@ function isProtected(val: unknown): val is ProtectedType {
 /**
  * TypeScript 类型工具：将 snake_case 字符串转换为 camelCase
  */
+
 export type CamelCase<S extends string> =
   S extends `${infer P1}_${infer P2}${infer P3}`
     ? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`
-    : Lowercase<S>;
+    : Uncapitalize<S>;
 
 /**
  * TypeScript 类型工具：递归地将对象及其属性从 snake_case 转换为 camelCase
@@ -28,19 +29,19 @@ export type CamelCase<S extends string> =
 export type Camelize<T> = T extends ProtectedType
   ? T
   : T extends (infer U)[]
-  ? Camelize<U>[]
-  : T extends object
-  ? {
-      [K in keyof T as K extends string ? CamelCase<K> : K]: Camelize<T[K]>;
-    }
-  : T;
+    ? Camelize<U>[]
+    : T extends object
+      ? {
+          [K in keyof T as K extends string ? CamelCase<K> : K]: Camelize<T[K]>;
+        }
+      : T;
 
 /**
  * 核心运行时逻辑：深度递归转换键名，同时保护白名单对象。
  */
 function transformKeysDeep(
   data: unknown,
-  processor: (s: string) => string
+  processor: (s: string) => string,
 ): any {
   if (!data || typeof data !== "object" || isProtected(data)) {
     return data;

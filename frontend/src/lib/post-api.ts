@@ -127,14 +127,10 @@ export const getPostDetail = cache(
     }
 
     return data as unknown as ApiData<PostDetailResponse>;
-    return data as unknown as ApiData<PostDetailResponse>;
   },
 );
 
 // 管理端-通过ID获取文章详情
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - getPostDetailAdmin is generated
-import { getPostDetailAdmin } from "@/shared/api/generated/sdk.gen";
 
 export const getAdminPostDetail = cache(
   async (postId: string): Promise<ApiData<PostDetailResponse>> => {

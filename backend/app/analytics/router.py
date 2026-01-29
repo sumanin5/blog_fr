@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated, Optional
 
 import user_agents
@@ -9,7 +10,10 @@ from app.users.dependencies import (
 )
 from app.users.model import User
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi_pagination import Page, Params
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -65,6 +69,34 @@ async def log_analytics_event(
     # 提取时长 (如果前端上传)
     duration = event_in.payload.get("duration", 0)
 
+    # GeoIP2 地理位置解析
+    country = "Unknown"
+    city = "Unknown"
+    geoip_path = "data/GeoLite2-City.mmdb"
+
+    import os
+
+    if ip_addr and os.path.exists(geoip_path):
+        import geoip2.database
+        import geoip2.errors
+
+        try:
+            with geoip2.database.Reader(geoip_path) as reader:
+                try:
+                    # 尝试解析 IP
+                    response = reader.city(ip_addr)
+                    # 优先获取英文名称，fallback 到 Unknown
+                    country = response.country.name or "Unknown"
+                    city = response.city.name or "Unknown"
+
+                except (ValueError, geoip2.errors.AddressNotFoundError):
+                    # IP 格式错误或未找到
+                    pass
+        except Exception as e:
+            # 文件读取或其他异常，通过日志记录
+            logger.warning(f"GeoIP resolution failed for IP {ip_addr}: {str(e)}")
+            pass
+
     # 将解析结果注入到 service 调用中
     # 注意：我们直接修改 event_in 对象，service 中的 model_validate 会自动处理这些字段
     extra_data = {
@@ -81,9 +113,8 @@ async def log_analytics_event(
         # 新增字段注入
         "ip_address": ip_addr,
         "duration": duration,
-        # TODO: 集成 GeoIP2 获取真实地理位置
-        "country": "Unknown",
-        "city": "Unknown",
+        "country": country,
+        "city": city,
     }
 
     # 使用 model_copy 创建一个带有新字段的 Pydantic 模型
@@ -138,3 +169,50 @@ async def get_analytics_top_posts(
     limit: int = Query(10, ge=1, le=50),
 ):
     return await service.get_top_posts(session, limit)
+
+
+@router.get(
+    "/stats/dashboard",
+    response_model=schema.DashboardStats,
+    dependencies=[Depends(get_current_superuser)],
+    summary="TrafficPulse 仪表盘聚合数据",
+    description=api_doc.STATS_DASHBOARD_DOC,
+)
+async def get_analytics_dashboard(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    days: int = Query(30, ge=1, le=365, description="统计天数"),
+):
+    return await service.get_dashboard_stats(session, days)
+
+
+@router.get(
+    "/stats/sessions",
+    response_model=Page[schema.SessionListItem],
+    dependencies=[Depends(get_current_superuser)],
+    summary="用户会话列表",
+    description=api_doc.STATS_SESSIONS_DOC,
+)
+async def get_analytics_sessions(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    params: Params = Depends(),
+):
+    return await service.get_sessions_list(session, params)
+
+
+@router.get(
+    "/stats/sessions/{session_id}",
+    response_model=Optional[schema.AnalyticsSessionDetail],
+    dependencies=[Depends(get_current_superuser)],
+    summary="获取单个会话详情",
+    description="获取指定会话的完整信息，包括用户画像和访问路径时间轴。",
+)
+async def get_analytics_session_detail(
+    session_id: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    from fastapi import HTTPException
+
+    data = await service.get_session_detail(session, session_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return data

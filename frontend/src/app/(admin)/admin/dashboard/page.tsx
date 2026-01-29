@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -20,8 +20,11 @@ import {
   Bot,
 } from "lucide-react";
 
-// Mock Data
-import { generateMockData, calculateStats } from "@/lib/mock/analytics";
+import {
+  useAnalyticsDashboard,
+  useAnalyticsSessions,
+  useAnalyticsTopPosts,
+} from "@/hooks/admin/use-analytics-stats";
 
 // Traffic Pulse Components
 import { TrafficOverviewCharts } from "@/components/admin/dashboard/traffic-pulse/TrafficOverviewCharts";
@@ -33,20 +36,47 @@ import { BotTrafficMonitor } from "@/components/admin/dashboard/traffic-pulse/Bo
 export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Generating mock data just once for now, or on refresh
-  const { sessions, articles } = useMemo(
-    () => generateMockData(),
-    [isRefreshing],
-  );
-  const stats = useMemo(() => calculateStats(sessions), [sessions]);
+  // Hook Data
+  const {
+    data: dashboard,
+    isLoading: loadingDash,
+    refetch: refetchDash,
+  } = useAnalyticsDashboard();
 
-  const handleRefresh = () => {
+  const {
+    data: sessionsData,
+    isLoading: loadingSessions,
+    refetch: refetchSessions,
+  } = useAnalyticsSessions();
+
+  const {
+    data: topPosts,
+    isLoading: loadingPosts,
+    refetch: refetchPosts,
+  } = useAnalyticsTopPosts();
+
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate network request
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 800);
+    await Promise.all([refetchDash(), refetchSessions(), refetchPosts()]);
+    setIsRefreshing(false);
   };
+
+  const isLoading = loadingDash || loadingSessions || loadingPosts;
+
+  // Safe Accessors
+  const stats = dashboard || {
+    totalVisits: 0,
+    realUserCount: 0,
+    uniqueIPs: 0,
+    crawlerCount: 0,
+    botTrafficPercent: 0,
+    avgSessionDuration: 0,
+    deviceStats: [],
+    hourlyTraffic: [],
+  };
+
+  const sessions = sessionsData?.items || [];
+  const articles = topPosts || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -62,10 +92,12 @@ export default function DashboardPage() {
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={isRefreshing}
+            disabled={isRefreshing || isLoading}
           >
             <RefreshCw
-              className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              className={`mr-2 h-4 w-4 ${
+                isRefreshing || isLoading ? "animate-spin" : ""
+              }`}
             />
             刷新数据
           </Button>
@@ -101,8 +133,8 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalVisits}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-emerald-500 font-bold">+12.5%</span>{" "}
-                  过去 24 小时
+                  <span className="text-emerald-500 font-bold">Live</span> 过去
+                  30 天
                 </p>
               </CardContent>
             </Card>
@@ -130,8 +162,7 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.crawlerCount}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-emerald-500 font-bold">Low</span> 占比{" "}
-                  {stats.botTrafficPercent.toFixed(1)}%
+                  占比 {stats.botTrafficPercent.toFixed(1)}%
                 </p>
               </CardContent>
             </Card>
@@ -151,7 +182,10 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <TrafficOverviewCharts sessions={sessions} />
+          <TrafficOverviewCharts
+            deviceStats={stats.deviceStats}
+            hourlyTraffic={stats.hourlyTraffic}
+          />
           <ContentPerformanceTable articles={articles} />
         </TabsContent>
 

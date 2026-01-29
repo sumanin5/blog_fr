@@ -26,6 +26,9 @@ class APIConfig:
     # 媒体相关路由
     MEDIA_BASE = f"{API_PREFIX}/media"
 
+    # 分析相关路由
+    ANALYTICS_BASE = f"{API_PREFIX}/analytics"
+
     @classmethod
     def user_url(cls, path: str = "") -> str:
         """生成用户相关的 URL"""
@@ -35,6 +38,11 @@ class APIConfig:
     def media_url(cls, path: str = "") -> str:
         """生成媒体相关的 URL"""
         return f"{cls.MEDIA_BASE}{path}"
+
+    @classmethod
+    def analytics_url(cls, path: str = "") -> str:
+        """生成分析相关的 URL"""
+        return f"{cls.ANALYTICS_BASE}{path}"
 
 
 # ============================================================

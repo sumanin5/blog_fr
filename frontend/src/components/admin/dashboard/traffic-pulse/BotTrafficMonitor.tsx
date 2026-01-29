@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { UserSession, UserType } from "@/types/analytics";
+import { AnalyticsSessionItem } from "@/shared/api/types";
 import {
   Card,
   CardHeader,
@@ -9,7 +9,6 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Bot, ShieldAlert, Globe, Server } from "lucide-react";
 import {
   BarChart,
@@ -22,34 +21,32 @@ import {
 } from "recharts";
 
 interface BotTrafficMonitorProps {
-  sessions: UserSession[];
+  sessions: AnalyticsSessionItem[];
 }
 
 export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
   sessions,
 }) => {
-  const botSessions = sessions.filter((s) => s.userType === UserType.CRAWLER);
+  const botSessions = sessions.filter((s) => s.isBot);
 
   // KPI
-  const totalBotHits = botSessions.reduce(
-    (acc, s) => acc + s.pageViews.length,
-    0,
-  );
+  const totalBotHits = botSessions.reduce((acc, s) => acc + s.pageCount, 0);
   const distinctBotIPs = new Set(botSessions.map((s) => s.ipAddress)).size;
-  const maliciousBots = botSessions.filter(
-    (s) => s.pageViews.length > 8,
-  ).length; // Mock criteria for "aggressive"
+  const maliciousBots = botSessions.filter((s) => s.pageCount > 8).length; // Criteria for "aggressive"
 
   // Bot Type Distribution
   const botTypes: Record<string, number> = {};
   botSessions.forEach((s) => {
     let type = "Other Bot";
-    const ua = s.device.userAgent.toLowerCase();
-    if (ua.includes("googlebot")) type = "Googlebot";
-    else if (ua.includes("baiduspider")) type = "Baiduspider";
-    else if (ua.includes("bingbot")) type = "Bingbot";
-    else if (ua.includes("semrush")) type = "Semrush";
-    else if (ua.includes("ahrefs")) type = "Ahrefs";
+    const info = s.deviceInfo.toLowerCase();
+    if (info.includes("google")) type = "Googlebot";
+    else if (info.includes("baidu")) type = "Baiduspider";
+    else if (info.includes("bing")) type = "Bingbot";
+    else if (info.includes("semrush")) type = "Semrush";
+    else if (info.includes("ahrefs")) type = "Ahrefs";
+    else if (info.includes("mj12")) type = "Majestic";
+    else if (info.includes("dotbot")) type = "DotBot";
+    else type = s.deviceInfo.split("/")[0] || "Unknown";
 
     botTypes[type] = (botTypes[type] || 0) + 1;
   });
@@ -57,18 +54,6 @@ export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
   const botTypeData = Object.entries(botTypes)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
-
-  // Most Crawled Pages
-  const pageHits: Record<string, number> = {};
-  botSessions.forEach((s) => {
-    s.pageViews.forEach((pv) => {
-      pageHits[pv.url] = (pageHits[pv.url] || 0) + 1;
-    });
-  });
-  const topCrawledPages = Object.entries(pageHits)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([url, count]) => ({ url, count }));
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -79,7 +64,7 @@ export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
             爬虫监控摘要
           </h4>
           <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-            检测到 {botSessions.length} 个爬虫会话，共计 {totalBotHits}{" "}
+            检测到 {botSessions.length} 个爬虫会话（最近），共计 {totalBotHits}{" "}
             次页面请求。其中 {maliciousBots} 个 IP 表现出高频抓取行为。
           </p>
         </div>
@@ -90,7 +75,7 @@ export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                爬虫会话总数
+                爬虫会话总数 (Recent)
               </p>
               <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
                 {botSessions.length}
@@ -140,10 +125,10 @@ export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bot Type Chart */}
-        <Card className="h-[400px] flex flex-col">
+        <Card className="h-[400px] flex flex-col col-span-2 lg:col-span-1">
           <CardHeader>
             <CardTitle>爬虫类型分布</CardTitle>
-            <CardDescription>按 User-Agent 归类的机器人家族</CardDescription>
+            <CardDescription>按设备特征归类的机器人家族</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 w-full min-h-0 p-4">
             <ResponsiveContainer width="100%" height="100%">
@@ -165,45 +150,6 @@ export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        {/* Top Crawled Pages Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>爬虫最爱访问的页面</CardTitle>
-            <CardDescription>被抓取频率最高的内容</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
-                  <tr>
-                    <th className="px-6 py-3">页面 URL</th>
-                    <th className="px-6 py-3 text-right">抓取次数</th>
-                    <th className="px-6 py-3 text-right">状态</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {topCrawledPages.map((page, idx) => (
-                    <tr
-                      key={idx}
-                      className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
-                    >
-                      <td className="px-6 py-4 font-mono text-xs text-slate-600 dark:text-slate-300">
-                        {page.url}
-                      </td>
-                      <td className="px-6 py-4 text-right font-bold text-slate-800 dark:text-slate-200">
-                        {page.count}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <Badge variant="outline">200 OK</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Recent Bot Activity Log */}
@@ -223,7 +169,7 @@ export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
               <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                 <tr>
                   <th className="px-6 py-3">Bot IP</th>
-                  <th className="px-6 py-3">User Agent (简称)</th>
+                  <th className="px-6 py-3">User Agent (Info)</th>
                   <th className="px-6 py-3">访问时间</th>
                   <th className="px-6 py-3">页面数</th>
                 </tr>
@@ -231,11 +177,11 @@ export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {botSessions.slice(0, 15).map((session) => {
                   let uaShort = "Unknown";
-                  const ua = session.device.userAgent.toLowerCase();
-                  if (ua.includes("googlebot")) uaShort = "Googlebot";
-                  else if (ua.includes("baiduspider")) uaShort = "Baiduspider";
-                  else if (ua.includes("bingbot")) uaShort = "Bingbot";
-                  else uaShort = "Other/Custom";
+                  const info = session.deviceInfo.toLowerCase();
+                  if (info.includes("google")) uaShort = "Googlebot";
+                  else if (info.includes("baidu")) uaShort = "Baiduspider";
+                  else if (info.includes("bing")) uaShort = "Bingbot";
+                  else uaShort = session.deviceInfo.split(" / ")[0];
 
                   return (
                     <tr
@@ -260,7 +206,7 @@ export const BotTrafficMonitor: React.FC<BotTrafficMonitorProps> = ({
                         {new Date(session.startTime).toLocaleTimeString()}
                       </td>
                       <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                        {session.pageViews.length}
+                        {session.pageCount}
                       </td>
                     </tr>
                   );

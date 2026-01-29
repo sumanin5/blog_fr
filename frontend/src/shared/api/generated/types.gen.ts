@@ -177,6 +177,60 @@ export type AnalyticsEventResponse = {
 };
 
 /**
+ * AnalyticsSessionDetail
+ */
+export type AnalyticsSessionDetail = {
+    /**
+     * Session Id
+     */
+    session_id: string;
+    /**
+     * Visitor Id
+     */
+    visitor_id: string;
+    /**
+     * Ip Address
+     */
+    ip_address?: string | null;
+    /**
+     * Country
+     */
+    country?: string | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Device Info
+     */
+    device_info: string;
+    /**
+     * Start Time
+     */
+    start_time: string;
+    /**
+     * Last Active
+     */
+    last_active: string;
+    /**
+     * Duration
+     */
+    duration: number;
+    /**
+     * Page Count
+     */
+    page_count: number;
+    /**
+     * Is Bot
+     */
+    is_bot: boolean;
+    /**
+     * Events
+     */
+    events: Array<SessionEvent>;
+};
+
+/**
  * AnalyticsStatsOverview
  */
 export type AnalyticsStatsOverview = {
@@ -535,6 +589,64 @@ export type DailyTrend = {
      * Uv
      */
     uv: number;
+};
+
+/**
+ * DashboardStats
+ */
+export type DashboardStats = {
+    /**
+     * Totalvisits
+     */
+    totalVisits: number;
+    /**
+     * Realusercount
+     */
+    realUserCount: number;
+    /**
+     * Uniqueips
+     */
+    uniqueIPs: number;
+    /**
+     * Crawlercount
+     */
+    crawlerCount: number;
+    /**
+     * Bottrafficpercent
+     */
+    botTrafficPercent: number;
+    /**
+     * Avgsessionduration
+     */
+    avgSessionDuration: number;
+    /**
+     * Devicestats
+     */
+    deviceStats: Array<DeviceStats>;
+    /**
+     * Hourlytraffic
+     */
+    hourlyTraffic: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+/**
+ * DeviceStats
+ */
+export type DeviceStats = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Value
+     */
+    value: number;
+    /**
+     * Fill
+     */
+    fill: string;
 };
 
 /**
@@ -908,6 +1020,32 @@ export type PagePostShortResponse = {
      * Items
      */
     items: Array<PostShortResponse>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Size
+     */
+    size: number;
+    /**
+     * Pages
+     */
+    pages: number;
+};
+
+/**
+ * Page[SessionListItem]
+ */
+export type PageSessionListItem = {
+    /**
+     * Items
+     */
+    items: Array<SessionListItem>;
     /**
      * Total
      */
@@ -1491,6 +1629,82 @@ export type PreviewResult = {
      * Errors
      */
     errors?: Array<SyncError>;
+};
+
+/**
+ * SessionEvent
+ */
+export type SessionEvent = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Event Type
+     */
+    event_type: string;
+    /**
+     * Page Path
+     */
+    page_path: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Duration
+     */
+    duration?: number | null;
+};
+
+/**
+ * SessionListItem
+ */
+export type SessionListItem = {
+    /**
+     * Session Id
+     */
+    session_id: string;
+    /**
+     * Visitor Id
+     */
+    visitor_id: string;
+    /**
+     * Ip Address
+     */
+    ip_address?: string | null;
+    /**
+     * Country
+     */
+    country?: string | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Device Info
+     */
+    device_info: string;
+    /**
+     * Start Time
+     */
+    start_time: string;
+    /**
+     * Last Active
+     */
+    last_active: string;
+    /**
+     * Duration
+     */
+    duration: number;
+    /**
+     * Page Count
+     */
+    page_count: number;
+    /**
+     * Is Bot
+     */
+    is_bot: boolean;
 };
 
 /**
@@ -5677,3 +5891,161 @@ export type GetAnalyticsTopPostsResponses = {
 };
 
 export type GetAnalyticsTopPostsResponse = GetAnalyticsTopPostsResponses[keyof GetAnalyticsTopPostsResponses];
+
+export type GetAnalyticsDashboardData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Days
+         *
+         * 统计天数
+         */
+        days?: number;
+    };
+    url: '/api/v1/analytics/stats/dashboard';
+};
+
+export type GetAnalyticsDashboardErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetAnalyticsDashboardError = GetAnalyticsDashboardErrors[keyof GetAnalyticsDashboardErrors];
+
+export type GetAnalyticsDashboardResponses = {
+    /**
+     * Successful Response
+     */
+    200: DashboardStats;
+};
+
+export type GetAnalyticsDashboardResponse = GetAnalyticsDashboardResponses[keyof GetAnalyticsDashboardResponses];
+
+export type GetAnalyticsSessionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Size
+         */
+        size?: number;
+    };
+    url: '/api/v1/analytics/stats/sessions';
+};
+
+export type GetAnalyticsSessionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetAnalyticsSessionsError = GetAnalyticsSessionsErrors[keyof GetAnalyticsSessionsErrors];
+
+export type GetAnalyticsSessionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: PageSessionListItem;
+};
+
+export type GetAnalyticsSessionsResponse = GetAnalyticsSessionsResponses[keyof GetAnalyticsSessionsResponses];
+
+export type GetAnalyticsSessionDetailData = {
+    body?: never;
+    path: {
+        /**
+         * Session Id
+         */
+        session_id: string;
+    };
+    query?: never;
+    url: '/api/v1/analytics/stats/sessions/{session_id}';
+};
+
+export type GetAnalyticsSessionDetailErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetAnalyticsSessionDetailError = GetAnalyticsSessionDetailErrors[keyof GetAnalyticsSessionDetailErrors];
+
+export type GetAnalyticsSessionDetailResponses = {
+    /**
+     * Response Getanalyticssessiondetail
+     *
+     * Successful Response
+     */
+    200: AnalyticsSessionDetail | null;
+};
+
+export type GetAnalyticsSessionDetailResponse = GetAnalyticsSessionDetailResponses[keyof GetAnalyticsSessionDetailResponses];

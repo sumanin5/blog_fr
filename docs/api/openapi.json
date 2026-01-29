@@ -6739,6 +6739,327 @@
           }
         }
       }
+    },
+    "/api/v1/analytics/stats/dashboard": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "TrafficPulse 仪表盘聚合数据",
+        "description": "获取 TrafficPulse 仪表盘所需的聚合统计数据。\n\n## 功能描述\n一次性返回仪表盘所需的多个维度的统计数据，减少前端 API 调用次数。\n\n## 包含数据模块\n1. **核心 KPI**:\n   - `totalVisits`: 总会话数 (Session Count)。\n   - `realUserCount`: 独立访客数 (Unique Visitors)。\n   - `uniqueIPs`: 独立 IP 数。\n   - `crawlerCount`: 爬虫访问次数。\n   - `botTrafficPercent`: 爬虫流量占比。\n   - `avgSessionDuration`: 平均会话时长 (秒)。\n\n2. **设备分布 (Device Stats)**:\n   - 按 `Mobile`, `PC`, `Tablet`, `Other` 分类的占比数据，用于饼图展示。\n\n3. **24小时流量趋势 (Hourly Traffic)**:\n   - 最近 24 小时的每小时 PV/UV 趋势，用于面积图展示。\n\n## 权限\n- 仅限 **超级管理员** 访问。",
+        "operationId": "getAnalyticsDashboard",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "description": "统计天数",
+              "default": 30,
+              "title": "Days"
+            },
+            "description": "统计天数"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/stats/sessions": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "用户会话列表",
+        "description": "获取用户会话列表（分页）。\n\n## 功能描述\n提供详细的用户访问链路列表，以 Session 为维度进行聚合。\n\n## 聚合逻辑\n如果同一个 `session_id` 有多条事件记录：\n- `start_time`: 取第一条记录的时间。\n- `last_active`: 取最后一条记录的时间。\n- `duration`: 会话总时长累加。\n- `page_count`: 该会话内的总 PV 数。\n- `device_info`: 取最后一次记录的设备信息。\n\n## 排序\n默认按 `last_active` 降序排列（最近活跃的会话排在前面）。\n\n## 权限\n- 仅限 **超级管理员** 访问。",
+        "operationId": "getAnalyticsSessions",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_SessionListItem_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/stats/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "获取单个会话详情",
+        "description": "获取指定会话的完整信息，包括用户画像和访问路径时间轴。",
+        "operationId": "getAnalyticsSessionDetail",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AnalyticsSessionDetail"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Getanalyticssessiondetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7154,6 +7475,97 @@
           "created_at"
         ],
         "title": "AnalyticsEventResponse"
+      },
+      "AnalyticsSessionDetail": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "visitor_id": {
+            "type": "string",
+            "title": "Visitor Id"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "device_info": {
+            "type": "string",
+            "title": "Device Info"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start Time"
+          },
+          "last_active": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Active"
+          },
+          "duration": {
+            "type": "integer",
+            "title": "Duration"
+          },
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "is_bot": {
+            "type": "boolean",
+            "title": "Is Bot"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/SessionEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "visitor_id",
+          "device_info",
+          "start_time",
+          "last_active",
+          "duration",
+          "page_count",
+          "is_bot",
+          "events"
+        ],
+        "title": "AnalyticsSessionDetail"
       },
       "AnalyticsStatsOverview": {
         "properties": {
@@ -7868,6 +8280,84 @@
         ],
         "title": "DailyTrend"
       },
+      "DashboardStats": {
+        "properties": {
+          "totalVisits": {
+            "type": "integer",
+            "title": "Totalvisits"
+          },
+          "realUserCount": {
+            "type": "integer",
+            "title": "Realusercount"
+          },
+          "uniqueIPs": {
+            "type": "integer",
+            "title": "Uniqueips"
+          },
+          "crawlerCount": {
+            "type": "integer",
+            "title": "Crawlercount"
+          },
+          "botTrafficPercent": {
+            "type": "number",
+            "title": "Bottrafficpercent"
+          },
+          "avgSessionDuration": {
+            "type": "number",
+            "title": "Avgsessionduration"
+          },
+          "deviceStats": {
+            "items": {
+              "$ref": "#/components/schemas/DeviceStats"
+            },
+            "type": "array",
+            "title": "Devicestats"
+          },
+          "hourlyTraffic": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Hourlytraffic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totalVisits",
+          "realUserCount",
+          "uniqueIPs",
+          "crawlerCount",
+          "botTrafficPercent",
+          "avgSessionDuration",
+          "deviceStats",
+          "hourlyTraffic"
+        ],
+        "title": "DashboardStats"
+      },
+      "DeviceStats": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "integer",
+            "title": "Value"
+          },
+          "fill": {
+            "type": "string",
+            "title": "Fill"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "fill"
+        ],
+        "title": "DeviceStats"
+      },
       "ErrorDetail": {
         "properties": {
           "code": {
@@ -8423,6 +8913,46 @@
           "pages"
         ],
         "title": "Page[PostShortResponse]"
+      },
+      "Page_SessionListItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SessionListItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Size"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages"
+        ],
+        "title": "Page[SessionListItem]"
       },
       "Page_TagResponse_": {
         "properties": {
@@ -9538,6 +10068,131 @@
         "type": "object",
         "title": "PreviewResult",
         "description": "Git 同步预览结果"
+      },
+      "SessionEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "page_path": {
+            "type": "string",
+            "title": "Page Path"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "page_path",
+          "created_at"
+        ],
+        "title": "SessionEvent"
+      },
+      "SessionListItem": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "visitor_id": {
+            "type": "string",
+            "title": "Visitor Id"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "device_info": {
+            "type": "string",
+            "title": "Device Info"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start Time"
+          },
+          "last_active": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Active"
+          },
+          "duration": {
+            "type": "integer",
+            "title": "Duration"
+          },
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "is_bot": {
+            "type": "boolean",
+            "title": "Is Bot"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "visitor_id",
+          "device_info",
+          "start_time",
+          "last_active",
+          "duration",
+          "page_count",
+          "is_bot"
+        ],
+        "title": "SessionListItem"
       },
       "SyncError": {
         "properties": {

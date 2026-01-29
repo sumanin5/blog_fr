@@ -56,6 +56,7 @@ STATS_TREND_DOC = """
 返回一个按日期排序的数组，包含每日的 PV 和 UV。
 """
 
+
 STATS_TOP_POSTS_DOC = """
 获取文章阅读量排行榜。
 
@@ -68,4 +69,50 @@ STATS_TOP_POSTS_DOC = """
 ## 注意事项
 - 该排行已自动排除爬虫流量，反映真实的读者偏好。
 - 仅包含已关联 `post_id` 的事件。
+"""
+
+STATS_DASHBOARD_DOC = """
+获取 TrafficPulse 仪表盘所需的聚合统计数据。
+
+## 功能描述
+一次性返回仪表盘所需的多个维度的统计数据，减少前端 API 调用次数。
+
+## 包含数据模块
+1. **核心 KPI**:
+   - `totalVisits`: 总会话数 (Session Count)。
+   - `realUserCount`: 独立访客数 (Unique Visitors)。
+   - `uniqueIPs`: 独立 IP 数。
+   - `crawlerCount`: 爬虫访问次数。
+   - `botTrafficPercent`: 爬虫流量占比。
+   - `avgSessionDuration`: 平均会话时长 (秒)。
+
+2. **设备分布 (Device Stats)**:
+   - 按 `Mobile`, `PC`, `Tablet`, `Other` 分类的占比数据，用于饼图展示。
+
+3. **24小时流量趋势 (Hourly Traffic)**:
+   - 最近 24 小时的每小时 PV/UV 趋势，用于面积图展示。
+
+## 权限
+- 仅限 **超级管理员** 访问。
+"""
+
+STATS_SESSIONS_DOC = """
+获取用户会话列表（分页）。
+
+## 功能描述
+提供详细的用户访问链路列表，以 Session 为维度进行聚合。
+
+## 聚合逻辑
+如果同一个 `session_id` 有多条事件记录：
+- `start_time`: 取第一条记录的时间。
+- `last_active`: 取最后一条记录的时间。
+- `duration`: 会话总时长累加。
+- `page_count`: 该会话内的总 PV 数。
+- `device_info`: 取最后一次记录的设备信息。
+
+## 排序
+默认按 `last_active` 降序排列（最近活跃的会话排在前面）。
+
+## 权限
+- 仅限 **超级管理员** 访问。
 """

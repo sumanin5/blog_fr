@@ -25,7 +25,7 @@ import {
 } from "recharts";
 
 interface UserBehaviorAnalyticsProps {
-  sessions: UserSession[];
+  sessions: AnalyticsSessionItem[];
 }
 
 const COLORS = ["#10b981", "#f59e0b", "#ef4444"];
@@ -33,19 +33,18 @@ const COLORS = ["#10b981", "#f59e0b", "#ef4444"];
 export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
   sessions,
 }) => {
-  const realUsers = sessions.filter((s) => s.userType === UserType.REAL_USER);
+  const realUsers = sessions.filter((s) => !s.isBot);
 
   // KPI Calculations
   const totalUsers = realUsers.length;
   const avgPages = totalUsers
-    ? (
-        realUsers.reduce((acc, s) => acc + s.pageViews.length, 0) / totalUsers
-      ).toFixed(1)
+    ? (realUsers.reduce((acc, s) => acc + s.pageCount, 0) / totalUsers).toFixed(
+        1,
+      )
     : "0";
   const bounceRate = totalUsers
     ? (
-        (realUsers.filter((s) => s.pageViews.length === 1).length /
-          totalUsers) *
+        (realUsers.filter((s) => s.pageCount === 1).length / totalUsers) *
         100
       ).toFixed(1)
     : "0";
@@ -54,29 +53,26 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
   const engagementData = [
     {
       name: "高活跃 (> 3m)",
-      value: realUsers.filter(
-        (s) => s.pageViews.reduce((acc, p) => acc + p.durationSeconds, 0) > 180,
-      ).length,
+      value: realUsers.filter((s) => s.duration > 180).length,
     },
     {
       name: "一般活跃 (30s-3m)",
-      value: realUsers.filter((s) => {
-        const d = s.pageViews.reduce((acc, p) => acc + p.durationSeconds, 0);
-        return d >= 30 && d <= 180;
-      }).length,
+      value: realUsers.filter((s) => s.duration >= 30 && s.duration <= 180)
+        .length,
     },
     {
       name: "跳出/低活跃 (< 30s)",
-      value: realUsers.filter(
-        (s) => s.pageViews.reduce((acc, p) => acc + p.durationSeconds, 0) < 30,
-      ).length,
+      value: realUsers.filter((s) => s.duration < 30).length,
     },
   ];
 
   // Top Locations
   const locationCounts: Record<string, number> = {};
   realUsers.forEach((s) => {
-    const loc = `${s.location.city}, ${s.location.country}`;
+    // Check if city/country are available
+    const city = s.city || "Unknown";
+    const country = s.country || "Unknown";
+    const loc = `${city}, ${country}`;
     locationCounts[loc] = (locationCounts[loc] || 0) + 1;
   });
   const topLocations = Object.entries(locationCounts)
@@ -86,11 +82,7 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
 
   // High Value Users (Top 10 by duration)
   const topUsers = [...realUsers]
-    .sort((a, b) => {
-      const durA = a.pageViews.reduce((acc, p) => acc + p.durationSeconds, 0);
-      const durB = b.pageViews.reduce((acc, p) => acc + p.durationSeconds, 0);
-      return durB - durA;
-    })
+    .sort((a, b) => b.duration - a.duration)
     .slice(0, 10);
 
   return (
@@ -116,7 +108,7 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                跳出率 (Bounce Rate)
+                跳出率 (Bounce Rate) (Recent)
               </p>
               <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
                 {bounceRate}%
@@ -131,7 +123,7 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                高价值用户
+                高价值用户 (Recent)
               </p>
               <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
                 {engagementData[0].value} 人
@@ -184,7 +176,7 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
         <Card className="h-[400px] flex flex-col">
           <CardHeader>
             <CardTitle>Top 访问地区</CardTitle>
-            <CardDescription>主要的用户来源城市</CardDescription>
+            <CardDescription>最近访问的用户来源</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 w-full min-h-0 p-4">
             <ResponsiveContainer width="100%" height="100%">
@@ -225,7 +217,7 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
             <Users className="size-5 text-slate-400" />
             <div>
               <CardTitle>高价值用户列表 (Top Active Users)</CardTitle>
-              <CardDescription>停留时间最长的真实访客</CardDescription>
+              <CardDescription>停留时间最长的真实访客 (最近)</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -243,10 +235,7 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {topUsers.map((user) => {
-                  const duration = user.pageViews.reduce(
-                    (acc, p) => acc + p.durationSeconds,
-                    0,
-                  );
+                  const duration = user.duration;
                   return (
                     <tr
                       key={user.sessionId}
@@ -263,21 +252,19 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5">
                           <MapPin className="size-3 text-slate-400" />
-                          {user.location.city}, {user.location.country}
+                          {user.city || "-"}, {user.country || "-"}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <Badge
-                          variant={
-                            user.pageViews.length > 3 ? "secondary" : "outline" // Using shadcn types
-                          }
+                          variant={user.pageCount > 3 ? "secondary" : "outline"}
                           className={
-                            user.pageViews.length > 3
+                            user.pageCount > 3
                               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
                               : ""
                           }
                         >
-                          {user.pageViews.length} 页
+                          {user.pageCount} 页
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
@@ -287,7 +274,7 @@ export const UserBehaviorAnalytics: React.FC<UserBehaviorAnalyticsProps> = ({
                         </div>
                       </td>
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
-                        {user.device.os} - {user.device.browser}
+                        {user.deviceInfo}
                       </td>
                     </tr>
                   );

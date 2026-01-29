@@ -1,64 +1,56 @@
-# TrafficPulse Dashboard 集成计划
+# 前端集成测试环境搭建计划 (Frontend Integration Testing Plan)
 
-## 1. 目标
+## 1. 核心目标
 
-将 "TrafficPulse" 流量分析系统集成到现有的 `admin/dashboard` 中，作为超级管理员的“数据中台”核心视图。
-利用现有的 `shadcn/ui` 组件库替换原始代码中的自定义 UI 组件，确保视觉风格一致性。
+建立一个**隔离的端到端集成测试环境**，使前端 Vitest 测试能够连接真实的后端 API 和数据库，验证 Hooks 及数据逻辑的准确性，同时**零污染**开发环境数据。
 
-## 2. 核心任务分解
+## 2. 架构设计 (Architecture)
 
-### Phase 1: 类型定义与数据层准备
+我们不使用 Mock，而是采用 **"Test Server + Isolated DB"** 模式：
 
-- [ ] **定义类型**: 创建 `frontend/src/types/analytics.ts`
-  - 核心接口: `UserSession`, `PageView`, `DeviceType`, `UserType`, `Location`, `ArticleStat`
-- [ ] **Mock 数据适配**: 迁移用户提供的 `generateMockData` 到 `frontend/src/lib/mock/analytics.ts`
-  - 确保数据结构与新的后端 API (`AnalyticsEventResponse`) 兼容，便于后续切换真数据。
+- **Test Server (后端)**: 运行在 `:8001` 端口的独立 FastAPI 实例。
+  - **数据库**: 连接至独立的 `test.db` (SQLite) 或临时 PostgreSQL 库。
+  - **依赖注入**: 强制覆盖 `get_session` 依赖，确保所有 API 操作均在测试库中进行。
+  - **测试后门 (Test Backdoor)**: 挂载专用于测试的 API 路由 (e.g., `/api/test/reset`), 供前端测试脚本调用以重置状态。
 
-### Phase 2: 组件迁移与 UI 重构 (TrafficPulse)
+- **Vitest (前端)**:
+  - 配置为 **Integration Mode**。
+  - 移除对 `api-client` 的 Mock，让其发起真实的 HTTP 请求至 `:8001`。
+  - 在 `beforeAll` / `afterEach` 钩子中调用后端的重置接口。
 
-将 `dashboard/components` 下的组件迁移至 `frontend/src/components/admin/dashboard/traffic-pulse/`，并进行深度重构：
+## 3. 执行路线图
 
-- [ ] **基础 UI 替换**:
-  - `Card`, `CardHeader` -> `@/components/ui/card`
-  - `Badge` -> `@/components/ui/badge` (需要适配 variant 样式: success/warning/danger)
-  - `Button` -> `@/components/ui/button`
-  - `table` (原生) -> `@/components/ui/table` (Table, TableHeader, TableRow, TableCell)
+### Phase 1: 后端测试服务搭建 (Backend Setup)
 
-- [ ] **业务组件重构**:
-  - [ ] `DashboardCharts.tsx` -> `TrafficOverviewCharts.tsx` (概览图表: 设备占比 + 流量趋势)
-  - [ ] `SessionList.tsx` -> `RealTimeSessionTable.tsx` (实时访客列表 + 详情侧边栏)
-  - [ ] `CrawlerAnalysis.tsx` -> `BotTrafficMonitor.tsx` (爬虫分析: 摘要 + 类型分布 + 抓取排行)
-  - [ ] `UserAnalysis.tsx` -> `UserBehaviorAnalytics.tsx` (用户画像: 活跃度 + 地区 + 高价值用户)
-  - [ ] `ArticleTable.tsx` -> `ContentPerformanceTable.tsx` (内容表现)
+- [ ] **创建测试路由 (`backend/app/api/test_router.py`)**:
+  - 实现 `POST /test/db/reset`: 清空所有表并重新创建 Schema。
+  - 实现 `POST /test/db/seed`: (可选) 注入基础的用户/配置数据。
+- [ ] **创建启动脚本 (`backend/scripts/run_test_server.py`)**:
+  - 基于现有的 `app` 实例。
+  - 覆盖数据库 Engine 配置 (使用 `sqlite:///./test.db`)。
+  - 挂载 `test_router`。
+  - 启动 Uvicorn 服务于 8001 端口。
 
-### Phase 3: 页面集成
+### Phase 2: 前端测试配置 (Frontend Config)
 
-- [ ] **仪表盘布局更新**: 修改 `frontend/src/app/(admin)/admin/dashboard/page.tsx`
-  - 引入 `Tabs` 组件 (`@/components/ui/tabs`) 分割视图：
-    - **Tab 1: 总览 (Overview)**: 包含 KPI 卡片 + `TrafficOverviewCharts` + `ContentPerformanceTable`
-    - **Tab 2: 用户 (User)**: `UserBehaviorAnalytics` + `RealTimeSessionTable`
-    - **Tab 3: 爬虫 (Bot)**: `BotTrafficMonitor`
-  - 仅对 `superadmin` 显示完整视图。
+- [ ] **改造 Vitest 配置 (`frontend/vitest.config.ts`)**:
+  - 取消对 `shared/api` 的 Mock。
+  - 设置环境变量 `VITE_API_BASE_URL=http://localhost:8001`。
+- [ ] **编写测试工具函数 (`frontend/src/lib/test-utils.ts`)**:
+  - 封装 `resetDB()` 方法，方便在测试文件中调用。
+  - 封装 `createTestUser()` 等辅助方法。
 
-### Phase 4: 真数据对接 (Future)
+### Phase 3: 编写真·集成测试 (Real Hooks Testing)
 
-- [ ] 对接后端新的 `ip_address`, `duration`, `country` 等字段。
-- [ ] 前端实现心跳机制 (`navigator.sendBeacon`) 上报 `duration`。
-- [ ] 后端集成 GeoIP2 实现 IP -> 地理位置转换。
+- [ ] **测试 `useAuth`**:
+  - 真实注册一个用户 -> 登录 -> 获取 Token -> 验证会话。
+- [ ] **测试 `useAnalytics` / `useAnalyticsStats`**:
+  - 真实触发 `trackEvent`。
+  - 调用 `getAnalyticsStats` 确认数据已写入数据库。
+- [ ] **测试数据获取 Hook**:
+  - 验证复杂的 Query 参数是否被后端正确解析。
 
-## 3. UI 组件映射表
+## 4. 预期工作流 (Workflow)
 
-| 原组件    | 目标组件 (shadcn/ui) | 备注                                                       |
-| :-------- | :------------------- | :--------------------------------------------------------- |
-| `Card`    | `Card`               | 需要拆分为 Card, CardHeader, CardTitle, CardContent        |
-| `Badge`   | `Badge`              | 需增加 variant 的 className 映射 (green/red/neutral)       |
-| `<table>` | `Table`              | 使用 TableHeader, TableBody, TableRow 获得更好的响应式支持 |
-| `Button`  | `Button`             | 保持 variant 命名或适配                                    |
-
-## 4. 执行顺序
-
-1. 定义 Types & Mock Data
-2. 迁移并重构 DashboardCharts & ArticleTable (Overview tab)
-3. 迁移并重构 SessionList & UserAnalysis (User tab)
-4. 迁移并重构 CrawlerAnalysis (Bot tab)
-5. 组装 Dashboard Page
+1. **终端 A**: 运行 `python backend/scripts/run_test_server.py` (启动隔离环境)。
+2. **终端 B**: 运行 `pnpm test` (执行前端测试)。
