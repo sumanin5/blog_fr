@@ -22,10 +22,10 @@
 
 ### Phase 1: 后端测试服务搭建 (Backend Setup)
 
-- [ ] **创建测试路由 (`backend/app/api/test_router.py`)**:
+- [x] **创建测试路由 (`backend/app/api/test_router.py`)**:
   - 实现 `POST /test/db/reset`: 清空所有表并重新创建 Schema。
   - 实现 `POST /test/db/seed`: (可选) 注入基础的用户/配置数据。
-- [ ] **创建启动脚本 (`backend/scripts/run_test_server.py`)**:
+- [x] **创建启动脚本 (`backend/scripts/run_test_server.py`)**:
   - 基于现有的 `app` 实例。
   - 覆盖数据库 Engine 配置 (使用 `sqlite:///./test.db`)。
   - 挂载 `test_router`。
@@ -33,21 +33,21 @@
 
 ### Phase 2: 前端测试配置 (Frontend Config)
 
-- [ ] **改造 Vitest 配置 (`frontend/vitest.config.ts`)**:
+- [x] **改造 Vitest 配置 (`frontend/vitest.config.ts`)**:
   - 取消对 `shared/api` 的 Mock。
   - 设置环境变量 `VITE_API_BASE_URL=http://localhost:8001`。
-- [ ] **编写测试工具函数 (`frontend/src/lib/test-utils.ts`)**:
+- [x] **编写测试工具函数 (`frontend/src/lib/test-utils.ts`)**:
   - 封装 `resetDB()` 方法，方便在测试文件中调用。
   - 封装 `createTestUser()` 等辅助方法。
 
 ### Phase 3: 编写真·集成测试 (Real Hooks Testing)
 
-- [ ] **测试 `useAuth`**:
+- [x] **测试 `useAuth`**:
   - 真实注册一个用户 -> 登录 -> 获取 Token -> 验证会话。
-- [ ] **测试 `useAnalytics` / `useAnalyticsStats`**:
+- [x] **测试 `useAnalytics` / `useAnalyticsStats`**:
   - 真实触发 `trackEvent`。
   - 调用 `getAnalyticsStats` 确认数据已写入数据库。
-- [ ] **测试数据获取 Hook**:
+- [x] **测试数据获取 Hook**:
   - 验证复杂的 Query 参数是否被后端正确解析。
 
 ## 4. 预期工作流 (Workflow)

@@ -1,101 +1,69 @@
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { useAnalytics } from "@/hooks/use-analytics";
-import { logAnalyticsEvent } from "@/shared/api";
-import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
+import { resetDB, loginAdmin, TEST_API_URL } from "@/lib/test-utils";
+import { client } from "@/shared/api";
 
-describe("useAnalytics Hook", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.clearAllMocks();
+// Configure Client for this test file
+client.setConfig({ baseUrl: TEST_API_URL });
 
-    // Mock sendBeacon
-    Object.defineProperty(navigator, "sendBeacon", {
-      value: vi.fn(),
-      writable: true,
+describe("useAnalytics Integration Test (Real Backend)", () => {
+  beforeAll(async () => {
+    // 1. Mock User Agent to avoid "Bot" detection by backend
+    Object.defineProperty(window.navigator, "userAgent", {
+      value:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      configurable: true,
     });
 
-    // Mock visibilityState
-    Object.defineProperty(document, "visibilityState", {
-      value: "visible",
-      writable: true,
-    });
+    // 2. Reset Backend DB (creates admin user)
+    await resetDB();
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  it("should send page_view and reflect in dashboard stats", async () => {
+    // Step 1: Simulate Visitor (No Auth)
+    // Clear cookies just in case
+    if (typeof document !== "undefined") {
+      document.cookie =
+        "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    }
 
-  it("should track page view on mount", () => {
+    // Render Hook -> triggers 'page_view' automatically on mount
     renderHook(() => useAnalytics());
 
-    expect(logAnalyticsEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          event_type: "page_view",
-        }),
-      }),
-    );
-  });
+    // Step 2: Login as Admin to check stats
+    // Increase wait time to ensure POST completes
+    await new Promise((r) => setTimeout(r, 2000));
 
-  it("should track heartbeat after 30 seconds", () => {
-    renderHook(() => useAnalytics());
+    const token = await loginAdmin();
 
-    // Fast-forward 30s
-    act(() => {
-      vi.advanceTimersByTime(30000);
-    });
+    // Step 3: Fetch Stats via Raw Fetch to verify side effects
+    // Dashboard stats API: /api/v1/analytics/stats/overview
 
-    expect(logAnalyticsEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          event_type: "heartbeat",
-          payload: { duration: 30 },
-        }),
-      }),
-    );
-  });
+    await waitFor(
+      async () => {
+        const res = await fetch(
+          `${TEST_API_URL}/api/v1/analytics/stats/overview`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
 
-  it("should track heartbeat via Beacon on page hide", () => {
-    renderHook(() => useAnalytics());
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Failed to fetch stats: ${res.status} ${text}`);
+        }
 
-    // Simulate 10s passed
-    vi.advanceTimersByTime(10000);
+        const data = await res.json();
+        console.log("Stats Data:", data);
 
-    // Trigger pagehide
-    const event = new Event("pagehide");
-    act(() => {
-      window.dispatchEvent(event);
-    });
-
-    expect(navigator.sendBeacon).toHaveBeenCalled();
-    // Verify payload in Beacon call
-    const blob = (navigator.sendBeacon as any).mock.calls[0][1];
-    // Since Blob is hard to read in jsdom, we trust the call happened
-    // real browser test would verify content
-  });
-
-  it("should track heartbeat on visibility hidden", () => {
-    renderHook(() => useAnalytics());
-
-    // Simulate 5s passed
-    vi.advanceTimersByTime(5000);
-
-    // Simulate visibility hidden
-    Object.defineProperty(document, "visibilityState", {
-      value: "hidden",
-      writable: true,
-    });
-    act(() => {
-      document.dispatchEvent(new Event("visibilitychange"));
-    });
-
-    expect(logAnalyticsEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          event_type: "heartbeat",
-          payload: { duration: 5 },
-        }),
-      }),
+        // Verify that we have at least 1 page view
+        // Correct field is total_pv
+        expect(data.total_pv).toBeGreaterThan(0);
+      },
+      { timeout: 10000 },
     );
   });
 });

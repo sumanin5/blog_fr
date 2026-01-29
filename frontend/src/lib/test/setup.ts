@@ -1,7 +1,10 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
-// Mock next/navigation
+// 1. 设置测试环境变量 (指向测试后端)
+process.env.NEXT_PUBLIC_API_URL = "http://localhost:8001";
+
+// 2. Mock next/navigation (路由相关组件仍需 Mock)
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
   useRouter: () => ({
@@ -12,19 +15,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock API client
-vi.mock("@/shared/api", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("@/shared/api")>();
-  return {
-    ...mod,
-    logAnalyticsEvent: vi.fn(),
-    client: {
-      getConfig: () => ({ baseUrl: "http://localhost:8000" }),
-    },
-  };
-});
-
-// Mock crypto.randomUUID
+// 3. 补充 JSDOM 缺失的 API
 if (!global.crypto) {
   Object.defineProperty(global, "crypto", {
     value: {
