@@ -10,19 +10,20 @@ import { redirect } from "next/navigation";
 export async function checkAuthGate() {
   const cookieStore = await cookies();
 
-  // 1. 检查是否已登录 (存在 access_token)
-  // 如果已登录，不需要再访问登录/注册页，直接回首页
-  const accessToken = cookieStore.get("access_token");
-  if (accessToken) {
-    redirect("/");
-  }
-
-  // 2. 检查门卫通行证
+  // 1. [唯一任务] 检查门卫通行证 (Gate Check)
   const gateSecret = process.env.AUTH_GATE_SECRET;
   const hasGatePass = cookieStore.get("auth_gate_pass");
 
-  // 如果配置了门卫密码，且用户没有通行证，则拦截
+  console.log(
+    "🔒 [AuthGate Check] Secret:",
+    gateSecret ? "Set (Hidden)" : "NOT SET",
+  );
+  console.log("🔒 [AuthGate Check] User Pass:", hasGatePass ? "Valid" : "None");
+
   if (gateSecret && !hasGatePass) {
     redirect("/auth/gate");
   }
+
+  // 移除自动跳转首页的逻辑，防止干扰测试
+  // 用户是否已登录由页面组件或 Hook 自行判断，这里只负责挡住未授权的门卫访问
 }

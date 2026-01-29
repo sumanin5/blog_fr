@@ -31,12 +31,19 @@ class Settings(
     """
 
     model_config = SettingsConfigDict(
-        # 优先级：.env.local（本地开发）> .env.test（测试）> .env（Docker）
-        env_file=(
-            "../.env.test"
-            if os.getenv("ENVIRONMENT") == "test"
-            else ("../.env.local" if os.path.exists("../.env.local") else "../.env")
-        ),
+        # 环境变量加载顺序 (优先级从低到高，后加载覆盖先加载)：
+        # 1. ../.env       (根目录 Docker 基础配置)
+        # 2. .env          (后端目录独立配置)
+        # 3. ../.env.local (根目录本地覆盖)
+        env_file=[
+            f
+            for f in [
+                ".env",
+                ".env.local",
+                ".env.test" if os.getenv("ENVIRONMENT") == "test" else None,
+            ]
+            if f is not None
+        ],
         env_ignore_empty=True,
         extra="ignore",
     )

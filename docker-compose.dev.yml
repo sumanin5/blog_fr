@@ -65,7 +65,7 @@ services:
       - "8000:8000"
 
     env_file:
-      - .env
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}
@@ -96,10 +96,11 @@ services:
       - /app/node_modules
 
     ports:
-      - "5173:5173"
+      - "3000:3000"
 
     environment:
-      - VITE_API_URL=${VITE_API_URL}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - BACKEND_INTERNAL_URL=http://backend:8000
 
     depends_on:
       - backend

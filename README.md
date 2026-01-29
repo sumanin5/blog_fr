@@ -9,12 +9,31 @@
 
 **Blog FR** 是一个基于 **FastAPI** 和 **Next.js 16** 构建的现代全栈博客系统。它集成了高性能后端、React Server Components 以及丰富的 MDX 渲染能力，旨在提供极致的写作与阅读体验。
 
+## 🌓 主题展示
+
+支持深色和浅色两种主题模式，为用户提供舒适的阅读体验：
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <b>☀️ 浅色主题</b><br/>
+      <img src="./image/Light.png" alt="浅色主题" />
+    </td>
+    <td width="50%" align="center">
+      <b>🌙 深色主题</b><br/>
+      <img src="./image/Dark.png" alt="深色主题" />
+    </td>
+  </tr>
+</table>
+
+> 💡 基于 `next-themes` 实现，支持系统主题自动跟随，用户偏好自动保存。[查看更多功能展示 →](./SHOWCASE.md)
+
 ---
 
 ## ✨ 核心特性
 
-- 🎨 **现代设计**: Tailwind CSS 4 + shadcn/ui，深色/浅色模式切换，响应式布局
-- 📝 **增强型 MDX**: Mermaid 图表、代码高亮 (highlight.js)、数学公式 (KaTeX)
+- 🎨 **现代设计**: Tailwind CSS 4 + shadcn/ui，深色/浅色主题无缝切换，响应式布局
+- 📝 **增强型 MDX**: Mermaid 图表、代码高亮 (highlight.js)、数学公式 (KaTeX)、交互式组件
 - ⚡ **混合渲染架构**:
   - **SSR**: 博客文章页面，最佳 SEO 和首屏加载
   - **CSR**: 管理后台，流畅的 SPA 体验
@@ -26,6 +45,8 @@
 - 🧪 **质量保证**: Pytest 测试框架 + 代码覆盖率
 - 🔄 **GitOps 同步**: 依赖注入容器模式，支持增量/全量同步
 - 🛡️ **统一错误处理**: 标准化错误响应格式 + 全链路追踪
+
+> 📸 **查看效果**: 想要直观了解这些特性？访问 [功能展示文档](./SHOWCASE.md) 查看完整的界面截图和功能演示！
 
 ---
 
@@ -47,7 +68,7 @@
 - **样式**: [Tailwind CSS 4](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/)
 - **状态管理**: [TanStack Query v5](https://tanstack.com/query)
 - **数据获取**: [hey-api SDK](https://www.heypi.com/) (基于 OpenAPI 自动生成)
-- **主题**: [next-themes](https://github.com/pacocoursey/next-themes)
+- **主题系统**: [next-themes](https://github.com/pacocoursey/next-themes) - 支持深色/浅色模式，自动跟随系统主题
 - **内容渲染**: MDX + Mermaid + KaTeX + highlight.js
 
 ---
@@ -284,11 +305,12 @@ docker compose down
 
 ## 📚 相关文档
 
+- [功能展示](./SHOWCASE.md) - 界面截图和功能演示 ⭐
 - [架构设计文档](./ARCHITECTURE.md) - 混合渲染架构和数据流详解
 - [后端 API 文档](./backend/README.md) - FastAPI 开发指南
 - [前端开发指南](./frontend/SETUP.md) - Next.js 开发环境配置
 - [API 集成指南](./docs/api/FRONTEND_API_INTEGRATION_GUIDE.md) - 前端如何使用后端 API
-- [错误处理协作指南](./frontend/ERROR_HANDLING.md) - 前后端错误处理机制详解 ⭐
+- [错误处理协作指南](./frontend/ERROR_HANDLING.md) - 前后端错误处理机制详解
 
 ---
 

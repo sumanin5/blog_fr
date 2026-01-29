@@ -24,8 +24,28 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Docker Compose 配置文件
+# 默认 Docker Compose 配置文件
 COMPOSE_FILE="$PROJECT_ROOT/docker-compose.dev.yml"
+ENV_MODE="development"
+
+# 检查是否包含 --prod 参数
+if [[ "$*" == *"--prod"* ]]; then
+    COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
+    ENV_MODE="production"
+    ENV_MODE_SET_BY_FLAG=true
+    # 移除 --prod 参数以便后续处理
+    # 注意：这里简单的移除仅适用于参数位于末尾或单独使用的情况，
+    # 但由于主逻辑是交互式或单个服务名，这里主要起到标识作用。
+
+    # 重新构建参数列表，过滤掉 --prod
+    NEW_ARGS=()
+    for arg in "$@"; do
+        if [ "$arg" != "--prod" ]; then
+            NEW_ARGS+=("$arg")
+        fi
+    done
+    set -- "${NEW_ARGS[@]}"
+fi
 
 # ==========================================
 # 辅助函数
@@ -64,11 +84,11 @@ check_docker() {
 # 检查 docker-compose 文件是否存在
 check_compose_file() {
     if [ ! -f "$COMPOSE_FILE" ]; then
-        print_error "未找到 docker-compose.dev.yml 文件"
+        print_error "未找到 $(basename "$COMPOSE_FILE") 文件"
         print_info "当前路径: $PROJECT_ROOT"
         exit 1
     fi
-    print_success "找到配置文件: docker-compose.dev.yml"
+    print_success "找到配置文件: $(basename "$COMPOSE_FILE")"
 }
 
 # 停止并删除容器
@@ -104,6 +124,70 @@ remove_images() {
         else
             print_info "未找到旧镜像，跳过删除"
         fi
+    fi
+}
+
+# 检查并清理端口占用
+check_and_kill_ports() {
+    local service=$1
+    local ports=()
+
+    # 检查 lsof 是否存在
+    if ! command -v lsof >/dev/null 2>&1; then
+        # print_warning "未找到 lsof 命令，跳过端口占用检查"
+        return
+    fi
+
+    # 根据服务定义要检查的端口
+    case $service in
+        backend)
+            ports=(8000)
+            ;;
+        frontend)
+            # 开发环境和生产环境我们统一到了 3000
+            ports=(3000)
+            ;;
+        all)
+            # 8000(Backend), 3000(Frontend), 5433(DB Host Port)
+            ports=(8000 3000 5433)
+            ;;
+    esac
+
+    print_step "检查端口占用..."
+
+    local found_conflict=false
+
+    for port in "${ports[@]}"; do
+        # 获取占用端口的 PID
+        local pids
+        pids=$(lsof -t -i TCP:$port -s TCP:LISTEN 2>/dev/null || true)
+
+        if [ -n "$pids" ]; then
+            found_conflict=true
+            # 转换为一行显示
+            local pids_str
+            pids_str=$(echo "$pids" | tr '\n' ' ')
+
+            echo ""
+            print_warning "端口 $port 正被以下进程占用 (PID: $pids_str):"
+            lsof -i :$port 2>/dev/null | grep -v "COMMAND" || true
+            echo ""
+
+            read -p "是否强制结束这些进程以释放端口？(y/N): " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                for pid in $pids; do
+                    kill -9 "$pid" 2>/dev/null || true
+                done
+                print_success "已释放端口 $port"
+            else
+                print_info "跳过清理端口 $port"
+            fi
+        fi
+    done
+
+    if [ "$found_conflict" = false ]; then
+        print_success "端口检查通过，无冲突"
     fi
 }
 
@@ -213,6 +297,30 @@ main() {
 
     # 检查环境
     check_docker
+
+    # 交互式选择环境模式 (如果未通过参数指定)
+    if [[ "$*" != *"--prod"* ]] && [ -z "$ENV_MODE_SET_BY_FLAG" ]; then
+        echo "" >&2
+        echo "========================================" >&2
+        echo "请选择运行环境：" >&2
+        echo "========================================" >&2
+        echo "  1) Development (开发环境 - 默认)" >&2
+        echo "  2) Production  (生产环境)" >&2
+        echo "========================================" >&2
+        echo -n "请输入选项 [1-2]: " >&2
+        read env_choice
+
+        case $env_choice in
+            2)
+                COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
+                ENV_MODE="production"
+                ;;
+            *)
+                # 默认保持 development
+                ;;
+        esac
+    fi
+
     check_compose_file
 
     # 确定要重建的服务
@@ -257,11 +365,15 @@ main() {
     rebuild_service "$service"
     echo ""
 
-    # 步骤 4: 启动服务
+    # 步骤 4: 检查端口占用 (在启动前)
+    check_and_kill_ports "$service"
+    echo ""
+
+    # 步骤 5: 启动服务
     start_service "$service"
     echo ""
 
-    # 步骤 5: 显示状态
+    # 步骤 6: 显示状态
     show_status
     echo ""
 
@@ -281,18 +393,26 @@ main() {
             ;;
         frontend)
             print_info "前端服务访问地址："
-            echo "  • 开发服务器: http://localhost:5173"
+            if [ "$ENV_MODE" == "production" ]; then
+                echo "  • 生产服务器: http://localhost:3000"
+            else
+                echo "  • 开发服务器: http://localhost:3000"
+            fi
             ;;
         all)
             print_info "服务访问地址："
-            echo "  • 前端: http://localhost:5173"
+            if [ "$ENV_MODE" == "production" ]; then
+                echo "  • 生产服务器: http://localhost:3000"
+            else
+                echo "  • 开发服务器: http://localhost:3000"
+            fi
             echo "  • 后端 API: http://localhost:8000/docs"
             echo "  • Scalar 文档: http://localhost:8000/scalar"
             ;;
     esac
 
     echo ""
-    print_info "查看日志: docker compose -f docker-compose.dev.yml logs -f $service"
+    print_info "查看日志: docker compose -f $(basename "$COMPOSE_FILE") logs -f $service"
     echo ""
 }
 

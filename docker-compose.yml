@@ -42,7 +42,7 @@ services:
       - "8000:8000"
 
     env_file:
-      - .env
+      - ./backend/.env
     # 环境变量：数据库连接信息
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
@@ -50,6 +50,9 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       # 配合 GitOps 同步逻辑通过 /git_root/content 访问
       CONTENT_DIR: /git_root/content
+      # 解决 Docker 挂载导致的 Git 仓库识别问题
+      GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
+      GIT_CONFIG_PARAMETERS: "'safe.directory=*'"
 
     # 等待数据库启动后再启动后端
     depends_on:
@@ -63,9 +66,11 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=${VITE_API_URL}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    environment:
+      - BACKEND_INTERNAL_URL=http://backend:8000
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on:
       - backend
 
