@@ -150,6 +150,16 @@ jobs:
             echo "🔄 重启服务..."
             docker compose up -d
 
+            # 等待后端容器启动
+            echo "⏳ 等待后端容器启动..."
+            sleep 5
+
+            # 执行数据库迁移
+            echo "🗄️  执行数据库迁移..."
+            docker compose exec -T backend alembic upgrade head || {
+              echo "⚠️  数据库迁移失败，但继续部署..."
+            }
+
             # 清理无用镜像
             echo "🧹 清理旧镜像..."
             docker image prune -f
