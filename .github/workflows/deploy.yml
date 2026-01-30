@@ -110,22 +110,31 @@ jobs:
                 echo "⚠️ Git 克隆失败，尝试创建基本目录结构..."
                 mkdir -p blog_fr
                 cd blog_fr
-                # 从 GitHub 下载必要文件
-                curl -L https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml -o docker-compose.yml
-                curl -L https://raw.githubusercontent.com/${{ github.repository }}/main/.env.production.template -o .env.production.template
+                # 从 GitHub 下载必要文件（设置超时）
+                echo "下载 docker-compose.yml..."
+                curl -L --connect-timeout 10 --max-time 30 --retry 2 \
+                  https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml \
+                  -o docker-compose.yml || echo "⚠️ 下载失败"
+
+                echo "下载 .env.production.template..."
+                curl -L --connect-timeout 10 --max-time 30 --retry 2 \
+                  https://raw.githubusercontent.com/${{ github.repository }}/main/.env.production.template \
+                  -o .env.production.template || echo "⚠️ 下载失败"
+
                 mkdir -p caddy content backend/data
               }
             fi
 
             cd ${{ env.DEPLOY_PATH }}
 
-            # 尝试更新代码（如果失败也继续）
+            # 尝试更新代码（优先使用 git）
             echo "📥 尝试更新配置文件..."
-            git pull origin main 2>/dev/null || {
-              echo "⚠️ Git pull 失败，使用现有配置继续部署..."
-              # 下载最新的 docker-compose.yml
-              curl -L https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml -o docker-compose.yml || echo "使用现有 docker-compose.yml"
-            }
+            if git pull origin main 2>/dev/null; then
+              echo "✅ Git pull 成功"
+            else
+              echo "⚠️ Git pull 失败，跳过代码更新"
+              echo "💡 提示: 如需更新配置文件，请手动执行 git pull"
+            fi
 
             # 确保 .env 文件存在
             if [ ! -f ".env" ]; then
