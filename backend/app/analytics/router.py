@@ -116,26 +116,27 @@ async def log_analytics_event(
 
                 if result:
                     parts = result.split("|")
-                    # 返回格式: 国家|区域|省份|城市|ISP
-                    # 例如: 中国|0|浙江省|杭州市|电信
+                    # 实际返回格式: 国家|省份|城市|ISP|国家代码
+                    # 例如: 中国|浙江省|绍兴市|移动|CN
                     if len(parts) >= 5:
                         country = (
                             parts[0] if parts[0] and parts[0] != "0" else "Unknown"
                         )
                         province = (
-                            parts[2] if parts[2] and parts[2] != "0" else "Unknown"
+                            parts[1] if parts[1] and parts[1] != "0" else "Unknown"
                         )
-                        city = parts[3] if parts[3] and parts[3] != "0" else "Unknown"
-                        isp = parts[4] if parts[4] and parts[4] != "0" else "Unknown"
+                        city = parts[2] if parts[2] and parts[2] != "0" else "Unknown"
+                        isp = parts[3] if parts[3] and parts[3] != "0" else "Unknown"
                     elif len(parts) >= 4:
                         # 兼容旧格式或不完整数据
                         country = (
                             parts[0] if parts[0] and parts[0] != "0" else "Unknown"
                         )
                         province = (
-                            parts[2] if parts[2] and parts[2] != "0" else "Unknown"
+                            parts[1] if parts[1] and parts[1] != "0" else "Unknown"
                         )
-                        city = parts[3] if parts[3] and parts[3] != "0" else "Unknown"
+                        city = parts[2] if parts[2] and parts[2] != "0" else "Unknown"
+                        isp = parts[3] if parts[3] and parts[3] != "0" else "Unknown"
 
         except Exception as e:
             # IP 解析失败，记录日志但不影响主流程
