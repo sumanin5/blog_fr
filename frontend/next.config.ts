@@ -45,12 +45,19 @@ const nextConfig: NextConfig = {
 
   // API 代理配置
   async rewrites() {
+    // 优先读取内部网络地址，如果没有则回退到公开 API 地址，最后兜底到 Docker 内部默认地址
+    const internalUrl =
+      process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const publicUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+    // 如果处于 Docker 环境，我们应该优先使用内部通信地址
+    const destination = `${internalUrl || publicUrl}/api/:path*`;
+
     return [
       {
         source: "/api/:path*",
-        destination: `${
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-        }/api/:path*`,
+        destination,
       },
     ];
   },

@@ -19,3 +19,8 @@ class SecuritySettings:
     FIRST_SUPERUSER_EMAIL: str = Field(
         default="admin@example.com", description="默认超级管理员邮箱"
     )
+
+    # CORS 设置
+    BACKEND_CORS_ORIGINS: list[str] = Field(
+        default=[], description="允许跨域的源列表 (JSON 格式字符串)"
+    )

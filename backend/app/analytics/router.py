@@ -69,32 +69,48 @@ async def log_analytics_event(
     # 提取时长 (如果前端上传)
     duration = event_in.payload.get("duration", 0)
 
-    # GeoIP2 地理位置解析
+    # ip2region 地理位置解析（国内 IP 更准确）
     country = "Unknown"
     city = "Unknown"
-    geoip_path = "data/GeoLite2-City.mmdb"
+    province = "Unknown"
 
-    import os
-
-    if ip_addr and os.path.exists(geoip_path):
-        import geoip2.database
-        import geoip2.errors
-
+    if ip_addr:
         try:
-            with geoip2.database.Reader(geoip_path) as reader:
-                try:
-                    # 尝试解析 IP
-                    response = reader.city(ip_addr)
-                    # 优先获取英文名称，fallback 到 Unknown
-                    country = response.country.name or "Unknown"
-                    city = response.city.name or "Unknown"
+            import ip2region.searcher as xdb
+            import ip2region.util as util
 
-                except (ValueError, geoip2.errors.AddressNotFoundError):
-                    # IP 格式错误或未找到
-                    pass
+            # 使用 VectorIndex 缓存模式（推荐）
+            db_path = "data/ip2region.xdb"
+            version = util.IPv4  # 目前只支持 IPv4
+
+            import os
+
+            if os.path.exists(db_path):
+                # 创建查询对象（使用 VectorIndex 缓存以提升性能）
+                # 注意：生产环境应该全局缓存 v_index，这里为了简化每次都加载
+                v_index = util.load_vector_index_from_file(db_path)
+                searcher = xdb.new_with_vector_index(version, db_path, v_index)
+
+                # 查询 IP
+                # 返回格式: 国家|区域|省份|城市|ISP
+                # 例如: 中国|0|浙江省|杭州市|电信
+                result = searcher.search(ip_addr)
+                searcher.close()
+
+                if result:
+                    parts = result.split("|")
+                    if len(parts) >= 4:
+                        country = (
+                            parts[0] if parts[0] and parts[0] != "0" else "Unknown"
+                        )
+                        province = (
+                            parts[2] if parts[2] and parts[2] != "0" else "Unknown"
+                        )
+                        city = parts[3] if parts[3] and parts[3] != "0" else "Unknown"
+
         except Exception as e:
-            # 文件读取或其他异常，通过日志记录
-            logger.warning(f"GeoIP resolution failed for IP {ip_addr}: {str(e)}")
+            # IP 解析失败，记录日志但不影响主流程
+            logger.warning(f"ip2region resolution failed for IP {ip_addr}: {str(e)}")
             pass
 
     # 将解析结果注入到 service 调用中
@@ -115,6 +131,7 @@ async def log_analytics_event(
         "duration": duration,
         "country": country,
         "city": city,
+        "region": province,  # 使用 region 字段存储省份
     }
 
     # 使用 model_copy 创建一个带有新字段的 Pydantic 模型

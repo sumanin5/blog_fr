@@ -59,9 +59,16 @@ class ApiException extends Error {
 /**
  * 初始化 API 客户端
  * 根据环境自动选择 Base URL
+ * SSR (服务端) -> 使用内部 Docker 网络地址 (http://backend:8000)
+ * Client (浏览器) -> 使用外部公开地址 (http://localhost:8080 或 域名)
  */
+const isServer = typeof window === "undefined";
+const baseUrl = isServer
+  ? settings.BACKEND_INTERNAL_URL
+  : settings.NEXT_PUBLIC_API_URL;
+
 client.setConfig({
-  baseUrl: settings.NEXT_PUBLIC_API_URL,
+  baseUrl: baseUrl,
 
   fetch: async (input, init) => {
     const response = await fetch(input, { ...init, cache: "no-store" });

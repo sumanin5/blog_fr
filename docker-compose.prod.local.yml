@@ -6,16 +6,14 @@ services:
     image: postgres:17
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.prod.local
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      # 数据持久化，防止容器删除后数据丢失
       - postgres_data:/var/lib/postgresql/data
     ports:
-      # 宿主机 5433 → 容器 5432（避免与本地 PostgreSQL 冲突）
       - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
@@ -24,27 +22,25 @@ services:
       retries: 5
 
   # ==========================================
-  # 后端 API
-  # ==========================================
-  # ==========================================
-  # 后端 API
+  # 后端 API (生产环境模拟)
   # ==========================================
   backend:
     image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-backend:latest
 
-    # 挂载卷：生产环境只挂载数据，不挂载代码
+    # 关键修改：取消代码目录挂载，强制使用镜像内的代码和环境
+    # 只挂载内容数据
     volumes:
       - ./.git:/git_root/.git
       - ./content:/git_root/content
-      - ./backend/data:/app/data  # 挂载 GeoIP 数据库目录
+      # 我们不挂载 ./backend:/app，这样容器就不会读到宿主机的 .env.local
 
     ports:
       - "8000:8000"
 
+    # 唯一环境变量来源
     env_file:
-      - .env
+      - .env.prod.local
 
-    # 环境变量优先级最高
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}
@@ -59,11 +55,13 @@ services:
 
     command: fastapi run --workers 4 app/main.py
 
+  # ==========================================
+  # 前端应用
+  # ==========================================
   frontend:
-    # 使用阿里云 ACR 镜像
     image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-frontend:latest
     env_file:
-      - .env
+      - .env.prod.local
     environment:
       - BACKEND_INTERNAL_URL=http://backend:8000
     ports:
@@ -72,7 +70,7 @@ services:
       - backend
 
   # ==========================================
-  # Caddy 反向代理 (自动 HTTPS)
+  # Caddy 网关
   # ==========================================
   caddy:
     image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-caddy:latest
@@ -80,10 +78,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      # 如果还是开发测试，也可以保留 API 端口转发，但生产环境建议走域名
       - "8080:8080"
     environment:
-      # Caddy 将使用这些变量来配置域名和申请证书
       - DOMAIN_NAME=${DOMAIN_NAME}
       - API_DOMAIN_NAME=${API_DOMAIN_NAME}
     volumes:
@@ -94,10 +90,7 @@ services:
       - frontend
       - backend
 
-# ==========================================
-# 数据卷
-# ==========================================
 volumes:
   postgres_data:
-  caddy_data:   # 存储 SSL 证书
-  caddy_config: # 存储 Caddy 配置
+  caddy_data:
+  caddy_config:

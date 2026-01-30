@@ -31,12 +31,23 @@ from sqlalchemy.exc import SQLAlchemyError
 logger = logging.getLogger(__name__)
 
 
+# ============================================================
+# API 文档控制
+# ============================================================
+# 仅在非生产环境显示文档
+DOCS_URL = "/docs" if settings.environment != "production" else None
+REDOC_URL = "/redoc" if settings.environment != "production" else None
+OPENAPI_URL = "/openapi.json" if settings.environment != "production" else None
+
 app = FastAPI(
     title="Blog API",
     version="0.1.0",
     description=DESCRIPTION,
-    openapi_tags=TAGS_METADATA,  # ← 添加 tags metadata
+    openapi_tags=TAGS_METADATA,
     generate_unique_id_function=custom_generate_unique_id,
+    docs_url=DOCS_URL,
+    redoc_url=REDOC_URL,
+    openapi_url=OPENAPI_URL,
     responses={
         400: {"model": ErrorResponse, "description": "Bad Request"},
         401: {"model": ErrorResponse, "description": "Unauthorized"},
@@ -56,23 +67,18 @@ app.add_exception_handler(SQLAlchemyError, database_exception_handler)  # type: 
 app.add_exception_handler(Exception, unexpected_exception_handler)  # type: ignore
 
 # ============================================================
-# CORS 配置：允许前端跨域访问
+# CORS 配置：使用配置文件的设置
 # ============================================================
-# 开发环境允许的前端地址
-origins = [
-    "http://localhost:3000",  # Next.js 开发服务器
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",  # Vite 开发服务器（兼容旧项目）
-    "http://127.0.0.1:5173",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  # 允许的前端地址
-    allow_credentials=True,  # 允许携带 Cookie
-    allow_methods=["*"],  # 允许所有 HTTP 方法
-    allow_headers=["*"],  # 允许所有请求头
-)
+if settings.BACKEND_CORS_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            str(origin).strip("/") for origin in settings.BACKEND_CORS_ORIGINS
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # 设置所有的自定义中间件
 setup_middleware(app)
@@ -99,19 +105,32 @@ async def startup_event():
         # 可选：根据需要决定是否让启动失败
         # raise
 
+    # 初始化 ip2region 数据库
+    try:
+        from app.core.ip2region_manager import init_ip2region_database
+
+        logger.info("开始初始化 ip2region 数据库...")
+        init_ip2region_database()
+    except Exception as e:
+        logger.error(f"ip2region 数据库初始化失败: {e}")
+        # 不影响应用启动，只是 IP 解析功能不可用
+
 
 @app.get("/")
 async def read_root():
-    return {"Hello": "fastapi"}
+    return {"Hello": "fastapi", "Environment": settings.environment}
 
 
-@app.get("/scalar", include_in_schema=False)
-async def scalar_html():
-    """Scalar API 文档界面 - 比 Swagger UI 更现代化"""
-    return get_scalar_api_reference(
-        openapi_url=app.openapi_url,
-        title=app.title,
-    )
+# 仅在非生产环境显示 Scalar 文档
+if settings.environment != "production":
+
+    @app.get("/scalar", include_in_schema=False)
+    async def scalar_html():
+        """Scalar API 文档界面 - 比 Swagger UI 更现代化"""
+        return get_scalar_api_reference(
+            openapi_url=app.openapi_url,
+            title=app.title,
+        )
 
 
 # ============================================================

@@ -1,0 +1,44 @@
+{
+    # 全局配置
+    # email your-email@example.com # 用于 Let's Encrypt 通知（建议填写真实邮箱）
+}
+
+# ==================================================
+# 前端应用 (主域名)
+# ==================================================
+# 将来替换为您的真实域名，例如: www.yourdomain.com
+# 环境变量 DOMAIN_NAME 未设置时默认为 :80 (本地开发)
+{$DOMAIN_NAME::80} {
+    # 启用 Gzip 压缩
+    encode gzip
+
+    # 代理到前端容器
+    reverse_proxy frontend:3000
+
+    # 也可以在这里统一拦截 /api 并转发给后端（同域模式）
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+}
+
+# ==================================================
+# 后端 API (API 子域名)
+# ==================================================
+# 将来替换为: api.yourdomain.com
+# 环境变量 API_DOMAIN_NAME 未设置时默认为 :8080 (本地开发)
+{$API_DOMAIN_NAME::8080} {
+    encode gzip
+
+    # 代理到后端容器
+    reverse_proxy backend:8000
+}
+
+# 实战上线指南：
+# 1. 购买域名并解析：
+#    - A 记录 @    -> 服务器 IP
+#    - A 记录 www  -> 服务器 IP
+#    - A 记录 api  -> 服务器 IP
+# 2. 修改本文件：
+#    - 将 :80 改为 www.yourdomain.com
+#    - 将 :8080 改为 api.yourdomain.com (端口就不要了，HTTPS 默认 443)
+# 3. 重启 Caddy: docker compose restart caddy

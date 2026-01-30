@@ -286,11 +286,30 @@ docker compose down
 
 ### 环境变量配置
 
-主要环境变量（参考 `.env.example`）：
+**重要**: 生产环境部署需要正确配置环境变量。详细说明请查看 [部署指南](./DEPLOYMENT_GUIDE.md)。
 
+**快速配置**:
+
+1. **服务器上**: 在 `/home/tomy/blog_fr/.env` 创建配置文件
+
+   ```bash
+   cp .env.production.template .env
+   vim .env  # 修改所有 CHANGEME 字段
+   ```
+
+2. **GitHub Secrets**: 配置 CI/CD 所需的密钥
+   - `ALIYUN_AK_ID` / `ALIYUN_AK_SECRET` - 阿里云访问密钥
+   - `ECS_IP` / `ECS_USER` / `ECS_PASSWORD` - 服务器连接信息
+   - `NEXT_PUBLIC_API_URL` - 前端 API 地址
+
+主要环境变量（参考 `.env.production.template`）：
+
+- **域名**: `DOMAIN_NAME`, `API_DOMAIN_NAME`
 - **数据库**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
-- **后端**: `SECRET_KEY`, `ENVIRONMENT`, `API_PREFIX`
-- **前端**: `NEXT_PUBLIC_API_URL`, `BACKEND_INTERNAL_URL`
+- **后端**: `SECRET_KEY`, `ENVIRONMENT`, `BASE_URL`, `MEDIA_URL`
+- **前端**: `NEXT_PUBLIC_API_URL`, `BACKEND_INTERNAL_URL`, `FRONTEND_URL`
+
+> 📖 完整的环境变量说明和部署流程，请参阅 [部署指南](./DEPLOYMENT_GUIDE.md)
 
 ### API 端点
 
@@ -306,6 +325,7 @@ docker compose down
 ## 📚 相关文档
 
 - [功能展示](./SHOWCASE.md) - 界面截图和功能演示 ⭐
+- [部署指南](./DEPLOYMENT_GUIDE.md) - 生产环境部署和环境变量配置 🚀
 - [架构设计文档](./ARCHITECTURE.md) - 混合渲染架构和数据流详解
 - [后端 API 文档](./backend/README.md) - FastAPI 开发指南
 - [前端开发指南](./frontend/SETUP.md) - Next.js 开发环境配置
