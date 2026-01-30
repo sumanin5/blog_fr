@@ -27,9 +27,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: "recursive" # 自动拉取 submodule
-          token: ${{ secrets.GITHUB_TOKEN }} # 用于访问私有 submodule
+        # 不拉取 submodule，content 目录由服务器上的同步脚本管理
 
       # 1. 登录阿里云镜像服务
       # 方式1: 使用 AccessKey (有时会有认证问题)
