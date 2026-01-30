@@ -91,3 +91,29 @@ Hello World
         assert len(results) == 2
         paths = sorted([r.file_path for r in results])
         assert paths == ["articles/a.mdx", "ideas/b.md"]
+
+    async def test_scan_all_ignores_readme(self, tmp_path):
+        """测试扫描器忽略 README.md 等非内容文件"""
+        # Setup
+        content_root = tmp_path / "content"
+        content_root.mkdir()
+        (content_root / "articles").mkdir()
+
+        # 创建正常的文章文件
+        (content_root / "articles" / "post.mdx").write_text(
+            "---\ntitle: Post\n---\nContent", encoding="utf-8"
+        )
+
+        # 创建应该被忽略的文件
+        (content_root / "README.md").write_text("# README", encoding="utf-8")
+        (content_root / "readme.md").write_text("# readme", encoding="utf-8")
+        (content_root / "LICENSE.md").write_text("MIT", encoding="utf-8")
+
+        # Execute
+        scanner = MDXScanner(content_root)
+        results = await scanner.scan_all()
+
+        # Verify: 只应该扫描到 1 个文章文件
+        assert len(results) == 1
+        assert results[0].file_path == "articles/post.mdx"
+        assert results[0].frontmatter["title"] == "Post"

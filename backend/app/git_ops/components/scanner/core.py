@@ -71,7 +71,16 @@ class MDXScanner:
         for pattern in glob_patterns:
             for path in self.content_root.glob(pattern):
                 if path.is_file():
-                    target_paths.append(str(path.relative_to(self.content_root)))
+                    rel_path = path.relative_to(self.content_root)
+                    # 忽略根目录的 README.md 和其他非内容文件
+                    if rel_path.name.upper() in (
+                        "README.MD",
+                        "README.MDX",
+                        "LICENSE.MD",
+                        ".GITIGNORE",
+                    ):
+                        continue
+                    target_paths.append(rel_path)
 
         if not target_paths:
             return []
