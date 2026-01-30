@@ -27,6 +27,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: "recursive" # 自动拉取 submodule
+          token: ${{ secrets.GITHUB_TOKEN }} # 用于访问私有 submodule
 
       # 1. 登录阿里云镜像服务
       # 方式1: 使用 AccessKey (有时会有认证问题)
@@ -113,6 +116,10 @@ jobs:
             echo "📥 拉取最新代码..."
             git fetch origin
             git reset --hard origin/main
+
+            # 更新 submodule (content 目录)
+            echo "📥 更新文章内容..."
+            git submodule update --init --recursive --remote
 
             # 确保 .env 文件存在
             if [ ! -f ".env" ]; then
