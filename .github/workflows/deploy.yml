@@ -29,25 +29,25 @@ jobs:
         uses: actions/checkout@v4
 
       # 1. 登录阿里云镜像服务
-      # 方式1: 使用 AccessKey (默认)
-      # 方式2: 使用固定密码 (更稳定) - 取消下面注释并注释掉方式1
+      # 方式1: 使用 AccessKey (有时会有认证问题)
+      # 方式2: 使用固定密码 (推荐，更稳定)
       - name: Login to Aliyun ACR
         run: |
           echo "尝试登录阿里云容器镜像服务..."
           echo "Registry: ${{ env.ACR_REGISTRY }}"
           echo "Namespace: ${{ env.ACR_NAMESPACE }}"
 
-          # 方式1: AccessKey 登录
-          echo "${{ secrets.ALIYUN_AK_SECRET }}" | docker login \
-            ${{ env.ACR_REGISTRY }} \
-            --username "${{ secrets.ALIYUN_AK_ID }}" \
-            --password-stdin
-
-          # 方式2: 固定密码登录 (如果 AccessKey 有问题，使用这个)
-          # echo "${{ secrets.ACR_PASSWORD }}" | docker login \
+          # 方式1: AccessKey 登录 (如果有认证问题，注释掉这部分)
+          # echo "${{ secrets.ALIYUN_AK_SECRET }}" | docker login \
           #   ${{ env.ACR_REGISTRY }} \
-          #   --username "${{ secrets.ACR_USERNAME }}" \
+          #   --username "${{ secrets.ALIYUN_AK_ID }}" \
           #   --password-stdin
+
+          # 方式2: 固定密码登录 (推荐)
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login \
+            ${{ env.ACR_REGISTRY }} \
+            --username "${{ secrets.ACR_USERNAME }}" \
+            --password-stdin
 
           echo "✓ 登录成功"
 
@@ -102,11 +102,12 @@ jobs:
             cd ${{ env.DEPLOY_PATH }}
 
             # 登录 ACR
-            # 方式1: AccessKey (默认)
-            echo "${{ secrets.ALIYUN_AK_SECRET }}" | docker login ${{ env.ACR_REGISTRY }} --username "${{ secrets.ALIYUN_AK_ID }}" --password-stdin
+            echo "🔐 登录阿里云容器镜像服务..."
+            # 方式1: AccessKey (如果有认证问题，注释掉这部分)
+            # echo "${{ secrets.ALIYUN_AK_SECRET }}" | docker login ${{ env.ACR_REGISTRY }} --username "${{ secrets.ALIYUN_AK_ID }}" --password-stdin
 
-            # 方式2: 固定密码 (如果 AccessKey 有问题，使用这个)
-            # echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ env.ACR_REGISTRY }} --username "${{ secrets.ACR_USERNAME }}" --password-stdin
+            # 方式2: 固定密码 (推荐)
+            echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ env.ACR_REGISTRY }} --username "${{ secrets.ACR_USERNAME }}" --password-stdin
 
             # 拉取最新镜像
             echo "📥 拉取最新镜像..."
