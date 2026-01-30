@@ -35,8 +35,10 @@ services:
     # 挂载卷：生产环境只挂载数据，不挂载代码
     volumes:
       - ./.git:/git_root/.git
+      - ./.git/modules/content:/git_root/.git/modules/content  # submodule 支持
       - ./content:/git_root/content
       - ./backend/data:/app/data  # 挂载 GeoIP 数据库目录
+      - ~/.ssh:/root/.ssh:ro  # SSH key 用于访问私有 submodule
 
     ports:
       - "8000:8000"
