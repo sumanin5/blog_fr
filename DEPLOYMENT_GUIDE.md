@@ -91,20 +91,37 @@ BASE_URL=https://api.yourdomain.com
 
 **需要配置的 Secrets**:
 
-| Secret 名称           | 说明                    | 示例值                     |
-| --------------------- | ----------------------- | -------------------------- |
-| `ALIYUN_AK_ID`        | 阿里云 AccessKey ID     | LTAI5t...                  |
-| `ALIYUN_AK_SECRET`    | 阿里云 AccessKey Secret | xxxxxx                     |
-| `ECS_IP`              | 服务器 IP 地址          | 123.456.789.0              |
-| `ECS_USER`            | SSH 用户名              | tomy                       |
-| `ECS_PASSWORD`        | SSH 密码                | your_ssh_password          |
-| `NEXT_PUBLIC_API_URL` | 前端构建时的 API 地址   | https://api.yourdomain.com |
+| Secret 名称           | 说明                        | 示例值                     |
+| --------------------- | --------------------------- | -------------------------- |
+| `ACR_USERNAME`        | 阿里云 ACR 用户名（推荐）   | nick1167443868             |
+| `ACR_PASSWORD`        | 阿里云 ACR 固定密码（推荐） | your_acr_password          |
+| `ECS_IP`              | 服务器 IP 地址              | 123.456.789.0              |
+| `ECS_USER`            | SSH 用户名                  | tomy                       |
+| `ECS_PASSWORD`        | SSH 密码                    | your_ssh_password          |
+| `NEXT_PUBLIC_API_URL` | 前端构建时的 API 地址       | https://api.yourdomain.com |
+
+**可选的 Secrets（AccessKey 方式，不推荐）**:
+
+| Secret 名称        | 说明                    | 示例值    |
+| ------------------ | ----------------------- | --------- |
+| `ALIYUN_AK_ID`     | 阿里云 AccessKey ID     | LTAI5t... |
+| `ALIYUN_AK_SECRET` | 阿里云 AccessKey Secret | xxxxxx    |
+
+> **💡 推荐使用固定密码方式**：固定密码比 AccessKey 更简单、更稳定，适合容器镜像推送场景。
 
 **配置步骤**:
 
-1. 访问: `https://github.com/你的用户名/blog_fr/settings/secrets/actions`
-2. 点击 "New repository secret"
-3. 逐个添加上述 Secrets
+1. **设置 ACR 固定密码**:
+
+   - 登录阿里云容器镜像服务控制台
+   - 进入"访问凭证"页面
+   - 点击"设置固定密码"
+   - 记下你的用户名（通常显示在页面顶部，如 `nick1167443868`）
+
+2. **添加 GitHub Secrets**:
+   - 访问: `https://github.com/你的用户名/blog_fr/settings/secrets/actions`
+   - 点击 "New repository secret"
+   - 逐个添加上述 Secrets
 
 ---
 
@@ -116,21 +133,28 @@ BASE_URL=https://api.yourdomain.com
 graph LR
     A[推送代码到 main] --> B[GitHub Actions 触发]
     B --> C[构建 Docker 镜像]
-    C --> D[推送到阿里云 ACR]
-    D --> E[SSH 连接到 ECS]
-    E --> F[拉取最新镜像]
-    F --> G[读取服务器 .env]
-    G --> H[docker compose up -d]
+    C --> D[登录阿里云 ACR]
+    D --> E[推送镜像到 ACR]
+    E --> F[SSH 连接到 ECS]
+    F --> G[拉取最新镜像]
+    G --> H[读取服务器 .env]
+    H --> I[docker compose up -d]
 ```
 
 ### 关键点
 
-1. **构建阶段**:
+1. **ACR 认证**:
+
+   - 推荐使用**固定密码**方式（`ACR_USERNAME` + `ACR_PASSWORD`）
+   - 也可以使用 AccessKey 方式（`ALIYUN_AK_ID` + `ALIYUN_AK_SECRET`）
+   - 固定密码更稳定，适合 CI/CD 场景
+
+2. **构建阶段**:
 
    - Frontend 镜像构建时需要 `NEXT_PUBLIC_API_URL`（从 GitHub Secrets 读取）
    - Backend 镜像不需要构建时变量
 
-2. **运行阶段**:
+3. **运行阶段**:
    - 所有运行时环境变量从服务器的 `.env` 文件读取
    - Docker Compose 自动加载 `.env` 文件
 
@@ -198,7 +222,37 @@ openssl rand -base64 24
 
 ## 🔍 故障排查
 
-### 问题 1: 服务启动失败
+### 问题 1: GitHub Actions 部署失败 - ACR 认证错误
+
+**错误信息**: `unauthorized: authentication required`
+
+**原因**: 阿里云容器镜像服务认证失败
+
+**解决方案**:
+
+1. **检查 GitHub Secrets 是否正确配置**:
+
+   - `ACR_USERNAME`: 你的 ACR 用户名（如 `nick1167443868`）
+   - `ACR_PASSWORD`: 在 ACR 控制台设置的固定密码
+
+2. **验证 ACR 固定密码**:
+
+   ```bash
+   # 在本地测试登录
+   echo "your_password" | docker login \
+     crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com \
+     --username your_username \
+     --password-stdin
+   ```
+
+3. **确认仓库已创建**:
+   - 登录阿里云 ACR 控制台
+   - 确认以下仓库存在：
+     - `blog-project/blog-backend`
+     - `blog-project/blog-frontend`
+     - `blog-project/blog-caddy`
+
+### 问题 2: 服务启动失败
 
 **检查步骤**:
 
@@ -214,7 +268,7 @@ ls -la /home/tomy/blog_fr/.env
 docker compose config | grep -A 5 "environment"
 ```
 
-### 问题 2: CORS 错误
+### 问题 3: CORS 错误
 
 **原因**: `BACKEND_CORS_ORIGINS` 配置不正确
 
@@ -231,7 +285,7 @@ BACKEND_CORS_ORIGINS="https://www.yourdomain.com,https://api.yourdomain.com"
 docker compose restart backend
 ```
 
-### 问题 3: 前端无法连接后端
+### 问题 4: 前端无法连接后端
 
 **检查清单**:
 

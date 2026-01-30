@@ -99,7 +99,27 @@ jobs:
             set -e
 
             echo "🚀 开始部署..."
+
+            # 确保项目目录存在
+            if [ ! -d "${{ env.DEPLOY_PATH }}" ]; then
+              echo "📁 项目目录不存在，正在克隆..."
+              cd /home/${{ secrets.ECS_USER }}
+              git clone https://github.com/${{ github.repository }}.git blog_fr
+            fi
+
             cd ${{ env.DEPLOY_PATH }}
+
+            # 拉取最新代码
+            echo "📥 拉取最新代码..."
+            git fetch origin
+            git reset --hard origin/main
+
+            # 确保 .env 文件存在
+            if [ ! -f ".env" ]; then
+              echo "⚠️  警告: .env 文件不存在，请手动创建！"
+              echo "提示: cp .env.production.template .env"
+              exit 1
+            fi
 
             # 登录 ACR
             echo "🔐 登录阿里云容器镜像服务..."
