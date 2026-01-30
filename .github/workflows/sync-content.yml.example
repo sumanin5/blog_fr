@@ -1,0 +1,29 @@
+name: Sync Content to Server
+
+# 这是一个示例文件，展示如何使用 GitHub Actions 触发服务器同步
+# 实际上，使用 Webhook 更简单高效（已实现）
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'content/**'  # 只在 content 目录变化时触发
+
+jobs:
+  trigger-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Server Sync
+        run: |
+          curl -X POST https://你的域名/api/v1/git-ops/trigger-sync \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
+            -d '{"force": false}'
+
+          echo "✅ 同步请求已发送到服务器"
+
+# 注意：
+# 1. 需要在 GitHub Secrets 中配置 API_TOKEN（管理员的访问令牌）
+# 2. 这个方案比 Webhook 复杂，不推荐使用
+# 3. 推荐使用 Webhook 方案（已实现，只需配置）

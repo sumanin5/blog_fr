@@ -65,7 +65,7 @@ DATABASE_URL=postgresql://postgres:your_strong_db_password@db:5432/blog_fr
 FIRST_SUPERUSER_PASSWORD=your_admin_password
 
 # CORS 配置（使用你的真实域名）
-BACKEND_CORS_ORIGINS="https://www.yourdomain.com,https://api.yourdomain.com"
+BACKEND_CORS_ORIGINS=["https://www.yourdomain.com","https://api.yourdomain.com"]
 
 # 前端配置
 NEXT_PUBLIC_API_URL=https://api.yourdomain.com
@@ -78,6 +78,9 @@ REVALIDATE_SECRET=your_revalidate_secret
 # 媒体文件 URL
 MEDIA_URL=https://api.yourdomain.com/media/
 BASE_URL=https://api.yourdomain.com
+
+# Git Webhook 密钥（用于 GitHub → 服务器同步）
+WEBHOOK_SECRET=your_webhook_secret_key
 ```
 
 #### 📍 位置 2: GitHub Secrets（CI/CD 配置）
@@ -122,6 +125,165 @@ BASE_URL=https://api.yourdomain.com
    - 访问: `https://github.com/你的用户名/blog_fr/settings/secrets/actions`
    - 点击 "New repository secret"
    - 逐个添加上述 Secrets
+
+---
+
+## � Git 双向同步配置
+
+本项目支持 **双向 Git 同步**：
+
+- **GitHub → 服务器**：通过 Webhook 自动同步文章内容
+- **服务器 → GitHub**：管理后台编辑文章后自动推送到 GitHub
+
+### 1. 配置 SSH 密钥（服务器 → GitHub）
+
+在服务器上配置 SSH 密钥，用于自动推送到 GitHub：
+
+```bash
+# 1. SSH 登录到服务器
+ssh tomy@your-server-ip
+
+# 2. 生成 SSH 密钥（如果还没有）
+ssh-keygen -t ed25519 -C "your_email@example.com"
+# 按 Enter 使用默认路径，可以设置密码或留空
+
+# 3. 查看公钥
+cat ~/.ssh/id_ed25519.pub
+
+# 4. 复制公钥内容，添加到 GitHub
+# 访问：https://github.com/settings/keys
+# 点击 "New SSH key"，粘贴公钥内容
+
+# 5. 测试 SSH 连接
+ssh -T git@github.com
+# 应该看到：Hi username! You've successfully authenticated...
+```
+
+### 2. 初始化 content 子模块
+
+```bash
+# 在服务器的项目目录中
+cd /home/tomy/blog_fr
+
+# 初始化并更新子模块
+git submodule update --init --recursive
+
+# 进入 content 目录
+cd content
+
+# 配置 Git 用户信息（如果需要）
+git config user.email "admin@blog.local"
+git config user.name "Blog Admin"
+
+# 验证远程仓库配置
+git remote -v
+# 应该显示 SSH URL：git@github.com:username/blog-content.git
+```
+
+### 3. 配置 GitHub Webhook（GitHub → 服务器）
+
+在 blog-content 仓库中配置 Webhook：
+
+1. **访问仓库设置**：
+
+   - 打开：`https://github.com/username/blog-content/settings/hooks`
+   - 点击 "Add webhook"
+
+2. **配置 Webhook**：
+
+   ```
+   Payload URL: https://api.yourdomain.com/api/v1/ops/git/webhook
+   Content type: application/json
+   Secret: your_webhook_secret_key  # 与 .env 中的 WEBHOOK_SECRET 一致
+   Events: Just the push event
+   Active: ✓
+   ```
+
+3. **验证配置**：
+   - 保存后，GitHub 会发送测试请求
+   - 在 "Recent Deliveries" 中查看响应状态
+   - 应该看到 200 响应
+
+### 4. 工作流程说明
+
+#### 场景 1：在 GitHub 上编辑文章
+
+```mermaid
+graph LR
+    A[在 GitHub 编辑 MDX] --> B[Push 到 blog-content]
+    B --> C[触发 Webhook]
+    C --> D[服务器接收通知]
+    D --> E[执行 git pull]
+    E --> F[解析 MDX 文件]
+    F --> G[更新数据库]
+```
+
+#### 场景 2：在管理后台编辑文章
+
+```mermaid
+graph LR
+    A[在后台编辑文章] --> B[保存到数据库]
+    B --> C[导出为 MDX 文件]
+    C --> D[git add & commit]
+    D --> E[git pull 远程更新]
+    E --> F[git push 到 GitHub]
+```
+
+### 5. 自动提交配置
+
+后端会在以下操作时自动提交到 GitHub：
+
+- **创建文章**：`feat: create post 'title'`
+- **更新文章**：`chore: update post 'title'`
+- **删除文章**：`chore: delete post 'title'`
+
+Git 用户信息会自动配置为：
+
+- Email: `admin@blog.local`
+- Name: `Blog Admin`
+
+如需自定义，可在容器中手动配置：
+
+```bash
+docker exec -it blog_fr-backend-1 bash
+cd /app/content
+git config --local user.email "your@email.com"
+git config --local user.name "Your Name"
+```
+
+### 6. 故障排查
+
+#### 问题 1: Webhook 返回 404
+
+**检查**：
+
+- URL 是否正确：`https://api.yourdomain.com/api/v1/ops/git/webhook`
+- 后端服务是否正常运行
+- Caddy 反向代理配置是否正确
+
+#### 问题 2: 自动推送失败
+
+**检查**：
+
+```bash
+# 1. 验证 SSH 密钥
+docker exec -it blog_fr-backend-1 ssh -T git@github.com
+
+# 2. 查看 Git 配置
+docker exec -it blog_fr-backend-1 bash
+cd /app/content
+git config --list
+
+# 3. 手动测试推送
+git push origin main
+```
+
+#### 问题 3: Webhook Secret 验证失败
+
+**检查**：
+
+- `.env` 中的 `WEBHOOK_SECRET` 是否与 GitHub Webhook 配置一致
+- 重启后端服务：`docker compose restart backend`
 
 ---
 
@@ -278,8 +440,8 @@ docker compose config | grep -A 5 "environment"
 # 编辑 .env 文件
 vim /home/tomy/blog_fr/.env
 
-# 确保包含你的前端域名
-BACKEND_CORS_ORIGINS="https://www.yourdomain.com,https://api.yourdomain.com"
+# 确保使用 JSON 数组格式
+BACKEND_CORS_ORIGINS=["https://www.yourdomain.com","https://api.yourdomain.com"]
 
 # 重启后端服务
 docker compose restart backend
@@ -294,6 +456,57 @@ docker compose restart backend
 - [ ] Caddy 是否正确配置了反向代理
 - [ ] 防火墙是否开放了 80 和 443 端口
 
+### 问题 5: Git 自动提交失败
+
+**错误信息**: `Git push failed` 或 `fatal: could not read Username`
+
+**解决步骤**:
+
+```bash
+# 1. 检查 SSH 密钥配置
+docker exec -it blog_fr-backend-1 ssh -T git@github.com
+
+# 2. 如果提示 "Permission denied"，重新配置 SSH 密钥
+# 在宿主机上：
+cat ~/.ssh/id_ed25519.pub
+# 将公钥添加到 GitHub: https://github.com/settings/keys
+
+# 3. 检查 content 目录的 Git 配置
+docker exec -it blog_fr-backend-1 bash
+cd /app/content
+git config --local user.email
+git config --local user.name
+
+# 4. 如果未配置，会自动使用默认值：
+# Email: admin@blog.local
+# Name: Blog Admin
+
+# 5. 手动测试推送
+git push origin main
+
+# 6. 查看后端日志
+docker compose logs backend | grep -i git
+```
+
+### 问题 6: Webhook 同步失败
+
+**检查步骤**:
+
+```bash
+# 1. 查看后端日志
+docker compose logs backend | grep -i webhook
+
+# 2. 验证 Webhook Secret
+# 在 GitHub Webhook 设置中点击 "Recent Deliveries"
+# 查看响应状态和错误信息
+
+# 3. 手动触发同步
+docker exec -it blog_fr-backend-1 python scripts/sync_git_content.py
+
+# 4. 检查 content 目录权限
+docker exec -it blog_fr-backend-1 ls -la /app/content
+```
+
 ---
 
 ## 📚 相关文档
@@ -302,6 +515,7 @@ docker compose restart backend
 - [.env.production.template](./.env.production.template) - 生产环境配置模板
 - [docker-compose.yml](./docker-compose.yml) - Docker Compose 配置
 - [GitHub Actions 部署配置](./.github/workflows/deploy.yml)
+- [Git 自动提交修复说明](./backend/docs/GIT_AUTO_COMMIT_FIX.md) - Git 双向同步技术细节
 
 ---
 
@@ -314,6 +528,8 @@ docker compose restart backend
 3. 域名 DNS 是否正确解析到服务器 IP
 4. 服务器防火墙是否开放必要端口（80, 443）
 5. Docker 容器日志中的错误信息
+6. SSH 密钥是否正确配置（用于 Git 推送）
+7. GitHub Webhook 是否正确配置（用于 Git 拉取）
 
 ---
 

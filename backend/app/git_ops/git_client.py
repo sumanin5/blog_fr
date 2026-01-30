@@ -11,8 +11,28 @@ logger = logging.getLogger(__name__)
 class GitClient:
     def __init__(self, repo_path: Path):
         self.repo_path = repo_path
+        self._config_initialized = False
         if not (repo_path / ".git").exists():
             logger.warning(f"GitClient initialized with non-git directory: {repo_path}")
+
+    async def _ensure_git_config(self):
+        """确保 Git 配置了用户信息（使用 --local 配置）"""
+        if self._config_initialized:
+            return
+
+        try:
+            # 检查是否已配置本地用户信息
+            code, email, _ = await self.run("config", "--local", "user.email")
+
+            if code != 0 or not email:
+                # 未配置，使用默认值
+                await self.run("config", "--local", "user.email", "admin@blog.local")
+                await self.run("config", "--local", "user.name", "Blog Admin")
+                logger.info("Git user config initialized with default values")
+
+            self._config_initialized = True
+        except Exception as e:
+            logger.warning(f"Failed to ensure git config: {e}")
 
     async def run(self, *args: str) -> Tuple[int, str, str]:
         """运行 git 命令 (非阻塞)"""
@@ -29,6 +49,7 @@ class GitClient:
 
     async def pull(self) -> str:
         """执行 git pull"""
+        await self._ensure_git_config()
         code, out, err = await self.run("pull")
         if code != 0:  # 如果失败
             if "not a git repository" in err.lower():
@@ -76,6 +97,7 @@ class GitClient:
 
     async def add(self, paths: List[str]):
         """执行 git add"""
+        await self._ensure_git_config()
         if not paths:
             return
         code, out, err = await self.run("add", *paths)
@@ -84,6 +106,7 @@ class GitClient:
 
     async def commit(self, message: str):
         """执行 git commit"""
+        await self._ensure_git_config()
         code, out, err = await self.run("commit", "-m", message)
         if code != 0:
             # 如果是 nothing to commit，忽略错误
@@ -93,6 +116,7 @@ class GitClient:
 
     async def push(self):
         """执行 git push"""
+        await self._ensure_git_config()
         code, out, err = await self.run("push")
         if code != 0:
             raise GitError(f"Git push failed: {err}")
