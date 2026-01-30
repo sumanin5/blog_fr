@@ -28,7 +28,8 @@ COPY . .
 RUN npm install -g pnpm
 
 # 设置构建时环境变量
-ARG NEXT_PUBLIC_API_URL
+# 默认使用相对路径 /api，通过 Caddy 反向代理访问后端
+ARG NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # 执行构建
