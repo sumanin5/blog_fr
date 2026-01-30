@@ -72,7 +72,7 @@ jobs:
           echo "构建 Frontend 镜像: $IMAGE_TAG"
           cd frontend
           # 前端使用相对路径 /api，不需要构建时传入
-          docker build --build-arg NEXT_PUBLIC_API_URL="" -t $IMAGE_TAG:${{ github.sha }} -t $IMAGE_TAG:latest .
+          docker build --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}" -t $IMAGE_TAG:${{ github.sha }} -t $IMAGE_TAG:latest .
           echo "推送 Frontend 镜像到 ACR..."
           docker push $IMAGE_TAG:${{ github.sha }} && echo "✓ 推送 SHA 标签成功" || echo "⚠ 推送 SHA 标签失败"
           docker push $IMAGE_TAG:latest && echo "✓ 推送 latest 标签成功" || echo "⚠ 推送 latest 标签失败"
