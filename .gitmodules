@@ -1,0 +1,3 @@
+[submodule "content"]
+	path = content
+	url = git@github.com:sumanin5/blog-content.git

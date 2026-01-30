@@ -67,6 +67,6 @@ backend/data/*.mmdb
 # 备份目录
 # ==========================================
 /frontend_react_backup/
-/content/
+# /content/
 /backend/htmlcov/
 /backend/test-report.html

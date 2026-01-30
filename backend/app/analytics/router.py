@@ -53,18 +53,34 @@ async def log_analytics_event(
     if "user_agent" not in event_in.payload:
         event_in.payload["user_agent"] = ua_string
 
+    # 获取真实客户端 IP（考虑反向代理）
+    def get_real_ip(request: Request) -> Optional[str]:
+        """从请求中提取真实客户端 IP，优先使用反向代理头"""
+        # 优先级：X-Forwarded-For > X-Real-IP > request.client.host
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            # X-Forwarded-For 可能包含多个 IP，取第一个（真实客户端）
+            return forwarded_for.split(",")[0].strip()
+
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return real_ip
+
+        # 兜底：直接连接 IP（可能是代理 IP）
+        return request.client.host if request.client else None
+
     if "ip" not in event_in.payload:
-        client_host = request.client.host if request.client else None
-        if client_host:
-            event_in.payload["ip"] = client_host
+        client_ip = get_real_ip(request)
+        if client_ip:
+            event_in.payload["ip"] = client_ip
 
     # 解析 User-Agent
     ua = user_agents.parse(ua_string)
 
-    # 提取 IP (优先从 payload 获取，否则用连接 IP)
+    # 提取 IP (优先从 payload 获取)
     ip_addr = event_in.payload.get("ip")
-    if not ip_addr and request.client:
-        ip_addr = request.client.host
+    if not ip_addr:
+        ip_addr = get_real_ip(request)
 
     # 提取时长 (如果前端上传)
     duration = event_in.payload.get("duration", 0)
