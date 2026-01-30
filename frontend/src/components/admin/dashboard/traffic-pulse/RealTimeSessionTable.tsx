@@ -34,7 +34,7 @@ export const RealTimeSessionTable: React.FC<RealTimeSessionTableProps> = ({
   sessions,
 }) => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
-    null,
+    null
   );
 
   const { data: sessionDetail, isLoading: loadingDetail } =
@@ -79,17 +79,29 @@ export const RealTimeSessionTable: React.FC<RealTimeSessionTableProps> = ({
     {
       accessorKey: "location",
       header: "地理位置",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-          <MapPin className="size-3 text-slate-400" />
-          <span
-            className="truncate max-w-[200px]"
-            title={`${row.original.city}, ${row.original.country}`}
-          >
-            {row.original.city || "Unknown"}, {row.original.country || "-"}
-          </span>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const { city, region, country, isp } = row.original;
+        // 构建完整的地理位置字符串
+        const locationParts = [city, region, country].filter(
+          (part) => part && part !== "Unknown"
+        );
+        const locationStr =
+          locationParts.length > 0 ? locationParts.join(", ") : "Unknown";
+
+        return (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+              <MapPin className="size-3 text-slate-400 shrink-0" />
+              <span className="truncate max-w-[200px]" title={locationStr}>
+                {locationStr}
+              </span>
+            </div>
+            {isp && isp !== "Unknown" && (
+              <span className="text-[10px] text-slate-500 ml-5">{isp}</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "device",
@@ -141,7 +153,7 @@ export const RealTimeSessionTable: React.FC<RealTimeSessionTableProps> = ({
 
   const renderCell = (
     col: ColumnDef<AnalyticsSessionItem>,
-    session: AnalyticsSessionItem,
+    session: AnalyticsSessionItem
   ) => {
     if (typeof col.cell === "function") {
       return (col.cell as any)({
@@ -246,13 +258,27 @@ export const RealTimeSessionTable: React.FC<RealTimeSessionTableProps> = ({
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="size-4 text-slate-400" />
                     <span className="font-medium">
-                      {sessionDetail.city}, {sessionDetail.country}
+                      {[
+                        sessionDetail.city,
+                        sessionDetail.region,
+                        sessionDetail.country,
+                      ]
+                        .filter((part) => part && part !== "Unknown")
+                        .join(", ") || "Unknown"}
                     </span>
                   </div>
+                  {sessionDetail.isp && sessionDetail.isp !== "Unknown" && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Globe className="size-4 text-slate-400" />
+                      <span className="text-slate-600 dark:text-slate-400">
+                        {sessionDetail.isp}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-sm">
                     {getDeviceIcon(
                       sessionDetail.deviceInfo,
-                      sessionDetail.isBot,
+                      sessionDetail.isBot
                     )}
                     <span className="text-slate-600 dark:text-slate-400">
                       {sessionDetail.deviceInfo}

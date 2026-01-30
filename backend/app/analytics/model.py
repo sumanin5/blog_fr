@@ -59,7 +59,10 @@ class AnalyticsEvent(Base, table=True):
     # 地理位置信息 (哪怕是大概的)
     country: Optional[str] = Field(default=None, index=True)
     city: Optional[str] = Field(default=None, index=True)
-    region: Optional[str] = Field(default=None)  # Provinc/State
+    region: Optional[str] = Field(default=None, index=True)  # Province/State
+    isp: Optional[str] = Field(
+        default=None, index=True
+    )  # ISP/运营商 (移动/电信/联通等)
     latitude: Optional[float] = Field(default=None)
     longitude: Optional[float] = Field(default=None)
 

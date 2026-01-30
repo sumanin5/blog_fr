@@ -89,6 +89,7 @@ async def log_analytics_event(
     country = "Unknown"
     city = "Unknown"
     province = "Unknown"
+    isp = "Unknown"
 
     if ip_addr:
         try:
@@ -115,7 +116,19 @@ async def log_analytics_event(
 
                 if result:
                     parts = result.split("|")
-                    if len(parts) >= 4:
+                    # 返回格式: 国家|区域|省份|城市|ISP
+                    # 例如: 中国|0|浙江省|杭州市|电信
+                    if len(parts) >= 5:
+                        country = (
+                            parts[0] if parts[0] and parts[0] != "0" else "Unknown"
+                        )
+                        province = (
+                            parts[2] if parts[2] and parts[2] != "0" else "Unknown"
+                        )
+                        city = parts[3] if parts[3] and parts[3] != "0" else "Unknown"
+                        isp = parts[4] if parts[4] and parts[4] != "0" else "Unknown"
+                    elif len(parts) >= 4:
+                        # 兼容旧格式或不完整数据
                         country = (
                             parts[0] if parts[0] and parts[0] != "0" else "Unknown"
                         )
@@ -148,6 +161,7 @@ async def log_analytics_event(
         "country": country,
         "city": city,
         "region": province,  # 使用 region 字段存储省份
+        "isp": isp,  # 运营商信息
     }
 
     # 使用 model_copy 创建一个带有新字段的 Pydantic 模型

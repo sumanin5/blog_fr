@@ -7232,6 +7232,17 @@
             ],
             "title": "Region"
           },
+          "isp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isp"
+          },
           "latitude": {
             "anyOf": [
               {
@@ -7439,6 +7450,17 @@
             ],
             "title": "Region"
           },
+          "isp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isp"
+          },
           "latitude": {
             "anyOf": [
               {
@@ -7521,6 +7543,17 @@
             ],
             "title": "Country"
           },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
           "city": {
             "anyOf": [
               {
@@ -7531,6 +7564,17 @@
               }
             ],
             "title": "City"
+          },
+          "isp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isp"
           },
           "device_info": {
             "type": "string",
@@ -10156,6 +10200,17 @@
             ],
             "title": "Country"
           },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
           "city": {
             "anyOf": [
               {
@@ -10166,6 +10221,17 @@
               }
             ],
             "title": "City"
+          },
+          "isp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isp"
           },
           "device_info": {
             "type": "string",

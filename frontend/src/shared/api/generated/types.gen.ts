@@ -71,6 +71,10 @@ export type AnalyticsEventCreate = {
      */
     region?: string | null;
     /**
+     * Isp
+     */
+    isp?: string | null;
+    /**
      * Latitude
      */
     latitude?: number | null;
@@ -159,6 +163,10 @@ export type AnalyticsEventResponse = {
      */
     region?: string | null;
     /**
+     * Isp
+     */
+    isp?: string | null;
+    /**
      * Latitude
      */
     latitude?: number | null;
@@ -197,9 +205,17 @@ export type AnalyticsSessionDetail = {
      */
     country?: string | null;
     /**
+     * Region
+     */
+    region?: string | null;
+    /**
      * City
      */
     city?: string | null;
+    /**
+     * Isp
+     */
+    isp?: string | null;
     /**
      * Device Info
      */
@@ -1678,9 +1694,17 @@ export type SessionListItem = {
      */
     country?: string | null;
     /**
+     * Region
+     */
+    region?: string | null;
+    /**
      * City
      */
     city?: string | null;
+    /**
+     * Isp
+     */
+    isp?: string | null;
     /**
      * Device Info
      */

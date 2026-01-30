@@ -26,6 +26,7 @@ class AnalyticsEventCreate(AnalyticsEventBase):
     country: Optional[str] = None
     city: Optional[str] = None
     region: Optional[str] = None
+    isp: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     duration: Optional[int] = 0
@@ -44,6 +45,7 @@ class AnalyticsEventResponse(AnalyticsEventBase):
     country: Optional[str] = None
     city: Optional[str] = None
     region: Optional[str] = None
+    isp: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     duration: Optional[int] = 0
@@ -113,7 +115,9 @@ class SessionListItem(BaseModel):
     visitor_id: str
     ip_address: Optional[str] = None
     country: Optional[str] = None
+    region: Optional[str] = None  # 省份/州
     city: Optional[str] = None
+    isp: Optional[str] = None  # 运营商
     device_info: str  # Combined browser/os "Chrome / Windows"
     start_time: datetime
     last_active: datetime
