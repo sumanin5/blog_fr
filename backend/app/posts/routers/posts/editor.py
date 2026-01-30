@@ -59,8 +59,12 @@ async def create_post_by_type(
     post_in.post_type = post_type
     post = await services.create_post(session, post_in, current_user.id)
 
-    # 触发自动提交
-    background_tasks.add_task(run_background_commit, f"Create post: {post.title}")
+    # 触发自动导出并提交到 Git
+    background_tasks.add_task(
+        run_background_commit,
+        message=f"feat: create post '{post.title}'",
+        post_id=str(post.id),
+    )
 
     return post
 
@@ -81,8 +85,12 @@ async def update_post_by_type(
 ):
     post = await services.update_post(session, post_id, post_in, current_user)
 
-    # 触发自动提交
-    background_tasks.add_task(run_background_commit, f"Update post: {post.title}")
+    # 触发自动导出并提交到 Git
+    background_tasks.add_task(
+        run_background_commit,
+        message=f"chore: update post '{post.title}'",
+        post_id=str(post.id),
+    )
 
     return post
 
@@ -100,9 +108,18 @@ async def delete_post_by_type(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     background_tasks: BackgroundTasks,
 ):
+    post = await services.get_post_by_id(session, post_id)
+    post_title = post.title if post else str(post_id)
+
     await services.delete_post(session, post_id, current_user)
 
-    # 触发自动提交
-    background_tasks.add_task(run_background_commit, f"Delete post: {post_id}")
+    # 删除文章时，需要删除对应的文件
+    # 注意：这里需要在删除数据库记录之前获取 source_path
+    # 然后手动删除文件并提交
+    background_tasks.add_task(
+        run_background_commit,
+        message=f"chore: delete post '{post_title}'",
+        post_id=None,  # 删除操作不需要导出，只需要提交删除的文件
+    )
 
     return None
