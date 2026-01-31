@@ -17,8 +17,8 @@ from app.media.utils import (
     get_file_extension,
     get_mime_type,
     get_thumbnail_size,
+    resize_to_fixed_height,
     should_generate_thumbnails,
-    smart_crop_and_resize,
     validate_file_extension,
     validate_file_size,
 )
@@ -520,10 +520,10 @@ class TestThumbnailConfiguration:
     def test_get_thumbnail_size_valid_sizes(self):
         """测试获取有效的缩略图尺寸"""
         test_cases = [
-            ("small", (150, 150)),
-            ("medium", (300, 300)),
-            ("large", (600, 600)),
-            ("xlarge", (1200, 1200)),
+            ("small", (300, 150)),  # 固定高度 150px
+            ("medium", (600, 300)),  # 固定高度 300px
+            ("large", (1200, 600)),  # 固定高度 600px
+            ("xlarge", (2400, 1200)),  # 固定高度 1200px
         ]
 
         for size_name, expected_size in test_cases:
@@ -538,7 +538,7 @@ class TestThumbnailConfiguration:
 
         for size_name in invalid_sizes:
             actual_size = get_thumbnail_size(size_name)
-            assert actual_size == (300, 300), (
+            assert actual_size == (600, 300), (
                 f"无效尺寸应该返回默认medium尺寸: {size_name} -> {actual_size}"
             )
 
@@ -579,67 +579,60 @@ class TestThumbnailConfiguration:
 class TestImageProcessing:
     """图片处理函数测试"""
 
-    def test_smart_crop_and_resize_landscape_to_square(self):
-        """测试横向图片裁剪为正方形"""
+    def test_resize_to_fixed_height_landscape(self):
+        """测试横向图片按固定高度缩放"""
         from PIL import Image
 
-        # 创建800x600的横向图片
-        original = Image.new("RGB", (800, 600), color="red")
+        # 创建1920x1080的横向图片
+        original = Image.new("RGB", (1920, 1080), color="red")
 
-        # 裁剪为300x300正方形
-        result = smart_crop_and_resize(original, (300, 300))
+        # 固定高度600，最大宽度1200
+        result = resize_to_fixed_height(original, max_width=1200, fixed_height=600)
 
-        # 验证结果尺寸
-        assert result.size == (300, 300), f"结果尺寸不正确: {result.size}"
+        # 验证结果：高度应该是600，宽度按比例缩放 (1920/1080)*600 ≈ 1067
+        assert result.size[1] == 600, f"高度应该是600: {result.size}"
+        # 允许 ±1 像素的舍入误差
+        assert 1066 <= result.size[0] <= 1067, f"宽度应该约为1067: {result.size}"
 
-    def test_smart_crop_and_resize_portrait_to_square(self):
-        """测试纵向图片裁剪为正方形"""
+    def test_resize_to_fixed_height_portrait(self):
+        """测试纵向图片按固定高度缩放"""
         from PIL import Image
 
         # 创建600x800的纵向图片
         original = Image.new("RGB", (600, 800), color="blue")
 
-        # 裁剪为300x300正方形
-        result = smart_crop_and_resize(original, (300, 300))
+        # 固定高度600，最大宽度1200
+        result = resize_to_fixed_height(original, max_width=1200, fixed_height=600)
 
-        # 验证结果尺寸
-        assert result.size == (300, 300), f"结果尺寸不正确: {result.size}"
+        # 验证结果：高度应该是600，宽度按比例缩放 (600/800)*600 = 450
+        assert result.size[1] == 600, f"高度应该是600: {result.size}"
+        assert result.size[0] == 450, f"宽度应该是450: {result.size}"
 
-    def test_smart_crop_and_resize_square_to_rectangle(self):
-        """测试正方形图片裁剪为矩形"""
+    def test_resize_to_fixed_height_with_max_width_limit(self):
+        """测试超宽图片受最大宽度限制"""
         from PIL import Image
 
-        # 创建600x600的正方形图片
-        original = Image.new("RGB", (600, 600), color="green")
+        # 创建3000x1000的超宽图片
+        original = Image.new("RGB", (3000, 1000), color="green")
 
-        # 裁剪为400x300矩形
-        result = smart_crop_and_resize(original, (400, 300))
+        # 固定高度600，最大宽度1200
+        result = resize_to_fixed_height(original, max_width=1200, fixed_height=600)
 
-        # 验证结果尺寸
-        assert result.size == (400, 300), f"结果尺寸不正确: {result.size}"
+        # 按固定高度缩放：(3000/1000)*600 = 1800，超过最大宽度1200
+        # 应该按最大宽度限制：宽度1200，高度 (1000/3000)*1200 = 400
+        assert result.size[0] == 1200, f"宽度应该被限制为1200: {result.size}"
+        assert result.size[1] == 400, f"高度应该是400: {result.size}"
 
-    def test_smart_crop_and_resize_upscaling(self):
-        """测试小图片放大"""
+    def test_resize_to_fixed_height_small_image(self):
+        """测试小图片放大到固定高度"""
         from PIL import Image
 
-        # 创建200x150的小图片
-        original = Image.new("RGB", (200, 150), color="yellow")
+        # 创建400x200的小图片
+        original = Image.new("RGB", (400, 200), color="yellow")
 
-        # 放大为800x600
-        result = smart_crop_and_resize(original, (800, 600))
+        # 固定高度600，最大宽度1200
+        result = resize_to_fixed_height(original, max_width=1200, fixed_height=600)
 
-        # 验证结果尺寸
-        assert result.size == (800, 600), f"结果尺寸不正确: {result.size}"
-
-    def test_smart_crop_and_resize_same_ratio(self):
-        """测试相同比例的图片调整"""
-        from PIL import Image
-
-        # 创建800x600的图片（4:3比例）
-        original = Image.new("RGB", (800, 600), color="purple")
-
-        # 调整为400x300（保持4:3比例）
-        result = smart_crop_and_resize(original, (400, 300))
-
-        # 验证结果尺寸
-        assert result.size == (400, 300), f"结果尺寸不正确: {result.size}"
+        # 验证结果：高度应该是600，宽度按比例放大 (400/200)*600 = 1200
+        assert result.size[1] == 600, f"高度应该是600: {result.size}"
+        assert result.size[0] == 1200, f"宽度应该是1200: {result.size}"

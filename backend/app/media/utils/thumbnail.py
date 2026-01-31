@@ -18,12 +18,15 @@ from .path import generate_thumbnail_path
 logger = logging.getLogger(__name__)
 
 
-# 缩略图配置
+# 缩略图配置（固定高度，宽度自适应）
+# 格式：(max_width, fixed_height)
+# - fixed_height: 固定高度
+# - max_width: 最大宽度（防止超宽图片）
 THUMBNAIL_SIZES = {
-    "small": (150, 150),
-    "medium": (300, 300),
-    "large": (600, 600),
-    "xlarge": (1200, 1200),
+    "small": (300, 150),  # 高度 150px，最大宽度 300px
+    "medium": (600, 300),  # 高度 300px，最大宽度 600px
+    "large": (1200, 600),  # 高度 600px，最大宽度 1200px
+    "xlarge": (2400, 1200),  # 高度 1200px，最大宽度 2400px
 }
 
 
@@ -101,45 +104,39 @@ async def load_and_process_image(source_path: str) -> Optional[tuple[bytes, int,
     return await asyncio.get_event_loop().run_in_executor(None, process_image)
 
 
-def smart_crop_and_resize(
-    image: Image.Image, target_size: tuple[int, int]
+def resize_to_fixed_height(
+    image: Image.Image, max_width: int, fixed_height: int
 ) -> Image.Image:
-    """智能裁剪并调整图片尺寸
+    """按固定高度缩放图片，宽度自适应（保持比例）
 
     Args:
         image: PIL Image 对象
-        target_size: 目标尺寸 (width, height)
+        max_width: 最大宽度（防止超宽图片）
+        fixed_height: 固定高度
 
     Returns:
         Image: 处理后的图片
+
+    示例：
+        原图 1920x1080 → 固定高度 600 → 结果 1067x600
+        原图 800x600 → 固定高度 600 → 结果 800x600
+        原图 3000x1000 → 固定高度 600，最大宽度 1200 → 结果 1200x400（先按高度缩放，再限制宽度）
     """
     original_width, original_height = image.size
-    target_width, target_height = target_size
 
-    # 计算比例
-    target_ratio = target_width / target_height
-    original_ratio = original_width / original_height
+    # 计算按固定高度缩放后的宽度
+    scale_ratio = fixed_height / original_height
+    new_width = int(original_width * scale_ratio)
+    new_height = fixed_height
 
-    if original_ratio > target_ratio:
-        # 原图更宽，裁剪宽度
-        new_width = int(original_height * target_ratio)
-        new_height = original_height
-        left = (original_width - new_width) // 2
-        top = 0
-        right = left + new_width
-        bottom = new_height
-    else:
-        # 原图更高，裁剪高度
-        new_width = original_width
-        new_height = int(original_width / target_ratio)
-        left = 0
-        top = (original_height - new_height) // 2
-        right = new_width
-        bottom = top + new_height
+    # 如果缩放后的宽度超过最大宽度，按最大宽度重新计算
+    if new_width > max_width:
+        scale_ratio = max_width / original_width
+        new_width = max_width
+        new_height = int(original_height * scale_ratio)
 
-    # 裁剪并调整尺寸
-    cropped = image.crop((left, top, right, bottom))
-    return cropped.resize(target_size, Image.Resampling.LANCZOS)
+    # 使用高质量重采样
+    return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
 
 async def create_thumbnail(
@@ -149,7 +146,7 @@ async def create_thumbnail(
 
     Args:
         image_data: 处理后的图片数据
-        target_size: 目标尺寸 (width, height)
+        target_size: 目标尺寸 (max_width, fixed_height)
         output_path: 输出路径
 
     Returns:
@@ -159,7 +156,8 @@ async def create_thumbnail(
     # CPU 密集型任务：生成缩略图
     def generate_thumbnail():
         image = Image.open(BytesIO(image_data))
-        thumbnail = smart_crop_and_resize(image, target_size)
+        max_width, fixed_height = target_size
+        thumbnail = resize_to_fixed_height(image, max_width, fixed_height)
 
         # 保存为 WebP 格式
         output = BytesIO()

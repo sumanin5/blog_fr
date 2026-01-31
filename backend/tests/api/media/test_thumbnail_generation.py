@@ -129,12 +129,15 @@ class TestThumbnailGeneration:
         # 验证缩略图生成
         assert len(thumbnails) == 4
 
-        # 验证xlarge缩略图被放大了
+        # 验证xlarge缩略图尺寸（固定高度1200，宽度自适应）
         xlarge_path = temp_media_dir / thumbnails["xlarge"]
         from PIL import Image
 
         with Image.open(xlarge_path) as img:
-            assert img.size == (1200, 1200), f"xlarge缩略图尺寸不正确: {img.size}"
+            # 固定高度应该是1200，宽度根据原图比例计算
+            assert img.size[1] == 1200, f"xlarge缩略图高度应该是1200: {img.size}"
+            # 宽度应该 <= 最大宽度2400
+            assert img.size[0] <= 2400, f"xlarge缩略图宽度不应超过2400: {img.size}"
 
     async def test_svg_image_no_thumbnails(self, temp_media_dir: Path):
         """测试SVG图片不生成缩略图"""

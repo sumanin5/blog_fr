@@ -39,8 +39,8 @@ from .thumbnail import (
     generate_all_thumbnails_for_file,
     get_thumbnail_size,
     load_and_process_image,
+    resize_to_fixed_height,
     should_generate_thumbnails,
-    smart_crop_and_resize,
 )
 from .validation import (
     ALLOWED_EXTENSIONS,
@@ -68,7 +68,7 @@ __all__ = [
     "save_file_to_disk",
     "delete_file_from_disk",
     "load_and_process_image",
-    "smart_crop_and_resize",
+    "resize_to_fixed_height",
     "create_thumbnail",
     "THUMBNAIL_SIZES",
     "get_thumbnail_size",

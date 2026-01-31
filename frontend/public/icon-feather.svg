@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- 背景 -->
+  <rect width="32" height="32" rx="8" fill="url(#grad3)"/>
+  <!-- 羽毛笔 -->
+  <path d="M 16 6 Q 20 8 22 12 Q 23 16 20 20 L 18 22 L 14 18 Q 12 14 14 10 Q 15 8 16 6 Z"
+        fill="white" opacity="0.9"/>
+  <path d="M 18 22 L 12 26 L 14 18" fill="white" opacity="0.7"/>
+</svg>
