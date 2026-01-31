@@ -22,8 +22,27 @@ def build_posts_query(
     author_id: Optional[UUID] = None,
     is_featured: Optional[bool] = None,
     search_query: Optional[str] = None,
+    include_scheduled: bool = False,  # 🆕 是否包含定时发布的文章
 ):
-    """构建文章查询"""
+    """构建文章查询
+
+    Args:
+        post_type: 文章类型过滤
+        status: 状态过滤
+        category_id: 分类过滤
+        tag_id: 标签过滤
+        author_id: 作者过滤
+        is_featured: 是否推荐过滤
+        search_query: 搜索关键词
+        include_scheduled: 是否包含定时发布的文章（默认 False）
+            - False: 只显示 published_at <= 当前时间 的文章（公开接口默认）
+            - True: 显示所有文章，包括未来发布的（管理后台默认）
+
+    定时发布逻辑：
+        - 文章状态为 PUBLISHED，但 published_at 是未来时间 → 不显示（除非 include_scheduled=True）
+        - 文章状态为 PUBLISHED，published_at 是过去时间 → 显示
+        - 文章状态为 DRAFT → 根据 status 参数决定是否显示
+    """
     stmt = select(Post).options(
         load_only(
             Post.id,
@@ -72,6 +91,17 @@ def build_posts_query(
         search_pattern = f"%{search_query}%"
         stmt = stmt.where(
             (Post.title.ilike(search_pattern)) | (Post.excerpt.ilike(search_pattern))
+        )
+
+    # 🆕 定时发布过滤：只在公开接口生效（include_scheduled=False）
+    if not include_scheduled:
+        # 只显示已发布且发布时间 <= 当前时间的文章
+        # 或者状态不是 PUBLISHED 的文章（草稿等，由 status 参数控制）
+        now = datetime.now()
+        stmt = stmt.where(
+            (Post.status != PostStatus.PUBLISHED)  # 草稿等状态不受限制
+            | (Post.published_at.is_(None))  # 没有设置发布时间的文章
+            | (Post.published_at <= now)  # 发布时间已到的文章
         )
 
     stmt = stmt.order_by(desc(Post.published_at), desc(Post.created_at))

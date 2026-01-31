@@ -84,6 +84,7 @@ async def list_posts_by_type(
         is_featured=filters.is_featured,
         search_query=filters.search,
         status=status_filter,
+        include_scheduled=False,  # 🆕 公开接口不显示定时发布的文章
     )
     return await cruds.paginate_query(session, query, params)
 

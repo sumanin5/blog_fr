@@ -31,6 +31,7 @@ class PostCreate(PostBase):
     content_mdx: str = Field(..., description="原始 MDX 内容")
     excerpt: Optional[str] = None  # 允许用户手动指定摘要
     tags: Optional[List[str]] = None  # 允许用户通过 API 传入标签名称列表
+    published_at: Optional[datetime] = None  # 🆕 允许用户设置定时发布时间
 
     # 关联信息
     category_id: Optional[UUID] = None
@@ -91,6 +92,7 @@ class PostUpdate(BaseModel):
     content_mdx: Optional[str] = None
     excerpt: Optional[str] = None  # 允许用户更新摘要
     tags: Optional[List[str]] = None  # 允许用户更新标签
+    published_at: Optional[datetime] = None  # 🆕 允许用户更新定时发布时间
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
     meta_keywords: Optional[str] = None

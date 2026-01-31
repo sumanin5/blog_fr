@@ -52,6 +52,7 @@ async def list_posts_by_type_admin(
         author_id=filters.author_id,
         is_featured=filters.is_featured,
         search_query=filters.search,
+        include_scheduled=True,  # 🆕 管理后台显示所有文章，包括定时发布的
     )
     return await cruds.paginate_query(session, query, params)
 
@@ -79,6 +80,7 @@ async def list_all_posts_admin(
         author_id=filters.author_id,
         is_featured=filters.is_featured,
         search_query=filters.search,
+        include_scheduled=True,  # 🆕 管理后台显示所有文章，包括定时发布的
     )
     return await cruds.paginate_query(session, query, params)
 
@@ -103,6 +105,7 @@ async def get_my_posts(
         tag_id=filters.tag_id,
         is_featured=filters.is_featured,
         search_query=filters.search,
+        include_scheduled=True,  # 🆕 用户可以看到自己的定时发布文章
     )
     return await cruds.paginate_query(session, query, params)
 

@@ -256,6 +256,7 @@ async def create_post(
                 "tags",
                 "commit_message",
                 "title",  # 排除 title，因为下面会显式设置
+                "published_at",  # 🆕 排除 published_at，下面会特殊处理
                 # excerpt 不再排除，允许用户通过 API 传入
             }
         ),
@@ -266,8 +267,16 @@ async def create_post(
         content_ast=processor.content_ast,
         toc=processor.toc,
         reading_time=processor.reading_time,
-        published_at=datetime.now() if post_in.status == PostStatus.PUBLISHED else None,
     )
+
+    # 🆕 处理发布时间：
+    # 1. 如果用户指定了 published_at，使用用户指定的时间（支持定时发布）
+    # 2. 如果状态是 PUBLISHED 但没有指定 published_at，使用当前时间
+    # 3. 如果状态是 DRAFT，published_at 保持 None
+    if post_in.published_at:
+        db_post.published_at = post_in.published_at
+    elif post_in.status == PostStatus.PUBLISHED:
+        db_post.published_at = datetime.now()
 
     # 处理 excerpt：优先级 用户传入 > MDX frontmatter > 自动生成
     if not db_post.excerpt:  # 如果用户没有通过 API 传入
@@ -396,7 +405,15 @@ async def update_post(
     pass
 
     # 3. 处理发布时间
-    if update_data.get("status") == PostStatus.PUBLISHED and not db_post.published_at:
+    # 🆕 更新逻辑：
+    # 1. 如果用户显式设置了 published_at，使用用户设置的值（支持修改定时发布时间）
+    # 2. 如果状态从 DRAFT 改为 PUBLISHED，且没有设置 published_at，使用当前时间
+    # 3. 如果状态从 PUBLISHED 改为 DRAFT，保持原 published_at 不变（方便重新发布）
+    if "published_at" in update_data:
+        # 用户显式设置了 published_at
+        db_post.published_at = update_data["published_at"]
+    elif update_data.get("status") == PostStatus.PUBLISHED and not db_post.published_at:
+        # 状态改为 PUBLISHED，但没有 published_at，使用当前时间
         db_post.published_at = datetime.now()
 
     # 4. 处理显式传入的标签更新 (优先级高于 MDX 中的标签)
