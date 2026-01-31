@@ -1,44 +1,44 @@
 {
-    # 全局配置
-    # email your-email@example.com # 用于 Let's Encrypt 通知（建议填写真实邮箱）
+	# 全局配置
+}
+
+# ==================================================
+# WWW 域名重定向到主域名 (解决 CORS 问题并统一权重)
+# ==================================================
+# 注意：需要在 .env 中设置 DOMAIN_NAME_WWW 变量才能启用
+{$DOMAIN_NAME_WWW} {
+	redir {scheme}://{$DOMAIN_NAME}{uri}
 }
 
 # ==================================================
 # 前端应用 (主域名)
 # ==================================================
-# 将来替换为您的真实域名，例如: www.yourdomain.com
-# 环境变量 DOMAIN_NAME 未设置时默认为 :80 (本地开发)
-{$DOMAIN_NAME::80} {
-    # 启用 Gzip 压缩
-    encode gzip
+{$DOMAIN_NAME} {
+	# 启用压缩
+	encode gzip
 
-    # 代理到前端容器
-    reverse_proxy frontend:3000
+	# 转发到前端 Next.js 容器
+	reverse_proxy frontend:3000
 
-    # 也可以在这里统一拦截 /api 并转发给后端（同域模式）
-    handle /api/* {
-        reverse_proxy backend:8000
-    }
+	# 处理 API 转发 (支持同域访问模式)
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
 }
 
 # ==================================================
-# 后端 API (API 子域名)
+# 后端 API (独立 API 子域名)
 # ==================================================
-# 将来替换为: api.yourdomain.com
-# 环境变量 API_DOMAIN_NAME 未设置时默认为 :8080 (本地开发)
-{$API_DOMAIN_NAME::8080} {
-    encode gzip
-
-    # 代理到后端容器
-    reverse_proxy backend:8000
+{$API_DOMAIN_NAME} {
+	reverse_proxy backend:8000
 }
 
-# 实战上线指南：
-# 1. 购买域名并解析：
-#    - A 记录 @    -> 服务器 IP
-#    - A 记录 www  -> 服务器 IP
-#    - A 记录 api  -> 服务器 IP
-# 2. 修改本文件：
-#    - 将 :80 改为 www.yourdomain.com
-#    - 将 :8080 改为 api.yourdomain.com (端口就不要了，HTTPS 默认 443)
-# 3. 重启 Caddy: docker compose restart caddy
+# ==================================================
+# 配置说明
+# ==================================================
+# 1. 确保 .env 文件中已设置以下变量：
+#    DOMAIN_NAME=yourdomain.com
+#    DOMAIN_NAME_WWW=www.yourdomain.com
+#    API_DOMAIN_NAME=api.yourdomain.com
+# 2. Caddy 将自动处理 SSL 证书申请与续期。
+# 3. 访问 www 域名将通过 301 重定向到主域名，彻底避免 CORS 跨域限制。

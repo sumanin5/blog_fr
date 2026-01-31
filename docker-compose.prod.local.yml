@@ -81,9 +81,10 @@ services:
       - "8080:8080"
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME}
+      - DOMAIN_NAME_WWW=${DOMAIN_NAME_WWW}
       - API_DOMAIN_NAME=${API_DOMAIN_NAME}
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

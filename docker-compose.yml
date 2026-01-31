@@ -22,6 +22,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - blog-network
 
   # ==========================================
   # 后端 API
@@ -61,6 +63,9 @@ services:
 
     command: fastapi run --workers 4 app/main.py
 
+    networks:
+      - blog-network
+
   frontend:
     # 使用阿里云 ACR 镜像
     image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-frontend:latest
@@ -73,6 +78,8 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    networks:
+      - blog-network
 
   # ==========================================
   # Caddy 反向代理 (自动 HTTPS)
@@ -88,6 +95,7 @@ services:
     environment:
       # Caddy 将使用这些变量来配置域名和申请证书
       - DOMAIN_NAME=${DOMAIN_NAME}
+      - DOMAIN_NAME_WWW=${DOMAIN_NAME_WWW}
       - API_DOMAIN_NAME=${API_DOMAIN_NAME}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
@@ -96,6 +104,8 @@ services:
     depends_on:
       - frontend
       - backend
+    networks:
+      - blog-network
 
 # ==========================================
 # 数据卷
@@ -104,3 +114,13 @@ volumes:
   postgres_data:
   caddy_data:   # 存储 SSL 证书
   caddy_config: # 存储 Caddy 配置
+
+# ==========================================
+# 网络配置
+# ==========================================
+networks:
+  blog-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

@@ -1,0 +1,31 @@
+{
+	auto_https off
+}
+
+http://{$DOMAIN_NAME} {
+	encode gzip
+	reverse_proxy frontend:3000
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+}
+
+http://{$API_DOMAIN_NAME} {
+	@options method OPTIONS
+	handle @options {
+		header Access-Control-Allow-Origin "*"
+		header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+		header Access-Control-Allow-Headers "*"
+		header Access-Control-Max-Age "3600"
+		respond 204
+	}
+
+	header Access-Control-Allow-Origin "*"
+	header Access-Control-Allow-Credentials "true"
+
+	reverse_proxy backend:8000
+}
+
+http://{$DOMAIN_NAME_WWW} {
+	redir http://{$DOMAIN_NAME}{uri}
+}

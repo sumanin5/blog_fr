@@ -52,10 +52,11 @@ async def create_category_by_type(
     category_in.post_type = post_type
     category = await service.create_category(session, category_in, current_user)
 
-    # 触发自动提交到 Git
+    # 触发自动提交到 Git（强制提交，因为分类 index.md 已被修改）
     background_tasks.add_task(
         run_background_commit,
         message=f"feat: create category '{category.name}' ({category.slug})",
+        force_commit=True,
     )
 
     return category
@@ -85,10 +86,11 @@ async def update_category_by_type(
         session, category_id, category_in, current_user, post_type
     )
 
-    # 触发自动提交到 Git
+    # 触发自动提交到 Git（强制提交，因为分类 index.md 已被修改）
     background_tasks.add_task(
         run_background_commit,
         message=f"chore: update category '{category.name}' ({category.slug})",
+        force_commit=True,
     )
 
     return category
@@ -116,10 +118,11 @@ async def delete_category_by_type(
 
     await service.delete_category(session, category_id, current_user, post_type)
 
-    # 触发自动提交到 Git
+    # 触发自动提交到 Git（强制提交，因为分类 index.md 已被删除）
     background_tasks.add_task(
         run_background_commit,
         message=f"chore: delete category '{category_name}' ({category_slug})",
+        force_commit=True,
     )
 
     return None

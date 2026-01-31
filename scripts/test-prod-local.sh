@@ -52,10 +52,10 @@ echo -e "${BLUE}  -> 构建 Backend...${NC}"
 docker build -t "$BACKEND_IMG" ./backend
 
 # 构建 Frontend
-echo -e "${BLUE}  -> 构建 Frontend (API: http://localhost:8080)...${NC}"
+echo -e "${BLUE}  -> 构建 Frontend (API: http://localhost:8000)...${NC}"
 # 强制 --no-cache 以确保 next.config.ts 等配置更新被重新编译
 docker build --no-cache \
-  --build-arg NEXT_PUBLIC_API_URL="http://localhost:8080" \
+  --build-arg NEXT_PUBLIC_API_URL="http://localhost:8000" \
   -t "$FRONTEND_IMG" ./frontend
 
 # 构建 Caddy
@@ -73,7 +73,9 @@ docker compose -f "$COMPOSE_FILE" down --remove-orphans || true
 docker compose -f "$PROJECT_ROOT/docker-compose.yml" down --remove-orphans 2>/dev/null || true
 
 # 启动！
-echo -e "${GREEN}🌐 服务启动中... 访问 http://localhost 即可${NC}"
+echo -e "${GREEN}🌐 服务启动中...${NC}"
+echo -e "${GREEN}   前端: http://localhost:3000${NC}"
+echo -e "${GREEN}   后端: http://localhost:8000${NC}"
 # 直接使用新文件，它会自己读取 .env.prod.local
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up
 
