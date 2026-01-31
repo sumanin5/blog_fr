@@ -1645,6 +1645,14 @@ export type PreviewResult = {
      * Errors
      */
     errors?: Array<SyncError>;
+    /**
+     * Git Pending Count
+     */
+    git_pending_count?: number;
+    /**
+     * Db Only Count
+     */
+    db_only_count?: number;
 };
 
 /**

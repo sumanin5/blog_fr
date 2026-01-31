@@ -45,6 +45,8 @@ class PreviewResult(BaseModel):
     to_update: List[PreviewChange] = []
     to_delete: List[PreviewChange] = []
     errors: List[SyncError] = []
+    git_pending_count: int = 0  # Git 仓库待同步的变更总数（新增+更新+删除）
+    db_only_count: int = 0  # 数据库中没有 source_path 的文章数量（待导出）
 
 
 class ResyncMetadataResponse(BaseModel):

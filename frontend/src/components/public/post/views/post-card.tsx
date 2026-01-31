@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -28,10 +27,10 @@ export function PostCard({ post, postType }: PostCardProps) {
   const authorName = post.author?.fullName || post.author?.username || "管理员";
   const type = (postType || post.postType || "articles") as PostType;
 
-  const coverUrl =
-    post.coverMedia?.thumbnails?.medium ||
-    post.coverMedia?.thumbnails?.small ||
-    post.coverMedia?.fileUrl;
+  // 根据 cover_media_id 拼接缩略图 URL
+  const coverUrl = post.coverMediaId
+    ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/${post.coverMediaId}/thumbnail/medium`
+    : null;
 
   const linkHref = routes.postDetailSlug(type, post.slug || "");
   const cardClassName = "group block h-full outline-hidden";
@@ -43,11 +42,10 @@ export function PostCard({ post, postType }: PostCardProps) {
         <Card className="flex flex-col h-full overflow-hidden border-border/40 bg-card/40 backdrop-blur-sm transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1.5 hover:border-primary/30 group-hover:ring-1 ring-primary/10">
           {/* 图片区域 */}
           <div className="relative aspect-video w-full overflow-hidden bg-muted">
-            <Image
+            <img
               src={coverUrl}
               alt={post.title}
-              fill
-              className="object-cover transition-transform duration-1000 will-change-transform group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-1000 will-change-transform group-hover:scale-110"
             />
             {/* 渐变遮罩 */}
             <div className="absolute inset-0 bg-linear-to-t from-background/95 via-background/20 to-transparent opacity-90 transition-opacity duration-500 group-hover:opacity-100" />

@@ -91,7 +91,7 @@ async def test_export_skips_posts_with_source_path(
     session,
     superadmin_user,
 ):
-    """测试：已有 source_path 的文章不会被重复导出"""
+    """测试：已有 source_path 且文件存在的文章不会被重复导出"""
     # 创建一篇已经有 source_path 的文章
     category = Category(
         name="Tech",
@@ -102,6 +102,21 @@ async def test_export_skips_posts_with_source_path(
     await session.commit()
     await session.refresh(category)
 
+    # 创建实际的文件
+    source_path = "articles/tech/existing-post.md"
+    file_path = mock_content_dir / source_path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text(
+        """---
+title: "Git Managed Post"
+slug: "git-managed-post"
+---
+
+# From Git
+""",
+        encoding="utf-8",
+    )
+
     post = Post(
         title="Git Managed Post",
         slug="git-managed-post",
@@ -110,7 +125,7 @@ async def test_export_skips_posts_with_source_path(
         post_type=PostType.ARTICLES,
         author_id=superadmin_user.id,
         category_id=category.id,
-        source_path="articles/tech/existing-post.md",  # 已有路径
+        source_path=source_path,  # 已有路径且文件存在
     )
     session.add(post)
     await session.commit()
@@ -124,7 +139,7 @@ async def test_export_skips_posts_with_source_path(
     assert response.status_code == 200
     data = response.json()
 
-    # 验证：没有文章被导出
+    # 验证：没有文章被导出（因为文件已存在）
     assert len(data["updated"]) == 0
 
 

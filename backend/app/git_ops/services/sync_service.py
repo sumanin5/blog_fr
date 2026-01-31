@@ -288,11 +288,10 @@ class SyncService(BaseGitOpsService):
         try:
             from .commit_service import CommitService
 
-            # 创建 CommitService 实例
+            # 创建 CommitService 实例 - 使用 container 而不是单独的参数
             commit_service = CommitService(
                 session=self.session,
-                git_client=self.git_client,
-                content_dir=self.content_dir,
+                container=self.container,
             )
 
             # 构建提交信息

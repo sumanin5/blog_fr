@@ -10120,6 +10120,16 @@
             "type": "array",
             "title": "Errors",
             "default": []
+          },
+          "git_pending_count": {
+            "type": "integer",
+            "title": "Git Pending Count",
+            "default": 0
+          },
+          "db_only_count": {
+            "type": "integer",
+            "title": "Db Only Count",
+            "default": 0
           }
         },
         "type": "object",

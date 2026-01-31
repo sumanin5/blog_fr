@@ -62,7 +62,13 @@ class ExportService(BaseGitOpsService):
             )
 
         # 2. 在内存中过滤
+        from pathlib import Path
+
+        from app.core.config import settings
+
+        content_dir = Path(settings.CONTENT_DIR)
         posts_to_export = []
+
         for post in all_posts:
             # 如果指定了 ID 或 强制导出，则包含
             if post_id or force_export:
@@ -70,10 +76,17 @@ class ExportService(BaseGitOpsService):
                 logger.info(f"[EXPORT DEBUG] Including '{post.title}' (forced/by_id)")
                 continue
 
-            # 否则只导出 source_path 为空的文章
+            # 否则导出需要导出的文章：
+            # 1) source_path 为空
+            # 2) source_path 不为空但文件不存在
             if not post.source_path or post.source_path.strip() == "":
                 posts_to_export.append(post)
                 logger.info(f"[EXPORT DEBUG] Including '{post.title}' (no source_path)")
+            elif not (content_dir / post.source_path).exists():
+                posts_to_export.append(post)
+                logger.info(
+                    f"[EXPORT DEBUG] Including '{post.title}' (file not exists: {post.source_path})"
+                )
 
         logger.info(
             f"[EXPORT DEBUG] Posts to export after filtering: {len(posts_to_export)}"

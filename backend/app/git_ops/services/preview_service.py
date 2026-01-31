@@ -27,6 +27,33 @@ class PreviewService(BaseGitOpsService):
 
         # 2. 获取数据库现状
         existing_posts = await post_crud.get_posts_with_source_path(self.session)
+
+        # 统计：数据库中需要导出的文章数量
+        # 包括：1) 没有 source_path 的文章  2) 有 source_path 但文件不存在的文章
+        from pathlib import Path
+
+        from app.core.config import settings
+        from app.posts.model import Post
+        from sqlmodel import select
+
+        # 获取所有文章
+        all_posts_stmt = select(Post)
+        all_posts_result = await self.session.exec(all_posts_stmt)
+        all_posts = list(all_posts_result.all())
+
+        content_dir = Path(settings.CONTENT_DIR)
+        db_only_count = 0
+
+        for post in all_posts:
+            # 情况1：没有 source_path
+            if not post.source_path:
+                db_only_count += 1
+            # 情况2：有 source_path 但文件不存在
+            elif not (content_dir / post.source_path).exists():
+                db_only_count += 1
+
+        result.db_only_count = db_only_count
+
         processed_post_ids = set()
 
         # 3. 对比差异
@@ -78,5 +105,14 @@ class PreviewService(BaseGitOpsService):
                         file=post.source_path, title=post.title, changes=["delete"]
                     )
                 )
+
+        # 5. 计算待同步总数
+        # 注意：有错误的文件也算作待处理（需要修复后才能同步）
+        result.git_pending_count = (
+            len(result.to_create)
+            + len(result.to_update)
+            + len(result.to_delete)
+            + len(result.errors)  # ← 添加错误数量
+        )
 
         return result

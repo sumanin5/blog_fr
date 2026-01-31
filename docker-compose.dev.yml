@@ -58,7 +58,9 @@ services:
     volumes:
       - ./backend:/app
       - ./.git:/git_root/.git
+      - ./.git/modules/content:/git_root/.git/modules/content  # submodule 支持
       - ./content:/git_root/content
+      - ~/.ssh:/root/.ssh:ro  # SSH key 用于 Git 推送
       - /app/.venv
 
     ports:
@@ -89,6 +91,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+    user: "${UID}:${GID}"  # 使用宿主机用户，避免权限问题
 
     # 挂载源代码（热更新）
     volumes:

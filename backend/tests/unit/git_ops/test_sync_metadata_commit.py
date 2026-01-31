@@ -52,8 +52,7 @@ class TestSyncMetadataCommit:
             # 验证
             MockCommitService.assert_called_once_with(
                 session=mock_session,
-                git_client=mock_git_client,
-                content_dir=mock_content_dir,
+                container=mock_container,  # 使用 container 而不是单独的参数
             )
             mock_commit_service.auto_commit.assert_called_once()
             call_args = mock_commit_service.auto_commit.call_args[0]

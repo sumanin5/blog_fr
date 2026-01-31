@@ -118,7 +118,8 @@ author: "{superadmin_user.username}"
         await session.exec(select(Post).where(Post.title == "Post with Image"))
     ).one()
 
-    assert "/media/uploads/" in post.content_mdx  # 路径已替换为媒体 URL
+    assert "/api/v1/media/" in post.content_mdx  # 路径已替换为媒体 API URL
+    assert "/thumbnail/large" in post.content_mdx  # 使用缩略图
 
     media = (
         await session.exec(select(MediaFile).where(MediaFile.content_hash == img_hash))

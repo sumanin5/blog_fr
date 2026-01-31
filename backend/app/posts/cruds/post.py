@@ -123,8 +123,19 @@ async def decrement_bookmark_count(session: AsyncSession, post_id: UUID) -> int:
     return post.bookmark_count
 
 
-async def get_posts_with_source_path(session: AsyncSession) -> list[Post]:
-    """获取所有有 source_path 的文章（用于 Git 同步）"""
+async def get_posts_with_source_path(
+    session: AsyncSession, verify_file_exists: bool = False
+) -> list[Post]:
+    """获取所有有 source_path 的文章（用于 Git 同步）
+
+    Args:
+        session: 数据库会话
+        verify_file_exists: 是否验证文件真实存在（默认 False 保持向后兼容）
+    """
+    from pathlib import Path
+
+    from app.core.config import settings
+
     stmt = (
         select(Post)
         .where(Post.source_path.isnot(None))  # type: ignore
@@ -136,4 +147,17 @@ async def get_posts_with_source_path(session: AsyncSession) -> list[Post]:
         )
     )
     result = await session.exec(stmt)
-    return list(result.all())
+    posts = list(result.all())
+
+    # 如果需要验证文件存在性，过滤掉文件不存在的记录
+    if verify_file_exists:
+        content_dir = Path(settings.CONTENT_DIR)
+        verified_posts = []
+        for post in posts:
+            if post.source_path:
+                file_path = content_dir / post.source_path
+                if file_path.exists():
+                    verified_posts.append(post)
+        return verified_posts
+
+    return posts

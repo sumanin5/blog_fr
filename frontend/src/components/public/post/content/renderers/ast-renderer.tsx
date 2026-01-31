@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 import { CodeBlock } from "@/components/public/mdx/components/code-block";
 import { MermaidDiagram } from "@/components/public/mdx/components/mermaid-diagram";
 import { KatexMath } from "@/components/public/mdx/components/katex-math";
@@ -73,13 +72,11 @@ function renderNode(node: Record<string, unknown>, i = 0): React.ReactNode {
       );
     case "image":
       return (
-        <Image
+        <img
           key={i}
           src={props.src as string}
           alt={(props.alt as string) || ""}
           title={props.title as string | undefined}
-          width={800}
-          height={600}
           className="max-w-full h-auto"
         />
       );
