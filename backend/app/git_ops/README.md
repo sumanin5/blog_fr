@@ -160,14 +160,14 @@ class GitOpsService:
 
 职责单一的服务类：
 
-| 服务             | 文件                  | 职责                           |
-| ---------------- | --------------------- | ------------------------------ |
-| `SyncService`    | `sync_service.py`     | 全量和增量同步 (Git → DB)      |
-| `ExportService`  | `export_service.py`   | 导出数据库文章 (DB → Git) ⭐   |
-| `PreviewService` | `preview_service.py`  | 同步预览（Dry Run）            |
-| `ResyncService`  | `resync_service.py`   | 重新同步单个文章元数据         |
-| `CommitService`  | `commit_service.py`   | Git 提交和推送                 |
-| `BaseGitOpsService` | `base.py`          | 服务基类，提供共享逻辑         |
+| 服务                | 文件                 | 职责                         |
+| ------------------- | -------------------- | ---------------------------- |
+| `SyncService`       | `sync_service.py`    | 全量和增量同步 (Git → DB)    |
+| `ExportService`     | `export_service.py`  | 导出数据库文章 (DB → Git) ⭐ |
+| `PreviewService`    | `preview_service.py` | 同步预览（Dry Run）          |
+| `ResyncService`     | `resync_service.py`  | 重新同步单个文章元数据       |
+| `CommitService`     | `commit_service.py`  | Git 提交和推送               |
+| `BaseGitOpsService` | `base.py`            | 服务基类，提供共享逻辑       |
 
 每个服务继承自 `BaseGitOpsService`，通过容器获取依赖。
 
@@ -202,14 +202,14 @@ class GitOpsService:
 
 ### API 端点概览
 
-| 端点                              | 方法 | 服务              | 说明                     |
-| --------------------------------- | ---- | ----------------- | ------------------------ |
-| `/ops/git/sync`                   | POST | `SyncService`     | 增量同步（默认）         |
-| `/ops/git/sync?force_full=true`   | POST | `SyncService`     | 强制全量同步             |
-| `/ops/git/push`                   | POST | `ExportService`   | 导出数据库文章到 Git     |
-| `/ops/git/preview`                | GET  | `PreviewService`  | 预览同步变更（Dry Run）  |
-| `/ops/git/posts/{id}/resync-metadata` | POST | `ResyncService` | 重新同步单篇元数据       |
-| `/ops/git/webhook`                | POST | `SyncService`     | GitHub Webhook 入口      |
+| 端点                                  | 方法 | 服务             | 说明                    |
+| ------------------------------------- | ---- | ---------------- | ----------------------- |
+| `/ops/git/sync`                       | POST | `SyncService`    | 增量同步（默认）        |
+| `/ops/git/sync?force_full=true`       | POST | `SyncService`    | 强制全量同步            |
+| `/ops/git/push`                       | POST | `ExportService`  | 导出数据库文章到 Git    |
+| `/ops/git/preview`                    | GET  | `PreviewService` | 预览同步变更（Dry Run） |
+| `/ops/git/posts/{id}/resync-metadata` | POST | `ResyncService`  | 重新同步单篇元数据      |
+| `/ops/git/webhook`                    | POST | `SyncService`    | GitHub Webhook 入口     |
 
 ### 全量同步流程 (sync_all)
 
@@ -220,20 +220,30 @@ flowchart LR
     C --> D{匹配结果}
     D -->|新增| E[handle_post_create]
     D -->|更新| F[handle_post_update]
-    D -->|删除| G[delete_post]
-    E --> H[回写 ID]
-    F --> H
-    G --> I[刷新缓存]
-    H --> I
+    D -->|分类| G[handle_category_sync]
+    D -->|删除| H[delete_post]
+    E --> I[回写 ID]
+    F --> I
+    G --> I
+    H --> J[清理孤儿]
+    I --> J
+    J --> K[写入 index.md]
+    K --> L[提交元数据]
+    L --> M[刷新缓存]
 ```
+
+**步骤说明**:
 
 1. **触发**: 管理员调用 API `/ops/git/sync?force_full=true`
 2. **Pull**: 使用 `git_client` 拉取最新代码
 3. **扫描**: 使用 `scanner` 扫描所有 MDX 文件
 4. **对比**: 查询数据库已同步文章
-5. **处理**: 新增/更新/删除
+5. **处理**: 新增/更新/删除文章，同步分类
 6. **回写**: 将生成的 UUID 回写到 Frontmatter
-7. **缓存**: 刷新 Next.js 前端缓存
+7. **清理**: 清理数据库中有但文件系统中没有的孤儿记录
+8. **分类**: 为数据库中的分类创建缺失的 `index.md` 文件
+9. **提交**: 将元数据变更提交并推送到 GitHub
+10. **缓存**: 刷新 Next.js 前端缓存
 
 ### 增量同步流程 (sync_incremental)
 
@@ -244,13 +254,26 @@ flowchart LR
     B -->|是| D[Git Pull]
     D --> E[获取变更文件]
     E --> F[处理变更]
-    F --> G[保存当前 Hash]
+    F --> G[清理孤儿]
+    G --> H[写入 index.md]
+    H --> I[提交元数据]
+    I --> J[保存当前 Hash]
+    J --> K[刷新缓存]
 ```
+
+**步骤说明**:
 
 1. **读取状态**: 从 `.gitops_last_sync` 获取上次 Commit Hash
 2. **差异获取**: 使用 `git_client.get_changed_files()` 获取变更
 3. **增量处理**: 仅处理变更的文件
-4. **智能回退**: 无记录则降级为全量同步
+4. **智能回退**:
+   - 无记录 → 全量同步
+   - Hash 相同但有未同步文件 → 全量同步
+   - `git diff` 失败 → 全量同步
+5. **清理孤儿**: 清理数据库中有但文件系统中没有的记录
+6. **分类**: 为数据库中的分类创建缺失的 `index.md` 文件
+7. **提交**: 将元数据变更提交并推送到 GitHub
+8. **保存状态**: 保存当前 Hash
 
 ### 导出同步流程 (export_to_git) ⭐
 
@@ -263,6 +286,8 @@ flowchart LR
     E --> F[Git Commit]
     F --> G[Git Push]
 ```
+
+**步骤说明**:
 
 1. **触发**: 管理员调用 API `/ops/git/push`
 2. **查询**: 获取需要导出的文章（无 source_path 的新文章）
@@ -282,6 +307,36 @@ flowchart LR
 2. **读取**: 重新读取指定文章的 MDX 文件
 3. **更新**: 将 Frontmatter 同步到数据库
 4. **用途**: 修复 frontmatter 错误、补全元数据
+
+### 元数据回写与提交流程
+
+#### 文章元数据回写
+
+同步完成后，系统会自动将数据库生成的 ID 和关系回写到 MDX 文件的 frontmatter：
+
+- **基础字段**: `title`, `slug`, `date`, `status`, `featured`, 等
+- **关系 ID**: `author_id`, `category_id`, `cover_media_id`, `tag_ids`（UUID 格式）
+- **人类可读**: `author`（用户名）, `category`（slug）, `cover`（文件名）, `tags`（名称列表）
+
+#### 分类 index.md 回写
+
+系统会检查数据库中的所有分类，如果没有对应的 `index.md` 文件，则自动创建：
+
+- **基础字段**: `title`, `icon`, `order`, `hidden`
+- **关系 ID**: `cover_media_id`（UUID 格式）
+- **人类可读**: `cover`（文件名）
+- **Body**: 分类描述
+
+#### 自动提交到 GitHub
+
+所有元数据回写完成后，系统会自动执行：
+
+1. `git add .` - 添加所有变更
+2. `git commit -m "chore: sync metadata from database (+X ~Y)"` - 提交变更
+3. `git pull --rebase` - 拉取远程变更（避免冲突）
+4. `git push` - 推送到 GitHub
+
+这确保了文件系统和 GitHub 仓库始终保持一致。
 
 ---
 
@@ -461,5 +516,5 @@ GitOps 模块采用 **`collect_errors` 上下文管理器** 进行错误处理�
 
 ---
 
-**最后更新**: 2026-01-28
-**文档版本**: 3.4.0 (双向同步文档更新 + 流程图增强)
+**最后更新**: 2026-01-31
+**文档版本**: 3.5.0 (完善双向同步文档 + 元数据回写与提交流程)

@@ -108,7 +108,7 @@ async def delete_post_by_type(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     background_tasks: BackgroundTasks,
 ):
-    post = await services.get_post_by_id(session, post_id)
+    post = await services.get_post_detail(session, post_id, post_type, current_user)
     post_title = post.title if post else str(post_id)
 
     await services.delete_post(session, post_id, current_user)

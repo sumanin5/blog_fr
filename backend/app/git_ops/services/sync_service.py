@@ -80,9 +80,23 @@ class SyncService(BaseGitOpsService):
             # 3. 获取差异文件
             try:
                 current_hash = await self.git_client.get_current_hash()
+
+                # 检查是否有新提交
                 if current_hash == last_hash:
-                    logger.info("No new commits. Sync is up to date.")
-                    return SyncStats()
+                    logger.info("No new commits detected.")
+                    # 即使没有新提交，也检查是否有未同步的文件
+                    # 这可以处理数据库被清空或之前同步失败的情况
+                    unsynced_count = await self._check_unsynced_files()
+                    if unsynced_count == 0:
+                        logger.info("All files are in sync. No action needed.")
+                        return SyncStats()
+                    else:
+                        logger.info(
+                            f"Found {unsynced_count} unsynced files. Falling back to full sync."
+                        )
+                        stats = await self._sync_all_impl(default_user)
+                        await self._save_last_hash(current_hash)
+                        return stats
 
                 changed_files = await self.git_client.get_changed_files(last_hash)
             except GitError as e:
@@ -97,12 +111,22 @@ class SyncService(BaseGitOpsService):
             logger.info(f"Incremental Sync: found {len(changed_files)} changed files.")
 
             # 4. 只处理变更的文件
+            operating_user = await self._get_operating_user(default_user)
             stats = await self._process_changed_files(changed_files, default_user)
 
-            # 5. 更新 Hash
+            # 5. 检查并清理孤儿记录（数据库中有但文件系统中没有的记录）
+            await self._cleanup_orphaned_posts(stats, operating_user)
+
+            # 6. 更新 Hash
             await self._save_last_hash(current_hash)
 
-            # 6. 刷新缓存
+            # 7. 为数据库中的分类写入 index.md（如果缺失）
+            await self._write_category_indexes(stats)
+
+            # 8. 如果有回写的元数据，提交并推送到 GitHub
+            await self._commit_metadata_changes(stats)
+
+            # 9. 刷新缓存
             if stats.added or stats.updated or stats.deleted:
                 await revalidate_nextjs_cache(
                     settings.FRONTEND_URL, settings.REVALIDATE_SECRET
@@ -116,7 +140,7 @@ class SyncService(BaseGitOpsService):
         """处理文件变更列表"""
         stats = SyncStats()
         operating_user = await self._get_operating_user(default_user)
-        processed_post_ids = set()
+        self.processed_post_ids = set()  # 改为实例变量，供 _cleanup_orphaned_posts 使用
 
         # 预加载 DB 数据
         existing_posts = await post_crud.get_posts_with_source_path(self.session)
@@ -173,7 +197,7 @@ class SyncService(BaseGitOpsService):
                         operating_user,
                         self.content_dir,
                         stats,
-                        processed_post_ids,
+                        self.processed_post_ids,
                     )
                 else:
                     await handle_post_create(
@@ -184,7 +208,7 @@ class SyncService(BaseGitOpsService):
                         operating_user,
                         self.content_dir,
                         stats,
-                        processed_post_ids,
+                        self.processed_post_ids,
                     )
 
         return stats
@@ -202,6 +226,155 @@ class SyncService(BaseGitOpsService):
             return
         hash_file = self.content_dir / LAST_SYNC_FILE
         hash_file.write_text(commit_hash)
+
+    async def _check_unsynced_files(self) -> int:
+        """检查是否有未同步的文件
+
+        Returns:
+            未同步的文件数量
+        """
+        # 扫描文件系统中的所有 MDX/MD 文件
+        scanned_posts = await self.scanner.scan_all()
+        scanned_paths = {p.file_path for p in scanned_posts if not p.is_category_index}
+
+        # 获取数据库中的所有文章路径
+        existing_posts = await post_crud.get_posts_with_source_path(self.session)
+        db_paths = {p.source_path for p in existing_posts}
+
+        # 计算差异：文件系统中有但数据库中没有的文件
+        unsynced = scanned_paths - db_paths
+
+        return len(unsynced)
+
+    async def _cleanup_orphaned_posts(self, stats: SyncStats, operating_user: User):
+        """清理孤儿记录（数据库中有但文件系统中没有的记录）
+
+        这个方法在增量同步时调用，确保数据库和文件系统保持一致
+        """
+        # 获取所有数据库中的文章
+        existing_posts = await post_crud.get_posts_with_source_path(self.session)
+
+        # 检查每个数据库记录对应的文件是否存在
+        for post in existing_posts:
+            # 跳过已经处理过的文章
+            if post.id in self.processed_post_ids:
+                continue
+
+            # 检查文件是否存在
+            file_path = self.content_dir / post.source_path
+            if not file_path.exists():
+                async with collect_errors(
+                    stats, f"Cleaning up orphaned post {post.source_path}"
+                ):
+                    logger.info(
+                        f"Deleting orphaned post: {post.source_path} (slug={post.slug})"
+                    )
+                    await post_service.delete_post(
+                        self.session, post.id, current_user=operating_user
+                    )
+                    stats.deleted.append(post.source_path)
+
+    async def _commit_metadata_changes(self, stats: SyncStats):
+        """提交元数据变更到 GitHub
+
+        在同步完成后，如果有文件被添加或更新（意味着可能有元数据回写），
+        则自动提交并推送这些变更到 GitHub
+        """
+        # 只有在有添加或更新的文件时才提交
+        if not stats.added and not stats.updated:
+            logger.info("No metadata changes to commit.")
+            return
+
+        try:
+            from .commit_service import CommitService
+
+            # 创建 CommitService 实例
+            commit_service = CommitService(
+                session=self.session,
+                git_client=self.git_client,
+                content_dir=self.content_dir,
+            )
+
+            # 构建提交信息
+            added_count = len(stats.added)
+            updated_count = len(stats.updated)
+            parts = []
+            if added_count > 0:
+                parts.append(f"+{added_count}")
+            if updated_count > 0:
+                parts.append(f"~{updated_count}")
+
+            message = f"chore: sync metadata from database ({' '.join(parts)})"
+
+            # 执行自动提交
+            logger.info(f"Committing metadata changes: {message}")
+            await commit_service.auto_commit(message)
+            logger.info("Metadata changes committed and pushed successfully.")
+        except Exception as e:
+            # 不要让提交失败影响同步流程
+            logger.warning(f"Failed to commit metadata changes: {e}", exc_info=True)
+
+    async def _write_category_indexes(self, stats: SyncStats):
+        """为数据库中的分类写入 index.md 文件
+
+        检查所有数据库中的分类，如果没有对应的 index.md 文件，则创建它
+        """
+        from app.posts.model import Category
+        from sqlalchemy.orm import selectinload
+        from sqlmodel import select
+
+        try:
+            # 查询所有分类（预加载 cover_media）
+            stmt = select(Category).options(
+                selectinload(Category.cover_media),  # type: ignore
+            )
+            result = await self.session.execute(stmt)
+            categories = result.scalars().all()
+
+            if not categories:
+                logger.info("No categories found in database.")
+                return
+
+            logger.info(f"Checking {len(categories)} categories for index.md files...")
+
+            from app.git_ops.components.writer.writer import FileWriter
+
+            writer = FileWriter(session=self.session, content_dir=self.content_dir)
+            created_count = 0
+
+            for category in categories:
+                # 计算 index.md 的路径
+                from app.git_ops.components.writer.path_calculator import (
+                    POST_TYPE_DIR_MAP,
+                )
+
+                raw_type = category.post_type.value
+                type_folder = POST_TYPE_DIR_MAP.get(raw_type, raw_type)
+                index_path = self.content_dir / type_folder / category.slug / "index.md"
+
+                # 如果 index.md 不存在，创建它
+                if not index_path.exists():
+                    logger.info(
+                        f"Creating missing index.md for category: {category.slug}"
+                    )
+                    try:
+                        await writer.write_category(category)
+                        # 计算相对路径
+                        rel_path = f"{type_folder}/{category.slug}/index.md"
+                        stats.added.append(rel_path)
+                        created_count += 1
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to create index.md for {category.slug}: {e}"
+                        )
+
+            if created_count > 0:
+                logger.info(f"Created {created_count} missing index.md files.")
+            else:
+                logger.info("All categories have index.md files.")
+
+        except Exception as e:
+            logger.error(f"Failed to write category indexes: {e}", exc_info=True)
 
     async def _sync_all_impl(self, default_user: User = None) -> SyncStats:
         """内部同步实现"""
@@ -292,7 +465,13 @@ class SyncService(BaseGitOpsService):
             f"Sync completed in {stats.duration:.2f}s: +{len(stats.added)} ~{len(stats.updated)} -{len(stats.deleted)}"
         )
 
-        # 5. 刷新缓存 (Best effort)
+        # 5. 为数据库中的分类写入 index.md（如果缺失）
+        await self._write_category_indexes(stats)
+
+        # 6. 如果有回写的元数据，提交并推送到 GitHub
+        await self._commit_metadata_changes(stats)
+
+        # 7. 刷新缓存 (Best effort)
         if stats.added or stats.updated or stats.deleted:
             await revalidate_nextjs_cache(
                 settings.FRONTEND_URL, settings.REVALIDATE_SECRET

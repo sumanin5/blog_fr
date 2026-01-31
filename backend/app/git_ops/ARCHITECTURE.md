@@ -81,18 +81,417 @@ graph TB
 
 ### API 端点概览
 
-| 端点                              | 方法   | 服务              | 说明                     |
-| --------------------------------- | ------ | ----------------- | ------------------------ |
-| `/ops/git/sync`                   | POST   | `SyncService`     | 触发同步（默认增量）     |
-| `/ops/git/sync?force_full=true`   | POST   | `SyncService`     | 强制全量同步             |
-| `/ops/git/push`                   | POST   | `ExportService`   | 导出数据库文章到 Git     |
-| `/ops/git/preview`                | GET    | `PreviewService`  | 预览同步变更（Dry Run）  |
-| `/ops/git/posts/{id}/resync-metadata` | POST | `ResyncService` | 重新同步单篇文章元数据   |
-| `/ops/git/webhook`                | POST   | `SyncService`     | GitHub Webhook 入口      |
+| 端点                                  | 方法 | 服务             | 说明                    |
+| ------------------------------------- | ---- | ---------------- | ----------------------- |
+| `/ops/git/sync`                       | POST | `SyncService`    | 触发同步（默认增量）    |
+| `/ops/git/sync?force_full=true`       | POST | `SyncService`    | 强制全量同步            |
+| `/ops/git/push`                       | POST | `ExportService`  | 导出数据库文章到 Git    |
+| `/ops/git/preview`                    | GET  | `PreviewService` | 预览同步变更（Dry Run） |
+| `/ops/git/posts/{id}/resync-metadata` | POST | `ResyncService`  | 重新同步单篇文章元数据  |
+| `/ops/git/webhook`                    | POST | `SyncService`    | GitHub Webhook 入口     |
 
 ---
 
-## 🔄 核心设计决策
+## 🔄 同步流程详解
+
+### 文章同步流程 (Posts)
+
+#### 完整同步流程图
+
+```mermaid
+flowchart TB
+    Start([开始同步]) --> Pull[Git Pull]
+    Pull --> Scan[扫描 MDX 文件]
+    Scan --> Loop{遍历文件}
+
+    Loop -->|文章文件| Match[匹配策略]
+    Loop -->|index.md| CategorySync[分类同步]
+    Loop -->|完成| Cleanup[清理孤儿记录]
+
+    Match --> MatchResult{匹配结果}
+    MatchResult -->|新增| Create[handle_post_create]
+    MatchResult -->|更新| Update[handle_post_update]
+
+    Create --> ProcessCreate[Processor Pipeline]
+    Update --> ProcessUpdate[Processor Pipeline]
+
+    ProcessCreate --> SaveCreate[保存到数据库]
+    ProcessUpdate --> SaveUpdate[更新数据库]
+
+    SaveCreate --> WriteBack[write_post_ids_to_frontmatter]
+    SaveUpdate --> WriteBack
+
+    WriteBack --> AddStats[添加到 stats]
+    CategorySync --> AddStats
+    AddStats --> Loop
+
+    Cleanup --> WriteCategoryIndex[_write_category_indexes]
+    WriteCategoryIndex --> CommitMeta[_commit_metadata_changes]
+    CommitMeta --> Cache[刷新缓存]
+    Cache --> End([返回 SyncStats])
+
+    style Create fill:#d4edda
+    style Update fill:#fff3cd
+    style CategorySync fill:#e1f5ff
+    style WriteBack fill:#ffe6e6
+    style WriteCategoryIndex fill:#e1f5ff
+    style CommitMeta fill:#ffe6e6
+```
+
+#### 文章元数据回写流程
+
+```mermaid
+flowchart LR
+    A[文章同步完成] --> B[write_post_ids_to_frontmatter]
+    B --> C[生成完整元数据]
+    C --> D{包含哪些字段?}
+
+    D --> E[基础字段<br>title, slug, date, status]
+    D --> F[关系 ID<br>author_id, category_id, cover_media_id]
+    D --> G[人类可读字段<br>author, category, cover, tags]
+
+    E --> H[写入 frontmatter]
+    F --> H
+    G --> H
+
+    H --> I[保存到文件]
+
+    style B fill:#ffe6e6
+    style C fill:#fff4e6
+    style H fill:#e8f5e9
+```
+
+**回写的字段**：
+
+- **基础字段**：`title`, `slug`, `date`, `status`, `featured`, `allow_comments`, 等
+- **关系 ID**：`author_id`, `category_id`, `cover_media_id`, `tag_ids`（UUID 格式）
+- **人类可读**：`author`（用户名）, `category`（slug）, `cover`（文件名）, `tags`（名称列表）
+
+### 分类同步流程 (Categories)
+
+#### 分类 index.md 解析流程
+
+```mermaid
+flowchart TB
+    Start([扫描到 index.md]) --> Check{是分类索引?}
+    Check -->|是| Parse[解析 frontmatter]
+    Check -->|否| Skip[跳过]
+
+    Parse --> Extract[提取字段]
+    Extract --> Fields{解析哪些字段?}
+
+    Fields --> F1[title → name]
+    Fields --> F2[icon → icon_preset]
+    Fields --> F3[order/sort → sort_order]
+    Fields --> F4[hidden → is_active<br>反转]
+    Fields --> F5[cover/image → cover_media_id]
+
+    F1 --> Process
+    F2 --> Process
+    F3 --> Process
+    F4 --> Process
+    F5 --> CoverProcess[封面处理]
+
+    CoverProcess --> CoverPriority{优先级}
+    CoverPriority -->|1. cover_media_id| ValidateID[验证 UUID]
+    CoverPriority -->|2. cover 字段| ResolveFile[解析文件名]
+
+    ValidateID -->|有效| UseID[使用 ID]
+    ValidateID -->|无效| ResolveFile
+    ResolveFile --> UseID
+
+    UseID --> Process[更新数据库]
+    Process --> End([完成])
+
+    style Parse fill:#e1f5ff
+    style CoverProcess fill:#fff4e6
+    style Process fill:#e8f5e9
+```
+
+#### 分类 index.md 回写流程
+
+```mermaid
+flowchart TB
+    Start([同步完成]) --> Check[_write_category_indexes]
+    Check --> Query[查询所有分类]
+    Query --> Loop{遍历分类}
+
+    Loop -->|下一个| Exists{index.md 存在?}
+    Exists -->|是| Loop
+    Exists -->|否| Create[创建 index.md]
+
+    Create --> Generate[生成 frontmatter]
+    Generate --> Fields{包含哪些字段?}
+
+    Fields --> F1[title: name]
+    Fields --> F2[icon: icon_preset]
+    Fields --> F3[order: sort_order]
+    Fields --> F4[hidden: !is_active]
+    Fields --> F5[cover_media_id: UUID]
+    Fields --> F6[cover: filename]
+
+    F1 --> Write[写入文件]
+    F2 --> Write
+    F3 --> Write
+    F4 --> Write
+    F5 --> Write
+    F6 --> Write
+
+    Write --> AddStats[添加到 stats.added]
+    AddStats --> Loop
+
+    Loop -->|完成| Commit[_commit_metadata_changes]
+    Commit --> End([提交到 GitHub])
+
+    style Create fill:#d4edda
+    style Generate fill:#fff4e6
+    style Write fill:#e8f5e9
+    style Commit fill:#ffe6e6
+```
+
+**回写的字段**：
+
+- `title`: 分类名称
+- `icon`: 图标（emoji）
+- `order`: 排序顺序
+- `hidden`: 是否隐藏（反转 `is_active`）
+- `cover_media_id`: 封面 UUID
+- `cover`: 封面文件名（人类可读）
+- **Body**: 分类描述
+
+### 封面处理优先级
+
+#### 文章封面（Posts）
+
+```mermaid
+flowchart LR
+    A[解析 frontmatter] --> B{有 cover_media_id?}
+    B -->|是| C[验证 UUID]
+    C -->|有效| D[✅ 使用 ID<br>1 次查询]
+    C -->|无效| E[降级到 cover 字段]
+
+    B -->|否| E
+    E --> F{有 cover 字段?}
+    F -->|是| G[解析文件名/路径]
+    G --> H[查找媒体库]
+    H --> I{找到?}
+    I -->|是| J[✅ 使用找到的 ID]
+    I -->|否| K[自动上传]
+    K --> J
+
+    F -->|否| L[❌ 无封面]
+
+    style D fill:#d4edda
+    style J fill:#d4edda
+    style E fill:#fff3cd
+    style L fill:#f8d7da
+```
+
+#### 分类封面（Categories）
+
+```mermaid
+flowchart LR
+    A[解析 index.md] --> B{有 cover_media_id?}
+    B -->|是| C[验证 UUID]
+    C -->|有效| D[✅ 使用 ID<br>1 次查询]
+    C -->|无效| E[降级到 cover 字段]
+
+    B -->|否| E
+    E --> F{有 cover 或 image?}
+    F -->|是| G[解析文件名/路径]
+    G --> H[查找媒体库]
+    H --> I{找到?}
+    I -->|是| J[✅ 使用找到的 ID]
+    I -->|否| K[自动上传]
+    K --> J
+
+    F -->|否| L[❌ 无封面]
+
+    style D fill:#d4edda
+    style J fill:#d4edda
+    style E fill:#fff3cd
+    style L fill:#f8d7da
+```
+
+**优化效果**：
+
+- **快速路径**：如果有 `cover_media_id`，只需 1 次数据库查询（主键查询）
+- **降级路径**：如果没有或无效，才解析文件名（可能需要多次查询）
+- **性能提升**：大部分情况下（回写后的文件）只需 1 次查询
+
+### 全量同步流程 (`sync_all`)
+
+```mermaid
+flowchart TB
+    Start([开始]) --> Init[创建 GitOpsService]
+    Init --> Container[创建 GitOpsContainer]
+    Container --> Delegate[委托给 SyncService]
+
+    subgraph SyncService["SyncService.sync_all()"]
+        Lock{获取同步锁} -->|已锁定| Wait[等待锁释放]
+        Wait --> Lock
+        Lock -->|获取成功| Pull[Git Pull]
+
+        Pull -->|失败| LogWarn[记录警告<br>继续同步]
+        Pull -->|成功| Scan
+        LogWarn --> Scan
+
+        Scan[扫描所有 MDX 文件] --> Query[查询数据库<br>已同步文章]
+        Query --> Loop{遍历文件}
+
+        Loop -->|下一个| Match[匹配策略]
+        Match --> MatchResult{匹配结果}
+
+        MatchResult -->|未找到| Create[handle_post_create]
+        MatchResult -->|找到| Update[handle_post_update]
+        MatchResult -->|分类索引| CategorySync[handle_category_sync]
+
+        Create --> WriteBack[回写 ID 到文件]
+        Update --> WriteBack
+        CategorySync --> Loop
+        WriteBack --> Loop
+
+        Loop -->|完成| Delete[检测删除]
+        Delete --> Cleanup[清理孤儿记录]
+        Cleanup --> WriteCategoryIndex[写入缺失的 index.md]
+        WriteCategoryIndex --> CommitMeta[提交元数据变更]
+        CommitMeta --> Cache[刷新 Next.js 缓存]
+        Cache --> SaveHash[保存 Commit Hash]
+    end
+
+    SaveHash --> Return([返回 SyncStats])
+
+    style Container fill:#e1f5ff
+    style Create fill:#d4edda
+    style Update fill:#fff3cd
+    style Delete fill:#f8d7da
+    style WriteCategoryIndex fill:#e1f5ff
+    style CommitMeta fill:#ffe6e6
+```
+
+### 增量同步流程 (`sync_incremental`)
+
+```mermaid
+flowchart TB
+    Start([开始]) --> LoadHash[读取上次同步 Hash]
+    LoadHash --> HasHash{存在记录?}
+
+    HasHash -->|否| Fallback[回退到全量同步]
+    Fallback --> End
+
+    HasHash -->|是| Pull[Git Pull]
+    Pull --> GetCurrent[获取当前 Hash]
+    GetCurrent --> Compare{Hash 相同?}
+
+    Compare -->|是| CheckUnsynced[检查未同步文件]
+    CheckUnsynced --> HasUnsynced{有未同步?}
+    HasUnsynced -->|否| NoChange[无变更，跳过]
+    HasUnsynced -->|是| Fallback
+
+    Compare -->|否| GetDiff[获取变更文件列表]
+    GetDiff -->|失败| Fallback
+
+    GetDiff -->|成功| Process[处理变更文件]
+
+    subgraph Process["处理变更"]
+        Loop{遍历变更} -->|下一个| Check{文件状态}
+        Check -->|删除| DoDelete[删除对应文章]
+        Check -->|新增/修改| DoSync[同步文章]
+        DoDelete --> Loop
+        DoSync --> Loop
+        Loop -->|完成| Done[处理完成]
+    end
+
+    Done --> Cleanup[清理孤儿记录]
+    Cleanup --> WriteCategoryIndex[写入缺失的 index.md]
+    WriteCategoryIndex --> CommitMeta[提交元数据变更]
+    CommitMeta --> SaveHash[保存当前 Hash]
+    SaveHash --> Cache[刷新缓存]
+    Cache --> End([返回 SyncStats])
+
+    NoChange --> End
+
+    style Fallback fill:#fff3cd
+    style NoChange fill:#d4edda
+    style WriteCategoryIndex fill:#e1f5ff
+    style CommitMeta fill:#ffe6e6
+```
+
+### 导出同步流程 (`export_to_git`)
+
+```mermaid
+flowchart TB
+    Start([开始]) --> Query[查询数据库文章]
+    Query --> Filter{过滤条件}
+
+    Filter -->|指定 ID| Single[单篇导出]
+    Filter -->|无 source_path| NoPath[新文章导出]
+    Filter -->|force_export| All[全部导出]
+
+    Single --> Process
+    NoPath --> Process
+    All --> Process
+
+    subgraph Process["处理导出"]
+        Loop{遍历文章} -->|下一个| Write[FileWriter.write_post]
+        Write --> UpdateDB[更新 source_path]
+        UpdateDB --> Loop
+        Loop -->|完成| Done[导出完成]
+    end
+
+    Done --> Commit[Git Add + Commit]
+    Commit --> Push[Git Push]
+    Push --> End([返回 SyncStats])
+
+    style Write fill:#d4edda
+    style Commit fill:#e1f5ff
+```
+
+### 完整同步步骤说明
+
+#### 全量同步 (sync_all)
+
+1. **初始化**: `GitOpsService` 创建 `GitOpsContainer`，容器初始化所有核心组件。
+2. **委托**: `GitOpsService.sync_all()` 委托给 `container.sync_service.sync_all()`。
+3. **Git Pull**: `SyncService` 使用 `container.git_client` 尝试更新本地仓库。如果失败（如网络问题），记录警告并继续（降级为仅同步本地文件）。
+4. **全量扫描**: 使用 `container.scanner` 遍历 content 目录，生成 `ScannedPost` 列表。
+5. **数据库对比**: 一次性查询所有已同步的文章 (`source_path is not null`)。
+6. **处理循环**:
+   - 遍历扫描到的文件。
+   - **匹配策略**: 使用 `container.serializer` 匹配，优先通过 `source_path` 匹配，其次通过 `slug` 匹配（检测文件重命名/移动）。
+   - **更新/创建**: 根据匹配结果调用 `handle_post_update` 或 `handle_post_create`。
+   - **分类同步**: 如果是 `index.md`，调用 `handle_category_sync`。
+   - **元数据回写**: 调用 `write_post_ids_to_frontmatter` 回写 ID 和关系。
+   - **错误处理**: 使用 `collect_errors` 上下文管理器捕获错误。
+7. **删除检测**: 遍历数据库中的文章，如果在本次扫描中未找到对应的文件，则执行删除。
+8. **分类 index.md 回写**: 调用 `_write_category_indexes` 为数据库中的分类创建缺失的 `index.md` 文件。
+9. **提交元数据变更**: 调用 `_commit_metadata_changes` 将回写的元数据提交到 GitHub。
+10. **刷新缓存**: 调用 `revalidate_nextjs_cache` 刷新前端缓存。
+11. **统计与响应**: 返回包含新增、更新、删除、错误列表的 `SyncStats` 对象。
+
+#### 增量同步 (sync_incremental)
+
+1. **读取状态**: 从 `.gitops_last_sync` 读取上次同步的 Commit Hash。
+2. **Git Pull**: 拉取最新代码。
+3. **差异计算**: 使用 `git diff` 获取变更文件列表。
+4. **智能回退**:
+   - 如果没有上次同步记录 → 回退到全量同步
+   - 如果 Hash 相同但有未同步文件 → 回退到全量同步
+   - 如果 `git diff` 失败 → 回退到全量同步
+5. **增量处理**: 只处理变更的文件（新增/修改/删除）。
+6. **清理孤儿**: 调用 `_cleanup_orphaned_posts` 清理数据库中有但文件系统中没有的记录。
+7. **分类 index.md 回写**: 调用 `_write_category_indexes` 为数据库中的分类创建缺失的 `index.md` 文件。
+8. **提交元数据变更**: 调用 `_commit_metadata_changes` 将回写的元数据提交到 GitHub。
+9. **保存状态**: 保存当前 Commit Hash 到 `.gitops_last_sync`。
+10. **刷新缓存**: 调用 `revalidate_nextjs_cache` 刷新前端缓存。
+
+#### 导出同步 (export_to_git)
+
+1. **查询数据库**: 获取需要导出的文章（无 `source_path` 的新文章或指定 ID）。
+2. **生成 MDX**: 使用 `FileWriter.write_post` 生成 MDX 文件。
+3. **更新关联**: 更新数据库的 `source_path` 字段。
+4. **Git 提交**: 执行 `git add`, `git commit`, `git push`。
+5. **返回统计**: 返回 `SyncStats` 对象。
 
 ### 1. 组件化设计 (Component-based)
 
@@ -214,14 +613,14 @@ Pipeline 按顺序执行，后续 Processor 可以依赖前面 Processor 的结�
 
 将原来的 `service.py` 拆分为多个职责单一的服务类：
 
-| 服务             | 行数 | 职责                           |
-| ---------------- | ---- | ------------------------------ |
-| `SyncService`    | ~300 | 全量和增量同步 (Git → DB)      |
-| `PreviewService` | ~80  | 同步预览（Dry Run）            |
-| `ResyncService`  | ~80  | 重新同步单个文章的元数据       |
-| `CommitService`  | ~30  | Git 提交和推送                 |
-| `ExportService`  | ~120 | 导出数据库文章到 Git (DB → Git)|
-| `GitOpsService`  | ~70  | 门面模式，协调各个子服务       |
+| 服务             | 行数 | 职责                            |
+| ---------------- | ---- | ------------------------------- |
+| `SyncService`    | ~300 | 全量和增量同步 (Git → DB)       |
+| `PreviewService` | ~80  | 同步预览（Dry Run）             |
+| `ResyncService`  | ~80  | 重新同步单个文章的元数据        |
+| `CommitService`  | ~30  | Git 提交和推送                  |
+| `ExportService`  | ~120 | 导出数据库文章到 Git (DB → Git) |
+| `GitOpsService`  | ~70  | 门面模式，协调各个子服务        |
 
 每个服务继承自 `BaseGitOpsService`，通过容器获取依赖。
 
@@ -413,14 +812,14 @@ flowchart LR
     style P6 fill:#e1f5ff
 ```
 
-| 序号 | Processor           | 职责                                     | 依赖                |
-| ---- | ------------------- | ---------------------------------------- | ------------------- |
-| 1    | `ContentProcessor`  | 处理 content_mdx 和 title fallback       | -                   |
-| 2    | `PostTypeProcessor` | 确定 post_type（路径优先）               | -                   |
-| 3    | `AuthorProcessor`   | 解析 author_id（数据库查询）             | -                   |
-| 4    | `CoverProcessor`    | 解析 cover_media_id（数据库查询）        | -                   |
-| 5    | `CategoryProcessor` | 解析 category_id（路径优先 + 自动创建）  | post_type           |
-| 6    | `TagsProcessor`     | 解析 tag_ids（数据库查询 + 自动创建）    | -                   |
+| 序号 | Processor           | 职责                                    | 依赖      |
+| ---- | ------------------- | --------------------------------------- | --------- |
+| 1    | `ContentProcessor`  | 处理 content_mdx 和 title fallback      | -         |
+| 2    | `PostTypeProcessor` | 确定 post_type（路径优先）              | -         |
+| 3    | `AuthorProcessor`   | 解析 author_id（数据库查询）            | -         |
+| 4    | `CoverProcessor`    | 解析 cover_media_id（数据库查询）       | -         |
+| 5    | `CategoryProcessor` | 解析 category_id（路径优先 + 自动创建） | post_type |
+| 6    | `TagsProcessor`     | 解析 tag_ids（数据库查询 + 自动创建）   | -         |
 
 ---
 
@@ -698,5 +1097,5 @@ for scanned in scanned_posts:
 
 ---
 
-**最后更新**: 2026-01-28
-**版本**: 3.4.0 (添加 ExportService + 详细流程图)
+**最后更新**: 2026-01-31
+**版本**: 3.5.0 (完善双向同步流程 + 分类和文章独立流程图)

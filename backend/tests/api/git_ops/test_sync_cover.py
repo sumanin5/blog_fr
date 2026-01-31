@@ -59,7 +59,7 @@ Content here.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 1
+    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
     assert len(data["errors"]) == 0
 
     # 4. 验证封面图关联
@@ -105,7 +105,7 @@ Content here.
     data = response.json()
 
     # 文章应该创建成功，但封面为空
-    assert len(data["added"]) == 1
+    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
     assert len(data["errors"]) == 0
 
     # 验证封面为空
@@ -164,7 +164,7 @@ Content here.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 1
+    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
 
     # 4. 验证封面图关联（通过文件名匹配）
     session.expire_all()
@@ -206,7 +206,7 @@ Content here.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 1
+    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
 
     # 验证封面为空
     session.expire_all()

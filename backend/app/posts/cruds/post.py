@@ -125,6 +125,15 @@ async def decrement_bookmark_count(session: AsyncSession, post_id: UUID) -> int:
 
 async def get_posts_with_source_path(session: AsyncSession) -> list[Post]:
     """获取所有有 source_path 的文章（用于 Git 同步）"""
-    stmt = select(Post).where(Post.source_path.isnot(None))  # type: ignore
+    stmt = (
+        select(Post)
+        .where(Post.source_path.isnot(None))  # type: ignore
+        .options(
+            selectinload(Post.category),  # type: ignore
+            selectinload(Post.tags),  # type: ignore
+            selectinload(Post.author),  # type: ignore
+            selectinload(Post.cover_media),  # type: ignore
+        )
+    )
     result = await session.exec(stmt)
     return list(result.all())

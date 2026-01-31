@@ -251,6 +251,25 @@ git config --local user.email "your@email.com"
 git config --local user.name "Your Name"
 ```
 
+### 6. 元数据同步机制
+
+系统在同步过程中会自动处理元数据回写：
+
+- **GitHub → 服务器**：同步后将数据库 ID 和关系写回 MDX frontmatter，然后自动推送回 GitHub
+- **管理后台 → GitHub**：编辑后导出完整的 frontmatter 元数据到 MDX 文件
+
+这确保了 GitHub 和服务器之间的数据完全一致。
+
+### 7. 详细文档
+
+完整的双向同步机制、防止无限循环、故障排查等详细信息，请参考：
+
+- [Git 双向同步完整实现](./backend/docs/GIT_BIDIRECTIONAL_SYNC.md) - 完整的技术文档
+- [Git 自动提交修复说明](./backend/docs/GIT_AUTO_COMMIT_FIX.md) - Git 配置技术细节
+  git config --local user.name "Your Name"
+
+````
+
 ### 6. 故障排查
 
 #### 问题 1: Webhook 返回 404
@@ -276,7 +295,7 @@ git config --list
 
 # 3. 手动测试推送
 git push origin main
-```
+````
 
 #### 问题 3: Webhook Secret 验证失败
 

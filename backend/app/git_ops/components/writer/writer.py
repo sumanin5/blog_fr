@@ -109,14 +109,16 @@ class FileWriter:
             if category.sort_order != 0:
                 meta["order"] = category.sort_order
 
-            # Cover 处理 (如果有 media ID，尝试获取 path? 这里暂时只处理 path 类 cover)
-            # 由于反向解析 media_id 到 path 比较复杂，这里暂时略过 cover_media_id 的反写，
-            # 或者仅当 cover_media_id 为空但有 old metadata 时保留?
-            # 简单起见，如果 category 有 cover_image_path 字段最好，但没有。
-            # 目前只支持: 只有当用户手动在 index.md 写了 cover，Sync 进 DB。
-            # DB -> File: 如果前端选了图，生成 file? 暂不支持反写 cover path，防止覆盖 git 的 path。
-            # 妥协：暂时不反写 cover，除非 category 模型里存了 string path。
-            # 但用户改了 Description 是必须存的。
+            # 封面处理（参考 posts 的做法）
+            if category.cover_media_id:
+                # 添加 UUID 格式的 ID
+                meta["cover_media_id"] = str(category.cover_media_id)
+
+                # 如果预加载了 cover_media，添加人类可读的文件名
+                if hasattr(category, "cover_media") and category.cover_media:
+                    cover = category.cover_media
+                    if hasattr(cover, "original_filename"):
+                        meta["cover"] = cover.original_filename
 
             # 使用 frontmatter 库生成
             import frontmatter

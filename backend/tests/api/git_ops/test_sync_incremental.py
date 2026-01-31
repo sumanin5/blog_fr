@@ -51,7 +51,7 @@ Content 1
     )
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 1
+    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
 
     # 2. 创建第二个文件并 commit
     file2 = mock_content_dir / "post-2.mdx"
@@ -76,8 +76,9 @@ Content 2
     data = response.json()
 
     # 验证:只处理了新增的文件
+    # 注意：第二次同步时，分类 index.md 已经存在，所以只添加新文章
     assert len(data["added"]) == 1
-    assert "post-2.mdx" in data["added"][0]
+    assert any("post-2.mdx" in path for path in data["added"])
     # 注意:post-1.mdx 可能因为 frontmatter 写入而被标记为 updated
     # 这是预期行为,我们只需确保 post-2 被正确添加
     assert len(data["deleted"]) == 0
@@ -343,8 +344,9 @@ Content 1 Updated
     data = response.json()
 
     # 验证：所有变更都被正确处理
+    # 注意：第二次同步时，分类 index.md 已经存在，所以只添加新文章
     assert len(data["added"]) == 1
-    assert "post-3.mdx" in data["added"][0]
+    assert any("post-3.mdx" in path for path in data["added"])
 
     assert len(data["updated"]) >= 1
     assert any("post-1.mdx" in path for path in data["updated"])
@@ -392,7 +394,7 @@ Content
     data = response.json()
 
     # 验证：文件被同步
-    assert len(data["added"]) == 1
+    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
     assert "first-post.mdx" in data["added"][0]
 
     # 验证：hash 文件被创建

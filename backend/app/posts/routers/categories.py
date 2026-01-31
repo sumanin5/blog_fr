@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from app.core.db import get_async_session
+from app.git_ops.background_tasks import run_background_commit
 from app.posts import services as service
 from app.posts.model import PostType
 from app.posts.schemas import (
@@ -11,7 +12,7 @@ from app.posts.schemas import (
 )
 from app.users.dependencies import get_current_superuser
 from app.users.model import User
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .categories_doc import (
@@ -39,6 +40,7 @@ async def create_category_by_type(
     category_in: CategoryCreate,
     current_user: Annotated[User, Depends(get_current_superuser)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    background_tasks: BackgroundTasks,
 ):
     """创建新分类（仅超级管理员）
 
@@ -48,7 +50,15 @@ async def create_category_by_type(
     """
     # 确保 post_type 匹配
     category_in.post_type = post_type
-    return await service.create_category(session, category_in, current_user)
+    category = await service.create_category(session, category_in, current_user)
+
+    # 触发自动提交到 Git
+    background_tasks.add_task(
+        run_background_commit,
+        message=f"feat: create category '{category.name}' ({category.slug})",
+    )
+
+    return category
 
 
 @router.patch(
@@ -63,6 +73,7 @@ async def update_category_by_type(
     category_in: CategoryUpdate,
     current_user: Annotated[User, Depends(get_current_superuser)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    background_tasks: BackgroundTasks,
 ):
     """更新分类（仅超级管理员）
 
@@ -70,9 +81,17 @@ async def update_category_by_type(
     - PATCH /posts/article/categories/{category_id}
     - PATCH /posts/idea/categories/{category_id}
     """
-    return await service.update_category(
+    category = await service.update_category(
         session, category_id, category_in, current_user, post_type
     )
+
+    # 触发自动提交到 Git
+    background_tasks.add_task(
+        run_background_commit,
+        message=f"chore: update category '{category.name}' ({category.slug})",
+    )
+
+    return category
 
 
 @router.delete(
@@ -86,8 +105,23 @@ async def delete_category_by_type(
     category_id: UUID,
     current_user: Annotated[User, Depends(get_current_superuser)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    background_tasks: BackgroundTasks,
 ):
+    # 先获取分类信息（用于提交信息）
+    from app.posts import cruds as category_crud
+
+    category = await category_crud.get_category_by_id(session, category_id, post_type)
+    category_name = category.name if category else str(category_id)
+    category_slug = category.slug if category else "unknown"
+
     await service.delete_category(session, category_id, current_user, post_type)
+
+    # 触发自动提交到 Git
+    background_tasks.add_task(
+        run_background_commit,
+        message=f"chore: delete category '{category_name}' ({category_slug})",
+    )
+
     return None
 
 

@@ -67,8 +67,9 @@ Content.
     data = response.json()
 
     # 验证结果
-    assert len(data["added"]) == 1  # 只有 valid-post 成功
-    assert "valid-post.mdx" in data["added"][0]
+    # 注意：added 包含 2 个文件：valid-post.mdx + 自动创建的分类 index.md
+    assert len(data["added"]) == 2
+    assert any("valid-post.mdx" in path for path in data["added"])
 
     assert len(data["errors"]) == 2  # 两个错误
 

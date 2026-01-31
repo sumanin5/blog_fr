@@ -43,19 +43,24 @@ async def run_background_commit(
     from app.core.db import AsyncSessionLocal
     from app.git_ops.service import GitOpsService
 
-    async with AsyncSessionLocal() as session:
-        service = GitOpsService(session)
+    try:
+        async with AsyncSessionLocal() as session:
+            service = GitOpsService(session)
 
-        # 1. 先导出文章到文件系统
-        logger.info(f"Exporting post(s) to Git: post_id={post_id}")
-        stats = await service.export_to_git(post_id=post_id)
+            # 1. 先导出文章到文件系统
+            logger.info(f"Exporting post(s) to Git: post_id={post_id}")
+            stats = await service.export_to_git(post_id=post_id)
 
-        # 2. 如果有文件更新，执行 Git 提交
-        if stats.updated:
-            logger.info(
-                f"Committing {len(stats.updated)} file(s) with message: {message}"
-            )
-            await service.auto_commit(message)
-            logger.info("Background commit finished successfully")
-        else:
-            logger.info("No files to commit, skipping Git push")
+            # 2. 如果有文件更新，执行 Git 提交
+            if stats.updated:
+                logger.info(
+                    f"Committing {len(stats.updated)} file(s) with message: {message}"
+                )
+                await service.auto_commit(message)
+                logger.info("Background commit finished successfully")
+            else:
+                logger.info("No files to commit, skipping Git push")
+    except Exception as e:
+        # 后台任务中的错误不应该影响主请求
+        # 只记录日志，不抛出异常
+        logger.error(f"Background commit failed: {e}", exc_info=True)

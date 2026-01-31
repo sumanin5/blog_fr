@@ -27,8 +27,9 @@ async def test_sync_add_post(
     data = response.json()
 
     # 验证响应
-    assert len(data["added"]) == 1
-    assert "git-post.mdx" in data["added"][0]
+    # 注意：added 包含 2 个文件：文章本身 + 自动创建的分类 index.md
+    assert len(data["added"]) == 2
+    assert any("git-post.mdx" in path for path in data["added"])
     assert len(data["updated"]) == 0
     assert len(data["deleted"]) == 0
 

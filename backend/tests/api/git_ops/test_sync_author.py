@@ -44,7 +44,7 @@ Content here.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 1
+    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
     assert len(data["errors"]) == 0
 
     # 验证作者
@@ -179,7 +179,7 @@ Content here.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 1
+    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
     assert len(data["errors"]) == 0
 
     # 验证作者

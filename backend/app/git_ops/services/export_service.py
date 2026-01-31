@@ -42,6 +42,7 @@ class ExportService(BaseGitOpsService):
             selectinload(Post.category),
             selectinload(Post.tags),
             selectinload(Post.author),
+            selectinload(Post.cover_media),  # 预加载封面，避免 N+1 查询
         )
 
         if post_id:

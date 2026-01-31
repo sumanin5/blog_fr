@@ -79,16 +79,45 @@ async def handle_category_sync(
         category.is_active = not scanned.frontmatter.get("hidden", False)
 
     # 3. 处理 Cover
-    # 复用 CoverProcessor 逻辑
-    cover_processor = CoverProcessor()
-    cover_val = scanned.frontmatter.get("cover") or scanned.frontmatter.get("image")
+    # 优先使用 cover_media_id（如果有效）
+    if scanned.frontmatter.get("cover_media_id"):
+        from uuid import UUID
 
-    if cover_val:
-        cover_id = await cover_processor._resolve_cover_media_id(
-            session, cover_val, mdx_file_path=scanned.file_path, content_dir=content_dir
-        )
-        if cover_id:
-            category.cover_media_id = cover_id
+        from app.media import crud as media_crud
+
+        try:
+            cover_media_id = UUID(str(scanned.frontmatter["cover_media_id"]))
+            existing_media = await media_crud.get_media_file(session, cover_media_id)
+            if existing_media:
+                category.cover_media_id = cover_media_id
+                logger.info(
+                    f"✅ Using existing cover_media_id from frontmatter: {cover_media_id}"
+                )
+            else:
+                logger.warning(
+                    f"⚠️ cover_media_id {cover_media_id} not found in DB, will resolve from cover field"
+                )
+        except (ValueError, TypeError) as e:
+            logger.warning(
+                f"⚠️ Invalid cover_media_id format: {scanned.frontmatter['cover_media_id']}, error: {e}"
+            )
+
+    # 如果没有有效的 cover_media_id，尝试从 cover 字段解析（降级）
+    if not category.cover_media_id:
+        cover_val = scanned.frontmatter.get("cover") or scanned.frontmatter.get("image")
+        if cover_val:
+            cover_processor = CoverProcessor()
+            cover_id = await cover_processor._resolve_cover_media_id(
+                session,
+                cover_val,
+                mdx_file_path=scanned.file_path,
+                content_dir=content_dir,
+            )
+            if cover_id:
+                category.cover_media_id = cover_id
+                logger.info(
+                    f"✅ Resolved cover from filename: {cover_val} -> {cover_id}"
+                )
 
     session.add(category)
     # 不提交，由调用方提交

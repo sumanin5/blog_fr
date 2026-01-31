@@ -86,6 +86,9 @@ sequenceDiagram
         PostSvc-->>SyncSvc: 添加到 stats.deleted
     end
 
+    SyncSvc->>SyncSvc: 清理孤儿记录
+    SyncSvc->>SyncSvc: 写入缺失的 index.md
+    SyncSvc->>SyncSvc: 提交元数据变更到 GitHub
     SyncSvc->>SyncSvc: 保存当前 Commit Hash
     SyncSvc->>SyncSvc: 刷新 Next.js 缓存
     SyncSvc-->>Facade: SyncStats
@@ -218,7 +221,11 @@ sequenceDiagram
             end
         end
 
+        SyncSvc->>SyncSvc: 清理孤儿记录
+        SyncSvc->>SyncSvc: 写入缺失的 index.md
+        SyncSvc->>SyncSvc: 提交元数据变更到 GitHub
         SyncSvc->>FS: 保存 current_hash 到 .gitops_last_sync
+        SyncSvc->>SyncSvc: 刷新 Next.js 缓存
         SyncSvc-->>User: SyncStats (增量)
 
     else 无上次同步记录
@@ -275,12 +282,12 @@ for file_path, scanned in scanned_map.items():
             await handle_post_create(...)
 ```
 
-| 错误类型                     | 处理方式               | 结果                 |
-| ---------------------------- | ---------------------- | -------------------- |
-| `GitOpsConfigurationError`   | 直接抛出，中断流程     | HTTP 500 响应        |
-| `GitOpsSyncError`            | 记录到 stats.errors    | 继续处理下一个       |
-| `ScanError`                  | 记录到 stats.errors    | 继续处理下一个       |
-| `Exception`                  | 记录堆栈到 stats.errors| 继续处理下一个       |
+| 错误类型                   | 处理方式                | 结果           |
+| -------------------------- | ----------------------- | -------------- |
+| `GitOpsConfigurationError` | 直接抛出，中断流程      | HTTP 500 响应  |
+| `GitOpsSyncError`          | 记录到 stats.errors     | 继续处理下一个 |
+| `ScanError`                | 记录到 stats.errors     | 继续处理下一个 |
+| `Exception`                | 记录堆栈到 stats.errors | 继续处理下一个 |
 
 ---
 
@@ -408,5 +415,5 @@ async def scan_all(self) -> List[ScannedPost]:
 
 ---
 
-**最后更新**: 2026-01-28
-**文档版本**: 2.0.0 (添加 ExportService 流程 + collect_errors 说明)
+**最后更新**: 2026-01-31
+**文档版本**: 2.1.0 (完善增量同步流程 + 元数据提交说明)
