@@ -47,6 +47,6 @@ async def handle_post_update(
     )
 
     processed_post_ids.add(matched_post.id)
-    stats.updated.append(file_path)
+    stats.updated.append(str(file_path))
 
     return updated_post

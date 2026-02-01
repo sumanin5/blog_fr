@@ -64,11 +64,34 @@ async def handle_category_sync(
     if scanned.frontmatter.get("title"):
         category.name = scanned.frontmatter["title"]
 
+    # Excerpt
+    if scanned.frontmatter.get("excerpt"):
+        category.excerpt = scanned.frontmatter["excerpt"]
+
+    # 处理 Icon
     if "icon" in scanned.frontmatter:
-        # 简单处理：如果是 emoji 则存 icon_preset，如果是 ID 则存 media_id (暂不实现 media_id)
         icon_val = scanned.frontmatter["icon"]
-        if icon_val and len(icon_val) < 10:  # Emoji heuristic
-            category.icon_preset = icon_val
+        if icon_val:
+            # 如果是短字符串（emoji），存储为 icon_preset
+            if len(icon_val) < 10:
+                category.icon_preset = icon_val
+                logger.info(f"✅ Using emoji icon: {icon_val}")
+            # 如果是文件路径或 UUID，解析为 icon_id
+            else:
+                cover_processor = CoverProcessor()
+                icon_id = await cover_processor._resolve_cover_media_id(
+                    session,
+                    icon_val,
+                    mdx_file_path=scanned.file_path,
+                    content_dir=content_dir,
+                )
+                if icon_id:
+                    category.icon_id = icon_id
+                    logger.info(f"✅ Resolved icon from path: {icon_val} -> {icon_id}")
+                else:
+                    logger.warning(
+                        f"⚠️ Could not resolve icon: {icon_val}, will be ignored"
+                    )
 
     if "sort" in scanned.frontmatter or "order" in scanned.frontmatter:
         category.sort_order = int(

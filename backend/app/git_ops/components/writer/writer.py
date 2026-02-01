@@ -109,6 +109,10 @@ class FileWriter:
             if category.sort_order != 0:
                 meta["order"] = category.sort_order
 
+            # 添加摘要字段
+            if category.excerpt:
+                meta["excerpt"] = category.excerpt
+
             # 封面处理（参考 posts 的做法）
             if category.cover_media_id:
                 # 添加 UUID 格式的 ID

@@ -91,6 +91,88 @@ async def test_handle_category_sync_update(session, mock_admin_user):
 
 
 @pytest.mark.asyncio
+async def test_handle_category_sync_icon_file_path(session, mock_admin_user):
+    """测试 icon 字段支持文件路径（长度 >= 10）"""
+    from unittest.mock import AsyncMock, patch
+    from uuid import uuid4
+
+    # 模拟 scanned post
+    scanned = MagicMock(spec=ScannedPost)
+    scanned.file_path = "content/articles/design/index.md"
+    scanned.derived_category_slug = "design"
+    scanned.derived_post_type = "articles"
+    scanned.frontmatter = {
+        "title": "Design Resources",
+        "icon": "design-icon.svg",  # 长度 >= 10，应该解析为文件路径
+    }
+    scanned.content = "Design resources collection"
+    scanned.is_category_index = True
+
+    # Mock CoverProcessor._resolve_cover_media_id 返回一个 UUID
+    mock_icon_id = uuid4()
+    with patch(
+        "app.git_ops.components.handlers.category_sync.CoverProcessor"
+    ) as MockCoverProcessor:
+        mock_processor = MockCoverProcessor.return_value
+        mock_processor._resolve_cover_media_id = AsyncMock(return_value=mock_icon_id)
+
+        # 执行
+        category = await handle_category_sync(
+            session=session,
+            scanned=scanned,
+            operating_user=mock_admin_user,
+            content_dir=Path("/tmp/content"),
+        )
+
+        # 验证
+        assert category is not None
+        assert category.slug == "design"
+        assert category.name == "Design Resources"
+        assert category.icon_id == mock_icon_id  # 应该设置 icon_id
+        assert category.icon_preset is None  # 不应该设置 icon_preset
+
+        # 验证 _resolve_cover_media_id 被调用
+        mock_processor._resolve_cover_media_id.assert_called_once_with(
+            session,
+            "design-icon.svg",
+            mdx_file_path=scanned.file_path,
+            content_dir=Path("/tmp/content"),
+        )
+
+
+@pytest.mark.asyncio
+async def test_handle_category_sync_icon_emoji(session, mock_admin_user):
+    """测试 icon 字段支持 emoji（长度 < 10）"""
+
+    # 模拟 scanned post
+    scanned = MagicMock(spec=ScannedPost)
+    scanned.file_path = "content/articles/tech/index.md"
+    scanned.derived_category_slug = "tech"
+    scanned.derived_post_type = "articles"
+    scanned.frontmatter = {
+        "title": "Tech Articles",
+        "icon": "🚀",  # 长度 < 10，应该存储为 icon_preset
+    }
+    scanned.content = "Technology articles"
+    scanned.is_category_index = True
+
+    # 执行
+    category = await handle_category_sync(
+        session=session,
+        scanned=scanned,
+        operating_user=mock_admin_user,
+        content_dir=Path("/tmp/content"),
+    )
+
+    # 验证
+    assert category is not None
+    assert category.slug == "tech"
+    assert category.name == "Tech Articles"
+    assert category.icon_preset == "🚀"  # 应该设置 icon_preset
+    assert category.icon_id is None  # 不应该设置 icon_id
+
+
+@pytest.mark.asyncio
 async def test_write_category_back_to_file(session, mock_admin_user):
     """验证反向同步: DB更新 -> 写入 index.md"""
     from app.posts.model import Category, PostType

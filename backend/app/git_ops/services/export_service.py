@@ -114,7 +114,7 @@ class ExportService(BaseGitOpsService):
                 # 更新数据库中的 source_path，建立关联
                 post.source_path = source_path
                 self.session.add(post)
-                stats.updated.append(source_path)
+                stats.updated.append(str(source_path))
                 logger.info(f"Exported article '{post.title}' to {source_path}")
 
         await self.session.commit()

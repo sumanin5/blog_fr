@@ -103,10 +103,15 @@ export default async function CategoryPage({
               {category.name}
             </h1>
 
-            {category.description && (
+            {/* 优先显示 excerpt，如果没有则显示 description */}
+            {category.excerpt ? (
+              <p className="text-lg md:text-xl max-w-4xl text-pretty text-muted-foreground leading-relaxed">
+                {category.excerpt}
+              </p>
+            ) : category.description ? (
               <div
                 className={cn(
-                  "text-lg md:text-xl max-w-4xl text-pretty text-muted-foreground leading-relaxed prose dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1",
+                  "text-lg md:text-xl max-w-4xl text-pretty text-muted-foreground leading-relaxed prose dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1 text-left"
                 )}
               >
                 <MdxServerRenderer
@@ -115,7 +120,7 @@ export default async function CategoryPage({
                   articleClassName="mx-auto"
                 />
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 

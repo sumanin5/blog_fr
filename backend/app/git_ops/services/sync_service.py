@@ -116,6 +116,7 @@ class SyncService(BaseGitOpsService):
 
             # 5. 检查并清理孤儿记录（数据库中有但文件系统中没有的记录）
             await self._cleanup_orphaned_posts(stats, operating_user)
+            await self._cleanup_orphaned_categories(stats, operating_user)
 
             # 6. 更新 Hash
             await self._save_last_hash(current_hash)
@@ -165,7 +166,7 @@ class SyncService(BaseGitOpsService):
                         await post_service.delete_post(
                             self.session, post_to_delete.id, current_user=operating_user
                         )
-                        stats.deleted.append(file_rel_path)
+                        stats.deleted.append(str(file_rel_path))
                     continue
 
                 # 情况 B: 文件新增或修改
@@ -179,7 +180,7 @@ class SyncService(BaseGitOpsService):
                         operating_user,
                         self.content_dir,
                     )
-                    stats.updated.append(file_rel_path)
+                    stats.updated.append(str(file_rel_path))
                     continue
 
                 matched_post, is_move = await self.serializer.match_post(
@@ -246,6 +247,69 @@ class SyncService(BaseGitOpsService):
 
         return len(unsynced)
 
+    async def _cleanup_orphaned_categories(
+        self, stats: SyncStats, operating_user: User
+    ):
+        """清理孤儿分类（数据库中有但文件系统中没有的分类）
+
+        这个方法在同步时调用，确保数据库和文件系统保持一致
+        """
+        from app.posts.model import Category
+        from sqlalchemy.orm import selectinload
+        from sqlmodel import select
+
+        try:
+            # 查询所有分类
+            stmt = select(Category).options(
+                selectinload(Category.cover_media),  # type: ignore
+            )
+            result = await self.session.execute(stmt)
+            categories = result.scalars().all()
+
+            if not categories:
+                return
+
+            logger.info(
+                f"Checking {len(categories)} categories for orphaned records..."
+            )
+
+            from app.git_ops.components.writer.path_calculator import POST_TYPE_DIR_MAP
+
+            deleted_count = 0
+
+            for category in categories:
+                # 计算 index.md 的路径
+                raw_type = category.post_type.value
+                type_folder = POST_TYPE_DIR_MAP.get(raw_type, raw_type)
+                index_path = self.content_dir / type_folder / category.slug / "index.md"
+
+                # 如果 index.md 不存在，说明这是孤儿分类
+                if not index_path.exists():
+                    async with collect_errors(
+                        stats, f"Cleaning up orphaned category {category.slug}"
+                    ):
+                        logger.info(
+                            f"Deleting orphaned category: {category.name} (slug={category.slug}, path={index_path})"
+                        )
+                        # 删除分类
+                        from app.posts import services as post_service
+
+                        await post_service.delete_category(
+                            self.session, category.id, operating_user
+                        )
+                        # 记录删除的路径（即使文件不存在）
+                        rel_path = f"{type_folder}/{category.slug}/index.md"
+                        stats.deleted.append(rel_path)
+                        deleted_count += 1
+
+            if deleted_count > 0:
+                logger.info(f"Cleaned up {deleted_count} orphaned categories.")
+            else:
+                logger.info("No orphaned categories found.")
+
+        except Exception as e:
+            logger.error(f"Failed to cleanup orphaned categories: {e}", exc_info=True)
+
     async def _cleanup_orphaned_posts(self, stats: SyncStats, operating_user: User):
         """清理孤儿记录（数据库中有但文件系统中没有的记录）
 
@@ -272,7 +336,7 @@ class SyncService(BaseGitOpsService):
                     await post_service.delete_post(
                         self.session, post.id, current_user=operating_user
                     )
-                    stats.deleted.append(post.source_path)
+                    stats.deleted.append(str(post.source_path))
 
     async def _commit_metadata_changes(self, stats: SyncStats):
         """提交元数据变更到 GitHub
@@ -416,7 +480,7 @@ class SyncService(BaseGitOpsService):
                         operating_user,
                         self.content_dir,
                     )
-                    stats.updated.append(file_path)
+                    stats.updated.append(str(file_path))
                     continue
 
                 matched_post, is_move = await self.serializer.match_post(
@@ -457,17 +521,20 @@ class SyncService(BaseGitOpsService):
                     await post_service.delete_post(
                         self.session, post.id, current_user=operating_user
                     )
-                    stats.deleted.append(post.source_path)
+                    stats.deleted.append(str(post.source_path))
 
         stats.duration = time.time() - start_time
         logger.info(
             f"Sync completed in {stats.duration:.2f}s: +{len(stats.added)} ~{len(stats.updated)} -{len(stats.deleted)}"
         )
 
-        # 5. 为数据库中的分类写入 index.md（如果缺失）
+        # 5. 清理孤儿分类（数据库中有但文件系统中没有的分类）
+        await self._cleanup_orphaned_categories(stats, operating_user)
+
+        # 6. 为数据库中的分类写入 index.md（如果缺失）
         await self._write_category_indexes(stats)
 
-        # 6. 如果有回写的元数据，提交并推送到 GitHub
+        # 7. 如果有回写的元数据，提交并推送到 GitHub
         await self._commit_metadata_changes(stats)
 
         # 7. 刷新缓存 (Best effort)

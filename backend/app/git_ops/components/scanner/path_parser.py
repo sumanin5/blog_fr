@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from app.posts.model import PostType
+from slugify import slugify as python_slugify
 
 
 class PathParser:
@@ -33,7 +34,8 @@ class PathParser:
         if len(parts) >= 3:
             # content/articles/tech/post.mdx -> parts=('articles', 'tech', 'post.mdx')
             dir_type = parts[0]
-            category_slug = parts[1].lower()  # 分类 Slug 统一小写
+            # 使用 slugify 处理分类 slug，支持中文转拼音
+            category_slug = python_slugify(parts[1])
             post_type = self.type_mapping.get(dir_type.lower())
             return {
                 "post_type": post_type,
