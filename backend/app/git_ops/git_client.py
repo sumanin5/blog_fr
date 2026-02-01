@@ -74,6 +74,37 @@ class GitClient:
         # 过滤掉空行
         return [f.strip() for f in out.splitlines() if f.strip()]
 
+    async def get_changed_files_with_status(
+        self, since_hash: str
+    ) -> List[Tuple[str, str]]:
+        """获取变更文件及其状态
+
+        Returns:
+            List of (status, filepath)
+            e.g. [("M", "ideas/post.md"), ("A", "ideas/new.md"), ("D", "ideas/old.md")]
+
+        Status codes:
+            M = Modified
+            A = Added
+            D = Deleted
+            R = Renamed
+            C = Copied
+        """
+        code, out, err = await self.run("diff", "--name-status", f"{since_hash}..HEAD")
+        if code != 0:
+            raise GitError(f"Failed to get diff: {err}")
+
+        results = []
+        for line in out.splitlines():
+            if not line.strip():
+                continue
+            parts = line.split("\t", 1)
+            if len(parts) == 2:
+                status, filepath = parts
+                results.append((status.strip(), filepath.strip()))
+
+        return results
+
     async def get_file_status(self) -> List[Tuple[str, str]]:
         """获取工作区文件状态 (git status --porcelain)
 

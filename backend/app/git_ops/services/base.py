@@ -31,6 +31,9 @@ class BaseGitOpsService:
             self.scanner = container.scanner
             self.serializer = container.serializer
             self.git_client = container.git_client
+            self.github = container.github
+            self.hash_manager = container.hash_manager
+            self.sync_processor = container.sync_processor
         else:
             # 向后兼容：如果没有容器，自己创建依赖
             from app.git_ops.container import GitOpsContainer

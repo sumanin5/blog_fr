@@ -145,5 +145,35 @@ async def handle_category_sync(
     session.add(category)
     # 不提交，由调用方提交
 
+    # 4. 回写 category_id 到 index.md
+    await _write_category_metadata_back(
+        session, content_dir, scanned.file_path, category
+    )
+
     logger.info(f"Updated category metadata for {category.slug}")
     return category
+
+
+async def _write_category_metadata_back(
+    session: AsyncSession,
+    content_dir: Path,
+    file_path: str,
+    category: Category,
+):
+    """回写分类 ID 到 index.md 的 frontmatter"""
+    from app.git_ops.components.writer.file_operator import update_frontmatter_metadata
+
+    metadata = {
+        "category_id": str(category.id),
+    }
+
+    # 如果有 cover_media_id，也回写
+    if category.cover_media_id:
+        metadata["cover_media_id"] = str(category.cover_media_id)
+
+    # 如果有 icon_id，也回写
+    if category.icon_id:
+        metadata["icon_id"] = str(category.icon_id)
+
+    await update_frontmatter_metadata(content_dir, file_path, metadata)
+    logger.info(f"Wrote category metadata back to {file_path}")

@@ -6,6 +6,7 @@ import pytest
 from app.git_ops.components.scanner.path_parser import PathParser
 
 
+@pytest.mark.unit
 class TestPathParserChinese:
     """测试中文路径解析"""
 

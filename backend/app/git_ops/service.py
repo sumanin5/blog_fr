@@ -29,11 +29,11 @@ class GitOpsService:
 
     async def sync_all(self, default_user: User = None) -> SyncStats:
         """执行全量同步（扫描本地文件 -> 更新数据库）"""
-        return await self.container.sync_service.sync_all(default_user)
+        return await self.container.sync_all(default_user)
 
     async def sync_incremental(self, default_user: User = None) -> SyncStats:
         """执行增量同步（基于 Git Diff）"""
-        return await self.container.sync_service.sync_incremental(default_user)
+        return await self.container.sync_incremental(default_user)
 
     # ========================================
     # 预览相关方法 - 委托给 PreviewService

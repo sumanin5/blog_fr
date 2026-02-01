@@ -60,6 +60,22 @@ class GitError(GitOpsError):
         )
 
 
+class GitHubConnectionError(GitError):
+    """GitHub 连接失败（网络问题、认证失败等）"""
+
+    def __init__(self, operation: str, detail: str = ""):
+        message = f"GitHub connection failed during {operation}"
+        if detail:
+            message += f": {detail}"
+        super().__init__(message)
+        self.error_code = "GITHUB_CONNECTION_ERROR"
+        self.details = (
+            {"operation": operation, "detail": detail}
+            if detail
+            else {"operation": operation}
+        )
+
+
 class GitNotFoundError(GitError):
     """Git 命令未找到"""
 

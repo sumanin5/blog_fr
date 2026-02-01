@@ -2,6 +2,9 @@ from pathlib import Path
 from typing import Optional
 
 from app.core.config import settings
+from app.git_ops.components.github import GitHubComponent
+from app.git_ops.components.handlers.file_processor import SyncProcessor
+from app.git_ops.components.hash_manager import HashManager
 from app.git_ops.components.scanner import MDXScanner
 from app.git_ops.components.serializer import PostSerializer
 from app.git_ops.components.writer import FileWriter
@@ -23,6 +26,11 @@ class GitOpsContainer:
             session=session, content_dir=self.content_dir, serializer=self.serializer
         )
         self.git_client = GitClient(self.content_dir)
+        self.github = GitHubComponent(self.content_dir, self.git_client)
+        self.hash_manager = HashManager(self.content_dir, self.git_client)
+        self.sync_processor = SyncProcessor(
+            self.scanner, self.serializer, self.content_dir
+        )
 
         # 服务初始化（延迟加载）
         self._sync_service = None
@@ -48,6 +56,14 @@ class GitOpsContainer:
 
             self._sync_service = SyncService(self.session, self)
         return self._sync_service
+
+    async def sync_all(self, default_user=None):
+        """执行全量同步"""
+        return await self.sync_service.sync_all(default_user)
+
+    async def sync_incremental(self, default_user=None):
+        """执行增量同步"""
+        return await self.sync_service.sync_incremental(default_user)
 
     @property
     def preview_service(self):
