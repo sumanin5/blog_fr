@@ -37,8 +37,10 @@ class GitHubComponent:
         if not (self.content_dir / ".git").exists():
             raise NotGitRepositoryError()
 
-        logger.info("Pulling from remote...")
-        output = await self.git_client.pull()
+        from app.core.config import settings
+
+        logger.info(f"Pulling from remote (branch: {settings.GIT_SYNC_BRANCH})...")
+        output = await self.git_client.pull(branch=settings.GIT_SYNC_BRANCH)
         logger.info(f"Git pull result: {output}")
         return output
 

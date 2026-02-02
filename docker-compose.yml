@@ -22,25 +22,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     networks:
       - blog-network
 
   # ==========================================
   # 后端 API
   # ==========================================
-  # ==========================================
-  # 后端 API
-  # ==========================================
   backend:
     image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-backend:latest
 
-    # 挂载卷：生产环境只挂载数据，不挂载代码
+    # 挂载卷：生产环境引入代码挂载，确保最新逻辑立即生效
     volumes:
-      - ./.git:/git_root/.git
-      - ./.git/modules/content:/git_root/.git/modules/content  # submodule 支持
-      - ./content:/git_root/content
-      - ./backend/data:/app/data  # 挂载 GeoIP 数据库目录
-      - ~/.ssh:/root/.ssh:ro  # SSH key 用于访问私有 submodule
+      - ./backend/app:/app/app       # 强制覆盖镜像内代码，使修复逻辑生效
+      - ./content:/git_root/content  # 直接挂载内容仓库
+      - ./backend/data:/app/data     # 挂载数据目录
+      - ./backend/media:/app/media   # 持久化媒体文件
+      - ~/.ssh:/root/.ssh:ro         # SSH key
 
     ports:
       - "8000:8000"
@@ -55,13 +56,19 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       CONTENT_DIR: /git_root/content
       GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
-      GIT_CONFIG_PARAMETERS: "'safe.directory=*'"
+      GIT_SYNC_BRANCH: main
+      GIT_SAFE_DIR: "*"  # 配合代码中的逻辑，进一步确保权限通畅
 
     depends_on:
       db:
         condition: service_healthy
 
-    command: fastapi run --workers 4 app/main.py
+    command: fastapi run --workers 1 app/main.py
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
 
     networks:
       - blog-network
@@ -78,6 +85,10 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - blog-network
 
@@ -104,6 +115,10 @@ services:
     depends_on:
       - frontend
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     networks:
       - blog-network
 

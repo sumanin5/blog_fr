@@ -36,6 +36,22 @@ class GitClient:
 
     async def run(self, *args: str) -> Tuple[int, str, str]:
         """运行 git 命令 (非阻塞)"""
+        # 针对容器环境自动处理 safe.directory 问题
+        import os
+
+        if os.getenv("GIT_SAFE_DIR") == "*":
+            safe_proc = await asyncio.create_subprocess_exec(
+                "git",
+                "config",
+                "--global",
+                "--add",
+                "safe.directory",
+                "*",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await safe_proc.wait()
+
         cmd = ["git"] + list(args)
         process = await asyncio.create_subprocess_exec(
             *cmd,  # 执行命令
@@ -47,10 +63,10 @@ class GitClient:
         stdout, stderr = await process.communicate()
         return (process.returncode, stdout.decode().strip(), stderr.decode().strip())
 
-    async def pull(self) -> str:
-        """执行 git pull"""
+    async def pull(self, remote: str = "origin", branch: str = "main") -> str:
+        """执行 git pull，强制指定远程和分支"""
         await self._ensure_git_config()
-        code, out, err = await self.run("pull")
+        code, out, err = await self.run("pull", remote, branch)
         if code != 0:  # 如果失败
             if "not a git repository" in err.lower():
                 raise NotGitRepositoryError()

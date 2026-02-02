@@ -16,4 +16,5 @@ class GitOpsSettings:
     GIT_DEFAULT_CATEGORY: str = Field(
         default="uncategorized", description="默认分类别名"
     )
+    GIT_SYNC_BRANCH: str = Field(default="main", description="同步的具体分支")
     WEBHOOK_SECRET: str = Field(default="", description="GitHub Webhook Secret")
