@@ -1,141 +1,143 @@
 services:
-  # ==========================================
-  # PostgreSQL 数据库
-  # ==========================================
-  db:
-    image: postgres:17
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      # 数据持久化，防止容器删除后数据丢失
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      # 宿主机 5433 → 容器 5432（避免与本地 PostgreSQL 冲突）
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-    networks:
-      - blog-network
+    # ==========================================
+    # PostgreSQL 数据库
+    # ==========================================
+    db:
+        image: postgres:17
+        restart: unless-stopped
+        env_file:
+            - .env
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        volumes:
+            # 数据持久化，防止容器删除后数据丢失
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            # 宿主机 5433 → 容器 5432（避免与本地 PostgreSQL 冲突）
+            - "5433:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+        networks:
+            - blog-network
 
-  # ==========================================
-  # 后端 API
-  # ==========================================
-  backend:
-    image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-backend:latest
+    # ==========================================
+    # 后端 API
+    # ==========================================
+    backend:
+        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-backend:latest
 
-    # 挂载卷：生产环境引入代码挂载，确保最新逻辑立即生效
-    volumes:
-      - ./backend/app:/app/app       # 强制覆盖镜像内代码，使修复逻辑生效
-      - ./content:/git_root/content  # 直接挂载内容仓库
-      - ./backend/data:/app/data     # 挂载数据目录
-      - ./backend/media:/app/media   # 持久化媒体文件
-      - ~/.ssh:/root/.ssh:ro         # SSH key
+        # 挂载卷：生产环境引入代码挂载，确保最新逻辑立即生效
+        volumes:
+            - ./backend/app:/app/app # 强制覆盖镜像内代码，使修复逻辑生效
+            - ./content:/git_root/content # 直接挂载内容仓库（独立 Git 仓库）
+            - ./backend/data:/app/data # 挂载数据目录
+            - ./backend/media:/app/media # 持久化媒体文件
+            - ~/.ssh:/root/.ssh:ro # SSH key
 
-    ports:
-      - "8000:8000"
+        ports:
+            - "8000:8000"
 
-    env_file:
-      - .env
+        env_file:
+            - .env
 
-    # 环境变量优先级最高
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      SECRET_KEY: ${SECRET_KEY}
-      ENVIRONMENT: ${ENVIRONMENT}
-      CONTENT_DIR: /git_root/content
-      GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
-      GIT_SYNC_BRANCH: main
-      GIT_SAFE_DIR: "*"  # 配合代码中的逻辑，进一步确保权限通畅
+        # 环境变量优先级最高
+        environment:
+            DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+            SECRET_KEY: ${SECRET_KEY}
+            ENVIRONMENT: ${ENVIRONMENT}
+            CONTENT_DIR: /git_root/content
+            GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
+            GIT_SYNC_BRANCH: main
+            GIT_SAFE_DIR: "*" # 配合代码中的逻辑，进一步确保权限通畅
+            GIT_CONFIG_PARAMETERS: "" # 禁用这个变量，避免格式错误
 
-    depends_on:
-      db:
-        condition: service_healthy
+        depends_on:
+            db:
+                condition: service_healthy
 
-    command: fastapi run --workers 1 app/main.py
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+        command: >
+            sh -c "git config --global --add safe.directory /git_root/content &&
+                   fastapi run --workers 1 app/main.py"
+        deploy:
+            resources:
+                limits:
+                    memory: 512M
 
+        networks:
+            - blog-network
 
-    networks:
-      - blog-network
+    frontend:
+        # 使用阿里云 ACR 镜像
+        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-frontend:latest
+        env_file:
+            - .env
+        environment:
+            - BACKEND_INTERNAL_URL=http://backend:8000
+            - NEXT_PUBLIC_API_URL= # 空字符串，API_PREFIX 已包含 /api/v1
+        ports:
+            - "3000:3000"
+        depends_on:
+            - backend
+        deploy:
+            resources:
+                limits:
+                    memory: 512M
+        networks:
+            - blog-network
 
-  frontend:
-    # 使用阿里云 ACR 镜像
-    image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-frontend:latest
-    env_file:
-      - .env
-    environment:
-      - BACKEND_INTERNAL_URL=http://backend:8000
-      - NEXT_PUBLIC_API_URL=  # 空字符串，API_PREFIX 已包含 /api/v1
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-    networks:
-      - blog-network
-
-  # ==========================================
-  # Caddy 反向代理 (自动 HTTPS)
-  # ==========================================
-  caddy:
-    image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-caddy:latest
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      # 如果还是开发测试，也可以保留 API 端口转发，但生产环境建议走域名
-      - "8080:8080"
-    environment:
-      # Caddy 将使用这些变量来配置域名和申请证书
-      - DOMAIN_NAME=${DOMAIN_NAME}
-      - DOMAIN_NAME_WWW=${DOMAIN_NAME_WWW}
-      - API_DOMAIN_NAME=${API_DOMAIN_NAME}
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - frontend
-      - backend
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    networks:
-      - blog-network
+    # ==========================================
+    # Caddy 反向代理 (自动 HTTPS)
+    # ==========================================
+    caddy:
+        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-caddy:latest
+        restart: unless-stopped
+        ports:
+            - "80:80"
+            - "443:443"
+            # 如果还是开发测试，也可以保留 API 端口转发，但生产环境建议走域名
+            - "8080:8080"
+        environment:
+            # Caddy 将使用这些变量来配置域名和申请证书
+            - DOMAIN_NAME=${DOMAIN_NAME}
+            - DOMAIN_NAME_WWW=${DOMAIN_NAME_WWW}
+            - API_DOMAIN_NAME=${API_DOMAIN_NAME}
+        volumes:
+            - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+            - caddy_config:/config
+        depends_on:
+            - frontend
+            - backend
+        deploy:
+            resources:
+                limits:
+                    memory: 128M
+        networks:
+            - blog-network
 
 # ==========================================
 # 数据卷
 # ==========================================
 volumes:
-  postgres_data:
-  caddy_data:   # 存储 SSL 证书
-  caddy_config: # 存储 Caddy 配置
+    postgres_data:
+    caddy_data: # 存储 SSL 证书
+    caddy_config: # 存储 Caddy 配置
 
 # ==========================================
 # 网络配置
 # ==========================================
 networks:
-  blog-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16
+    blog-network:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.25.0.0/16
