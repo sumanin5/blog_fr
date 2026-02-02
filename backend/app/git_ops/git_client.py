@@ -182,4 +182,15 @@ class GitClient:
         await self._ensure_git_config()
         code, out, err = await self.run("push")
         if code != 0:
-            raise GitError(f"Git push failed: {err}")
+            # 如果是因为没有 upstream，自动设置并重试
+            if "no upstream branch" in err.lower():
+                logger.info(
+                    "No upstream branch detected, setting upstream to origin/main"
+                )
+                code, out, err = await self.run(
+                    "push", "--set-upstream", "origin", "main"
+                )
+                if code != 0:
+                    raise GitError(f"Git push failed: {err}")
+            else:
+                raise GitError(f"Git push failed: {err}")
