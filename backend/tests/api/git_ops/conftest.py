@@ -36,10 +36,13 @@ def mock_content_dir(tmp_path, monkeypatch, mocker):
     # 自动 Mock 配置（仍使用 monkeypatch，因为它更适合修改配置对象）
     monkeypatch.setattr(settings, "CONTENT_DIR", d)
 
-    # Mock GitClient.pull 防止网络操作报错（使用 pytest-mock）
     mocker.patch(
         "app.git_ops.git_client.GitClient.pull",
         return_value="Already up to date.",
+    )
+    mocker.patch(
+        "app.git_ops.git_client.GitClient.push",
+        return_value="",
     )
 
     return d

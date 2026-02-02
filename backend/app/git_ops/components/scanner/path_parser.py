@@ -19,36 +19,44 @@ class PathParser:
             self.type_mapping[base] = val  # "article" -> "articles"
             self.type_mapping[f"{base}s"] = val  # "articles" -> "articles"
 
+        # 定义解析规则表：基于路径片段数量 (parts count) 的分发
+        # 这种设计极其便于扩展，只需在此处添加 key 和对应的解析逻辑
+        self.rules = {
+            3: self._parse_category_depth,  # articles/tech/post.md
+            2: self._parse_type_depth,  # articles/post.md
+        }
+
     def parse(self, rel_path: str) -> Dict[str, Optional[str]]:
         """
-        解析文件路径，提取 post_type 和 category
-
-        规则：
-        - {post_type_plural}/{category_slug}/{filename} -> {type, category}
-        - {post_type_plural}/{filename} -> {type, category=None}
-        - {filename} -> {type=None, category=None}
+        解析文件路径，动态分发至对应规则处理器。
         """
         path = Path(rel_path)
         parts = path.parts
+        parts_count = len(parts)
 
-        if len(parts) >= 3:
-            # content/articles/tech/post.mdx -> parts=('articles', 'tech', 'post.mdx')
-            dir_type = parts[0]
-            # 使用 slugify 处理分类 slug，支持中文转拼音
-            category_slug = python_slugify(parts[1])
-            post_type = self.type_mapping.get(dir_type.lower())
-            return {
-                "post_type": post_type,
-                "category_slug": category_slug,
-            }
+        # 1. 查找对应层级的解析规则
+        parser = self.rules.get(parts_count)
+        if not parser:
+            return {"post_type": None, "category_slug": None}
 
-        elif len(parts) == 2:
-            # content/articles/post.mdx -> parts=('articles', 'post.mdx')
-            dir_type = parts[0]
-            post_type = self.type_mapping.get(dir_type.lower())
-            return {
-                "post_type": post_type,
-                "category_slug": None,
-            }
+        # 2. 执行具体解析逻辑
+        return parser(parts)
 
-        return {"post_type": None, "category_slug": None}
+    def _parse_category_depth(self, parts: tuple) -> Dict[str, Optional[str]]:
+        """处理格式: {type}/{category}/{file}"""
+        dir_type = parts[0].lower()
+        category_raw = parts[1]
+
+        return {
+            "post_type": self.type_mapping.get(dir_type),
+            "category_slug": python_slugify(category_raw) if category_raw else None,
+        }
+
+    def _parse_type_depth(self, parts: tuple) -> Dict[str, Optional[str]]:
+        """处理格式: {type}/{file}"""
+        dir_type = parts[0].lower()
+
+        return {
+            "post_type": self.type_mapping.get(dir_type),
+            "category_slug": None,
+        }

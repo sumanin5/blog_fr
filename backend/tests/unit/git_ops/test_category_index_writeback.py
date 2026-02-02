@@ -1,223 +1,185 @@
 """
 测试分类 index.md 回写逻辑
 
-注意：这些测试使用旧的类式 API，已重构为使用 pytest 和 conftest fixture
-TODO: 重写这些测试以适配新的函数式 API
+测试 SyncService.sync_all 方法中包含的 "确保分类索引存在" 的逻辑
 """
 
 from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from app.git_ops.schema import SyncStats
-from app.posts.model import Category, PostType
+from app.posts.model import Category
 
 
-@pytest.mark.skip(reason="需要重写以适配函数式 API")
+@pytest.mark.unit
+@pytest.mark.asyncio
 @pytest.mark.unit
 @pytest.mark.asyncio
 class TestCategoryIndexWriteback:
-    """测试同步时为缺失的分类创建 index.md"""
+    """测试 SyncProcessor.sync_categories_to_disk 回写逻辑"""
+
+    @pytest.fixture
+    def setup_processor(self, mock_container, mock_session, mocker):
+        """设置 SyncProcessor 及其依赖"""
+        from app.git_ops.components.handlers.file_processor import SyncProcessor
+        from app.git_ops.components.scanner import MDXScanner
+        from app.git_ops.components.serializer import PostSerializer
+        from app.git_ops.schema import SyncStats
+
+        mock_scanner = mocker.Mock(spec=MDXScanner)
+        mock_serializer = mocker.Mock(spec=PostSerializer)
+        content_dir = Path("/content")
+
+        processor = SyncProcessor(mock_scanner, mock_serializer, content_dir)
+
+        # Mock writer
+        mock_writer = mocker.MagicMock()
+        mock_writer.write_category = mocker.AsyncMock()
+        mock_writer.path_calculator.calculate_category_path.side_effect = (
+            lambda c: Path(f"/content/articles/{c.slug}/index.md")
+        )
+
+        mock_writer.file_operator = mocker.MagicMock()
+        mock_writer.file_operator.read_text = mocker.AsyncMock(return_value="---")
+
+        return processor, mock_writer, SyncStats()
 
     async def test_write_missing_category_indexes(
-        self, mock_session, mock_content_dir, mock_file_writer, mocker
+        self, mock_session, mocker, setup_processor
     ):
         """测试为没有 index.md 的分类创建文件"""
-        # 准备测试数据
-        category1 = Category(
-            id=uuid4(),
-            name="技术文章",
-            slug="tech",
-            post_type=PostType.ARTICLES,
-            icon_preset="💻",
-            sort_order=1,
-            is_active=True,
-            description="技术分类描述",
+        processor, mock_writer, stats = setup_processor
+
+        category1 = Category(id=uuid4(), name="T1", slug="t1", post_type="articles")
+        category2 = Category(id=uuid4(), name="T2", slug="t2", post_type="articles")
+
+        # Mock DB returns for categories
+        mocker.patch(
+            "app.posts.cruds.category.get_all_categories",
+            return_value=[category1, category2],
         )
 
-        category2 = Category(
-            id=uuid4(),
-            name="生活随笔",
-            slug="life",
-            post_type=PostType.ARTICLES,
-            icon_preset="📝",
-            sort_order=2,
-            is_active=True,
-        )
-
-        stats = SyncStats()
-
-        # Mock 数据库查询（返回两个分类）
-        mock_result = mocker.MagicMock()
-        mock_result.scalars.return_value.all.return_value = [category1, category2]
-        mock_session.execute.return_value = mock_result
-
-        # Mock Path.exists（两个 index.md 都不存在）
+        # Mock File missing
         mocker.patch("pathlib.Path.exists", return_value=False)
 
-        # TODO: 使用新的函数式 API
-        # await write_category_indexes(session, content_dir, stats)
+        # Execute
+        await processor.sync_categories_to_disk(mock_session, mock_writer, stats)
 
-        # 验证
-        assert mock_file_writer.write_category.call_count == 2
-        mock_file_writer.write_category.assert_any_call(category1)
-        mock_file_writer.write_category.assert_any_call(category2)
+        assert mock_writer.write_category.call_count == 2
+        mock_writer.write_category.assert_any_call(category1)
+        mock_writer.write_category.assert_any_call(category2)
         assert len(stats.added) == 2
-        assert "articles/tech/index.md" in stats.added
-        assert "articles/life/index.md" in stats.added
 
     async def test_skip_existing_category_indexes(
-        self, mock_session, mock_content_dir, mock_file_writer, mocker
+        self, mock_session, mocker, setup_processor
     ):
-        """测试跳过已存在 index.md 的分类"""
+        """测试跳过已存在且内容一致的 index.md 分类"""
+        processor, mock_writer, stats = setup_processor
         category = Category(
-            id=uuid4(),
-            name="技术文章",
-            slug="tech",
-            post_type=PostType.ARTICLES,
-            is_active=True,
+            id=uuid4(), name="T1", slug="t1", post_type="articles", is_active=True
         )
 
-        stats = SyncStats()
+        mocker.patch(
+            "app.posts.cruds.category.get_all_categories", return_value=[category]
+        )
+        mocker.patch("pathlib.Path.exists", return_value=True)  # Exists
 
-        # Mock 数据库查询
-        mock_result = mocker.MagicMock()
-        mock_result.scalars.return_value.all.return_value = [category]
-        mock_session.execute.return_value = mock_result
+        # Mock content exactly same as expected
+        expected_meta = "title: T1\nhidden: false\n"
+        mock_writer.file_operator.read_text.return_value = expected_meta
+        # Note: frontmatter.dumps default output format might vary,
+        # so here we just rely on logic: if strip() matches, it skips.
+        # Ideally we should mock frontmatter.dumps to return expected_meta too.
+        mocker.patch("frontmatter.dumps", return_value=expected_meta)
 
-        # Mock Path.exists（index.md 已存在）
-        mocker.patch("pathlib.Path.exists", return_value=True)
+        await processor.sync_categories_to_disk(mock_session, mock_writer, stats)
 
-        # TODO: 使用新的函数式 API
-
-        # 验证
-        mock_file_writer.write_category.assert_not_called()
+        mock_writer.write_category.assert_not_called()
         assert len(stats.added) == 0
 
     async def test_mixed_existing_and_missing_indexes(
-        self, mock_session, mock_content_dir, mock_file_writer, mocker
+        self, mock_session, mocker, setup_processor
     ):
-        """测试混合场景：部分分类有 index.md，部分没有"""
-        category1 = Category(
-            id=uuid4(),
-            name="技术文章",
-            slug="tech",
-            post_type=PostType.ARTICLES,
-            is_active=True,
+        """测试混合场景"""
+        processor, mock_writer, stats = setup_processor
+        c1 = Category(id=uuid4(), name="Exist", slug="exist", post_type="articles")
+        c2 = Category(id=uuid4(), name="Missing", slug="missing", post_type="articles")
+
+        mocker.patch(
+            "app.posts.cruds.category.get_all_categories", return_value=[c1, c2]
         )
 
-        category2 = Category(
-            id=uuid4(),
-            name="生活随笔",
-            slug="life",
-            post_type=PostType.ARTICLES,
-            is_active=True,
+        # Mock exists logic
+        def exists_side_effect(self):
+            return "exist" in str(self)
+
+        mocker.patch.object(
+            Path, "exists", autospec=True, side_effect=exists_side_effect
         )
 
-        stats = SyncStats()
+        # Mock frontmatter dumps to ensure consistent comparison for existing file
+        mocker.patch("frontmatter.dumps", return_value="title: Exist")
+        mock_writer.file_operator.read_text.return_value = "title: Exist"
 
-        # Mock 数据库查询
-        mock_result = mocker.MagicMock()
-        mock_result.scalars.return_value.all.return_value = [category1, category2]
-        mock_session.execute.return_value = mock_result
+        await processor.sync_categories_to_disk(mock_session, mock_writer, stats)
 
-        # Mock Path.exists（tech 存在，life 不存在）
-        mocker.patch.object(Path, "exists", lambda self: "tech" in str(self))
-
-        # TODO: 使用新的函数式 API
-
-        # 验证
-        mock_file_writer.write_category.assert_called_once_with(category2)
+        mock_writer.write_category.assert_called_once_with(c2)
         assert len(stats.added) == 1
-        assert "articles/life/index.md" in stats.added
-
-    async def test_no_categories_in_database(
-        self, mock_session, mock_content_dir, mocker
-    ):
-        """测试数据库中没有分类的情况"""
-        stats = SyncStats()
-
-        # Mock 数据库查询（返回空列表）
-        mock_result = mocker.MagicMock()
-        mock_result.scalars.return_value.all.return_value = []
-        mock_session.execute.return_value = mock_result
-
-        # TODO: 使用新的函数式 API
-
-        # 验证
-        assert len(stats.added) == 0
-
-    async def test_write_category_with_cover(
-        self, mock_session, mock_content_dir, mock_file_writer, mocker
-    ):
-        """测试为有封面的分类创建 index.md"""
-        media_id = uuid4()
-        category = Category(
-            id=uuid4(),
-            name="技术文章",
-            slug="tech",
-            post_type=PostType.ARTICLES,
-            cover_media_id=media_id,
-            is_active=True,
-        )
-
-        # Mock cover_media 关系
-        mock_cover = mocker.MagicMock()
-        mock_cover.id = media_id
-        mock_cover.original_filename = "tech-banner.jpg"
-        category.cover_media = mock_cover
-
-        stats = SyncStats()
-
-        # Mock 数据库查询
-        mock_result = mocker.MagicMock()
-        mock_result.scalars.return_value.all.return_value = [category]
-        mock_session.execute.return_value = mock_result
-
-        # Mock Path.exists（index.md 不存在）
-        mocker.patch("pathlib.Path.exists", return_value=False)
-
-        # TODO: 使用新的函数式 API
-
-        # 验证
-        mock_file_writer.write_category.assert_called_once_with(category)
-        assert category.cover_media_id == media_id
-        assert category.cover_media.original_filename == "tech-banner.jpg"
 
     async def test_handle_write_error_gracefully(
-        self, mock_session, mock_content_dir, mocker
+        self, mock_session, mocker, setup_processor
     ):
-        """测试写入失败时的错误处理"""
+        """测试写入失败时不崩溃"""
+        processor, mock_writer, stats = setup_processor
+        category = Category(id=uuid4(), name="T1", slug="t1", post_type="articles")
+
+        mocker.patch(
+            "app.posts.cruds.category.get_all_categories", return_value=[category]
+        )
+        mocker.patch("pathlib.Path.exists", return_value=False)
+
+        # Mock write error
+        mock_writer.write_category.side_effect = Exception("Disk error")
+
+        await processor.sync_categories_to_disk(mock_session, mock_writer, stats)
+
+        mock_writer.write_category.assert_called_once()
+        # Should not raise exception
+        assert len(stats.added) == 0
+
+    async def test_update_existing_category_when_content_changed(
+        self, mock_session, mocker, setup_processor
+    ):
+        """测试：当数据库信息变更导致内容不一致时，应更新 index.md"""
+        processor, mock_writer, stats = setup_processor
+
+        # DB data: Name is "New Title"
         category = Category(
             id=uuid4(),
-            name="技术文章",
-            slug="tech",
-            post_type=PostType.ARTICLES,
+            name="New Title",
+            slug="t1",
+            post_type="articles",
             is_active=True,
         )
 
-        stats = SyncStats()
-
-        # Mock 数据库查询
-        mock_result = mocker.MagicMock()
-        mock_result.scalars.return_value.all.return_value = [category]
-        mock_session.execute.return_value = mock_result
-
-        # Mock Path.exists（index.md 不存在）
-        mocker.patch("pathlib.Path.exists", return_value=False)
-
-        # Mock FileWriter（抛出异常）
-        mock_writer = mocker.MagicMock()
-        mock_writer.write_category = mocker.AsyncMock(
-            side_effect=Exception("Write failed")
-        )
         mocker.patch(
-            "app.git_ops.components.writer.writer.FileWriter", return_value=mock_writer
+            "app.posts.cruds.category.get_all_categories", return_value=[category]
         )
+        mocker.patch("pathlib.Path.exists", return_value=True)  # File exists
 
-        # TODO: 使用新的函数式 API
-        # 执行测试（不应该抛出异常）
+        # Disk content: Title is "Old Title"
+        old_content = "title: Old Title\nhidden: false\n"
+        mock_writer.file_operator.read_text.return_value = old_content
 
-        # 验证
-        mock_writer.write_category.assert_called_once()
+        # Expected new content (generated from DB)
+        expected_content = "title: New Title\nhidden: false\n"
+        mocker.patch("frontmatter.dumps", return_value=expected_content)
+
+        await processor.sync_categories_to_disk(mock_session, mock_writer, stats)
+
+        # Assert specific write call
+        mock_writer.write_category.assert_called_once_with(category)
+
+        # Assert stats reflection (updated, not added)
+        assert len(stats.updated) == 1
         assert len(stats.added) == 0

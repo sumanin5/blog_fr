@@ -19,14 +19,14 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 @pytest.mark.git_ops
-async def test_sync_continues_when_git_pull_fails(
+async def test_sync_fails_when_git_pull_fails(
     async_client: AsyncClient,
     superadmin_user_token_headers: dict,
     mock_content_dir: Path,
     mocker,
     superadmin_user,
 ):
-    """测试 git pull 失败时同步继续执行"""
+    """测试 git pull 失败时同步应该失败"""
     # 1. 创建测试文件
     test_file = mock_content_dir / "test.mdx"
     test_file.write_text(
@@ -47,22 +47,14 @@ Content
         side_effect=GitError("Network error: failed to pull"),
     )
 
-    # 3. 执行同步（应该继续执行而不是失败）
+    # 3. 执行同步（应该失败）
     response = await async_client.post(
         f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
         headers=superadmin_user_token_headers,
     )
 
-    # 验证：同步应该成功（pull 失败被容错处理）
-    assert response.status_code == 200
-    data = response.json()
-
-    # 验证：文件仍然被同步
-    assert len(data["added"]) >= 1
-
-    # 验证：错误被记录
-    assert len(data["errors"]) >= 1
-    assert any("Git Pull" in str(err) for err in data["errors"])
+    # 验证：同步失败
+    assert response.status_code != 200
 
     # 验证：pull 被调用
     mock_pull.assert_called()
@@ -164,17 +156,13 @@ Content
     hash_file = mock_content_dir / ".gitops_last_sync"
     hash_file.write_text("invalid-hash-format")
 
-    # 3. 执行增量同步（应该回退到全量同步）
+    # 3. 执行增量同步（应该失败）
     response = await async_client.post(
         f"{settings.API_PREFIX}/ops/git/sync",
         headers=superadmin_user_token_headers,
     )
 
-    assert response.status_code == 200
-    data = response.json()
-
-    # 验证：文件被同步
-    assert len(data["added"]) >= 1
+    assert response.status_code != 200
 
 
 @pytest.mark.asyncio
@@ -206,21 +194,13 @@ Content
     hash_file = mock_content_dir / ".gitops_last_sync"
     hash_file.write_text("")
 
-    # 3. 执行增量同步（应该回退到全量同步）
+    # 3. 执行增量同步（应该失败）
     response = await async_client.post(
         f"{settings.API_PREFIX}/ops/git/sync",
         headers=superadmin_user_token_headers,
     )
 
-    assert response.status_code == 200
-    data = response.json()
-
-    # 验证：文件被同步
-    assert len(data["added"]) >= 1
-
-    # 验证：hash 文件被更新为有效值
-    assert hash_file.exists()
-    assert len(hash_file.read_text().strip()) > 0
+    assert response.status_code != 200
 
 
 @pytest.mark.asyncio
@@ -359,7 +339,7 @@ Content
 
     # Mock get_changed_files 返回空列表
     mocker.patch(
-        "app.git_ops.git_client.GitClient.get_changed_files",
+        "app.git_ops.git_client.GitClient.get_changed_files_with_status",
         return_value=[],
     )
 
@@ -417,14 +397,7 @@ Content {i}
         headers=superadmin_user_token_headers,
     )
 
-    assert response.status_code == 200
-    data = response.json()
-
-    # 验证：文件仍然被同步
-    assert len(data["added"]) >= 3
-
-    # 验证：pull 错误被记录
-    assert len(data["errors"]) >= 1
+    assert response.status_code != 200
 
 
 @pytest.mark.asyncio
@@ -463,7 +436,7 @@ Content
         f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
         headers=superadmin_user_token_headers,
     )
-    assert response.status_code == 200
+    assert response.status_code != 200
 
     # 3. 第二次同步：pull 恢复正常
     mock_pull.side_effect = None

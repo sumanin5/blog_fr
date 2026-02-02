@@ -161,3 +161,24 @@ async def get_posts_with_source_path(
         return verified_posts
 
     return posts
+
+
+async def get_posts_by_source_paths(
+    session: AsyncSession, paths: list[str]
+) -> list[Post]:
+    """根据 source_path 列表批量查询文章（用于增量 Git 同步）"""
+    if not paths:
+        return []
+
+    stmt = (
+        select(Post)
+        .where(Post.source_path.in_(paths))  # type: ignore
+        .options(
+            selectinload(Post.category),
+            selectinload(Post.tags),
+            selectinload(Post.author),
+            selectinload(Post.cover_media),
+        )
+    )
+    result = await session.exec(stmt)
+    return list(result.all())

@@ -148,7 +148,7 @@ Description for {category_name}.
 
     # 2. 执行同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync",
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
         headers=superadmin_user_token_headers,
     )
 

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from app.posts.model import Category, PostType
@@ -74,3 +74,15 @@ async def delete_category(session: AsyncSession, category: Category) -> None:
     """删除分类"""
     await session.delete(category)
     await session.flush()
+
+
+async def get_all_categories(session: AsyncSession) -> List[Category]:
+    """获取所有分类"""
+    # 显式加载关联数据以避免 lazy load 错误
+    from sqlalchemy.orm import selectinload
+
+    stmt = select(Category).options(
+        selectinload(Category.icon), selectinload(Category.cover_media)
+    )
+    result = await session.exec(stmt)
+    return list(result.all())

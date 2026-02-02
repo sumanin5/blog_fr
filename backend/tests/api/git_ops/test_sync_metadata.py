@@ -40,7 +40,7 @@ Content here.
 
     # 同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     assert response.status_code == 200
@@ -84,9 +84,10 @@ Content here.
         encoding="utf-8",
     )
 
-    # 同步
+    # 同步 (强制全量以跳过 incremental hash check)
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
 
     assert response.status_code == 200
@@ -131,9 +132,10 @@ Content here.
         encoding="utf-8",
     )
 
-    # 同步
+    # 同步 (强制全量以跳过 incremental hash check)
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
 
     assert response.status_code == 200
@@ -177,9 +179,10 @@ This is an idea post.
         encoding="utf-8",
     )
 
-    # 同步
+    # 同步 (强制全量以跳过 incremental hash check)
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
 
     assert response.status_code == 200
@@ -220,9 +223,10 @@ This is a featured post.
         encoding="utf-8",
     )
 
-    # 同步
+    # 同步 (强制全量以跳过 incremental hash check)
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
 
     assert response.status_code == 200
@@ -276,7 +280,7 @@ Complete post content.
 
     # 同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     assert response.status_code == 200

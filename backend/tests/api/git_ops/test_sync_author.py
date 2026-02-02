@@ -39,7 +39,7 @@ Content here.
 
     # 同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     assert response.status_code == 200
@@ -80,7 +80,7 @@ Content here.
 
     # 同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     # 当同步过程中只有错误而没有成功操作时,API 返回 400
@@ -125,7 +125,7 @@ Content here.
 
     # 同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     # 当同步过程中只有错误而没有成功操作时,API 返回 400
@@ -174,7 +174,7 @@ Content here.
 
     # 同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     assert response.status_code == 200

@@ -53,9 +53,12 @@ def mock_git_client(mocker):
     client = mocker.MagicMock()
     client.get_current_hash = mocker.AsyncMock(return_value="abc123")
     client.get_changed_files_with_status = mocker.AsyncMock(return_value=[])
+    client.get_file_status = mocker.AsyncMock(return_value=[])  # Critical fix
     client.add = mocker.AsyncMock()
     client.commit = mocker.AsyncMock()
     client.push = mocker.AsyncMock()
+    client.pull = mocker.AsyncMock(return_value="Already up to date.")
+    client.run = mocker.AsyncMock(return_value=(0, "ok", ""))
     return client
 
 
@@ -63,7 +66,7 @@ def mock_git_client(mocker):
 def mock_container(mocker, mock_session, mock_git_client, mock_content_dir):
     """创建 mock DI 容器
 
-    包含所有常用的依赖：session, git_client, content_dir, scanner, serializer
+    包含所有常用的依赖：session, git_client, content_dir, scanner, serializer, github, hash_manager, sync_processor
     """
     container = mocker.MagicMock()
     container.session = mock_session
@@ -79,6 +82,26 @@ def mock_container(mocker, mock_session, mock_git_client, mock_content_dir):
     container.serializer = mocker.MagicMock()
     container.serializer.from_frontmatter = mocker.AsyncMock(return_value={})
     container.serializer.match_post = mocker.AsyncMock(return_value=(None, False))
+
+    # Mock GitHubComponent
+    container.github = mocker.MagicMock()
+    container.github.pull = mocker.AsyncMock()
+    container.github.commit_and_push = mocker.AsyncMock(return_value=True)
+    container.github.auto_commit_metadata = mocker.AsyncMock(return_value=True)
+
+    # Mock HashManager
+    container.hash_manager = mocker.MagicMock()
+    container.hash_manager.get_last_hash = mocker.MagicMock(return_value="abc123")
+    container.hash_manager.save_current_hash = mocker.AsyncMock(return_value="abc123")
+    container.hash_manager.has_new_commits = mocker.AsyncMock(return_value=True)
+    container.hash_manager.get_changed_files_since_last_sync = mocker.AsyncMock(
+        return_value=[]
+    )
+
+    # Mock SyncProcessor
+    container.sync_processor = mocker.MagicMock()
+    container.sync_processor.process_file_change = mocker.AsyncMock()
+    container.sync_processor.process_scanned_file = mocker.AsyncMock()
 
     return container
 

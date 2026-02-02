@@ -49,7 +49,7 @@ Content
 
     # 执行同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
     assert response.status_code == 200
 
@@ -109,7 +109,7 @@ author: "{superadmin_user.username}"
 
     # 执行同步
     await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     # 验证：图片已导入媒体库，文章中的路径已替换
@@ -171,7 +171,7 @@ author: "{superadmin_user.username}"
 
     # 执行同步
     await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     # 验证：媒体库中只有一条记录（去重成功）
@@ -216,7 +216,7 @@ Content
 
     # 执行同步
     await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
     # 验证
@@ -264,7 +264,7 @@ Content here.
 
     # 执行同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
     assert response.status_code == 200
 

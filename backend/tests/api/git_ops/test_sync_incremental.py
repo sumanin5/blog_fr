@@ -357,7 +357,7 @@ Content 1 Updated
 
 @pytest.mark.asyncio
 @pytest.mark.git_ops
-async def test_incremental_sync_fallback_to_full_on_no_hash(
+async def test_incremental_sync_fail_on_no_hash(
     async_client: AsyncClient,
     superadmin_user_token_headers: dict,
     mock_content_dir: Path,
@@ -365,7 +365,7 @@ async def test_incremental_sync_fallback_to_full_on_no_hash(
     session,
     superadmin_user,
 ):
-    """测试增量同步：没有 last_hash 时回退到全量同步"""
+    """测试增量同步：没有 last_hash 时应该报错（不再自动回退）"""
     # 1. 创建文件但不执行全量同步（模拟首次同步）
     test_file = mock_content_dir / "first-post.mdx"
     test_file.write_text(
@@ -386,20 +386,18 @@ Content
     if hash_file.exists():
         hash_file.unlink()
 
-    # 3. 执行增量同步（应该自动回退到全量同步）
+    # 3. 执行增量同步（应该报错）
     response = await async_client.post(
         f"{settings.API_PREFIX}/ops/git/sync", headers=superadmin_user_token_headers
     )
-    assert response.status_code == 200
-    data = response.json()
 
-    # 验证：文件被同步
-    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
-    assert "first-post.mdx" in data["added"][0]
+    # 验证：应该返回错误（500 或 4xx，取决于异常处理配置，GitOpsConfigurationError 通常被映射为 500）
+    assert response.status_code != 200
 
-    # 验证：hash 文件被创建
-    assert hash_file.exists()
-    assert len(hash_file.read_text().strip()) > 0
+    # 验证错误信息包含提示
+    # 注意：FastAPI 的 500 响应可能不包含 detail，或者包含 "Internal Server Error"
+    # 这里我们主要验证它没有成功执行同步
+    assert not hash_file.exists()  # 应该没有生成 hash 文件
 
 
 @pytest.mark.asyncio

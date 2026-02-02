@@ -4,7 +4,7 @@
 
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 from app.git_ops.components.handlers.category_sync import handle_category_sync
 from app.git_ops.components.handlers.post_create import handle_post_create
@@ -196,3 +196,161 @@ class SyncProcessor:
                 stats,
                 processed_post_ids,
             )
+            await handle_post_update(
+                session,
+                post,
+                scanned,
+                Path(file_path) if isinstance(file_path, str) else file_path,
+                False,  # is_move
+                self.serializer,
+                operating_user,
+                self.content_dir,
+                stats,
+                processed_post_ids,
+            )
+
+    async def reconcile_full_sync(
+        self,
+        session: AsyncSession,
+        scanned_map: Dict[str, Any],
+        existing_map: Dict[str, Post],
+        operating_user: User,
+        stats: SyncStats,
+    ):
+        """
+        全量同步的核心协调逻辑：
+        1. 对比找出孤儿记录并删除 (DB - Disk)
+        2. 遍历处理所有磁盘文件 (Disk -> DB)
+
+        Args:
+            session: 数据库会话
+            scanned_map: 磁盘文件映射 {path: ScannedPost}
+            existing_map: 数据库现有记录映射 {path: Post}
+            operating_user: 操作用户
+            stats: 统计对象
+        """
+        from app.git_ops.exceptions import collect_errors
+
+        # 1. 删除数据库中多余的记录（文件系统中不存在的）
+        for db_path, post in existing_map.items():
+            if db_path not in scanned_map:
+                async with collect_errors(stats, f"Deleting orphaned {db_path}"):
+                    logger.info(f"Deleting orphaned post: {db_path} (slug={post.slug})")
+                    await post_service.delete_post(
+                        session, post.id, current_user=operating_user
+                    )
+                    stats.deleted.append(str(db_path))
+
+        # 2. 处理扫描到的文件 (Disk -> DB)
+        processed_post_ids = set()
+        for file_path, scanned in scanned_map.items():
+            async with collect_errors(stats, f"Processing {file_path}"):
+                await self.process_scanned_file(
+                    session,
+                    file_path,
+                    scanned,
+                    existing_map,
+                    operating_user,
+                    stats,
+                    processed_post_ids,
+                )
+
+    async def sync_categories_to_disk(
+        self, session: AsyncSession, writer, stats: SyncStats
+    ):
+        """
+        (DB -> Disk) 确保所有分类都有 index.md 并保持同步
+
+        Args:
+            session: 数据库会话
+            writer:FileWriter 实例
+            stats: 统计对象
+        """
+        import frontmatter
+        from app.posts.cruds import category as category_crud
+
+        categories = await category_crud.get_all_categories(session)
+
+        for category in categories:
+            try:
+                target_path = writer.path_calculator.calculate_category_path(category)
+
+                # 构建期望的内容
+                meta = {"title": category.name, "hidden": not category.is_active}
+                if category.icon_preset:
+                    meta["icon"] = category.icon_preset
+                if category.sort_order != 0:
+                    meta["order"] = category.sort_order
+                if category.excerpt:
+                    meta["excerpt"] = category.excerpt
+                if category.cover_media_id:
+                    meta["cover_media_id"] = str(category.cover_media_id)
+                    if hasattr(category, "cover_media") and category.cover_media:
+                        meta["cover"] = category.cover_media.original_filename
+
+                expected_content = frontmatter.dumps(
+                    frontmatter.Post(category.description or "", **meta)
+                )
+
+                should_write = False
+                if not target_path.exists():
+                    should_write = True
+                else:
+                    existing_content = await writer.file_operator.read_text(target_path)
+                    if existing_content.strip() != expected_content.strip():
+                        should_write = True
+
+                if should_write:
+                    is_new = not target_path.exists()
+                    await writer.write_category(category)
+                    rel_path = target_path.relative_to(self.content_dir)
+                    if is_new:
+                        if str(rel_path) not in stats.added:
+                            stats.added.append(str(rel_path))
+                    else:
+                        if str(rel_path) not in stats.updated:
+                            stats.updated.append(str(rel_path))
+            except Exception as e:
+                logger.error(f"Failed to sync category index for {category.slug}: {e}")
+
+    async def reconcile_incremental_sync(
+        self,
+        session: AsyncSession,
+        changed_files: list,
+        existing_map: Dict[str, Post],
+        operating_user: User,
+        stats: SyncStats,
+    ):
+        """
+        增量同步的核心协调逻辑：
+        遍历变更列表并调度处理
+
+        Args:
+            session: 数据库会话
+            changed_files: 变更文件列表 [(status, path), ...]
+            existing_map: 涉及到的数据库现有记录映射
+            operating_user: 操作用户
+            stats: 统计对象
+        """
+        from app.git_ops.exceptions import collect_errors
+
+        processed_post_ids = set()
+
+        if changed_files:
+            logger.info(
+                f"Incremental sync: processing {len(changed_files)} changed files."
+            )
+            for status, file_path in changed_files:
+                if not file_path.endswith((".md", ".mdx")):
+                    continue
+
+                async with collect_errors(stats, f"Processing {status} {file_path}"):
+                    await self.process_file_change(
+                        session,
+                        file_path,
+                        status,
+                        existing_map,
+                        operating_user,
+                        stats,
+                        processed_post_ids,
+                    )

@@ -1,10 +1,10 @@
 import asyncio
-import json
 import logging
 from pathlib import Path
 from typing import List, Optional
 
 import frontmatter
+import orjson
 from app.git_ops.exceptions import GitOpsConfigurationError, ScanError
 
 from .models import ScannedPost
@@ -34,10 +34,11 @@ class MDXScanner:
         try:
             # 1. 异步读取与解析
             raw_content = await asyncio.to_thread(full_path.read_text, encoding="utf-8")
-            post = frontmatter.loads(raw_content)
+            post = frontmatter.loads(raw_content)  # 主要的性能瓶颈
 
             # 2. 计算 Hash 与路径解析
-            meta_str = json.dumps(post.metadata, sort_keys=True, default=str)
+            # 使用 orjson 进行更快的、确定性的序列化 (自动处理日期等)
+            meta_bytes = orjson.dumps(post.metadata, option=orjson.OPT_SORT_KEYS)
             path_info = self.path_parser.parse(rel_path)
 
             # 检测是否为分类元数据文件
@@ -47,7 +48,7 @@ class MDXScanner:
             return ScannedPost(
                 file_path=str(rel_path),
                 content_hash=calc_hash(raw_content),
-                meta_hash=calc_hash(meta_str),
+                meta_hash=calc_hash(meta_bytes),
                 frontmatter=post.metadata,
                 content=post.content,
                 updated_at=full_path.stat().st_mtime,
@@ -62,38 +63,59 @@ class MDXScanner:
     async def scan_all(
         self, glob_patterns: Optional[List[str]] = None
     ) -> List[ScannedPost]:
-        """扫描所有匹配的文件 (并发模式)。"""
+        """
+        扫描所有匹配的文件 (并发模式，带限流保护)。
+
+        优化点：
+        1. 路径去重：使用 set 避免多个 pattern 重复匹配同一文件。
+        2. 并发限流：使用 Semaphore 防止瞬间打开过多文件句柄。
+        3. 容错增强：保持 gather 的 return_exceptions=True，确保个别文件损坏不影响全局。
+        """
         if glob_patterns is None:
-            glob_patterns = ["**/*.md", "**/*.mdx"]
+            target_extensions = {".md", ".mdx"}
+        else:
+            # 从 pattern 中提取后缀名进行优化过滤，可以自定义
+            target_extensions = {
+                f".{p.split('.')[-1].lower()}" for p in glob_patterns if "." in p
+            }
 
-        # 收集待扫描路径
-        target_paths = []
-        for pattern in glob_patterns:
-            for path in self.content_root.glob(pattern):
-                if path.is_file():
-                    rel_path = path.relative_to(self.content_root)
-                    # 忽略根目录的 README.md 和其他非内容文件
-                    if rel_path.name.upper() in (
-                        "README.MD",
-                        "README.MDX",
-                        "LICENSE.MD",
-                        ".GITIGNORE",
-                    ):
-                        continue
-                    target_paths.append(rel_path)
+        # 1. 发现并收集路径 (单次递归遍历物理磁盘，效率更高)
+        target_path_set = set()
+        ignore_names = {"README.MD", "README.MDX", "LICENSE.MD", ".GITIGNORE"}
 
-        if not target_paths:
+        # 仅执行一次 rglob，在循环内进行后缀匹配
+        for path in self.content_root.rglob("*"):
+            if (
+                # 三重过滤条件：文件、后缀、名称
+                path.is_file()
+                and path.suffix.lower() in target_extensions
+                and path.name.upper() not in ignore_names
+            ):
+                target_path_set.add(path)
+
+        if not target_path_set:
             return []
 
-        # 并发扫描
-        tasks = [self.scan_file(p) for p in target_paths]
+        # 转换为相对路径
+        rel_paths = [p.relative_to(self.content_root) for p in target_path_set]
+        logger.info(f"🔍 [Scanner] Found {len(rel_paths)} target files to scan.")
+
+        # 2. 并发扫描 (引入信号量限流，默认并发数为 20)
+        # 这能保证即便文件极多，也不会因瞬间内存峰值或文件句柄耗尽而崩溃
+        sem = asyncio.Semaphore(20)
+
+        async def throttled_scan(rel_p: Path):
+            async with sem:
+                return await self.scan_file(str(rel_p))
+
+        tasks = [throttled_scan(p) for p in rel_paths]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # 筛选结果，记录错误但不中断整体流程
+        # 3. 筛选并汇总结果
         scanned_posts = []
         for i, res in enumerate(results):
             if isinstance(res, Exception):
-                logger.error(f"Failed to scan file {target_paths[i]}: {res}")
+                logger.error(f"Failed to scan file {rel_paths[i]}: {res}")
             elif res:
                 scanned_posts.append(res)
 
