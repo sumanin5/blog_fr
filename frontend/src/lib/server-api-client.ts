@@ -27,76 +27,76 @@ import { cookies } from "next/headers";
  * 4. 自动注入 Token（如果有）
  */
 export const serverClient = createClient({
-  baseUrl: settings.BACKEND_INTERNAL_URL,
+    baseUrl: settings.BACKEND_INTERNAL_URL,
 }) as Client;
 
 /**
  * 自定义 fetch 方法：添加 ISR 缓存、Token 注入和自动转换
  */
 serverClient.setConfig({
-  fetch: async (input, init) => {
-    // 动态获取 Token
-    let token = undefined;
-    try {
-      const cookieStore = await cookies();
-      token = cookieStore.get("access_token")?.value;
-    } catch {
-      // 这里的 try-catch 是为了防止在一些非请求生命周期中调用报错(如构建时)
-      // 但对于服务端组件渲染，它是正常的
-    }
+    fetch: async (input, init) => {
+        // 动态获取 Token
+        let token = undefined;
+        try {
+            const cookieStore = await cookies();
+            token = cookieStore.get("access_token")?.value;
+        } catch {
+            // 这里的 try-catch 是为了防止在一些非请求生命周期中调用报错(如构建时)
+            // 但对于服务端组件渲染，它是正常的
+        }
 
-    // 构造新的 Headers
-    const headers = new Headers(init?.headers);
-    headers.set("Content-Type", "application/json"); // 确保默认有 Content-Type
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
+        // 构造新的 Headers
+        const headers = new Headers(init?.headers);
+        headers.set("Content-Type", "application/json"); // 确保默认有 Content-Type
+        if (token) {
+            headers.set("Authorization", `Bearer ${token}`);
+        }
 
-    // 合并 Next.js 配置
-    const initNext = (init as any)?.next || {};
-    const defaultRevalidate = 3600;
+        // 合并 Next.js 配置
+        const initNext = (init as any)?.next || {};
+        const defaultRevalidate = 300; // 5 分钟 (300 秒)
 
-    // 合并 tags: 始终包含 'api'，加上调用方传入的 tags
-    const tags = Array.from(new Set([...(initNext.tags || []), "api"]));
+        // 合并 tags: 始终包含 'api'，加上调用方传入的 tags
+        const tags = Array.from(new Set([...(initNext.tags || []), "api"]));
 
-    // 执行请求
-    const response = await fetch(input, {
-      ...init,
-      headers: headers,
-      // ✅ Next.js ISR 配置
-      next: {
-        ...initNext,
-        revalidate: initNext.revalidate ?? defaultRevalidate,
-        tags: tags,
-      },
-    });
-
-    // 如果响应失败，直接返回
-    if (!response.ok) {
-      return response;
-    }
-
-    // ✅ 自动转换响应数据：snake_case → camelCase
-    const contentType = response.headers.get("content-type");
-    if (contentType?.includes("application/json")) {
-      try {
-        const data = await response.json();
-        const converted = normalizeApiResponse(data);
-
-        // 返回转换后的数据
-        return new Response(JSON.stringify(converted), {
-          status: response.status,
-          statusText: response.statusText,
-          headers: new Headers(response.headers),
+        // 执行请求
+        const response = await fetch(input, {
+            ...init,
+            headers: headers,
+            // ✅ Next.js ISR 配置
+            next: {
+                ...initNext,
+                revalidate: initNext.revalidate ?? defaultRevalidate,
+                tags: tags,
+            },
         });
-      } catch {
-        // JSON 解析失败，返回原始响应
-        return response;
-      }
-    }
 
-    return response;
-  },
+        // 如果响应失败，直接返回
+        if (!response.ok) {
+            return response;
+        }
+
+        // ✅ 自动转换响应数据：snake_case → camelCase
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+            try {
+                const data = await response.json();
+                const converted = normalizeApiResponse(data);
+
+                // 返回转换后的数据
+                return new Response(JSON.stringify(converted), {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: new Headers(response.headers),
+                });
+            } catch {
+                // JSON 解析失败，返回原始响应
+                return response;
+            }
+        }
+
+        return response;
+    },
 });
 
 export default serverClient;

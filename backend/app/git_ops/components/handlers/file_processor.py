@@ -348,6 +348,15 @@ class SyncProcessor:
                         f"as its directory was removed from Git"
                     )
                     await session.delete(category)
+
+                    # 更新统计信息以触发缓存刷新
+                    category_path = writer.path_calculator.calculate_category_path(
+                        category
+                    )
+                    rel_path = str(category_path.relative_to(self.content_dir))
+                    if rel_path not in stats.deleted:
+                        stats.deleted.append(rel_path)
+                        logger.debug(f"Added deleted category to stats: {rel_path}")
                 except Exception as e:
                     logger.error(
                         f"Failed to delete category '{category.slug}' from database: {e}"
