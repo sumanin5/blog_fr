@@ -90,18 +90,34 @@ class GitClient:
             R = Renamed
             C = Copied
         """
-        code, out, err = await self.run("diff", "--name-status", f"{since_hash}..HEAD")
+        # 1. 对比 since_hash 和 工作区 (Working Tree)
+        # 注意：不使用 ..HEAD，而是直接对比 hash，这样可以包含未提交的本地变更
+        code, out, err = await self.run("diff", "--name-status", since_hash)
         if code != 0:
             raise GitError(f"Failed to get diff: {err}")
 
         results = []
+        seen_files = set()
+
         for line in out.splitlines():
             if not line.strip():
                 continue
             parts = line.split("\t", 1)
             if len(parts) == 2:
                 status, filepath = parts
-                results.append((status.strip(), filepath.strip()))
+                s_code = status.strip()[0]  # 只取第一个字符，处理如 'R100'
+                f_path = filepath.strip()
+                results.append((s_code, f_path))
+                seen_files.add(f_path)
+
+        # 2. 获取 Untracked 文件 (作为 Added 处理)
+        # 这确保了本地新增但未 add 的文件也能被同步检测到
+        code, out, err = await self.run("ls-files", "--others", "--exclude-standard")
+        if code == 0:
+            for line in out.splitlines():
+                fpath = line.strip()
+                if fpath and fpath not in seen_files:
+                    results.append(("A", fpath))
 
         return results
 

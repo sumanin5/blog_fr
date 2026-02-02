@@ -83,6 +83,8 @@ class GitHubComponent:
         logger.info(f"Committed: {message}")
 
         # 4. Push
+        # The git_client.push() method is expected to raise an exception on failure.
+        # If it succeeds, the execution continues, and True is returned.
         await self.git_client.push()
         logger.info("Pushed to remote successfully.")
 

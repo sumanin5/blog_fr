@@ -60,7 +60,8 @@ services:
       - ./.git:/git_root/.git
       - ./.git/modules/content:/git_root/.git/modules/content  # submodule 支持
       - ./content:/git_root/content
-      - ~/.ssh:/root/.ssh:ro  # SSH key 用于 Git 推送
+      - ~/.ssh:/tmp/.ssh:ro  # SSH key 用于 Git 推送 (挂载到新的 HOME)
+      - ./backend/passwd.docker:/etc/passwd:ro  # 让容器认识 UID 1000
       - /app/.venv
 
     ports:
@@ -76,6 +77,7 @@ services:
       # 解决 Docker 挂载导致的 Git 仓库识别问题
       GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
       GIT_CONFIG_PARAMETERS: "'safe.directory=*'"
+      HOME: /tmp
 
     depends_on:
       db:
