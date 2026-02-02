@@ -6,6 +6,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from app.git_ops.components.handlers.category_sync import handle_category_sync
 from app.git_ops.components.handlers.post_create import handle_post_create
 from app.git_ops.components.handlers.post_update import handle_post_update
@@ -15,7 +17,6 @@ from app.git_ops.schema import SyncStats
 from app.posts import services as post_service
 from app.posts.model import Post
 from app.users.model import User
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -259,7 +260,13 @@ class SyncProcessor:
         self, session: AsyncSession, writer, stats: SyncStats
     ):
         """
-        (DB -> Disk) 确保所有分类都有 index.md 并保持同步
+        (Disk -> DB 优先) 只为已存在的分类目录创建/更新 index.md
+        并删除 Git 中已删除的分类
+
+        Git 仓库是真理源（Source of Truth）：
+        - 只有当分类目录在文件系统中存在时，才会创建/更新 index.md
+        - 如果目录不存在，说明已在 Git 中删除，从数据库中删除该分类
+        - 这确保了 Git 仓库的变更优先级高于数据库
 
         Args:
             session: 数据库会话
@@ -267,13 +274,25 @@ class SyncProcessor:
             stats: 统计对象
         """
         import frontmatter
+
         from app.posts.cruds import category as category_crud
 
         categories = await category_crud.get_all_categories(session)
+        categories_to_delete = []
 
         for category in categories:
             try:
                 target_path = writer.path_calculator.calculate_category_path(category)
+                category_dir = target_path.parent
+
+                # 关键改变：如果分类目录不存在，标记为删除
+                if not category_dir.exists():
+                    logger.info(
+                        f"Category directory '{category.slug}' not found in Git, "
+                        f"marking for deletion from database"
+                    )
+                    categories_to_delete.append(category)
+                    continue
 
                 # 构建期望的内容
                 meta = {"title": category.name, "hidden": not category.is_active}
@@ -294,11 +313,18 @@ class SyncProcessor:
 
                 should_write = False
                 if not target_path.exists():
+                    # 目录存在但 index.md 不存在，创建它
                     should_write = True
+                    logger.info(
+                        f"Creating missing index.md for existing category directory: {category.slug}"
+                    )
                 else:
                     existing_content = await writer.file_operator.read_text(target_path)
                     if existing_content.strip() != expected_content.strip():
                         should_write = True
+                        logger.debug(
+                            f"Updating index.md for category '{category.slug}' due to metadata changes"
+                        )
 
                 if should_write:
                     is_new = not target_path.exists()
@@ -312,6 +338,20 @@ class SyncProcessor:
                             stats.updated.append(str(rel_path))
             except Exception as e:
                 logger.error(f"Failed to sync category index for {category.slug}: {e}")
+
+        # 删除 Git 中已不存在的分类
+        if categories_to_delete:
+            for category in categories_to_delete:
+                try:
+                    logger.info(
+                        f"Deleting category '{category.name}' (slug: {category.slug}) "
+                        f"as its directory was removed from Git"
+                    )
+                    await session.delete(category)
+                except Exception as e:
+                    logger.error(
+                        f"Failed to delete category '{category.slug}' from database: {e}"
+                    )
 
     async def reconcile_incremental_sync(
         self,

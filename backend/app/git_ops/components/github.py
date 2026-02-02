@@ -123,6 +123,6 @@ class GitHubComponent:
             logger.info("No metadata changes to commit.")
             return False
 
-        message = f"chore: sync metadata from database ({' '.join(parts)})"
+        message = f"chore: sync metadata from database ({' '.join(parts)}) [skip ci]"
 
         return await self.commit_and_push(message)

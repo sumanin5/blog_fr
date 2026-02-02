@@ -5,6 +5,7 @@ from pathlib import Path
 
 import aiofiles
 import frontmatter
+
 from app.git_ops.exceptions import FileOpsError
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,16 @@ logger = logging.getLogger(__name__)
 
 class FileOperator:
     """底层文件操作器 - 负责物理读写、移动和删除"""
+
+    async def read_text(self, path: Path) -> str:
+        """异步读取文件内容"""
+        try:
+            async with aiofiles.open(path, "r", encoding="utf-8") as f:
+                return await f.read()
+        except Exception as e:
+            raise FileOpsError(
+                "Failed to read file", path=str(path), detail=str(e)
+            ) from e
 
     async def write_file(self, path: Path, content: str) -> None:
         """异步写入文件"""

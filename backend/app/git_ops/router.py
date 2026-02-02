@@ -1,5 +1,10 @@
+import json
 import logging
+from collections import deque
 from typing import Annotated
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query, Request
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_async_session
@@ -14,13 +19,14 @@ from app.git_ops.schema import (
 from app.git_ops.service import GitOpsService
 from app.users.dependencies import get_current_adminuser
 from app.users.model import User
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query, Request
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .api_doc import git_doc
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Webhook 去重：存储最近处理过的 commit SHA（最多保留 100 个）
+_recent_webhook_commits: deque = deque(maxlen=100)
 
 
 @router.post(
@@ -129,6 +135,41 @@ async def github_webhook(
     # 验证签名（会抛出 WebhookSignatureError 异常）
     verify_github_signature(payload, x_hub_signature_256, settings.WEBHOOK_SECRET)
 
-    logger.info("Valid webhook received, triggering background sync...")
+    # 解析 payload 检查是否需要跳过
+    try:
+        payload_json = json.loads(payload)
+    except json.JSONDecodeError:
+        logger.warning("Failed to parse webhook payload, proceeding anyway")
+        payload_json = {}
+
+    # 防止循环触发 - 第一道防线：检查 commit message 中的 [skip ci] 标记
+    if "commits" in payload_json:
+        for commit in payload_json["commits"]:
+            message = commit.get("message", "")
+            if "[skip ci]" in message or "[ci skip]" in message:
+                logger.info(
+                    f"⏭️  Skipping webhook for automated commit: {commit.get('id', 'unknown')[:7]} - {message[:50]}"
+                )
+                return {
+                    "status": "skipped",
+                    "reason": "automated commit with [skip ci]",
+                }
+
+    # 防止循环触发 - 第二道防线：SHA 去重（防止重复处理、网络重试等）
+    commit_sha = payload_json.get("after") or payload_json.get("head_commit", {}).get(
+        "id"
+    )
+    if commit_sha:
+        if commit_sha in _recent_webhook_commits:
+            logger.info(f"⏭️  Skipping duplicate webhook for commit: {commit_sha[:7]}")
+            return {"status": "skipped", "reason": "duplicate commit"}
+
+        # 记录此次处理的 commit SHA
+        _recent_webhook_commits.append(commit_sha)
+        logger.debug(
+            f"Recorded commit SHA: {commit_sha[:7]} (cache size: {len(_recent_webhook_commits)})"
+        )
+
+    logger.info("✅ Valid webhook received, triggering background sync...")
     background_tasks.add_task(run_background_sync)
     return {"status": "triggered"}

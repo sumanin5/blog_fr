@@ -55,6 +55,7 @@ services:
             SECRET_KEY: ${SECRET_KEY}
             ENVIRONMENT: ${ENVIRONMENT}
             CONTENT_DIR: /git_root/content
+            FRONTEND_URL: http://frontend:3000 # 内部网络访问前端
             GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
             GIT_SYNC_BRANCH: main
             GIT_SAFE_DIR: "*" # 配合代码中的逻辑，进一步确保权限通畅
