@@ -1,4 +1,4 @@
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { NextRequest } from "next/server";
 
 /**
@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
         // 3. 失效 tags
         if (Array.isArray(tags) && tags.length > 0) {
             for (const tag of tags) {
-                // 在 Route Handler 中必须使用 revalidateTag
-                revalidateTag(tag);
+                // 在 Next.js 16 中使用 updateTag 代替 revalidateTag
+                await updateTag(tag);
                 console.log(`✅ Revalidated tag: ${tag}`);
             }
         }
