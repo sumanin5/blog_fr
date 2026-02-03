@@ -196,18 +196,6 @@ class SyncProcessor:
                 stats,
                 processed_post_ids,
             )
-            await handle_post_update(
-                session,
-                post,
-                scanned,
-                Path(file_path) if isinstance(file_path, str) else file_path,
-                False,  # is_move
-                self.serializer,
-                operating_user,
-                self.content_dir,
-                stats,
-                processed_post_ids,
-            )
 
     async def reconcile_full_sync(
         self,
