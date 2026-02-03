@@ -77,8 +77,15 @@ class ContentProcessor(FieldProcessor):
             if not media_id:
                 return match.group(0)  # 上传失败，保持原样
 
-            # 生成新 URL（默认使用 large 尺寸）
-            new_url = f"{settings.BASE_URL}{settings.API_PREFIX}/media/{media_id}/thumbnail/large"
+            # 生成新 URL
+            if image_path.lower().endswith((".svg", ".gif")):
+                # SVG 和 GIF 使用原图（view 接口），避免转换带来的画质损失或动画丢失
+                new_url = (
+                    f"{settings.BASE_URL}{settings.API_PREFIX}/media/{media_id}/view"
+                )
+            else:
+                # 其他图片使用 large 缩略图
+                new_url = f"{settings.BASE_URL}{settings.API_PREFIX}/media/{media_id}/thumbnail/large"
 
             return f"![{alt_text}]({new_url})"
 
