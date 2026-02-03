@@ -269,16 +269,6 @@ class SyncProcessor:
         for category in categories:
             try:
                 target_path = writer.path_calculator.calculate_category_path(category)
-                category_dir = target_path.parent
-
-                # 关键改变：如果分类目录不存在，标记为删除
-                if not category_dir.exists():
-                    logger.info(
-                        f"Category directory '{category.slug}' not found in Git, "
-                        f"marking for deletion from database"
-                    )
-                    categories_to_delete.append(category)
-                    continue
 
                 # 构建期望的内容
                 meta = {"title": category.name, "hidden": not category.is_active}

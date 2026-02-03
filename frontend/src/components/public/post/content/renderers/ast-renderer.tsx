@@ -102,6 +102,15 @@ function renderNode(node: Record<string, unknown>, i = 0): React.ReactNode {
       return <tr key={i}>{renderKids()}</tr>;
     case "table-cell":
       return <td key={i}>{renderKids()}</td>;
+    case "html": {
+      const HtmlTag = props.display === "block" ? "div" : "span";
+      return (
+        <HtmlTag
+          key={i}
+          dangerouslySetInnerHTML={{ __html: value as string }}
+        />
+      );
+    }
     default:
       // 不支持的节点类型（包括 html）
       // 如果需要自定义组件或交互，请使用 MDX 渲染器

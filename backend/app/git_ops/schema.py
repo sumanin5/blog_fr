@@ -69,3 +69,4 @@ class WebhookResponse(BaseModel):
     """Webhook 响应"""
 
     status: str
+    reason: Optional[str] = None

@@ -395,15 +395,13 @@ class ASTGenerator:
                         "props": props,
                     }
 
-            # 其他 HTML：不支持，记录警告
-            # 如果需要自定义 HTML 或交互，应该使用 MDX 渲染器
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.warning(
-                f"Unsupported HTML in AST generation (use MDX for custom HTML): {content[:100]}"
-            )
-            return None  # 忽略不支持的 HTML
+            # 其他 HTML：作为原生 HTML 节点保留
+            # 这样前端可以决定如何渲染（例如使用 dangerouslySetInnerHTML）
+            return {
+                "type": "html",
+                "value": content,
+                "display": "block" if token_type == "html_block" else "inline",
+            }
 
         # 表格相关
         if token_type == "table_open":
