@@ -85,11 +85,15 @@ class MDXScanner:
 
         # 仅执行一次 rglob，在循环内进行后缀匹配
         for path in self.content_root.rglob("*"):
+            # 获取相对于根目录的内容，检查每一级是否包含隐藏目录/文件
+            rel_path_obj = path.relative_to(self.content_root)
+
             if (
-                # 三重过滤条件：文件、后缀、名称
+                # 四重过滤条件：文件、后缀、名称、非隐藏路径
                 path.is_file()
                 and path.suffix.lower() in target_extensions
                 and path.name.upper() not in ignore_names
+                and not any(part.startswith(".") for part in rel_path_obj.parts)
             ):
                 target_path_set.add(path)
 

@@ -6,8 +6,6 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
-from sqlmodel.ext.asyncio.session import AsyncSession
-
 from app.git_ops.components.handlers.category_sync import handle_category_sync
 from app.git_ops.components.handlers.post_create import handle_post_create
 from app.git_ops.components.handlers.post_update import handle_post_update
@@ -17,6 +15,7 @@ from app.git_ops.schema import SyncStats
 from app.posts import services as post_service
 from app.posts.model import Post
 from app.users.model import User
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -274,7 +273,6 @@ class SyncProcessor:
             stats: 统计对象
         """
         import frontmatter
-
         from app.posts.cruds import category as category_crud
 
         categories = await category_crud.get_all_categories(session)
@@ -391,6 +389,15 @@ class SyncProcessor:
             )
             for status, file_path in changed_files:
                 if not file_path.endswith((".md", ".mdx")):
+                    continue
+
+                # 🚫 安全检查：忽略隐藏文件/目录（与 scan_all 保持一致）
+                # 即使强制提交了隐藏文件，增量同步也会忽略它们
+                is_hidden = any(part.startswith(".") for part in Path(file_path).parts)
+                if is_hidden:
+                    logger.debug(
+                        f"🙈 Skipping hidden file in incremental sync: {file_path}"
+                    )
                     continue
 
                 async with collect_errors(stats, f"Processing {status} {file_path}"):
