@@ -44,3 +44,4 @@ export type {
 
 // 导出基础配置（来自生成的 client，但已被 config.ts 修改）
 export { client } from "./generated/client.gen";
+export { denormalizeApiRequest } from "./transformers";

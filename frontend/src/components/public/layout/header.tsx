@@ -102,9 +102,7 @@ export function Header() {
                   @{user.username}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => router.push("/admin/dashboard")}
-                >
+                <DropdownMenuItem onClick={() => router.push("/admin/users")}>
                   个人资料
                 </DropdownMenuItem>
                 <DropdownMenuItem

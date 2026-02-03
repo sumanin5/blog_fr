@@ -52,7 +52,7 @@ export function DesktopNav() {
         "ontouchstart" in window ||
           navigator.maxTouchPoints > 0 ||
           // @ts-expect-error - for older browsers
-          navigator.msMaxTouchPoints > 0
+          navigator.msMaxTouchPoints > 0,
       );
     };
     checkTouchDevice();
@@ -76,7 +76,7 @@ export function DesktopNav() {
                   className={cn(
                     "bg-transparent text-sm font-medium transition-colors hover:text-primary",
                     "data-[state=open]:bg-transparent data-[state=open]:text-primary",
-                    "focus:bg-transparent focus:text-primary outline-none"
+                    "focus:bg-transparent focus:text-primary outline-none",
                   )}
                 >
                   {menu.title}
@@ -115,7 +115,7 @@ export function DesktopNav() {
                   className={cn(
                     navigationMenuTriggerStyle(),
                     "bg-transparent transition-colors hover:text-primary active:bg-transparent",
-                    "focus:bg-transparent focus:text-primary outline-none"
+                    "focus:bg-transparent focus:text-primary outline-none",
                   )}
                 >
                   {menu.title}
@@ -134,7 +134,7 @@ export function DesktopNav() {
  */
 export function MobileNav() {
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(
-    {}
+    {},
   );
   const pathname = usePathname();
   const { user, isLoading, logout } = useAuth();
@@ -197,7 +197,7 @@ export function MobileNav() {
                       <ChevronDown
                         className={cn(
                           "h-4 w-4 transition-transform duration-200",
-                          openGroups[menu.title] && "rotate-180"
+                          openGroups[menu.title] && "rotate-180",
                         )}
                       />
                     </button>
@@ -207,7 +207,7 @@ export function MobileNav() {
                         "grid gap-1 overflow-hidden transition-all duration-300 ease-in-out",
                         openGroups[menu.title]
                           ? "mt-2 grid-rows-[1fr] opacity-100"
-                          : "grid-rows-[0fr] opacity-0"
+                          : "grid-rows-[0fr] opacity-0",
                       )}
                     >
                       <div className="border-border/40 ml-1.5 flex min-h-0 flex-col gap-1 border-l-2 pl-4">
@@ -218,7 +218,7 @@ export function MobileNav() {
                               "hover:bg-accent hover:text-accent-foreground block rounded-md px-3 py-2 text-sm font-medium transition-colors",
                               isActive(menu.link)
                                 ? "bg-accent/40 text-primary"
-                                : "text-muted-foreground"
+                                : "text-muted-foreground",
                             )}
                           >
                             {menu.title} 概览
@@ -232,7 +232,7 @@ export function MobileNav() {
                                 "hover:bg-accent hover:text-accent-foreground flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                                 isActive(item.link)
                                   ? "bg-accent/40 text-primary"
-                                  : "text-muted-foreground"
+                                  : "text-muted-foreground",
                               )}
                             >
                               {item.icon && (
@@ -251,7 +251,9 @@ export function MobileNav() {
                       href={menu.link as any}
                       className={cn(
                         "hover:text-primary flex items-center gap-2 rounded-md py-2 text-base font-semibold transition-colors",
-                        isActive(menu.link) ? "text-primary" : "text-foreground"
+                        isActive(menu.link)
+                          ? "text-primary"
+                          : "text-foreground",
                       )}
                     >
                       {menu.icon && <menu.icon className="h-5 w-5" />}
@@ -290,9 +292,9 @@ export function MobileNav() {
                     className="justify-start gap-2"
                     asChild
                   >
-                    <Link href={"/admin/dashboard" as any}>
+                    <Link href={"/admin/users" as any}>
                       <UserCircle className="h-4 w-4" />
-                      个人资料
+                      用户管理
                     </Link>
                   </Button>
                 </SheetClose>
@@ -361,7 +363,7 @@ function ListItem({
           className={cn(
             "block space-y-1 rounded-md p-3 leading-none no-underline transition-all duration-200 outline-none select-none",
             "hover:bg-accent/50 hover:text-accent-foreground focus:bg-accent/50 focus:text-accent-foreground",
-            className
+            className,
           )}
           {...props}
         >

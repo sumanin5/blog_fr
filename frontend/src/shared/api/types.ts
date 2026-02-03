@@ -26,7 +26,7 @@ export type UserUpdate = ApiData<Raw.UserUpdate>;
 export type UserAdminUpdate = ApiData<Raw.UserUpdate>; // 管理员更新用户使用相同结构
 
 // 列表与过滤
-export type UserList = ApiData<Raw.GetUsersListResponses>;
+export type UserList = ApiData<Raw.UserListResponse>;
 export type UserFilters = ApiData<Raw.GetUsersListData["query"]>;
 
 // ============================================

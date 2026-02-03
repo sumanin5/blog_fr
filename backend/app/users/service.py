@@ -67,6 +67,55 @@ async def register_user(session: AsyncSession, user_data: UserRegister) -> User:
     return user
 
 
+async def create_user_by_admin(
+    session: AsyncSession, user_in: UserCreate, current_user: User
+) -> User:
+    """
+    管理员创建用户（包含权限检查）
+
+    Args:
+        session: 数据库会话
+        user_in: 用户创建数据
+        current_user: 当前操作用户
+
+    Returns:
+        创建的用户对象
+
+    Raises:
+        InsufficientPermissionsError: 权限不足
+        UserAlreadyExistsError: 用户名或邮箱已存在
+    """
+    from app.core.exceptions import InsufficientPermissionsError
+
+    # 权限检查：只有超级管理员可以创建超级管理员
+    if user_in.role == UserRole.SUPERADMIN and not current_user.is_superadmin:
+        raise InsufficientPermissionsError(
+            "Only superadmins can create superadmin accounts"
+        )
+
+    # 权限检查：管理员只能创建 Admin 或 User (逻辑上已隐含，因为非Admin进不来，但在业务层再次防御)
+    if user_in.role == UserRole.ADMIN and not current_user.is_admin:
+        raise InsufficientPermissionsError("Only admins can create admin accounts")
+
+    logger.info(
+        f"Admin creating user: creator={current_user.username}, new_user={user_in.username}, role={user_in.role}"
+    )
+
+    # 检查用户名是否已存在
+    existing_user = await crud.get_user_by_username(session, user_in.username)
+    if existing_user:
+        raise UserAlreadyExistsError(f"Username '{user_in.username}' already exists")
+
+    # 检查邮箱是否已存在
+    existing_email = await crud.get_user_by_email(session, user_in.email)
+    if existing_email:
+        raise UserAlreadyExistsError(f"Email '{user_in.email}' already exists")
+
+    # 创建用户
+    user = await crud.create_user(session, user_in)
+    return user
+
+
 async def authenticate_and_create_token(
     session: AsyncSession, username: str, password: str
 ) -> TokenResponse:
@@ -129,9 +178,9 @@ async def update_user_profile(
 
     Args:
         session: 数据库会话
-        user: 要更新的用户对象
+        user: 要更新的用户对象 (Target User)
         update_data: 更新数据
-        current_user: 当前操作用户
+        current_user: 当前操作用户 (Operator)
 
     Returns:
         更新后的用户对象
@@ -139,10 +188,28 @@ async def update_user_profile(
     Raises:
         UserAlreadyExistsError: 用户名或邮箱冲突
         UserNotFoundError: 更新失败
+        InsufficientPermissionsError: 权限不足
     """
+    from app.core.exceptions import InsufficientPermissionsError
+
     logger.info(
         f"User profile update attempt: user_id={user.id}, operator={current_user.username}"
     )
+
+    # 🛡️ 权限栅栏 (Permission Guard)
+    # 1. 只有超级管理员可以修改超级管理员账号
+    if user.is_superadmin and not current_user.is_superadmin:
+        # 允许超级管理员自己修改自己，或者其他超级管理员修改
+        if user.id != current_user.id:
+            raise InsufficientPermissionsError("Cannot modify a superadmin account")
+
+    # 2. 如果尝试修改角色
+    if update_data.role is not None:
+        # 只有超级管理员可以将用户提升为超级管理员
+        if update_data.role == UserRole.SUPERADMIN and not current_user.is_superadmin:
+            raise InsufficientPermissionsError("Cannot promote user to superadmin")
+
+    # 3. 普通管理员不能降级超级管理员 (已由规则1覆盖，但逻辑上保持清晰)
 
     # 检查更新数据中的冲突
     update_dict = update_data.model_dump(exclude_unset=True)
@@ -202,6 +269,13 @@ async def delete_user_account(
     logger.warning(
         f"User account deletion attempt: user_id={user.id}, operator={current_user.username}"
     )
+
+    from app.core.exceptions import InsufficientPermissionsError
+
+    # 🛡️ 权限栅栏
+    # 只有超级管理员可以删除超级管理员
+    if user.is_superadmin and not current_user.is_superadmin:
+        raise InsufficientPermissionsError("Cannot delete a superadmin account")
 
     # 执行删除
     success = await crud.delete_user(session, user.id)

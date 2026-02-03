@@ -31,6 +31,7 @@ import {
   FolderTree,
   Tags,
   Image as ImageIcon,
+  Users,
 } from "lucide-react";
 
 const SIDEBAR_CONFIG = {
@@ -40,6 +41,7 @@ const SIDEBAR_CONFIG = {
   ],
   admin: [
     { icon: LayoutDashboard, label: "数据中台", href: "/admin/dashboard" }, // 工作台 -> 数据中台
+    { icon: Users, label: "用户管理", href: "/admin/users" },
     { icon: ShieldCheck, label: "全站内容", href: "/admin/posts/all" },
     { icon: FolderTree, label: "分类运维", href: "/admin/categories" },
     { icon: Tags, label: "标签治理", href: "/admin/tags" },
@@ -88,7 +90,7 @@ export function AdminSidebar({
         </SidebarGroup>
 
         {/* 段落 2: 管理员特权 */}
-        {user.role === "superadmin" && (
+        {(user.role === "superadmin" || user.role === "admin") && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
               Admin Control

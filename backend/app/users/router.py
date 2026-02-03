@@ -12,12 +12,13 @@ from app.users import service
 from app.users.api_doc import admin, auth, profile
 from app.users.dependencies import (
     get_current_active_user,
-    get_current_superuser,
+    get_current_adminuser,
     get_user_by_id_dep,
 )
 from app.users.model import User
 from app.users.schema import (
     TokenResponse,
+    UserCreate,
     UserListResponse,
     UserRegister,
     UserResponse,
@@ -114,8 +115,25 @@ async def delete_current_user_account(
 
 
 # ========================================
-# 管理员接口（需要超级用户权限）
+# 管理员接口（管理员及以上权限）
 # ========================================
+
+
+@router.post(
+    "/",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建新用户（管理员）",
+    description=admin.CREATE_USER_DOC
+    if hasattr(admin, "CREATE_USER_DOC")
+    else "管理员创建新用户",
+)
+async def create_new_user(
+    user_in: UserCreate,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    current_user: Annotated[User, Depends(get_current_adminuser)],
+):
+    return await service.create_user_by_admin(session, user_in, current_user)
 
 
 @router.get(
@@ -126,7 +144,7 @@ async def delete_current_user_account(
 )
 async def get_users_list(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    current_user: Annotated[User, Depends(get_current_superuser)],
+    current_user: Annotated[User, Depends(get_current_adminuser)],
     skip: int = 0,
     limit: int = 100,
     is_active: bool | None = None,
@@ -144,7 +162,7 @@ async def get_users_list(
     description=admin.GET_USER_DOC,
 )
 async def get_user_by_id(
-    current_user: Annotated[User, Depends(get_current_superuser)],
+    current_user: Annotated[User, Depends(get_current_adminuser)],
     target_user: Annotated[User, Depends(get_user_by_id_dep)],
 ):
     return target_user
@@ -158,7 +176,7 @@ async def get_user_by_id(
 )
 async def update_user_by_id(
     user_in: UserUpdate,
-    current_user: Annotated[User, Depends(get_current_superuser)],
+    current_user: Annotated[User, Depends(get_current_adminuser)],
     target_user: Annotated[User, Depends(get_user_by_id_dep)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
@@ -174,7 +192,7 @@ async def update_user_by_id(
     description=admin.DELETE_USER_DOC,
 )
 async def delete_user_by_id(
-    current_user: Annotated[User, Depends(get_current_superuser)],
+    current_user: Annotated[User, Depends(get_current_adminuser)],
     target_user: Annotated[User, Depends(get_user_by_id_dep)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
