@@ -37,7 +37,7 @@ export async function generateMetadata({
       description: summary,
       type: "article",
       publishedTime: post.publishedAt || undefined,
-      authors: post.author?.fullName || post.author?.username,
+      authors: post.author?.username || post.author?.fullName,
       images: [], // 目前 PostDetailResponse 中没有直接的 cover_image URL，先置空
     },
     twitter: {

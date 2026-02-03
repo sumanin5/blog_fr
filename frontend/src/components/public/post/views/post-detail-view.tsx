@@ -50,6 +50,13 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
           />
         )}
 
+        {/* 文章摘要 (Summary/Excerpt) */}
+        {post.excerpt && (
+          <div className="mb-8 text-xl leading-relaxed text-muted-foreground">
+            {post.excerpt}
+          </div>
+        )}
+
         {/* 标签 */}
         {post.tags && post.tags.length > 0 && (
           <div className="mb-8 flex flex-wrap gap-2">

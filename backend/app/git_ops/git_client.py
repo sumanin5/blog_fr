@@ -21,7 +21,10 @@ class GitClient:
             return
 
         try:
-            # 检查是否已配置本地用户信息
+            # 1. 禁用路径转义，确保中文文件名能正确显示 (解决增量同步时中文文件名被截断/不匹配的问题)
+            await self.run("config", "--local", "core.quotepath", "false")
+
+            # 2. 检查是否已配置本地用户信息
             code, email, _ = await self.run("config", "--local", "user.email")
 
             if code != 0 or not email:
@@ -111,6 +114,7 @@ class GitClient:
             R = Renamed
             C = Copied
         """
+        await self._ensure_git_config()
         # 检查是否是范围查询（包含 ".."）
         is_range_query = ".." in since_hash
 

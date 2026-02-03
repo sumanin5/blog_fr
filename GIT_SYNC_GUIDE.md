@@ -349,7 +349,7 @@ tags:
 tags: "Python, FastAPI, 后端开发"
 
 # ========== 布尔字段 ==========
-featured: true  # 是否推荐到首页
+is_featured: true  # 是否推荐到首页
 allow_comments: true  # 是否允许评论（默认 true）
 
 # ========== SEO 字段 ==========
@@ -453,14 +453,22 @@ keywords: "同 meta_keywords"
 
 ### 3. 内容字段
 
-#### `excerpt` - 文章摘要
+#### `summary` / `excerpt` - 文章摘要
 
 - **类型**: 字符串
 - **必填**: 否
 - **默认值**: 空字符串
 - **说明**: 显示在文章列表页的摘要文本
-- **兼容字段**: `summary`, `description`（优先级递减）
-- **示例**: `excerpt: "本文介绍 Python 异步编程的核心概念"`
+- **映射字段**: `excerpt`
+- **别名**: `excerpt` (summary 是 alias)
+- **示例**: `summary: "本文介绍 Python 异步编程的核心概念"`
+
+#### `description` - 通用描述
+
+- **类型**: 字符串
+- **必填**: 否
+- **说明**: 便捷字段。如果 `summary` 或 `meta_description` 为空，系统会自动将其值填充过去。
+- **示例**: `description: "这是一篇关于..."`
 
 ---
 
@@ -528,14 +536,16 @@ tags: "Python, FastAPI, 异步编程"
 
 ### 6. 布尔字段
 
-#### `featured` - 是否推荐
+### 6. 布尔字段
+
+#### `is_featured` - 是否推荐
 
 - **类型**: 布尔值
 - **必填**: 否
 - **默认值**: `false`
 - **说明**: 标记为推荐文章，可在首页展示
-- **兼容字段**: `is_featured`
-- **示例**: `featured: true`
+- **不支持别名**: 必须使用 `is_featured`，不支持 `featured`
+- **示例**: `is_featured: true`
 
 #### `allow_comments` - 允许评论
 
@@ -543,7 +553,7 @@ tags: "Python, FastAPI, 异步编程"
 - **必填**: 否
 - **默认值**: `true`
 - **说明**: 是否允许用户评论
-- **兼容字段**: `comments`
+- **不支持别名**: 必须使用 `allow_comments`
 - **示例**: `allow_comments: false`
 
 ---

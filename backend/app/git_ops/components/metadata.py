@@ -8,7 +8,14 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 
 class Frontmatter(BaseModel):
@@ -86,6 +93,22 @@ class Frontmatter(BaseModel):
         if status_str not in valid:
             raise ValueError(f"Invalid status. Must be one of: {valid}")
         return status_str
+
+    @model_validator(mode="before")
+    @classmethod
+    def map_description_fields(cls, data: Any) -> Any:
+        """处理 description 字段的映射逻辑"""
+        if isinstance(data, dict):
+            # 1. description -> excerpt (summary) fallback
+            # 如果 summary (excerpt 的 alias) 不存在，尝试使用 description
+            if not data.get("summary") and data.get("description"):
+                data["summary"] = data["description"]
+
+            # 2. description -> meta_description fallback
+            # 如果 meta_description 不存在，尝试使用 description
+            if not data.get("meta_description") and data.get("description"):
+                data["meta_description"] = data["description"]
+        return data
 
     # --- 序列化器 (用于写入 MDX) ---
 
