@@ -3,6 +3,7 @@
 """
 
 import pytest
+
 from app.git_ops.components.github import GitHubComponent
 from app.git_ops.exceptions import NotGitRepositoryError
 
@@ -14,9 +15,14 @@ async def test_github_pull_success(mock_git_client, tmp_path):
     # 准备环境 (需要 .git 目录)
     (tmp_path / ".git").mkdir()
 
-    component = GitHubComponent(tmp_path, mock_git_client)
-    await component.pull()
+    # Mock get_current_hash to return different hashes before and after pull
+    mock_git_client.get_current_hash.side_effect = ["old_hash_123", "new_hash_456"]
 
+    component = GitHubComponent(tmp_path, mock_git_client)
+    output, old_hash, new_hash = await component.pull()
+
+    assert old_hash == "old_hash_123"
+    assert new_hash == "new_hash_456"
     mock_git_client.pull.assert_called_once()
 
 

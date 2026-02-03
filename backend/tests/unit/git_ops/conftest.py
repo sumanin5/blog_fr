@@ -85,7 +85,9 @@ def mock_container(mocker, mock_session, mock_git_client, mock_content_dir):
 
     # Mock GitHubComponent
     container.github = mocker.MagicMock()
-    container.github.pull = mocker.AsyncMock()
+    container.github.pull = mocker.AsyncMock(
+        return_value=("pull output", "old_hash_abc", "new_hash_def")
+    )
     container.github.commit_and_push = mocker.AsyncMock(return_value=True)
     container.github.auto_commit_metadata = mocker.AsyncMock(return_value=True)
 

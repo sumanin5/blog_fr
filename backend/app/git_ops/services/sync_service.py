@@ -47,7 +47,7 @@ class SyncService(BaseGitOpsService):
             logger.info("Starting full sync...")
 
             # 1. Git Pull
-            await self.github.pull()
+            _, _, _ = await self.github.pull()
 
             # 2. 扫描文件系统
             scanned_posts = await self.scanner.scan_all()
@@ -99,8 +99,19 @@ class SyncService(BaseGitOpsService):
 
             return stats
 
-    async def sync_incremental(self, default_user: User = None) -> SyncStats:
-        """执行增量同步（基于 Git Diff）"""
+    async def sync_incremental(
+        self,
+        default_user: User | None = None,
+        old_hash: str | None = None,
+        new_hash: str | None = None,
+    ) -> SyncStats:
+        """执行增量同步（基于 Git Diff）
+
+        Args:
+            default_user: 默认操作用户
+            old_hash: 可选，指定旧的 commit hash（用于 webhook 场景）
+            new_hash: 可选，指定新的 commit hash（用于 webhook 场景）
+        """
         sync_lock = self._get_sync_lock()
 
         if sync_lock.locked():
@@ -108,10 +119,31 @@ class SyncService(BaseGitOpsService):
 
         async with sync_lock:
             # 1. 先 Git Pull (把远程变更拉下来)
-            await self.github.pull()
+            pull_output, pull_old_hash, pull_new_hash = await self.github.pull()
 
-            # 2. 再获取变更文件（对比 Last Sync Hash 和 当前最新的 HEAD）
-            changed_files = await self.hash_manager.get_changed_files_since_last_sync()
+            # 2. 再获取变更文件
+            # 如果提供了 hash 范围（webhook 场景），使用提供的范围
+            # 否则使用 last_sync 记录和当前 HEAD 对比
+            if old_hash and new_hash:
+                logger.info(
+                    f"Using provided hash range: {old_hash[:7]}..{new_hash[:7]}"
+                )
+                changed_files = await self.hash_manager.get_changed_files_between(
+                    old_hash, new_hash
+                )
+            elif pull_old_hash != pull_new_hash:
+                # Pull 产生了变更，使用 pull 前后的 hash
+                logger.info(
+                    f"Using pull hash range: {pull_old_hash[:7]}..{pull_new_hash[:7]}"
+                )
+                changed_files = await self.hash_manager.get_changed_files_between(
+                    pull_old_hash, pull_new_hash
+                )
+            else:
+                # Pull 没有变更，使用传统的 last_sync 对比
+                changed_files = (
+                    await self.hash_manager.get_changed_files_since_last_sync()
+                )
 
             if changed_files is None:
                 logger.warning(

@@ -95,6 +95,11 @@ class GitClient:
     ) -> List[Tuple[str, str]]:
         """获取变更文件及其状态
 
+        Args:
+            since_hash: 可以是单个 hash 或者 hash 范围（如 "abc123" 或 "abc123..def456"）
+                       - 单个 hash: 对比该 hash 和工作区
+                       - hash 范围: 对比两个 commit 之间的变更（不包含工作区）
+
         Returns:
             List of (status, filepath)
             e.g. [("M", "ideas/post.md"), ("A", "ideas/new.md"), ("D", "ideas/old.md")]
@@ -106,8 +111,12 @@ class GitClient:
             R = Renamed
             C = Copied
         """
-        # 1. 对比 since_hash 和 工作区 (Working Tree)
-        # 注意：不使用 ..HEAD，而是直接对比 hash，这样可以包含未提交的本地变更
+        # 检查是否是范围查询（包含 ".."）
+        is_range_query = ".." in since_hash
+
+        # 1. 对比 since_hash 和 工作区/目标 commit
+        # 如果是范围查询，只对比两个 commit，不包含工作区
+        # 如果是单个 hash，对比该 hash 和工作区
         code, out, err = await self.run("diff", "--name-status", since_hash)
         if code != 0:
             raise GitError(f"Failed to get diff: {err}")
@@ -127,13 +136,17 @@ class GitClient:
                 seen_files.add(f_path)
 
         # 2. 获取 Untracked 文件 (作为 Added 处理)
-        # 这确保了本地新增但未 add 的文件也能被同步检测到
-        code, out, err = await self.run("ls-files", "--others", "--exclude-standard")
-        if code == 0:
-            for line in out.splitlines():
-                fpath = line.strip()
-                if fpath and fpath not in seen_files:
-                    results.append(("A", fpath))
+        # 注意：只在单个 hash 查询时检查 untracked 文件
+        # 范围查询只关心两个 commit 之间的变更，不包含工作区
+        if not is_range_query:
+            code, out, err = await self.run(
+                "ls-files", "--others", "--exclude-standard"
+            )
+            if code == 0:
+                for line in out.splitlines():
+                    fpath = line.strip()
+                    if fpath and fpath not in seen_files:
+                        results.append(("A", fpath))
 
         return results
 

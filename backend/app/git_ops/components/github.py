@@ -24,11 +24,14 @@ class GitHubComponent:
         self.content_dir = content_dir
         self.git_client = git_client
 
-    async def pull(self) -> str:
+    async def pull(self) -> tuple[str, str, str]:
         """拉取远程更新
 
         Returns:
-            拉取结果消息
+            Tuple of (output_message, old_hash, new_hash)
+            - output_message: Git pull 的输出信息
+            - old_hash: Pull 前的 commit hash
+            - new_hash: Pull 后的 commit hash
 
         Raises:
             NotGitRepositoryError: 不是 Git 仓库
@@ -39,10 +42,17 @@ class GitHubComponent:
 
         from app.core.config import settings
 
+        # 获取 pull 前的 hash
+        old_hash = await self.git_client.get_current_hash()
+
         logger.info(f"Pulling from remote (branch: {settings.GIT_SYNC_BRANCH})...")
         output = await self.git_client.pull(branch=settings.GIT_SYNC_BRANCH)
         logger.info(f"Git pull result: {output}")
-        return output
+
+        # 获取 pull 后的 hash
+        new_hash = await self.git_client.get_current_hash()
+
+        return output, old_hash, new_hash
 
     async def commit_and_push(
         self, message: str, files: Optional[List[str]] = None
