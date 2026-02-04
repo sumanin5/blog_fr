@@ -211,7 +211,7 @@ class Post(Base, table=True):
         default=None, max_length=50, description="Git Commit ID"
     )
     source_path: Optional[str] = Field(
-        default=None, max_length=500, description="源文件路径"
+        default=None, max_length=500, index=True, description="源文件路径"
     )
 
     # 关联信息

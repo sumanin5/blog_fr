@@ -22,33 +22,26 @@ class ContentProcessor(FieldProcessor):
         # 设置内容
         content = scanned.content
 
-        # 转换图片路径（只在非 dry_run 模式下）
-        # 转换图片路径
-        # 在 dry_run 模式下也执行转换，以确保 Preview 能对比处理后的内容（Absolute URL）
-        # 但只有在非 dry_run 模式下才将变更写回磁盘
-        has_relative_images = self._has_relative_images(content)
+        # 转换内部文章链接 (e.g., [text](./other.md) -> [text](/posts/slug))
+        transformed_content = await self._transform_internal_links(
+            content, scanned.file_path, session
+        )
 
-        if has_relative_images:
-            # 转换图片路径
-            transformed_content = await self._transform_image_paths(
-                content, scanned.file_path, session
-            )
+        # 🆕 如果内容发生了变化，且不是 dry_run，则写回源文件
+        if transformed_content != content:
+            if not dry_run:
+                await self._write_transformed_content(
+                    scanned.file_path, transformed_content
+                )
+                import logging
 
-            # 🆕 如果内容发生了变化，且不是 dry_run，则写回源文件
-            if transformed_content != content:
-                if not dry_run:
-                    await self._write_transformed_content(
-                        scanned.file_path, transformed_content
-                    )
-                    import logging
+                logger = logging.getLogger(__name__)
+                logger.info(
+                    f"✓ Transformed and wrote back content: {scanned.file_path}"
+                )
 
-                    logger = logging.getLogger(__name__)
-                    logger.info(
-                        f"✓ Transformed and wrote back image paths: {scanned.file_path}"
-                    )
-
-                # 无论是否 dry_run，都更新内存中的 content 以便后续处理/对比
-                content = transformed_content
+            # 无论是否 dry_run，都更新内存中的 content 以便后续处理/对比
+            content = transformed_content
 
         result["content_mdx"] = content
 
@@ -104,6 +97,91 @@ class ContentProcessor(FieldProcessor):
         # 从后往前替换，避免索引错乱
         for match, replacement in zip(reversed(matches), reversed(replacements)):
             content = content[: match.start()] + replacement + content[match.end() :]
+
+        return content
+
+    async def _transform_internal_links(
+        self, content: str, mdx_file_path: str, session: AsyncSession
+    ) -> str:
+        """
+        批量转换 Markdown 内部链接
+        例如: [另篇文章](./security/firewall.md) -> [另篇文章](/posts/firewall-slug-xyz)
+        """
+        import logging
+        from pathlib import Path
+
+        from app.core.config import settings
+        from app.posts.cruds.post import get_slug_map_by_source_paths
+
+        logger = logging.getLogger(__name__)
+
+        # 1. 先处理图片路径转换（保持原有逻辑独立性）
+        content = await self._transform_image_paths(content, mdx_file_path, session)
+
+        # 2. 匹配 Markdown 链接语法：[text](path.md)
+        # 排除图片链接 (![), 排除网页链接 (http), 必须以 .md 或 .mdx 结尾
+        link_pattern = r"(?<!\!)\[([^\]]+)\]\(([^)]+\.mdx?)\)"
+        matches = list(re.finditer(link_pattern, content))
+        if not matches:
+            return content
+
+        content_dir = Path(settings.CONTENT_DIR)
+        current_mdx_path = Path(mdx_file_path)
+        # mdx_dir 是该文件所在的物理目录（相对于 content_dir 的绝对路径）
+        mdx_dir = (content_dir / current_mdx_path).parent
+
+        # 3. 第一轮遍历：解析所有物理路径
+        path_map = {}  # {raw_path: target_rel_path_in_db}
+        for match in matches:
+            raw_path = match.group(2)
+
+            # 排除外部链接
+            if raw_path.startswith(("http://", "https://", "mailto:", "/")):
+                continue
+
+            try:
+                # 解析目标文件的绝对路径
+                target_abs_path = (mdx_dir / raw_path).resolve()
+                # 转换为相对于 content_dir 的路径，用于查询数据库
+                target_rel_path = target_abs_path.relative_to(
+                    content_dir.resolve()
+                ).as_posix()
+                path_map[raw_path] = target_rel_path
+            except Exception as e:
+                logger.warning(
+                    f"⚠️ Failed to resolve internal link '{raw_path}' in {mdx_file_path}: {e}"
+                )
+                continue
+
+        if not path_map:
+            return content
+
+        # 4. 批量查询：一次性拿到所有 slug
+        slug_map = await get_slug_map_by_source_paths(session, list(path_map.values()))
+
+        # 5. 第二轮遍历：执行替换
+        # 从后往前替换，避免偏移失效
+        for match in reversed(matches):
+            text = match.group(1)
+            raw_path = match.group(2)
+
+            target_rel_path = path_map.get(raw_path)
+            if not target_rel_path:
+                continue
+
+            target_info = slug_map.get(target_rel_path)
+            if target_info:
+                slug, post_type = target_info
+                # 必须包含 post_type 路径段，以匹配详情页路由 /posts/[postType]/[slug]
+                new_url = f"/posts/{post_type}/{slug}"
+                replacement = f"[{text}]({new_url})"
+                content = (
+                    content[: match.start()] + replacement + content[match.end() :]
+                )
+            else:
+                logger.debug(
+                    f"ℹ️ Link target not found in DB: {target_rel_path} (from {mdx_file_path})"
+                )
 
         return content
 

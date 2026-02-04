@@ -182,3 +182,24 @@ async def get_posts_by_source_paths(
     )
     result = await session.exec(stmt)
     return list(result.all())
+
+
+async def get_slug_map_by_source_paths(
+    session: AsyncSession, paths: list[str]
+) -> dict[str, tuple[str, str]]:
+    """根据 source_path 列表批量查询对应的 (slug, post_type) 映射"""
+    if not paths:
+        return {}
+
+    # 选择 source_path, slug 和 post_type
+    stmt = select(Post.source_path, Post.slug, Post.post_type).where(
+        Post.source_path.in_(paths)
+    )  # type: ignore
+    result = await session.exec(stmt)
+
+    # 转换为 {source_path: (slug, post_type)} 字典
+    return {
+        row[0]: (row[1], row[2].value if hasattr(row[2], "value") else str(row[2]))
+        for row in result.all()
+        if row[0] and row[1]
+    }
