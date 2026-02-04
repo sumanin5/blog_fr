@@ -4,7 +4,7 @@ import type {
   PageCategoryResponse,
   PostType,
 } from "@/shared/api/generated/types.gen";
-import type { ApiData } from "@/shared/api/transformers";
+import { normalizeApiResponse, type ApiData } from "@/shared/api/transformers";
 
 /**
  * 获取推荐分类
@@ -45,7 +45,7 @@ export async function getFeaturedCategories(
     response.items = response.items.slice(0, limit);
   }
 
-  return response as unknown as ApiData<PageCategoryResponse>;
+  return normalizeApiResponse(response);
 }
 
 /**
@@ -65,5 +65,5 @@ export async function getCategories(
     throw new Error((error as any)?.error?.message || "无法获取分类列表");
   }
 
-  return response as unknown as ApiData<PageCategoryResponse>;
+  return normalizeApiResponse(response);
 }

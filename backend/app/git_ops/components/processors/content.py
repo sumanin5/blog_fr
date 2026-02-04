@@ -23,28 +23,32 @@ class ContentProcessor(FieldProcessor):
         content = scanned.content
 
         # 转换图片路径（只在非 dry_run 模式下）
-        if not dry_run:
-            # 🆕 先检测是否有需要转换的图片
-            has_relative_images = self._has_relative_images(content)
+        # 转换图片路径
+        # 在 dry_run 模式下也执行转换，以确保 Preview 能对比处理后的内容（Absolute URL）
+        # 但只有在非 dry_run 模式下才将变更写回磁盘
+        has_relative_images = self._has_relative_images(content)
 
-            if has_relative_images:
-                # 转换图片路径
-                transformed_content = await self._transform_image_paths(
-                    content, scanned.file_path, session
-                )
+        if has_relative_images:
+            # 转换图片路径
+            transformed_content = await self._transform_image_paths(
+                content, scanned.file_path, session
+            )
 
-                # 🆕 如果内容发生了变化，立即写回源文件
-                if transformed_content != content:
+            # 🆕 如果内容发生了变化，且不是 dry_run，则写回源文件
+            if transformed_content != content:
+                if not dry_run:
                     await self._write_transformed_content(
                         scanned.file_path, transformed_content
                     )
-                    content = transformed_content
                     import logging
 
                     logger = logging.getLogger(__name__)
                     logger.info(
                         f"✓ Transformed and wrote back image paths: {scanned.file_path}"
                     )
+
+                # 无论是否 dry_run，都更新内存中的 content 以便后续处理/对比
+                content = transformed_content
 
         result["content_mdx"] = content
 

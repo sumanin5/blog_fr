@@ -35,7 +35,7 @@ export function HeroSection() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-5 w-full justify-center animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200 fill-mode-backwards">
-          <Link href="/posts/articles">
+          <Link href="/posts/articles/categories">
             <Button
               size="lg"
               className="w-full sm:w-auto min-w-[160px] text-base h-12 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
@@ -43,7 +43,7 @@ export function HeroSection() {
               <BookOpen className="mr-2 w-5 h-5" /> 阅读文章
             </Button>
           </Link>
-          <Link href="/posts/ideas">
+          <Link href="/posts/ideas/categories">
             <Button
               size="lg"
               variant="outline"

@@ -24,7 +24,7 @@ import type {
   PostType,
   PageTagResponse,
 } from "@/shared/api/generated/types.gen";
-import type { ApiData } from "@/shared/api/transformers";
+import { normalizeApiResponse, type ApiData } from "@/shared/api/transformers";
 import { cache } from "react";
 
 /**
@@ -64,7 +64,7 @@ export async function getPosts(
     );
   }
 
-  return response as unknown as ApiData<PagePostShortResponse>;
+  return normalizeApiResponse(response);
 }
 
 /**
@@ -93,7 +93,7 @@ export async function getFeaturedPosts(
     return { items: [], total: 0, page: 1, size: limit, pages: 0 } as any;
   }
 
-  return response as unknown as ApiData<PagePostShortResponse>;
+  return normalizeApiResponse(response);
 }
 
 /**
@@ -115,7 +115,7 @@ export async function getCategories(
     throw new Error((error as any)?.error?.message || "无法获取分类列表");
   }
 
-  return response as unknown as ApiData<PageCategoryResponse>;
+  return normalizeApiResponse(response);
 }
 
 /**
@@ -144,7 +144,7 @@ export async function getHotTags(
     return { items: [], total: 0, page: 1, size: limit, pages: 0 } as any;
   }
 
-  return response as unknown as ApiData<PageTagResponse>;
+  return normalizeApiResponse(response);
 }
 
 // 获取文章详情
@@ -194,7 +194,7 @@ export const getPostDetail = cache(
       notFound();
     }
 
-    return data as unknown as ApiData<PostDetailResponse>;
+    return normalizeApiResponse(data);
   },
 );
 
@@ -225,6 +225,6 @@ export const getAdminPostDetail = cache(
 
     if (!data) notFound();
 
-    return data as unknown as ApiData<PostDetailResponse>;
+    return normalizeApiResponse(data);
   },
 );

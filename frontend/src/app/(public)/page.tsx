@@ -4,12 +4,6 @@ import { getFeaturedPosts } from "@/lib/post-api";
 import { HeroSection } from "@/components/public/home/hero-section";
 import { FeaturedCategoriesSection } from "@/components/public/home/featured-categories-section";
 import { ThoughtsSection } from "@/components/public/home/thoughts-section";
-import type {
-  PostShortResponse,
-  PageCategoryResponse,
-} from "@/shared/api/generated/types.gen";
-import type { ApiData } from "@/shared/api/transformers";
-import { normalizeApiResponse } from "@/shared/api/transformers";
 
 export const dynamic = "force-dynamic";
 // export const revalidate = 3600; // 或者使用 ISR
@@ -22,13 +16,9 @@ export default async function Home() {
   ]);
 
   // Normalize: snake_case -> camelCase
-  // 注意：normalizeApiResponse 返回的是对象数组
-  const thoughtsItems = normalizeApiResponse(
-    featuredThoughtsData.items || [],
-  ) as any[];
-  const categoryItems = normalizeApiResponse(
-    featuredCategoriesData.items || [],
-  ) as any[];
+  // 注意：API Layer (lib/*) 已经处理了 `normalizeApiResponse`，此处直接使用即可
+  const thoughtsItems = featuredThoughtsData.items || [];
+  const categoryItems = featuredCategoriesData.items || [];
 
   return (
     <div className="flex flex-col min-h-screen">
