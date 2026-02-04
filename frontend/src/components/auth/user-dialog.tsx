@@ -88,7 +88,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     const result = schemaToValidate.safeParse(rawData);
     if (!result.success) {
       const errors: Record<string, string[]> = {};
-      result.error.errors.forEach((err) => {
+      result.error.issues.forEach((err) => {
         const path = err.path[0] as string;
         if (!errors[path]) errors[path] = [];
         errors[path].push(err.message);

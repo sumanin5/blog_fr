@@ -75,13 +75,13 @@ async def test_admin_user_permissions(
     data = response.json()
     assert_user_response(data, admin_user)
 
-    # ❌ 管理员也不能获取用户列表（只有超级管理员可以）
+    # ✅ 管理员现在可以获取用户列表（权限放宽）
     response = await async_client.get(
         api_urls.user_url("/"), headers=admin_user_token_headers
     )
-    assert response.status_code == test_data.StatusCodes.FORBIDDEN
+    assert response.status_code == test_data.StatusCodes.OK
     data = response.json()
-    assert_error_response(data, test_data.ErrorCodes.INSUFFICIENT_PERMISSIONS)
+    assert_user_list_response(data)
 
 
 @pytest.mark.integration
@@ -162,11 +162,11 @@ async def test_user_list_access_permissions(
     )
     assert response.status_code == test_data.StatusCodes.FORBIDDEN
 
-    # 管理员也不能访问（根据当前权限设计）
+    # 管理员可以访问（权限放宽）
     response = await async_client.get(
         api_urls.user_url("/"), headers=admin_user_token_headers
     )
-    assert response.status_code == test_data.StatusCodes.FORBIDDEN
+    assert response.status_code == test_data.StatusCodes.OK
 
     # 只有超级管理员可以访问
     response = await async_client.get(
@@ -301,30 +301,30 @@ async def test_admin_cross_user_restrictions(
     api_urls: APIConfig,
 ):
     """测试管理员跨用户访问限制"""
-    # 管理员也不能获取其他用户信息（根据当前权限设计）
+    # ✅ 管理员现在可以获取其他用户信息（权限放宽）
     response = await async_client.get(
         api_urls.user_url(f"/{normal_user.id}"), headers=admin_user_token_headers
     )
-    assert response.status_code == test_data.StatusCodes.FORBIDDEN
+    assert response.status_code == test_data.StatusCodes.OK
 
     response = await async_client.get(
         api_urls.user_url(f"/{superadmin_user.id}"), headers=admin_user_token_headers
     )
-    assert response.status_code == test_data.StatusCodes.FORBIDDEN
+    assert response.status_code == test_data.StatusCodes.OK
 
-    # 管理员不能更新其他用户信息
+    # ✅ 管理员现在可以更新其他用户信息
     response = await async_client.patch(
         api_urls.user_url(f"/{normal_user.id}"),
         json={"full_name": "Admin Update"},
         headers=admin_user_token_headers,
     )
-    assert response.status_code == test_data.StatusCodes.FORBIDDEN
+    assert response.status_code == test_data.StatusCodes.OK
 
-    # 管理员不能删除其他用户
+    # ✅ 管理员现在可以删除其他用户
     response = await async_client.delete(
         api_urls.user_url(f"/{normal_user.id}"), headers=admin_user_token_headers
     )
-    assert response.status_code == test_data.StatusCodes.FORBIDDEN
+    assert response.status_code == test_data.StatusCodes.NO_CONTENT
 
 
 @pytest.mark.integration
