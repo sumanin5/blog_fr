@@ -33,6 +33,65 @@ class SyncProcessor:
         self.serializer = serializer
         self.content_dir = content_dir
 
+    async def resolve_internal_links_for_posts(
+        self, session: AsyncSession, post_ids: set
+    ):
+        """
+        后处理：对指定的一组文章重新进行链接解析
+        这是为了解决 "A引用B，但A先处理导致链接无法解析" 的问题
+        """
+        if not post_ids:
+            return
+
+        from app.git_ops.components.processors.content import ContentProcessor
+        from app.posts.model import Post
+        from sqlmodel import select
+
+        logger.info(
+            f"🔄 Resolving internal links for {len(post_ids)} processed posts..."
+        )
+
+        # 1. 批量获取文章
+        stmt = select(Post).where(Post.id.in_(post_ids))
+        result = await session.execute(stmt)
+        posts = result.scalars().all()
+
+        processor = ContentProcessor()
+
+        count = 0
+        for post in posts:
+            if not post.source_path or not post.content_mdx:
+                continue
+
+            try:
+                # 2. 尝试解析链接
+                # 注意：_transform_internal_links 是为了处理磁盘文件上的链接转换
+                # 这里我们直接对 DB 中的 content_mdx 进行转换，如果有变动，则更新 DB 和 磁盘
+                original_content = post.content_mdx
+                new_content = await processor._transform_internal_links(
+                    original_content, post.source_path, session
+                )
+
+                if new_content != original_content:
+                    logger.info(f"🔗 Fixed links in post: {post.source_path}")
+                    # 更新 DB
+                    post.content_mdx = new_content
+                    session.add(post)
+
+                    # 更新磁盘 (物理文件)
+                    await processor._write_transformed_content(
+                        post.source_path, new_content
+                    )
+                    count += 1
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to resolve links for {post.source_path}: {e}")
+
+        if count > 0:
+            logger.info(f"✅ Fixed links for {count} posts.")
+            # 这里的 session 提交通常由外部（调用者）负责，或者显式 commit
+            # 由于这是后处理，最好先 commit 一次确保安全
+            await session.commit()
+
     async def process_file_change(
         self,
         session: AsyncSession,
@@ -243,6 +302,14 @@ class SyncProcessor:
                     processed_post_ids,
                 )
 
+        # 3. 🆕 后处理：批量修复内部链接
+        # 因为在第一遍扫描时，目标文章可能还未入库，导致 ContentProcessor 无法解析链接
+        # 所以需要在这个时候（所有文章都在 DB 后）再次尝试解析所有被 update/add 的文章
+        if processed_post_ids:
+            # 获取这批文章的路径映射（只有发生过变更的才需要重试）
+            # 注意：这里我们重新查询 DB 确保状态最新
+            await self.resolve_internal_links_for_posts(session, processed_post_ids)
+
     async def sync_categories_to_disk(
         self, session: AsyncSession, writer, stats: SyncStats
     ):
@@ -278,6 +345,9 @@ class SyncProcessor:
                     meta["order"] = category.sort_order
                 if category.excerpt:
                     meta["excerpt"] = category.excerpt
+                # 新增 post_sort 支持
+                if category.post_sort_order:
+                    meta["post_sort"] = category.post_sort_order.value
                 if category.cover_media_id:
                     meta["cover_media_id"] = str(category.cover_media_id)
                     if hasattr(category, "cover_media") and category.cover_media:

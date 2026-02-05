@@ -103,7 +103,11 @@ class FileWriter:
             target_path = self.path_calculator.calculate_category_path(category)
 
             # 构建 metadata
-            meta = {"title": category.name, "hidden": not category.is_active}
+            meta = {
+                "title": category.name,
+                "hidden": not category.is_active,
+                "category_id": str(category.id),
+            }
             if category.icon_preset:
                 meta["icon"] = category.icon_preset
             if category.sort_order != 0:
@@ -123,6 +127,11 @@ class FileWriter:
                     cover = category.cover_media
                     if hasattr(cover, "original_filename"):
                         meta["cover"] = cover.original_filename
+
+            # 添加 post_sort 字段 (API 更新回写)
+            if category.post_sort_order:
+                # 写入 post_sort 字段，保持与 GIT_SYNC_GUIDE 一致
+                meta["post_sort"] = category.post_sort_order.value
 
             # 使用 frontmatter 库生成
             import frontmatter
