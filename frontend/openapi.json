@@ -527,6 +527,101 @@
       }
     },
     "/api/v1/users/": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "创建新用户（管理员）",
+        "description": "管理员创建新用户",
+        "operationId": "createNewUser",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "Users"
@@ -4744,6 +4839,24 @@
             "description": "文章类型"
           },
           {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "排序方式 (published_at_desc, published_at_asc, title_asc, title_desc)",
+              "title": "Sort"
+            },
+            "description": "排序方式 (published_at_desc, published_at_asc, title_asc, title_desc)"
+          },
+          {
             "name": "status",
             "in": "query",
             "required": false,
@@ -7892,6 +8005,10 @@
           "post_type": {
             "$ref": "#/components/schemas/PostType",
             "default": "articles"
+          },
+          "post_sort_order": {
+            "$ref": "#/components/schemas/PostSortOrder",
+            "default": "published_at_desc"
           }
         },
         "type": "object",
@@ -8002,6 +8119,10 @@
           "post_type": {
             "$ref": "#/components/schemas/PostType",
             "default": "articles"
+          },
+          "post_sort_order": {
+            "$ref": "#/components/schemas/PostSortOrder",
+            "default": "published_at_desc"
           },
           "id": {
             "type": "string",
@@ -8159,6 +8280,10 @@
             "$ref": "#/components/schemas/PostType",
             "default": "articles"
           },
+          "post_sort_order": {
+            "$ref": "#/components/schemas/PostSortOrder",
+            "default": "published_at_desc"
+          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -8304,6 +8429,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/PostType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "post_sort_order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PostSortOrder"
               },
               {
                 "type": "null"
@@ -9121,6 +9256,18 @@
             ],
             "title": "Tags"
           },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
           "category_id": {
             "anyOf": [
               {
@@ -9733,6 +9880,17 @@
         "title": "PostShortResponse",
         "description": "用于列表展示的精简响应，规避 N+1 风险"
       },
+      "PostSortOrder": {
+        "type": "string",
+        "enum": [
+          "published_at_desc",
+          "published_at_asc",
+          "title_asc",
+          "title_desc"
+        ],
+        "title": "PostSortOrder",
+        "description": "文章排序规则枚举"
+      },
       "PostStatus": {
         "type": "string",
         "enum": [
@@ -9930,6 +10088,18 @@
               }
             ],
             "title": "Tags"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
           },
           "meta_title": {
             "anyOf": [
@@ -10603,6 +10773,98 @@
         ],
         "title": "TopPostStat"
       },
+      "UserCreate": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Username",
+            "description": "用户名"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "邮箱"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "是否激活",
+            "default": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole",
+            "description": "用户角色",
+            "default": "user"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name",
+            "description": "全名"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio",
+            "description": "用户简介"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar",
+            "description": "用户头像 URL"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 4,
+            "title": "Password",
+            "description": "密码"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "email",
+          "password"
+        ],
+        "title": "UserCreate",
+        "description": "创建用户的请求模型（管理员使用，包含角色等字段）",
+        "examples": [
+          {
+            "email": "bob@example.com",
+            "password": "secret123",
+            "role": "admin",
+            "username": "admin_bob"
+          }
+        ]
+      },
       "UserListResponse": {
         "properties": {
           "total": {
@@ -10952,6 +11214,17 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
           }
         },
         "type": "object",

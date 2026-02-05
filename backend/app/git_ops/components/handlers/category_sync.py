@@ -101,6 +101,22 @@ async def handle_category_sync(
     if "hidden" in scanned.frontmatter:
         category.is_active = not scanned.frontmatter.get("hidden", False)
 
+    # 🆕 Post Sort Order
+    post_sort_val = scanned.frontmatter.get("post_sort") or scanned.frontmatter.get(
+        "post_sort_order"
+    )
+    if post_sort_val:
+        from app.posts.model import PostSortOrder
+
+        try:
+            # 尝试直接匹配 Enum 值
+            category.post_sort_order = PostSortOrder(post_sort_val)
+            logger.info(f"✅ Set post sort order: {post_sort_val}")
+        except ValueError:
+            logger.warning(
+                f"⚠️ Invalid post_sort_order: {post_sort_val}. Allowed: {[e.value for e in PostSortOrder]}"
+            )
+
     # 3. 处理 Cover
     # 优先使用 cover_media_id（如果有效）
     if scanned.frontmatter.get("cover_media_id"):

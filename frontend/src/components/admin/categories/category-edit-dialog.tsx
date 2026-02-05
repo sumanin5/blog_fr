@@ -12,10 +12,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { FolderTree, Eye, FileText, LayoutTemplate } from "lucide-react";
+import {
+  FolderTree,
+  Eye,
+  FileText,
+  LayoutTemplate,
+  ArrowUpDown,
+} from "lucide-react";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MdxClientRenderer } from "@/components/public/post/content/renderers/mdx-client-renderer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MediaSelectField } from "@/components/admin/media/fields/media-select-field";
 import type { MediaFile } from "@/shared/api/types";
 import { Category } from "@/shared/api/types";
@@ -47,6 +60,7 @@ export function CategoryEditDialog({
     coverMedia: MediaFile | null;
     icon: MediaFile | null;
     excerpt: string;
+    postSortOrder: string;
   }>({
     name: "",
     slug: "",
@@ -59,6 +73,7 @@ export function CategoryEditDialog({
     coverMedia: null,
     icon: null,
     excerpt: "",
+    postSortOrder: "published_at_desc",
   });
 
   // 当编辑对象变化时，填充表单
@@ -75,6 +90,7 @@ export function CategoryEditDialog({
         coverMedia: category.coverMedia ?? null,
         icon: (category as any).icon ?? null,
         excerpt: category.excerpt ?? "",
+        postSortOrder: (category as any).postSortOrder ?? "published_at_desc",
       });
     } else {
       setFormData({
@@ -88,6 +104,7 @@ export function CategoryEditDialog({
         coverMedia: null,
         icon: null,
         excerpt: "",
+        postSortOrder: "published_at_desc",
       });
     }
     setActiveTab("edit");
@@ -272,7 +289,7 @@ export function CategoryEditDialog({
 
                   <div className="flex gap-4">
                     {/* SVG 选择器 */}
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <MediaSelectField
                         variant="icon"
                         label="SVG ICON"
@@ -336,6 +353,40 @@ export function CategoryEditDialog({
                         })
                       }
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="edit-post-sort">文章列表排序</Label>
+                      <ArrowUpDown className="size-3 text-muted-foreground" />
+                    </div>
+                    <Select
+                      value={formData.postSortOrder}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, postSortOrder: value })
+                      }
+                    >
+                      <SelectTrigger id="edit-post-sort" className="w-full">
+                        <SelectValue placeholder="选择排序方式" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="published_at_desc">
+                          发布时间 (最新在前)
+                        </SelectItem>
+                        <SelectItem value="published_at_asc">
+                          发布时间 (最旧在前)
+                        </SelectItem>
+                        <SelectItem value="title_asc">
+                          标题 (A {"->"} Z)
+                        </SelectItem>
+                        <SelectItem value="title_desc">
+                          标题 (Z {"->"} A)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground">
+                      * 该分类下文章列表的默认排序列
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">

@@ -83,10 +83,14 @@ Check out [this link](./target.md).
     result = await session.exec(stmt)
     source_post = result.one()
 
-    expected_link = f"[this link](/posts/{real_slug})"
-    assert expected_link in source_post.content_mdx
+    # 注意：文章类型默认是 'articles'
+    expected_link_prefix = f"[this link](/posts/articles/{real_slug}"
+    # 验证链接前缀是否存在（替换成功）
+    assert expected_link_prefix in source_post.content_mdx
+    # 验证不再包含相对路径
+    assert "./target.md" not in source_post.content_mdx
 
     # 5. 验证物理文件是否也被写回修复了
     file_content = source_path.read_text(encoding="utf-8")
-    assert expected_link in file_content
-    print(f"Verified link repair in file: {expected_link}")
+    assert expected_link_prefix in file_content
+    print(f"Verified link repair in file: {expected_link_prefix}...")

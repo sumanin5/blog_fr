@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from app.posts.model import Post, PostStatus, PostType, Tag
+from app.posts.model import Post, PostSortOrder, PostStatus, PostType, Tag
 from sqlalchemy import String, cast, func
 from sqlalchemy.orm import load_only, selectinload
 from sqlmodel import desc, select
@@ -24,6 +24,7 @@ def build_posts_query(
     is_featured: Optional[bool] = None,
     search_query: Optional[str] = None,
     include_scheduled: bool = False,  # 🆕 是否包含定时发布的文章
+    sort_by: Optional["PostSortOrder"] = None,  # 🆕 排序方式
 ):
     """构建文章查询
 
@@ -38,6 +39,7 @@ def build_posts_query(
         include_scheduled: 是否包含定时发布的文章（默认 False）
             - False: 只显示 published_at <= 当前时间 的文章（公开接口默认）
             - True: 显示所有文章，包括未来发布的（管理后台默认）
+        sort_by: 排序方式（默认为 PUBLISHED_AT_DESC）
 
     定时发布逻辑：
         - 文章状态为 PUBLISHED，但 published_at 是未来时间 → 不显示（除非 include_scheduled=True）
@@ -105,7 +107,19 @@ def build_posts_query(
             | (Post.published_at <= now)  # 发布时间已到的文章
         )
 
-    stmt = stmt.order_by(desc(Post.published_at), desc(Post.created_at))
+    # 处理排序
+    from app.posts.model import PostSortOrder
+
+    if sort_by == PostSortOrder.PUBLISHED_AT_ASC:
+        stmt = stmt.order_by(Post.published_at.asc(), Post.created_at.asc())
+    elif sort_by == PostSortOrder.TITLE_ASC:
+        stmt = stmt.order_by(Post.title.asc())
+    elif sort_by == PostSortOrder.TITLE_DESC:
+        stmt = stmt.order_by(Post.title.desc())
+    else:
+        # 默认：PUBLISHED_AT_DESC
+        stmt = stmt.order_by(desc(Post.published_at), desc(Post.created_at))
+
     return stmt
 
 

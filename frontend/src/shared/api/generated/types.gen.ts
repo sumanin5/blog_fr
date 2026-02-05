@@ -410,6 +410,7 @@ export type CategoryCreate = {
      */
     is_featured?: boolean;
     post_type?: PostType;
+    post_sort_order?: PostSortOrder;
 };
 
 /**
@@ -463,6 +464,7 @@ export type CategoryResponse = {
      */
     is_featured?: boolean;
     post_type?: PostType;
+    post_sort_order?: PostSortOrder;
     /**
      * Id
      */
@@ -532,6 +534,7 @@ export type CategorySimpleResponse = {
      */
     is_featured?: boolean;
     post_type?: PostType;
+    post_sort_order?: PostSortOrder;
     /**
      * Id
      */
@@ -587,6 +590,7 @@ export type CategoryUpdate = {
      */
     is_featured?: boolean | null;
     post_type?: PostType | null;
+    post_sort_order?: PostSortOrder | null;
 };
 
 /**
@@ -1147,6 +1151,10 @@ export type PostCreate = {
      */
     tags?: Array<string> | null;
     /**
+     * Published At
+     */
+    published_at?: string | null;
+    /**
      * Category Id
      */
     category_id?: string | null;
@@ -1462,6 +1470,13 @@ export type PostShortResponse = {
 };
 
 /**
+ * PostSortOrder
+ *
+ * 文章排序规则枚举
+ */
+export type PostSortOrder = 'published_at_desc' | 'published_at_asc' | 'title_asc' | 'title_desc';
+
+/**
  * PostStatus
  *
  * 文章状态枚举
@@ -1545,6 +1560,10 @@ export type PostUpdate = {
      * Tags
      */
     tags?: Array<string> | null;
+    /**
+     * Published At
+     */
+    published_at?: string | null;
     /**
      * Meta Title
      */
@@ -1965,6 +1984,60 @@ export type TopPostStat = {
 };
 
 /**
+ * UserCreate
+ *
+ * 创建用户的请求模型（管理员使用，包含角色等字段）
+ */
+export type UserCreate = {
+    /**
+     * Username
+     *
+     * 用户名
+     */
+    username: string;
+    /**
+     * Email
+     *
+     * 邮箱
+     */
+    email: string;
+    /**
+     * Is Active
+     *
+     * 是否激活
+     */
+    is_active?: boolean;
+    /**
+     * 用户角色
+     */
+    role?: UserRole;
+    /**
+     * Full Name
+     *
+     * 全名
+     */
+    full_name?: string | null;
+    /**
+     * Bio
+     *
+     * 用户简介
+     */
+    bio?: string | null;
+    /**
+     * Avatar
+     *
+     * 用户头像 URL
+     */
+    avatar?: string | null;
+    /**
+     * Password
+     *
+     * 密码
+     */
+    password: string;
+};
+
+/**
  * UserListResponse
  *
  * 用户列表响应模型
@@ -2169,6 +2242,10 @@ export type WebhookResponse = {
      * Status
      */
     status: string;
+    /**
+     * Reason
+     */
+    reason?: string | null;
 };
 
 /**
@@ -2222,6 +2299,7 @@ export type CategoryResponseWritable = {
      */
     is_featured?: boolean;
     post_type?: PostType;
+    post_sort_order?: PostSortOrder;
     /**
      * Id
      */
@@ -2992,6 +3070,51 @@ export type GetUsersListResponses = {
 };
 
 export type GetUsersListResponse = GetUsersListResponses[keyof GetUsersListResponses];
+
+export type CreateNewUserData = {
+    body: UserCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/';
+};
+
+export type CreateNewUserErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type CreateNewUserError = CreateNewUserErrors[keyof CreateNewUserErrors];
+
+export type CreateNewUserResponses = {
+    /**
+     * Successful Response
+     */
+    201: UserResponse;
+};
+
+export type CreateNewUserResponse = CreateNewUserResponses[keyof CreateNewUserResponses];
 
 export type DeleteUserByIdData = {
     body?: never;
@@ -4865,6 +4988,12 @@ export type ListPostsByTypeData = {
         post_type: PostType;
     };
     query?: {
+        /**
+         * Sort
+         *
+         * 排序方式 (published_at_desc, published_at_asc, title_asc, title_desc)
+         */
+        sort?: string | null;
         /**
          * Status
          *

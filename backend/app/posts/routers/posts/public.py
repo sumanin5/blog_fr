@@ -65,6 +65,12 @@ async def list_posts_by_type(
     filters: Annotated[PostFilterParams, Depends()],
     params: Annotated[Params, Depends()],
     current_user: Annotated[Optional[User], Depends(get_optional_current_user)],
+    sort: Annotated[
+        Optional[str],
+        Query(
+            description="排序方式 (published_at_desc, published_at_asc, title_asc, title_desc)"
+        ),
+    ] = None,
 ):
     # 确定文章状态过滤
     # 规则：
@@ -76,6 +82,29 @@ async def list_posts_by_type(
     else:
         status_filter = PostStatus.PUBLISHED
 
+    # 确定排序方式
+    from app.posts.model import PostSortOrder
+
+    sort_by = None
+    if sort:
+        try:
+            sort_by = PostSortOrder(sort)
+        except ValueError:
+            pass  # 无效排序忽略
+
+    # 如果未指定排序且存在 category_id，则尝试使用分类的默认排序
+    if not sort_by and filters.category_id:
+        from app.posts.model import Category
+
+        # 简单的获取 Category，这里也可以考虑加缓存或在 cruds 层做
+        category = await session.get(Category, filters.category_id)
+        if category:
+            sort_by = category.post_sort_order
+
+    # 默认为最新发布
+    if not sort_by:
+        sort_by = PostSortOrder.PUBLISHED_AT_DESC
+
     query = utils.build_posts_query(
         post_type=post_type,
         category_id=filters.category_id,
@@ -85,6 +114,7 @@ async def list_posts_by_type(
         search_query=filters.search,
         status=status_filter,
         include_scheduled=False,  # 🆕 公开接口不显示定时发布的文章
+        sort_by=sort_by,
     )
     return await cruds.paginate_query(session, query, params)
 

@@ -43,6 +43,15 @@ class PostStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+class PostSortOrder(str, Enum):
+    """文章排序规则枚举"""
+
+    PUBLISHED_AT_DESC = "published_at_desc"  # 发布时间倒序 (最新)
+    PUBLISHED_AT_ASC = "published_at_asc"  # 发布时间正序 (最旧)
+    TITLE_ASC = "title_asc"  # 标题 A-Z
+    TITLE_DESC = "title_desc"  # 标题 Z-A
+
+
 class PostTagLink(SQLModel, table=True):
     """文章与标签的多对多中间表"""
 
@@ -88,6 +97,17 @@ class Category(Base, table=True):
             default=PostType.ARTICLES,
         ),
         description="所属内容类型",
+    )
+    post_sort_order: PostSortOrder = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(
+                PostSortOrder, values_callable=lambda obj: [e.value for e in obj]
+            ),
+            nullable=False,
+            default=PostSortOrder.PUBLISHED_AT_DESC,
+            server_default=PostSortOrder.PUBLISHED_AT_DESC.value,
+        ),
+        description="文章列表默认排序方式",
     )
 
     __table_args__ = (

@@ -72,7 +72,18 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    # 自定义比较函数，忽略 Alembic 对 Enum 类型的重复创建警告
+    def include_object(object, name, type_, reflected, compare_to):
+        if type_ == "table" and name == "alembic_version":
+            return False
+        return True
+
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+        compare_type=True,  # 开启类型变更检测
+    )
 
     with context.begin_transaction():
         context.run_migrations()

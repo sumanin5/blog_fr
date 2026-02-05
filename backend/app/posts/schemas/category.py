@@ -3,7 +3,7 @@ from uuid import UUID
 
 from app.core.config import settings
 from app.media.schemas import MediaFileResponse
-from app.posts.model import PostType
+from app.posts.model import PostSortOrder, PostType
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
@@ -20,6 +20,7 @@ class CategoryBase(BaseModel):
     icon_preset: Optional[str] = None
     is_featured: bool = False
     post_type: PostType = PostType.ARTICLES
+    post_sort_order: PostSortOrder = PostSortOrder.PUBLISHED_AT_DESC
 
 
 class CategoryCreate(CategoryBase):
@@ -39,6 +40,7 @@ class CategoryUpdate(BaseModel):
     icon_preset: Optional[str] = None
     is_featured: Optional[bool] = None
     post_type: Optional[PostType] = None
+    post_sort_order: Optional[PostSortOrder] = None
 
 
 class CategorySimpleResponse(CategoryBase):
