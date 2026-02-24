@@ -21,9 +21,10 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // chartId 只在组件挂载时生成一次，避免主题切换时重新生成导致冲突
   const chartId = useMemo(
     () => `mermaid-${Math.random().toString(36).slice(2, 9)}`,
-    [resolvedTheme]
+    [], // 移除 resolvedTheme 依赖
   );
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
       if (!isMounted) return;
       setIsLoading(true);
       setError(null);
+      setSvgContent(""); // 清空旧内容，避免新旧内容叠加
 
       if (!code.trim()) {
         setIsLoading(false);
@@ -45,10 +47,11 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
       try {
         const mermaid = (await import("mermaid")).default;
 
+        // 每次渲染前重新初始化，确保主题正确应用
         mermaid.initialize({
           startOnLoad: false,
           theme: mermaidTheme,
-          securityLevel: "loose",
+          securityLevel: "strict", // 改用 strict，减少样式污染
           flowchart: { useMaxWidth: true, htmlLabels: true },
           sequence: { useMaxWidth: true },
           gantt: { useMaxWidth: false },
