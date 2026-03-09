@@ -245,6 +245,108 @@ export default function ResumePage() {
                 },
               ]}
             />
+
+            <Separator className="print:hidden" />
+
+            <div className="pt-8">
+              <h3 className="text-2xl font-bold tracking-tight mb-8">
+                C++ 底层项目系列
+              </h3>
+              <div className="space-y-12">
+                <ProjectCard
+                  title="MiniSTL"
+                  subtitle="手工实现 C++ 标准模板库子集"
+                  techStack={[
+                    "C++11",
+                    "Template Metaprogramming",
+                    "Memory Management",
+                    "Data Structures",
+                  ]}
+                  highlights={[
+                    {
+                      title: "空间配置器与内存池",
+                      description:
+                        "allocator 分配器：萃取出数据类型的 size，调用底层的 allocate 和 deallocate 申请释放内存。construct 构造器：使用 placement new 定位 new 语法在指定的内存块上构造对象，避免默认构造开销。destroy 析构器：利用 type_traits 判断对象是否拥有 trivial_destructor（无关痛痒的析构函数），提升大规模销毁时的性能。",
+                    },
+                    {
+                      title: "迭代器萃取技术 (Traits)",
+                      description:
+                        "萃取机原理：使用 partial specialization 偏特化提取原生指针（如 T* 和 const T*）的类型信息。Iterator 分类：实现 Input/Output, Forward, Bidirectional, RandomAccess 五种迭代器标签，指导算法进行最优复杂度的方法派发。",
+                    },
+                    {
+                      title: "核心容器内部机制",
+                      description:
+                        "vector 扩容策略：当 size == capacity，采用两倍扩容，申请新内存、移动旧元素、释放旧内存，实现摊还 O(1) 插入。list 双向循环链表：节点采用「环状指针」设计，拥有一个空白的 end 节点标志终点。rb_tree 红黑树：实现严格的变色/旋转（左旋、右旋）规则，保证 O(logN) 的插入删除查询，作为 set/map 的底层容器。",
+                    },
+                    {
+                      title: "泛型算法 (Algorithms)",
+                      description:
+                        "sort：对于量小的数据直接使用 insertion_sort，大量数据使用 intro_sort（快速排序改良版，递归深度过深时转为 heap_sort）保证最坏 O(NlogN)。find/copy 等操作：大量通过 type_traits 判断类型，如果为 POD（Plain Old Data），直接调用 memmove 等底层 C 函数暴力拷贝，把性能压榨到极致。",
+                    },
+                  ]}
+                />
+
+                <Separator className="print:hidden" />
+
+                <ProjectCard
+                  title="高性能内存池"
+                  subtitle="基于两级空间配置器的内存管理方案"
+                  techStack={[
+                    "C++11",
+                    "内存对齐",
+                    "Free List",
+                    "多线程竞争优化",
+                  ]}
+                  highlights={[
+                    {
+                      title: "架构设计",
+                      description:
+                        "第一级配置器：处理大于 128 Bytes 的请求，直接调用 malloc/free。第二级配置器：处理小于等于 128 Bytes 的内存请求，采用内存池（Memory Pool）和自由链表（Free List）配合，大幅减少系统调用与内存碎片。",
+                    },
+                    {
+                      title: "自由链表 (Free List)",
+                      description:
+                        "维护 16 个 free_list 数组，步长为 8 Bytes（8, 16, 24 ... 128）。联合体 (union) 妙用：空闲时区块内部存放指向下个空闲块的指针，分配时直接当做数据空间用，不浪费哪怕一点额外内存（不包含 cookie）。",
+                    },
+                    {
+                      title: "内存池补充机制 (Refill)",
+                      description:
+                        "chunk_alloc 批量预借：当 free_list 某位置为空，向内存池按 20 个区块的量进货。内存池余量判断：若余量够 20 个直接给；若只够几个，尽力给；若一个都给不出，调用 malloc 向系统拿新内存（每次翻倍申请，余量全放进内存池留待后用）。",
+                    },
+                  ]}
+                />
+
+                <Separator className="print:hidden" />
+
+                <ProjectCard
+                  title="线程池"
+                  subtitle="高效线程池管理系统"
+                  techStack={[
+                    "C++11",
+                    "std::thread",
+                    "std::future",
+                    "任务队列",
+                  ]}
+                  highlights={[
+                    {
+                      title: "架构设计",
+                      description:
+                        "核心组件：任务队列（thread-safe queue）+ 工作线程数组（worker threads）+ 停止标志（atomic<bool>）。工作线程启动后进入无限循环：从队列取任务 → 执行 → 继续取，直到收到停止信号。线程数量通常设为 std::thread::hardware_concurrency()，匹配 CPU 核心数。",
+                    },
+                    {
+                      title: "任务队列与同步",
+                      description:
+                        "std::queue + std::mutex + std::condition_variable 组成线程安全队列。生产者（提交任务）：加锁 → push → unlock → notify_one。消费者（工作线程）：wait(lock, predicate) → pop → unlock → 执行任务。避免虚假唤醒（spurious wakeup）：wait 使用 lambda 谓词 while 循环检查条件。",
+                    },
+                    {
+                      title: "任务提交与返回值",
+                      description:
+                        "submit 方法接受任意可调用对象：使用 std::function<void()> 类型擦除 + std::bind / lambda 包装。std::packaged_task<R()> 包装任务，关联 std::future<R> 获取异步返回值。std::future::get() 阻塞等待结果，实现「提交任务 → 继续做其他事 → 需要时取结果」的异步模式。完美转发：submit 使用 template + std::forward 保持参数的左值/右值属性。",
+                    },
+                  ]}
+                />
+              </div>
+            </div>
           </div>
         </ResumeSection>
 
