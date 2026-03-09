@@ -36,7 +36,7 @@ export function ProjectCard({
   tags,
 }: ProjectCardProps) {
   return (
-    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-gradient-to-br from-card to-muted/20 print:border hover:border-border/80 print:shadow-none print:bg-none print:transform-none">
+    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-linear-to-br from-card to-muted/20 print:border hover:border-border/80 print:shadow-none print:bg-none print:transform-none">
       <CardHeader className="pb-4">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div className="space-y-1 relative z-10">

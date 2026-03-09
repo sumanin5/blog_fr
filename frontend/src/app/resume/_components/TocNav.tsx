@@ -17,7 +17,7 @@ const tocItems: TocItem[] = [
 
 export function TocNav() {
   return (
-    <nav className="sticky top-24 hidden lg:block w-48 shrink-0 print:hidden">
+    <nav className="sticky top-24 hidden lg:block w-48 shrink-0 print:hidden self-start">
       <div className="space-y-4">
         <h4 className="text-sm font-semibold tracking-tight text-muted-foreground uppercase">
           导航目录
