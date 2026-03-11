@@ -67,6 +67,26 @@ async def login(
     )
 
 
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    summary="刷新访问令牌",
+    description="使用有效的访问令牌获取一个新的令牌以延长登录状态（自动刷新机制）。",
+)
+async def refresh_token(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    from datetime import timedelta
+
+    from app.core.config import settings
+    from app.core.security import create_access_token
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=str(current_user.id), expires_delta=access_token_expires
+    )
+    return TokenResponse(access_token=access_token, token_type="bearer")
+
+
 # ========================================
 # 需要登录的接口
 # ========================================

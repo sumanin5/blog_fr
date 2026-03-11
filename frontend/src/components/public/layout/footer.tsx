@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Github, Mail } from "lucide-react";
+import { Github } from "lucide-react";
 import { siteConfig } from "@/config/site";
+import { FooterEmail } from "./footer-email";
 
 /**
  * 🦶 页脚组件 - 极致简约设计
@@ -36,13 +37,7 @@ export function Footer() {
             >
               <Github className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
             </a>
-            <a
-              href={`mailto:${siteConfig.links.email}`}
-              className="group text-muted-foreground hover:text-primary transition-all duration-300"
-              title="Email"
-            >
-              <Mail className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-            </a>
+            <FooterEmail />
           </div>
         </div>
       </div>

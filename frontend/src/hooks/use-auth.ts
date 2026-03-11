@@ -5,6 +5,7 @@ import {
   login as apiLogin,
   registerUser as apiRegister,
   getCurrentUserInfo,
+  refreshToken as apiRefreshToken,
 } from "@/shared/api";
 import type {
   User,
@@ -28,12 +29,57 @@ export const authKeys = {
 };
 
 /**
+ * 解析 JWT 获取载荷
+ */
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 获取当前用户信息 (优雅降级模式)
  * 逻辑：有 Token 就探测身份，报错(401/500等)统统视为“游客”
  */
 async function fetchCurrentUser(): Promise<User | null> {
-  const token = Cookies.get("access_token");
+  let token = Cookies.get("access_token");
   if (!token) return null;
+
+  // 检查 Token 是否需要刷新（小于3天）
+  const decoded = parseJwt(token);
+  if (decoded && decoded.exp) {
+    const now = Date.now() / 1000;
+    const timeLeft = decoded.exp - now;
+    // 如果剩余时间小于 3 天 (3 * 24 * 3600 = 259200 秒)，则刷新 token
+    if (timeLeft > 0 && timeLeft < 259200) {
+      try {
+        const refreshResponse = await apiRefreshToken({ throwOnError: true });
+        const newTokenData = refreshResponse.data as unknown as DomainToken;
+        if (newTokenData?.accessToken) {
+          token = newTokenData.accessToken;
+          localStorage.setItem("access_token", token);
+          Cookies.set("access_token", token, {
+            expires: 7, // 延长 7 天
+            path: "/",
+            sameSite: "lax",
+          });
+        }
+      } catch (err) {
+        console.error("Token 自动刷新失败:", err);
+        // 如果刷新失败，且原 token 未完全过期，放行给后端的 getCurrentUserInfo 处理
+      }
+    }
+  }
 
   try {
     const response = await getCurrentUserInfo({ throwOnError: true });

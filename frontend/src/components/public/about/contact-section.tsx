@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Code2, Github, Mail, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
+import { ContactEmailDropdown } from "./contact-email-dropdown";
 
 export function ContactSection() {
   return (
@@ -27,16 +28,7 @@ export function ContactSection() {
               <Github className="w-5 h-5" /> GitHub 仓库
             </Link>
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="rounded-full px-8 gap-2"
-            asChild
-          >
-            <Link href={siteConfig.links.email}>
-              <Mail className="w-5 h-5" /> 邮件联系
-            </Link>
-          </Button>
+          <ContactEmailDropdown />
         </div>
 
         <div className="pt-8">
