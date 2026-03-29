@@ -194,3 +194,84 @@ async def test_handle_category_sync_icon_emoji(session, mock_user, mocker):
     assert category.name == "Tech Articles"
     assert category.icon_preset == "🚀"  # 应该设置 icon_preset
     assert category.icon_id is None  # 不应该设置 icon_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_handle_category_sync_transforms_internal_links(session, mock_user_with_id, mocker):
+    """测试 category index 中的相对链接被自动转换为绝对 URL"""
+    from app.posts.model import Post, PostType, PostStatus
+    from app.users.model import User, UserRole
+
+    # Patch _write_category_metadata_back
+    mocker.patch(
+        "app.git_ops.components.handlers.category_sync._write_category_metadata_back",
+        new_callable=mocker.AsyncMock,
+    )
+
+    # 确保用户存在于数据库
+    user = User(
+        id=mock_user_with_id.id,
+        username=mock_user_with_id.username,
+        email="test@example.com",
+        hashed_password="hashed",
+        role=UserRole.ADMIN,
+    )
+    session.add(user)
+    await session.commit()
+
+    # 预先创建两篇文章，这样 ContentProcessor 可以找到它们
+    post1 = Post(
+        title="Article One",
+        slug="article-one-abc123",
+        source_path="content/articles/fastapi/01-article.md",
+        post_type=PostType.ARTICLES,
+        status=PostStatus.PUBLISHED,
+        author_id=mock_user_with_id.id,
+        content_mdx="Article 1 content",
+    )
+    post2 = Post(
+        title="Article Two",
+        slug="article-two-def456",
+        source_path="content/articles/fastapi/02-article.md",
+        post_type=PostType.ARTICLES,
+        status=PostStatus.PUBLISHED,
+        author_id=mock_user_with_id.id,
+        content_mdx="Article 2 content",
+    )
+    session.add(post1)
+    session.add(post2)
+    await session.commit()
+
+    # 模拟 scanned post，内容包含相对链接
+    scanned = mocker.MagicMock(spec=ScannedPost)
+    scanned.file_path = "content/articles/fastapi/index.md"
+    scanned.derived_category_slug = "fastapi"
+    scanned.derived_post_type = "articles"
+    scanned.frontmatter = {"title": "FastAPI Series"}
+    # 内容包含相对链接，应该被转换为绝对 URL
+    scanned.content = """# FastAPI Series
+
+- [Article One](./01-article.md)
+- [Article Two](./02-article.md)
+"""
+    scanned.is_category_index = True
+
+    # 执行
+    category = await handle_category_sync(
+        session=session,
+        scanned=scanned,
+        operating_user=mock_user_with_id,
+        content_dir=Path("/tmp/content"),
+    )
+
+    # 验证
+    assert category is not None
+    assert category.slug == "fastapi"
+
+    # 验证链接被转换为绝对 URL
+    assert "/posts/articles/article-one-abc123" in category.description
+    assert "/posts/articles/article-two-def456" in category.description
+    # 验证原来的相对链接不再存在
+    assert "./01-article.md" not in category.description
+    assert "./02-article.md" not in category.description

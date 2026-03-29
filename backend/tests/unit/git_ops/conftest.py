@@ -42,6 +42,16 @@ def mock_user(mocker):
 
 
 @pytest.fixture
+def mock_user_with_id(mocker):
+    """创建 mock 用户（包含真实的 UUID id）"""
+    from uuid import uuid4
+    user = mocker.MagicMock()
+    user.id = uuid4()
+    user.username = "test_user"
+    return user
+
+
+@pytest.fixture
 def mock_content_dir():
     """创建 mock content 目录"""
     return Path("/fake/content")
