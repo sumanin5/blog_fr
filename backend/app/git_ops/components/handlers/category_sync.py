@@ -56,9 +56,16 @@ async def handle_category_sync(
         await session.flush()  # 获取 ID
 
     # 2. 更新元数据
-    # Description (Body)
-    if scanned.content:
-        category.description = scanned.content
+    # Description (Body) - 转换内部链接
+    content = scanned.content
+    if content:
+        # 转换分类索引中的内部链接
+        from app.git_ops.components.processors.content import ContentProcessor
+        content_processor = ContentProcessor()
+        content = await content_processor._transform_internal_links(
+            content, scanned.file_path, session
+        )
+        category.description = content
 
     # Frontmatter overrides
     if scanned.frontmatter.get("title"):
