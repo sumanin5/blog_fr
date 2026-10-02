@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { BookOpen, ArrowRight, Sparkles, Orbit } from "lucide-react";
+import { BookOpen, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -83,12 +83,6 @@ export function HeroSection() {
 
               {/* 底部柔和边缘羽化渐变，自然沉入背景 */}
               <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/40 to-transparent pointer-events-none" />
-
-              {/* 右下角极客交互小徽标 */}
-              <div className="absolute bottom-3 right-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono text-emerald-800 dark:text-emerald-300 bg-background/60 backdrop-blur-md border border-border/40 pointer-events-none">
-                <Orbit className="w-3 h-3 text-emerald-500 animate-spin [animation-duration:8s]" />
-                <span>原生 3D · 移动鼠标互动</span>
-              </div>
             </div>
           </motion.div>
         </div>

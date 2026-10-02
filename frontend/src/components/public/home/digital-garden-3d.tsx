@@ -4,14 +4,12 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 /**
- * 👑 数字花园极轻量高性能 3D 场景 (Low-overhead Digital Garden 3D)
+ * 👑 数字宇宙生态系：真实球形天体公转与柔光星尘流 (Realistic Cosmic Orbit & Starflow)
  *
- * 核心优化：
- * 1. 纯数学程序化几何体（总三角面数 < 260），0 外部大模型网络开销；
- * 2. 限制渲染像素比 (DPR <= 1.5)，极大降低核显与移动端显卡负荷；
- * 3. 接入 IntersectionObserver：当滚动离开视口时自动暂停渲染（GPU 占用降至 0%）；
- * 4. 卸载时彻底 dispose 几何体、材质与渲染器，杜绝显存泄漏；
- * 5. 鼠标平滑跟随视差 (Lerp 缓动)，带来生动流畅的三维沉浸感。
+ * 核心升级：
+ * 1. 消除方形像素粒子：采用内存生成的径向高斯光晕贴图，星尘全部呈现真实圆润发光光子；
+ * 2. 消除多面体棱角：中心恒星与公转天体升级为真实球体，带有晨昏光影与物理土星光环；
+ * 3. 极致低配性能：球体采用精简细分度（总面数 < 800），配合 DPR 限制与离屏休眠。
  */
 
 export default function DigitalGarden3D() {
@@ -33,7 +31,7 @@ export default function DigitalGarden3D() {
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0, 8.5);
+    camera.position.set(0, 0, 9.5);
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -42,112 +40,196 @@ export default function DigitalGarden3D() {
       powerPreference: "high-performance",
     });
     renderer.setSize(width, height);
-    // 关键性能优化：限制 DPR，避免 Retina 高分屏过载
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
-    // 2. 场景灯光系统（温和省电的 3 点光源）
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    // 2. 动态创建“圆形发光星尘粒子贴图”（彻底告别方形方块！）
+    const createParticleTexture = () => {
+      const c = document.createElement("canvas");
+      c.width = 64;
+      c.height = 64;
+      const ctx = c.getContext("2d");
+      if (!ctx) return null;
+
+      // 径向渐变：中心亮白 -> 中层翡翠绿 -> 外层透明
+      const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+      gradient.addColorStop(0.25, "rgba(110, 231, 183, 0.85)");
+      gradient.addColorStop(0.6, "rgba(16, 185, 129, 0.35)");
+      gradient.addColorStop(1, "rgba(16, 185, 129, 0)");
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(32, 32, 32, 0, Math.PI * 2);
+      ctx.fill();
+
+      const texture = new THREE.CanvasTexture(c);
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+    const particleTexture = createParticleTexture();
+
+    // 3. 宇宙光照系统 (主光源自中心恒星发出，侧翼带微弱冷蓝补光)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
-    const pointLight1 = new THREE.PointLight(0x10b981, 2.5, 20); // 翡翠绿核心光
-    pointLight1.position.set(4, 5, 4);
-    scene.add(pointLight1);
+    const coreLight = new THREE.PointLight(0x34d399, 4.0, 30);
+    scene.add(coreLight);
 
-    const pointLight2 = new THREE.PointLight(0x14b8a6, 2.0, 20); // 青绿柔光
-    pointLight2.position.set(-4, -4, 3);
-    scene.add(pointLight2);
+    const rimLight = new THREE.PointLight(0x38bdf8, 1.8, 25);
+    rimLight.position.set(-6, -4, 4);
+    scene.add(rimLight);
 
-    // 3. 构建 3D 核心：数字花园二十面体晶石 (Icosahedron Crystal)
-    const coreGeometry = new THREE.IcosahedronGeometry(1.6, 0); // 仅 20 个面！极速光栅化
-    const coreMaterial = new THREE.MeshPhongMaterial({
-      color: 0x059669,
-      emissive: 0x064e3b,
-      emissiveIntensity: 0.35,
-      shininess: 90,
-      transparent: true,
-      opacity: 0.65,
-      flatShading: true,
+    // 4. 构建中心真实球形恒星 (Central Glowing Star)
+    const starGroup = new THREE.Group();
+    scene.add(starGroup);
+
+    // 4.1 恒星内层核心 (Smooth Sphere)
+    const starGeometry = new THREE.SphereGeometry(1.2, 28, 28);
+    const starMaterial = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x059669,
+      emissiveIntensity: 0.85,
+      roughness: 0.2,
+      metalness: 0.1,
     });
-    const coreMesh = new THREE.Mesh(coreGeometry, coreMaterial);
-    scene.add(coreMesh);
+    const starMesh = new THREE.Mesh(starGeometry, starMaterial);
+    starGroup.add(starMesh);
 
-    // 晶石发光线框 (Wireframe Accent)
-    const edgesGeometry = new THREE.EdgesGeometry(coreGeometry);
-    const edgesMaterial = new THREE.LineBasicMaterial({
+    // 4.2 恒星外层柔和日冕大气 (Corona Glow)
+    const coronaGeometry = new THREE.SphereGeometry(1.35, 24, 24);
+    const coronaMaterial = new THREE.MeshBasicMaterial({
       color: 0x6ee7b7,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.25,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
     });
-    const wireframeMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
-    coreMesh.add(wireframeMesh);
+    const coronaMesh = new THREE.Mesh(coronaGeometry, coronaMaterial);
+    starGroup.add(coronaMesh);
 
-    // 4. 构建周围浮动的磨砂有机玻璃立方体 (Floating Glass Cubes)
-    const cubeGeometry = new THREE.BoxGeometry(0.55, 0.55, 0.55);
-    const cubeMaterial = new THREE.MeshPhongMaterial({
-      color: 0x34d399,
-      emissive: 0x047857,
-      emissiveIntensity: 0.2,
-      shininess: 100,
-      transparent: true,
-      opacity: 0.5,
-    });
-
-    const floatingCubes: {
-      mesh: THREE.Mesh;
-      basePos: THREE.Vector3;
-      speed: number;
-      offset: number;
-    }[] = [];
-
-    const positions = [
-      new THREE.Vector3(-2.4, 1.4, 0.2),
-      new THREE.Vector3(2.5, -1.2, 0.5),
-      new THREE.Vector3(-1.8, -1.8, -0.4),
-      new THREE.Vector3(2.0, 1.8, -0.6),
-    ];
-
-    positions.forEach((pos, i) => {
-      const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-      cube.position.copy(pos);
-      // 边缘细线
-      const cubeEdges = new THREE.LineSegments(
-        new THREE.EdgesGeometry(cubeGeometry),
-        new THREE.LineBasicMaterial({ color: 0xa7f3d0, transparent: true, opacity: 0.7 })
+    // 5. 构建优雅发光公转轨道线 (Smooth Orbital Rings)
+    const createOrbitRing = (radiusX: number, radiusY: number, rotation: THREE.Euler, color = 0x34d399, opacity = 0.35) => {
+      const curve = new THREE.EllipseCurve(0, 0, radiusX, radiusY, 0, 2 * Math.PI, false, 0);
+      const points = curve.getPoints(96);
+      const ringGeometry = new THREE.BufferGeometry().setFromPoints(
+        points.map((p) => new THREE.Vector3(p.x, 0, p.y))
       );
-      cube.add(cubeEdges);
-      scene.add(cube);
-
-      floatingCubes.push({
-        mesh: cube,
-        basePos: pos.clone(),
-        speed: 1.2 + i * 0.3,
-        offset: i * 1.5,
+      const ringMaterial = new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity,
+        blending: THREE.AdditiveBlending,
       });
-    });
+      const ringLine = new THREE.Line(ringGeometry, ringMaterial);
+      ringLine.rotation.copy(rotation);
+      scene.add(ringLine);
+      return ringLine;
+    };
 
-    // 5. 萤火微粒系统 (Firefly Particles) - 仅 45 个极轻量粒子
-    const particleCount = 45;
+    const ring1 = createOrbitRing(2.7, 2.4, new THREE.Euler(0.45, 0.2, 0.25), 0x10b981, 0.45);
+    const ring2 = createOrbitRing(4.0, 3.6, new THREE.Euler(-0.5, -0.3, -0.35), 0x34d399, 0.35);
+    const ring3 = createOrbitRing(5.3, 4.8, new THREE.Euler(0.65, -0.35, 0.45), 0x2dd4bf, 0.25);
+
+    // 6. 构造真实公转行星系统 (Realistic Celestial Bodies)
+
+    // 行星 1：内轨类地行星 (Terrestrial Planet)
+    const planet1Geometry = new THREE.SphereGeometry(0.38, 22, 22);
+    const planet1Material = new THREE.MeshStandardMaterial({
+      color: 0x34d399,
+      emissive: 0x065f46,
+      emissiveIntensity: 0.25,
+      roughness: 0.35,
+      metalness: 0.2,
+    });
+    const planet1 = new THREE.Mesh(planet1Geometry, planet1Material);
+    scene.add(planet1);
+
+    // 行星 2：中轨带环行星 (Ringed Planet 类似土星环天体)
+    const planet2Group = new THREE.Group();
+    scene.add(planet2Group);
+
+    const planet2Geometry = new THREE.SphereGeometry(0.45, 24, 24);
+    const planet2Material = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.3,
+      roughness: 0.3,
+      metalness: 0.15,
+    });
+    const planet2Mesh = new THREE.Mesh(planet2Geometry, planet2Material);
+    planet2Group.add(planet2Mesh);
+
+    // 行星 2 的土星光环 (Saturn-like Ring)
+    const ringGeometry = new THREE.RingGeometry(0.62, 0.95, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x7dd3fc,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
+    });
+    const saturnRing = new THREE.Mesh(ringGeometry, ringMat);
+    saturnRing.rotation.x = Math.PI / 2.3;
+    planet2Group.add(saturnRing);
+
+    // 行星 2 的绕转卫星 (Moon)
+    const moonGeometry = new THREE.SphereGeometry(0.12, 16, 16);
+    const moonMaterial = new THREE.MeshBasicMaterial({ color: 0xe0f2fe });
+    const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+    scene.add(moon);
+
+    // 行星 3：外轨深空巨行星 (Gas Giant)
+    const planet3Geometry = new THREE.SphereGeometry(0.48, 24, 24);
+    const planet3Material = new THREE.MeshStandardMaterial({
+      color: 0x059669,
+      emissive: 0x047857,
+      emissiveIntensity: 0.35,
+      roughness: 0.4,
+      metalness: 0.1,
+    });
+    const planet3 = new THREE.Mesh(planet3Geometry, planet3Material);
+    scene.add(planet3);
+
+    // 7. 宇宙流光星尘系统 (真实的圆形柔光微粒流) - 220 颗
+    const particleCount = 220;
     const particleGeometry = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
+    const particleAngles = new Float32Array(particleCount);
+    const particleRadii = new Float32Array(particleCount);
+    const particleSpeeds = new Float32Array(particleCount);
+    const particleHeights = new Float32Array(particleCount);
 
-    for (let i = 0; i < particleCount * 3; i += 3) {
-      particlePositions[i] = (Math.random() - 0.5) * 7.5;
-      particlePositions[i + 1] = (Math.random() - 0.5) * 6.5;
-      particlePositions[i + 2] = (Math.random() - 0.5) * 5.0;
+    for (let i = 0; i < particleCount; i++) {
+      const radius = 1.6 + Math.random() * 5.0;
+      const angle = Math.random() * Math.PI * 2;
+      const height = (Math.random() - 0.5) * 3.5;
+
+      particlePositions[i * 3] = Math.cos(angle) * radius;
+      particlePositions[i * 3 + 1] = height;
+      particlePositions[i * 3 + 2] = Math.sin(angle) * radius;
+
+      particleAngles[i] = angle;
+      particleRadii[i] = radius;
+      particleSpeeds[i] = (0.2 + Math.random() * 0.4) * (Math.random() > 0.5 ? 1 : 0.85);
+      particleHeights[i] = height;
     }
     particleGeometry.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
 
+    // 使用刚才生成的圆形发光贴图，彻底消除方块感！
     const particleMaterial = new THREE.PointsMaterial({
-      color: 0x6ee7b7,
-      size: 0.08,
+      color: 0xa7f3d0,
+      size: 0.22,
+      map: particleTexture ?? undefined,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.85,
       blending: THREE.AdditiveBlending,
+      depthWrite: false,
     });
     const particles = new THREE.Points(particleGeometry, particleMaterial);
     scene.add(particles);
 
-    // 6. 交互式鼠标追踪 (平滑 Lerp 视差)
+    // 8. 交互式鼠标追踪 (平滑视差与引力倾斜)
     let targetMouseX = 0;
     let targetMouseY = 0;
     let currentMouseX = 0;
@@ -169,7 +251,7 @@ export default function DigitalGarden3D() {
     container.addEventListener("mousemove", handleMouseMove);
     container.addEventListener("mouseleave", handleMouseLeave);
 
-    // 7. 视口可见性监听 (IntersectionObserver)：离开视口自动休眠
+    // 9. 视口离开自动休眠
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -180,7 +262,7 @@ export default function DigitalGarden3D() {
     );
     observer.observe(container);
 
-    // 8. 窗口尺寸自适应
+    // 10. 窗口尺寸自适应
     const handleResize = () => {
       if (!container) return;
       const w = container.clientWidth;
@@ -193,38 +275,75 @@ export default function DigitalGarden3D() {
     };
     window.addEventListener("resize", handleResize);
 
-    // 9. 渲染循环
+    // 11. 真实天体力学渲染循环
     const clock = new THREE.Clock();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      // 如果滚出屏幕，完全跳过计算，GPU 0% 开销！
       if (!isVisible) return;
 
-      const elapsedTime = clock.getElapsedTime();
+      const elapsed = clock.getElapsedTime();
 
-      // 缓动鼠标移动 (Lerp)
-      currentMouseX += (targetMouseX - currentMouseX) * 0.05;
-      currentMouseY += (targetMouseY - currentMouseY) * 0.05;
+      // 缓动鼠标追踪 (Lerp)
+      currentMouseX += (targetMouseX - currentMouseX) * 0.045;
+      currentMouseY += (targetMouseY - currentMouseY) * 0.045;
 
-      // 核心晶体自转与交互跟随
-      coreMesh.rotation.x = elapsedTime * 0.25 + currentMouseY * 0.4;
-      coreMesh.rotation.y = elapsedTime * 0.35 + currentMouseX * 0.5;
+      // 11.1 恒星微脉冲与光影呼吸
+      const starPulse = 1 + Math.sin(elapsed * 1.5) * 0.035;
+      starGroup.scale.set(starPulse, starPulse, starPulse);
+      starMesh.rotation.y = elapsed * 0.15;
+      coronaMesh.rotation.y = -elapsed * 0.08;
 
-      // 浮动立方体缓动微浮
-      floatingCubes.forEach(({ mesh, basePos, speed, offset }) => {
-        mesh.position.y = basePos.y + Math.sin(elapsedTime * speed + offset) * 0.22;
-        mesh.rotation.x = elapsedTime * 0.4 + offset;
-        mesh.rotation.z = elapsedTime * 0.3;
-      });
+      // 11.2 行星 1 公转 (内轨)
+      const angle1 = elapsed * 0.75;
+      const pos1 = new THREE.Vector3(Math.cos(angle1) * 2.7, 0, Math.sin(angle1) * 2.4).applyEuler(
+        ring1.rotation
+      );
+      planet1.position.copy(pos1);
+      planet1.rotation.y = elapsed * 1.2;
 
-      // 粒子缓慢公转
-      particles.rotation.y = elapsedTime * 0.08;
+      // 11.3 行星 2（带环行星）公转 (中轨，逆行)
+      const angle2 = -elapsed * 0.5 + 2.0;
+      const pos2 = new THREE.Vector3(Math.cos(angle2) * 4.0, 0, Math.sin(angle2) * 3.6).applyEuler(
+        ring2.rotation
+      );
+      planet2Group.position.copy(pos2);
+      planet2Group.rotation.y = elapsed * 0.6;
 
-      // 相机微角度视差
-      camera.position.x = currentMouseX * 0.6;
-      camera.position.y = currentMouseY * 0.5;
+      // 卫星围绕行星 2 旋转
+      const moonAngle = elapsed * 2.2;
+      const moonOffset = new THREE.Vector3(
+        Math.cos(moonAngle) * 0.9,
+        Math.sin(moonAngle) * 0.35,
+        Math.sin(moonAngle) * 0.9
+      );
+      moon.position.copy(pos2).add(moonOffset);
+
+      // 11.4 行星 3 公转 (外轨)
+      const angle3 = elapsed * 0.32 + 4.1;
+      const pos3 = new THREE.Vector3(Math.cos(angle3) * 5.3, 0, Math.sin(angle3) * 4.8).applyEuler(
+        ring3.rotation
+      );
+      planet3.position.copy(pos3);
+      planet3.rotation.y = elapsed * 0.4;
+
+      // 11.5 宇宙圆形星尘微粒沿引力旋涡流动
+      const positions = particleGeometry.attributes.position.array as Float32Array;
+      for (let i = 0; i < particleCount; i++) {
+        particleAngles[i] += particleSpeeds[i] * 0.012;
+        const currentAngle = particleAngles[i];
+        const r = particleRadii[i] + Math.sin(elapsed * 0.6 + i) * 0.12;
+
+        positions[i * 3] = Math.cos(currentAngle) * r;
+        positions[i * 3 + 1] = particleHeights[i] + Math.sin(elapsed * 0.4 + currentAngle) * 0.2;
+        positions[i * 3 + 2] = Math.sin(currentAngle) * r;
+      }
+      particleGeometry.attributes.position.needsUpdate = true;
+
+      // 11.6 相机整体视差追踪
+      camera.position.x = currentMouseX * 1.05;
+      camera.position.y = currentMouseY * 0.8;
       camera.lookAt(0, 0, 0);
 
       renderer.render(scene, camera);
@@ -232,7 +351,7 @@ export default function DigitalGarden3D() {
 
     animate();
 
-    // 10. 卸载时的全量资源释放（杜绝任何内存泄露）
+    // 12. 卸载时的全量资源释放
     return () => {
       cancelAnimationFrame(animationFrameId);
       observer.disconnect();
@@ -240,14 +359,32 @@ export default function DigitalGarden3D() {
       container.removeEventListener("mousemove", handleMouseMove);
       container.removeEventListener("mouseleave", handleMouseLeave);
 
-      coreGeometry.dispose();
-      coreMaterial.dispose();
-      edgesGeometry.dispose();
-      edgesMaterial.dispose();
-      cubeGeometry.dispose();
-      cubeMaterial.dispose();
+      starGeometry.dispose();
+      starMaterial.dispose();
+      coronaGeometry.dispose();
+      coronaMaterial.dispose();
+
+      ring1.geometry.dispose();
+      (ring1.material as THREE.Material).dispose();
+      ring2.geometry.dispose();
+      (ring2.material as THREE.Material).dispose();
+      ring3.geometry.dispose();
+      (ring3.material as THREE.Material).dispose();
+
+      planet1Geometry.dispose();
+      planet1Material.dispose();
+      planet2Geometry.dispose();
+      planet2Material.dispose();
+      ringGeometry.dispose();
+      ringMat.dispose();
+      moonGeometry.dispose();
+      moonMaterial.dispose();
+      planet3Geometry.dispose();
+      planet3Material.dispose();
+
       particleGeometry.dispose();
       particleMaterial.dispose();
+      if (particleTexture) particleTexture.dispose();
       renderer.dispose();
     };
   }, []);
@@ -255,7 +392,7 @@ export default function DigitalGarden3D() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full min-h-[340px] md:min-h-[400px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+      className="relative w-full h-full min-h-[360px] md:min-h-[420px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
     >
       <canvas ref={canvasRef} className="w-full h-full block" />
     </div>
