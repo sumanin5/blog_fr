@@ -5,6 +5,7 @@ import { HeroSection } from "@/components/public/home/hero-section";
 import { FeaturedCategoriesSection } from "@/components/public/home/featured-categories-section";
 import { LatestArticlesSection } from "@/components/public/home/latest-articles-section";
 import { ThoughtsSection } from "@/components/public/home/thoughts-section";
+import { ConnectSection } from "@/components/public/home/connect-section";
 import {
   MOCK_FEATURED_COLLECTIONS,
   MOCK_LATEST_ARTICLES,
@@ -55,12 +56,12 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* 1. Hero 区域：数字花园非对称左右分栏（左标题与 CTA，右通透绿植艺术图） */}
+      {/* 1. Hero 区域：数字花园非对称左右分栏 + 原生 3D 天体公转展台 */}
       <HeroSection />
 
       {/* 2. 核心内容区域 */}
-      <div className="container mx-auto px-4 md:px-6 py-10 md:py-16 space-y-14 md:space-y-18">
-        {/* 板块 A：3 列专栏合集卡片（系统设计、前端工程、工程实践） */}
+      <div className="container mx-auto px-4 md:px-6 py-10 md:py-16 space-y-16 md:space-y-20">
+        {/* 板块 A：3 列专栏合集卡片（带 3D 物理倾斜与聚光） */}
         <FeaturedCategoriesSection categories={categoryItems} />
 
         {/* 板块 B：设计图核心双栏架构（左侧最新文章列表 + 右侧单篇即时想法） */}
@@ -74,6 +75,11 @@ export default async function Home() {
           <div className="lg:col-span-5">
             <ThoughtsSection posts={thoughtItems} />
           </div>
+        </div>
+
+        {/* 板块 C：首页专属收官模块（取缔繁琐页脚，打造自然连接与愿景） */}
+        <div className="pt-4">
+          <ConnectSection />
         </div>
       </div>
     </div>
