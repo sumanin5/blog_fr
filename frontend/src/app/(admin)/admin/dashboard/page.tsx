@@ -179,8 +179,8 @@ export default function DashboardPage() {
           </div>
 
           <TrafficOverviewCharts
-            deviceStats={stats.deviceStats as any}
-            hourlyTraffic={stats.hourlyTraffic as any}
+            deviceStats={stats.deviceStats}
+            hourlyTraffic={stats.hourlyTraffic}
           />
           <ContentPerformanceTable articles={articles} />
         </TabsContent>

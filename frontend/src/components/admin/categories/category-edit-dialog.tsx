@@ -31,13 +31,13 @@ import {
 } from "@/components/ui/select";
 import { MediaSelectField } from "@/components/admin/media/fields/media-select-field";
 import type { MediaFile } from "@/shared/api/types";
-import { Category } from "@/shared/api/types";
+import { Category, CategoryCreate } from "@/shared/api/types";
 
 interface CategoryEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category: Category | null;
-  onSave: (data: any) => void | Promise<void>;
+  onSave: (data: CategoryCreate) => void | Promise<void>;
   isPending: boolean;
 }
 
@@ -60,7 +60,7 @@ export function CategoryEditDialog({
     coverMedia: MediaFile | null;
     icon: MediaFile | null;
     excerpt: string;
-    postSortOrder: string;
+    postSortOrder: NonNullable<CategoryCreate["postSortOrder"]>;
   }>({
     name: "",
     slug: "",
@@ -88,9 +88,9 @@ export function CategoryEditDialog({
         isFeatured: category.isFeatured ?? false,
         iconPreset: category.iconPreset ?? "",
         coverMedia: category.coverMedia ?? null,
-        icon: (category as any).icon ?? null,
+        icon: category.icon ?? null,
         excerpt: category.excerpt ?? "",
-        postSortOrder: (category as any).postSortOrder ?? "published_at_desc",
+        postSortOrder: category.postSortOrder ?? "published_at_desc",
       });
     } else {
       setFormData({
@@ -110,16 +110,15 @@ export function CategoryEditDialog({
     setActiveTab("edit");
   }, [category, open]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     // 构造提交数据，将 coverMedia 转换为 ID
-    const submitData = {
-      ...formData,
-      cover_media_id: formData.coverMedia?.id || null,
-      icon_id: formData.icon?.id || null,
-      icon_preset: formData.iconPreset || null,
-      is_featured: formData.isFeatured,
-      excerpt: formData.excerpt,
+    const { coverMedia, icon, ...fields } = formData;
+    const submitData: CategoryCreate = {
+      ...fields,
+      coverMediaId: coverMedia?.id ?? null,
+      iconId: icon?.id ?? null,
+      iconPreset: fields.iconPreset || null,
     };
     await onSave(submitData);
     onOpenChange(false);
@@ -362,9 +361,11 @@ export function CategoryEditDialog({
                     </div>
                     <Select
                       value={formData.postSortOrder}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, postSortOrder: value })
-                      }
+                      onValueChange={(value) => {
+                        if (value === "published_at_desc" || value === "published_at_asc" || value === "title_asc" || value === "title_desc") {
+                          setFormData({ ...formData, postSortOrder: value });
+                        }
+                      }}
                     >
                       <SelectTrigger id="edit-post-sort" className="w-full">
                         <SelectValue placeholder="选择排序方式" />
@@ -433,7 +434,7 @@ export function CategoryEditDialog({
             </AdminActionButton>
             <AdminActionButton
               type="button" // Changed from submit to button
-              onClick={(e) => handleSubmit(e as any)} // Trigger handler manually
+              onClick={(e) => handleSubmit(e)} // Trigger handler manually
               isLoading={isPending}
               loadingText="保存中"
               icon={LayoutTemplate}

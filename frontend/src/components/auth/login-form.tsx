@@ -1,5 +1,8 @@
 "use client";
 
+import { readApiError } from "@/shared/api/errors";
+import type { Route } from "next";
+
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -71,13 +74,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         message: "登录成功！正在跳转...",
         redirectTo: callbackUrl,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const failure = readApiError(err, "登录失败");
       // 🚀 核心思想：优先相信后端翻译好的 message
       const fieldErrors: Record<string, string[]> = {};
 
       // 处理精细的表单验证错误（422）
-      if (err.details?.validation_errors) {
-        err.details.validation_errors.forEach(
+      if (failure.validationErrors.length) {
+        failure.validationErrors.forEach(
           (e: { field: string; message: string }) => {
             fieldErrors[e.field] = [e.message];
           }
@@ -85,13 +89,13 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       }
 
       // 如果有具体的 code，我们可以根据业务需要做本地覆盖，否则直接用后端的 message
-      let finalMsg = err.message || "登录失败";
+      let finalMsg = failure.message;
 
-      if (err.code === "INVALID_CREDENTIALS") {
+      if (failure.code === "INVALID_CREDENTIALS") {
         finalMsg = "密码输入错误";
-      } else if (err.code === "USER_NOT_FOUND") {
+      } else if (failure.code === "USER_NOT_FOUND") {
         finalMsg = "该账号尚未注册";
-      } else if (err.code === "INACTIVE_USER") {
+      } else if (failure.code === "INACTIVE_USER") {
         finalMsg = "账号已被锁定，请联系管理员";
       }
 
@@ -115,7 +119,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         onSuccess();
       }
       const timer = setTimeout(() => {
-        router.push(state.redirectTo as any);
+        router.push(state.redirectTo as Route);
         router.refresh();
       }, 1000);
       return () => clearTimeout(timer);

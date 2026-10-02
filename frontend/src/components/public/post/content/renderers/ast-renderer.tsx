@@ -1,3 +1,4 @@
+import Image from "next/image";
 import React from "react";
 import { CodeBlock } from "@/components/public/mdx/components/code-block";
 import { MermaidDiagram } from "@/components/public/mdx/components/mermaid-diagram";
@@ -72,8 +73,12 @@ function renderNode(node: Record<string, unknown>, i = 0): React.ReactNode {
       );
     case "image":
       return (
-        <img
+        <Image
           key={i}
+          unoptimized
+          width={Number(props.width) || 1200}
+          height={Number(props.height) || 800}
+          style={{ width: "auto", height: "auto" }}
           src={props.src as string}
           alt={(props.alt as string) || ""}
           title={props.title as string | undefined}

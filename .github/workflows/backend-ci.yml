@@ -1,15 +1,23 @@
 name: Backend CI
 
 on:
+  workflow_call:
   push:
     branches: [main, develop]
     paths:
       - "backend/**"
       - ".github/workflows/backend-ci.yml"
+      - "scripts/deploy-release.sh"
+      - "scripts/tests/**"
+      - "docker-compose.yml"
   pull_request:
     branches: [main, develop]
     paths:
       - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+      - "scripts/deploy-release.sh"
+      - "scripts/tests/**"
+      - "docker-compose.yml"
 
 jobs:
   test:
@@ -48,18 +56,19 @@ jobs:
       - name: Install dependencies
         working-directory: backend
         run: |
-          uv sync --all-extras
+          uv sync --frozen --all-extras
 
       - name: Wait for PostgreSQL
         run: |
-          until pg_isready -h localhost -p 5432 -U postgres; do
-            echo "Waiting for postgres..."
-            sleep 2
-          done
+          timeout 60s bash -c 'until pg_isready -h localhost -p 5432 -U postgres; do sleep 2; done'
+
+      - name: Verify release failure handling
+        run: python3 -m unittest discover -s scripts/tests -v
 
       - name: Run migrations
         working-directory: backend
         env:
+          ENVIRONMENT: test
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/blog_fr_test
         run: uv run alembic upgrade head
 
@@ -89,11 +98,6 @@ jobs:
           path: backend/htmlcov/
           retention-days: 30
 
-      - name: Check code formatting (optional)
-        working-directory: backend
-        run: |
-          uv run ruff check . || true
-
   lint:
     name: Lint Backend
     runs-on: ubuntu-latest
@@ -113,9 +117,9 @@ jobs:
       - name: Install dependencies
         working-directory: backend
         run: |
-          uv sync
+          uv sync --frozen
 
       - name: Run ruff (linter)
         working-directory: backend
         run: |
-          uv run ruff check . || echo "Linting issues found (non-blocking)"
+          uv run ruff check .

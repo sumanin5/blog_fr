@@ -1,5 +1,7 @@
 "use client";
 
+import type { Route } from "next";
+
 import React from "react";
 import {
   Sidebar,
@@ -78,7 +80,7 @@ export function AdminSidebar({
                     isActive={pathname === item.href}
                     tooltip={item.label}
                   >
-                    <Link href={item.href as any}>
+                    <Link href={item.href as Route}>
                       <item.icon className="size-4" />
                       <span className="font-medium">{item.label}</span>
                     </Link>
@@ -104,7 +106,7 @@ export function AdminSidebar({
                       isActive={pathname === item.href}
                       tooltip={item.label}
                     >
-                      <Link href={item.href as any}>
+                      <Link href={item.href as Route}>
                         <item.icon className="size-4" />
                         <span className="font-medium">{item.label}</span>
                       </Link>

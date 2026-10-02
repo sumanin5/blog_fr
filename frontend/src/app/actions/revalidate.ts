@@ -54,12 +54,12 @@ export async function revalidateAll() {
   // 我们传入 "default" 或作为临时方案强制类型断言
   const profile = "default";
   try {
-    await (revalidateTag as any)("posts", profile);
-    await (revalidateTag as any)("posts-list", profile);
-    await (revalidateTag as any)("categories", profile);
+    await revalidateTag("posts", profile);
+    await revalidateTag("posts-list", profile);
+    await revalidateTag("categories", profile);
     await revalidatePath("/", "page");
     console.log("✅ 已使用 revalidateTag 清除所有缓存 + 首页刷新");
-  } catch (err) {
+  } catch {
     // 如果运行时不支持第二个参数，退回到 updateTag
     await updateTag("posts");
     await updateTag("posts-list");

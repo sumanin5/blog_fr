@@ -76,3 +76,9 @@ RESUME*.md
 /content/
 /backend/htmlcov/
 /backend/test-report.html
+
+# Production release state (managed on the deployment host)
+/.deploy/
+/.release.env
+/.previous-release.env
+/.previous-compose.yml

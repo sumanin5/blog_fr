@@ -563,58 +563,41 @@ async def test_get_user_files_invalid_pagination(
 
 @pytest.mark.asyncio
 @pytest.mark.media
+@pytest.mark.parametrize("same_timestamp", [False, True])
 async def test_get_user_files_sorting_by_creation_time(
     async_client: AsyncClient,
     normal_user_token_headers: dict,
     sample_image_data: bytes,
     api_urls: APIConfig,
+    session,
+    same_timestamp: bool,
 ):
-    """测试按创建时间排序（默认降序）"""
-    import asyncio
+    """Newest first, with a stable UUID7 tie-break when timestamps match."""
+    from datetime import datetime, timedelta
+    from uuid import UUID
 
-    # 上传3个文件，间隔一点时间
+    from app.media.model import MediaFile
+
     filenames = ["first.jpg", "second.jpg", "third.jpg"]
-
-    for filename in filenames:
-        files = {
-            "file": (filename, sample_image_data + filename.encode(), "image/jpeg")
-        }
-        data = {"usage": "general", "description": f"文件 {filename}"}
-
-        await async_client.post(
+    for index, filename in enumerate(filenames):
+        response = await async_client.post(
             api_urls.media_url("/upload"),
-            files=files,
-            data=data,
+            files={"file": (filename, sample_image_data + filename.encode(), "image/jpeg")},
+            data={"usage": "general", "description": f"文件 {filename}"},
             headers=normal_user_token_headers,
         )
-        await asyncio.sleep(0.3)  # 增加延迟确保时间差异
+        assert response.status_code == status.HTTP_201_CREATED
+        media_file = await session.get(MediaFile, UUID(response.json()["file"]["id"]))
+        media_file.created_at = datetime(2025, 1, 1) + timedelta(minutes=0 if same_timestamp else index)
+        await session.commit()
 
-    # 获取文件列表
-    response = await async_client.get(
-        api_urls.media_url("/"), headers=normal_user_token_headers
-    )
-
+    response = await async_client.get(api_urls.media_url("/"), headers=normal_user_token_headers)
     assert response.status_code == status.HTTP_200_OK
     result = response.json()
-
     assert result["total"] == 3
-    assert len(result["items"]) == 3
-
-    # 验证按创建时间降序排列（最新的在前）
-    files = result["items"]
-
-    # 验证时间戳确实是降序（这是最可靠的验证方式）
-    timestamps = [file["created_at"] for file in files]
-    assert timestamps == sorted(timestamps, reverse=True), "文件应该按创建时间降序排列"
-
-    # 可选：验证第一个和最后一个文件名（更宽松的验证）
-    # 注意：由于时间精度问题,中间的顺序可能不稳定
-    assert files[0]["original_filename"] in ["second.jpg", "third.jpg"], (
-        "最新的文件应该在前面"
-    )
-    assert files[-1]["original_filename"] in ["first.jpg", "second.jpg"], (
-        "最旧的文件应该在后面"
-    )
+    assert [file["original_filename"] for file in result["items"]] == list(reversed(filenames))
+    timestamps = [file["created_at"] for file in result["items"]]
+    assert timestamps == sorted(timestamps, reverse=True)
 
 
 @pytest.mark.asyncio

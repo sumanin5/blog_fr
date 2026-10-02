@@ -7,7 +7,7 @@ type ProtectedType = File | Blob | Date | FormData;
 
 function isProtected(val: unknown): val is ProtectedType {
   return (
-    val instanceof File ||
+    (typeof File !== "undefined" && val instanceof File) ||
     val instanceof Blob ||
     val instanceof Date ||
     val instanceof FormData
@@ -42,7 +42,7 @@ export type Camelize<T> = T extends ProtectedType
 function transformKeysDeep(
   data: unknown,
   processor: (s: string) => string,
-): any {
+): unknown {
   if (!data || typeof data !== "object" || isProtected(data)) {
     return data;
   }
@@ -70,7 +70,7 @@ export function normalizeApiResponse<T>(data: T): ApiData<T> {
  * 将前端的 camelCase 数据去规范化为下划线，以符合后端契约
  * 支持传入目标类型 T 以实现类型安全的转换结果
  */
-export function denormalizeApiRequest<T = any>(data: unknown): T {
+export function denormalizeApiRequest<T = unknown>(data: unknown): T {
   return transformKeysDeep(data, humps.decamelize) as T;
 }
 
@@ -78,3 +78,12 @@ export function denormalizeApiRequest<T = any>(data: unknown): T {
  * 官方对外接口模型
  */
 export type ApiData<T> = Camelize<T>;
+
+/** Wire request keys for the camelCase domain models. */
+type SnakeCase<S extends string> = S extends `${infer C}${infer Rest}`
+  ? `${C extends Lowercase<C> ? C : `_${Lowercase<C>}`}${SnakeCase<Rest>}`
+  : S;
+export type Snakeize<T> = T extends ProtectedType ? T
+  : T extends (infer U)[] ? Snakeize<U>[]
+  : T extends object ? { [K in keyof T as K extends string ? SnakeCase<Uncapitalize<K>> : K]: Snakeize<T[K]> }
+  : T;

@@ -1,6 +1,7 @@
 name: Frontend CI
 
 on:
+  workflow_call:
   push:
     branches: [main, develop]
     paths:
@@ -12,6 +13,7 @@ on:
     paths:
       - "frontend/**"
       - "backend/**"
+      - ".github/workflows/frontend-ci.yml"
 
 jobs:
   test:
@@ -28,29 +30,14 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        uses: astral-sh/setup-uv@v4
 
       - name: Install backend dependencies
         working-directory: backend
-        run: |
-          $HOME/.cargo/bin/uv sync --frozen
-
-      - name: Start Backend Test Server
-        working-directory: backend
-        run: |
-          echo "Starting Test Server..."
-          # Start in background using uv run
-          nohup $HOME/.cargo/bin/uv run python scripts/run_test_server.py > ../test_server.log 2>&1 &
-
-          # Wait for server to start
-          echo "Waiting for server to be ready..."
-          sleep 10
-
-          # Verify connection (optional but good for debugging)
-          curl -v http://localhost:8001/docs || echo "Server startup failed or still loading"
+        run: uv sync --frozen
 
       # ----------------------------------------------
       # 2. Setup Frontend Environment
@@ -58,12 +45,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
 
       - name: Get pnpm store directory
         shell: bash
@@ -87,11 +74,11 @@ jobs:
       # ----------------------------------------------
       - name: Type check
         working-directory: frontend
-        run: pnpm run type-check || true
+        run: pnpm run type-check
 
       - name: Lint
         working-directory: frontend
-        run: pnpm run lint || true
+        run: pnpm run lint
 
       - name: Run Integration Tests
         working-directory: frontend
@@ -106,8 +93,4 @@ jobs:
         run: pnpm run build
         env:
           # Build time env vars
-          NEXT_PUBLIC_API_URL: http://localhost:8000
-
-      - name: Dump Backend Logs (on failure)
-        if: failure()
-        run: cat test_server.log
+          NEXT_PUBLIC_API_URL: ""

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { type MediaFile } from "@/shared/api/types";
 import {
   Dialog,
@@ -26,17 +26,25 @@ interface MediaRenameDialogProps {
 export function MediaRenameDialog({
   file,
   open,
+  ...props
+}: MediaRenameDialogProps) {
+  return (
+    <MediaRenameDialogForm
+      key={`${file?.id ?? "none"}:${file?.originalFilename ?? ""}:${open}`}
+      file={file}
+      open={open}
+      {...props}
+    />
+  );
+}
+
+function MediaRenameDialogForm({
+  file,
+  open,
   onOpenChange,
   onRename,
 }: MediaRenameDialogProps) {
-  const [newName, setNewName] = useState("");
-
-  // 当 file 变化时，重置输入框
-  useEffect(() => {
-    if (file) {
-      setNewName(file.originalFilename);
-    }
-  }, [file]);
+  const [newName, setNewName] = useState(file?.originalFilename ?? "");
 
   const handleConfirm = async () => {
     if (!file || !newName.trim()) return;

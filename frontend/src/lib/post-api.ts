@@ -9,7 +9,8 @@
  */
 
 import { notFound, redirect } from "next/navigation";
-import { serverClient } from "@/lib/server-api-client";
+import { readApiError } from "@/shared/api/errors";
+import { serverClient, createServerFetch } from "@/lib/server-api-client";
 import {
   listPostsByType,
   listCategoriesByType,
@@ -53,14 +54,13 @@ export async function getPosts(
       tag_id: tagId,
     },
     client: serverClient,
-    // @ts-ignore
-    next: { tags: ["posts", "posts-list"] },
+    fetch: createServerFetch({ tags: ["posts", "posts-list"] }),
   });
 
   if (error) {
     // 🚀 让错误冒泡到最近的 error.tsx 边界
     throw new Error(
-      (error as any)?.error?.message || "无法获取文章列表，请稍后重试",
+      readApiError(error, "无法获取文章列表，请稍后重试").message,
     );
   }
 
@@ -84,13 +84,12 @@ export async function getFeaturedPosts(
       page: 1,
     },
     client: serverClient,
-    // @ts-ignore
-    next: { tags: ["posts", "posts-list"] },
+    fetch: createServerFetch({ tags: ["posts", "posts-list"] }),
   });
 
   if (error) {
     console.error(`Failed to fetch featured ${postType}:`, error);
-    return { items: [], total: 0, page: 1, size: limit, pages: 0 } as any;
+    return { items: [], total: 0, page: 1, size: limit, pages: 0 };
   }
 
   return normalizeApiResponse(response);
@@ -107,12 +106,11 @@ export async function getCategories(
       post_type: postType,
     },
     client: serverClient,
-    // @ts-ignore
-    next: { tags: ["categories"] },
+    fetch: createServerFetch({ tags: ["categories"] }),
   });
 
   if (error) {
-    throw new Error((error as any)?.error?.message || "无法获取分类列表");
+    throw new Error(readApiError(error, "无法获取分类列表").message);
   }
 
   return normalizeApiResponse(response);
@@ -135,13 +133,12 @@ export async function getHotTags(
       sort: "usage",
     },
     client: serverClient,
-    // @ts-ignore
-    next: { tags: ["tags"] },
+    fetch: createServerFetch({ tags: ["tags"] }),
   });
 
   if (error) {
     console.error("Failed to fetch tags:", error);
-    return { items: [], total: 0, page: 1, size: limit, pages: 0 } as any;
+    return { items: [], total: 0, page: 1, size: limit, pages: 0 };
   }
 
   return normalizeApiResponse(response);
@@ -153,32 +150,25 @@ export const getPostDetail = cache(
     postType: string,
     slug: string,
   ): Promise<ApiData<PostDetailResponse>> => {
-    const { data, error } = await getPostBySlug({
+    const { data, error, response } = await getPostBySlug({
       client: serverClient,
       path: {
         post_type: postType as PostType,
         slug: slug,
       },
-      // @ts-ignore
-      next: { tags: ["posts", `post-${slug}`] },
+      fetch: createServerFetch({ tags: ["posts", `post-${slug}`] }),
     });
 
     if (error) {
-      const errAny = error as any;
-      const status = errAny.status || errAny.code || errAny.statusCode;
-      const msg = errAny?.error?.message || errAny?.message || String(error);
+      const { status, message: msg } = readApiError(error, "无法获取文章详情", response?.status);
 
       // 明确的 401 信号
-      if (status === 401 || errAny?.error?.code === 401) {
-        redirect("/login" as any);
+      if (status === 401) {
+        redirect("/auth/login");
       }
 
       // 明确的 404 信号
-      if (
-        status === 404 ||
-        errAny?.error?.code === 404 ||
-        /not found/i.test(msg)
-      ) {
+      if (status === 404) {
         notFound();
       }
 
@@ -202,9 +192,7 @@ export const getPostDetail = cache(
 
 export const getAdminPostDetail = cache(
   async (postId: string): Promise<ApiData<PostDetailResponse>> => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const { data, error } = await getPostDetailAdmin({
+    const { data, error, response } = await getPostDetailAdmin({
       client: serverClient,
       path: {
         post_id: postId,
@@ -212,15 +200,14 @@ export const getAdminPostDetail = cache(
     });
 
     if (error) {
-      const errAny = error as any;
-      const status = errAny.status || errAny.code || errAny.statusCode;
+      const { status, message } = readApiError(error, "无法获取文章详情", response?.status);
       // 明确的 401 信号
-      if (status === 401 || errAny?.error?.code === 401) {
-        redirect("/login" as any);
+      if (status === 401) {
+        redirect("/auth/login");
       }
       if (status === 404) notFound();
 
-      throw new Error((error as any)?.error?.message || "无法获取文章详情");
+      throw new Error(message);
     }
 
     if (!data) notFound();

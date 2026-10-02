@@ -52,7 +52,7 @@ async def get_public_media_files(
     if usage:
         stmt = stmt.where(MediaFile.usage == usage)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -84,7 +84,7 @@ async def get_user_public_files(
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -134,7 +134,7 @@ async def get_user_media_files(
     if is_public is not None:
         stmt = stmt.where(MediaFile.is_public.is_(is_public))  # type: ignore
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -156,7 +156,7 @@ async def get_media_files_by_usage(
     stmt = (
         select(MediaFile)
         .where(MediaFile.usage == usage)
-        .order_by(MediaFile.created_at.desc())  # type: ignore
+        .order_by(MediaFile.created_at.desc(), MediaFile.id.desc())  # type: ignore
         .limit(limit)
     )
 
@@ -192,7 +192,7 @@ async def get_media_files_by_tags(
     if user_id:
         stmt = stmt.where(MediaFile.uploader_id == user_id)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -231,7 +231,7 @@ async def search_media_files(
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -274,7 +274,7 @@ async def get_all_media_files(
     if usage:
         stmt = stmt.where(MediaFile.usage == usage)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -304,7 +304,7 @@ async def get_recent_files(
     if user_id:
         stmt = stmt.where(MediaFile.uploader_id == user_id)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit)  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc()).limit(limit)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -443,7 +443,7 @@ async def get_media_files_by_criteria(
             | MediaFile.alt_text.ilike(search_pattern)  # type: ignore
         )
 
-    stmt = stmt.order_by(MediaFile.created_at.desc()).limit(limit).offset(offset)  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc()).limit(limit).offset(offset)  # type: ignore
 
     result = await session.execute(stmt)
     return list(result.scalars().all())

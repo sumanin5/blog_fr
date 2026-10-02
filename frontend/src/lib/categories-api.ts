@@ -1,4 +1,5 @@
-import { serverClient } from "@/lib/server-api-client";
+import { readApiError } from "@/shared/api/errors";
+import { serverClient, createServerFetch } from "@/lib/server-api-client";
 import { listCategoriesByType } from "@/shared/api/generated/sdk.gen";
 import type {
   PageCategoryResponse,
@@ -21,11 +22,7 @@ export async function getFeaturedCategories(
       is_featured: true,
     },
     client: serverClient,
-    // Pass Next.js cache tags
-    // @ts-ignore - The generated SDK might not explicitly type 'next' in options but client-fetch usually passes extra props
-    next: {
-      tags: ["categories"],
-    },
+    fetch: createServerFetch({ tags: ["categories"] }),
   });
 
   if (error) {
@@ -37,7 +34,7 @@ export async function getFeaturedCategories(
       page: 1,
       size: limit,
       pages: 0,
-    } as unknown as ApiData<PageCategoryResponse>;
+    };
   }
 
   // Handle pagination limitation manually since we cannot filter by size in query
@@ -62,7 +59,7 @@ export async function getCategories(
   });
 
   if (error) {
-    throw new Error((error as any)?.error?.message || "无法获取分类列表");
+    throw new Error(readApiError(error, "无法获取分类列表").message);
   }
 
   return normalizeApiResponse(response);

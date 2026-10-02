@@ -8,15 +8,6 @@ import {
 } from "@/types/analytics";
 
 // Mock Data Generators
-const IPS = [
-  "192.168.1.1",
-  "10.0.0.5",
-  "172.16.254.1",
-  "203.0.113.5",
-  "198.51.100.2",
-  "45.33.22.11",
-  "104.21.55.2",
-];
 const LOCATIONS = [
   { country: "中国", city: "北京", region: "北京" },
   { country: "中国", city: "上海", region: "上海" },
@@ -87,12 +78,10 @@ export const generateMockData = (): {
     // Page Views for this session
     const numViews = isBot ? randomInt(1, 10) : randomInt(1, 5);
     const pageViews: PageView[] = [];
-    let sessionDuration = 0;
 
     for (let j = 0; j < numViews; j++) {
       const art = randomItem(ARTICLES);
       const duration = isBot ? 1 : randomInt(10, 300);
-      sessionDuration += duration;
 
       pageViews.push({
         id: `pv-${i}-${j}`,

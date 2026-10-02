@@ -12,7 +12,7 @@ from sqlmodel import select
 async def test_handle_category_sync_new(session, mock_user, mocker):
     """测试从 index.md 创建新分类"""
     # Patch _write_category_metadata_back to prevent file operations
-    mock_write_back = mocker.patch(
+    mocker.patch(
         "app.git_ops.components.handlers.category_sync._write_category_metadata_back",
         new_callable=mocker.AsyncMock,
     )

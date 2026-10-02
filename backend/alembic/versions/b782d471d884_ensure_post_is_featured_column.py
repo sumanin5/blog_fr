@@ -7,8 +7,6 @@ Create Date: 2026-01-27 09:54:19.288303
 """
 from typing import Sequence, Union
 
-from alembic import op
-import sqlalchemy as sa
 import sqlmodel  # noqa: F401 - SQLModel 类型支持（如 AutoString）
 
 

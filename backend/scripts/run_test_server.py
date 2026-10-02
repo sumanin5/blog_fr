@@ -13,7 +13,9 @@ if __name__ == "__main__":
     os.environ["ENVIRONMENT"] = "test"
     # 使用独立的 SQLite 数据库，避免污染开发库
     # 需要安装 aiosqlite: uv add --dev aiosqlite
-    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test_server.db"
+    os.environ["DATABASE_URL"] = os.environ.get(
+        "TEST_DATABASE_URL", "sqlite+aiosqlite:///./test_server.db"
+    )
 
     print(f"🌍 环境: {os.environ['ENVIRONMENT']}")
     print(f"📦 数据库: {os.environ['DATABASE_URL']}")

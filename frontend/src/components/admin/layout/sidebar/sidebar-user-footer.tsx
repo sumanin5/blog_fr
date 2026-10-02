@@ -125,7 +125,7 @@ export function SidebarUserFooter({ user, logout }: SidebarUserFooterProps) {
 
             <DropdownMenuItem asChild>
               <Link
-                href={"/admin/settings" as any}
+                href={"/admin/dashboard"}
                 className="w-full flex items-center"
               >
                 <Settings className="mr-2 size-4" />

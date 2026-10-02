@@ -1,3 +1,4 @@
+import { normalizeApiResponse } from "@/shared/api/transformers";
 import { notFound } from "next/navigation";
 import { serverClient } from "@/lib/server-api-client";
 import type { PostType } from "@/shared/api/generated/types.gen";
@@ -10,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { MdxServerRenderer } from "@/components/public/post/content/renderers/mdx-server-renderer";
 import { getThumbnailUrl, getMediaUrl } from "@/lib/media-utils";
-import { CategoryList } from "@/shared/api/types";
 
 export default async function CategoryPage({
   params,
@@ -29,8 +29,8 @@ export default async function CategoryPage({
     console.error("Failed to fetch categories list", categoriesRes.error);
   }
 
-  // 后端返回的分页数据已由拦截器处理成驼峰，断言为 CategoryList
-  const data = categoriesRes.data as unknown as CategoryList;
+  // SDK 保留后端字段，在页面数据边界转换为领域模型。
+  const data = normalizeApiResponse(categoriesRes.data);
   const category = data?.items?.find((c) => c.slug === slug);
 
   if (!category) {
@@ -48,7 +48,7 @@ export default async function CategoryPage({
     },
   });
 
-  const posts = postsRes.data?.items || [];
+  const posts = normalizeApiResponse(postsRes.data?.items ?? []);
   const coverImageUrl = getThumbnailUrl(category.coverMediaId, "xlarge");
   const iconUrl = getMediaUrl(category.iconId);
 
@@ -150,7 +150,7 @@ export default async function CategoryPage({
           {posts.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {posts.map((post) => (
-                <PostCard key={post.id} post={post as any} />
+                <PostCard key={post.id} post={post} />
               ))}
             </div>
           ) : (

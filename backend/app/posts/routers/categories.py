@@ -1,4 +1,6 @@
 from typing import Annotated
+from app.posts import cruds, utils
+from fastapi_pagination import Page
 from uuid import UUID
 
 from app.core.db import get_async_session
@@ -132,8 +134,6 @@ async def delete_category_by_type(
 # 动态路由 - 必须放在最后
 # ========================================
 
-from app.posts import cruds, utils
-from fastapi_pagination import Page
 
 
 @router.get(

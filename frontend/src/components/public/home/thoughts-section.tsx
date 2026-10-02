@@ -8,7 +8,7 @@ import type { PostShortResponse } from "@/shared/api/generated/types.gen";
 import { ApiData } from "@/shared/api/transformers";
 
 interface ThoughtsProps {
-  posts: any[];
+  posts: ApiData<PostShortResponse>[];
 }
 
 export function ThoughtsSection({ posts }: ThoughtsProps) {

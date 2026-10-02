@@ -1,5 +1,7 @@
 "use client";
 
+import type { Route } from "next";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -171,7 +173,7 @@ export default function AuthGate() {
                 ].map((item) => (
                   <Link
                     key={item.path}
-                    href={item.path as any}
+                    href={item.path as Route}
                     className="group relative overflow-hidden rounded-lg border border-border/50 bg-background/50 p-3 transition-all hover:border-primary/50 hover:bg-background/80"
                   >
                     <div className="absolute inset-0 bg-linear-to-r from-primary/0 via-primary/10 to-primary/0 opacity-0 transition-opacity group-hover:opacity-100" />

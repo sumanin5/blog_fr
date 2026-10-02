@@ -95,6 +95,12 @@ class SessionStats(BaseModel):
     avgSessionDuration: float
 
 
+class HourlyTraffic(BaseModel):
+    time: str
+    visitors: int
+    pageViews: int
+
+
 class DashboardStats(BaseModel):
     totalVisits: int
     realUserCount: int
@@ -105,9 +111,7 @@ class DashboardStats(BaseModel):
 
     # Nested charts data
     deviceStats: list[DeviceStats]
-    hourlyTraffic: list[
-        dict[str, Any]
-    ]  # [{"time": "10:00", "visitors": 12, "pageViews": 30}]
+    hourlyTraffic: list[HourlyTraffic]
 
 
 class SessionListItem(BaseModel):

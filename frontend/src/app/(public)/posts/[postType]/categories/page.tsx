@@ -1,8 +1,8 @@
+import { normalizeApiResponse } from "@/shared/api/transformers";
 import { serverClient } from "@/lib/server-api-client";
 import type { PostType } from "@/shared/api/generated/types.gen";
 import { listCategoriesByType } from "@/shared/api/generated/sdk.gen";
 import { CategoryCard } from "@/components/public/category/category-card";
-import { CategoryList } from "@/shared/api/types";
 import { PageHeader } from "@/components/public/common/page-header";
 import { PageBackground } from "@/components/public/common/page-background";
 
@@ -32,7 +32,7 @@ export default async function CategoryListPage({
   });
 
   // 后端返回的分页数据已由拦截器处理成驼峰，断言为 CategoryList 以确保业务代码 100% 驼峰
-  const data = categoriesRes.data as unknown as CategoryList;
+  const data = normalizeApiResponse(categoriesRes.data);
   const categories = data?.items || [];
   const activeCategories = categories.filter((c) => c.isActive !== false);
 

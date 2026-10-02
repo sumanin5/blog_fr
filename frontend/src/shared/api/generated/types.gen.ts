@@ -646,9 +646,7 @@ export type DashboardStats = {
     /**
      * Hourlytraffic
      */
-    hourlyTraffic: Array<{
-        [key: string]: unknown;
-    }>;
+    hourlyTraffic: Array<HourlyTraffic>;
 };
 
 /**
@@ -712,6 +710,24 @@ export type ErrorResponse = {
  * FileUsage
  */
 export type FileUsage = 'general' | 'avatar' | 'cover' | 'icon' | 'favicon' | 'document' | 'attachment';
+
+/**
+ * HourlyTraffic
+ */
+export type HourlyTraffic = {
+    /**
+     * Time
+     */
+    time: string;
+    /**
+     * Visitors
+     */
+    visitors: number;
+    /**
+     * Pageviews
+     */
+    pageViews: number;
+};
 
 /**
  * MediaFileResponse

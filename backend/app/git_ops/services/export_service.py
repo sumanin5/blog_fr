@@ -34,7 +34,7 @@ class ExportService(BaseGitOpsService):
         3. 执行 Git Commit & Push
         """
         stats = SyncStats()
-        operating_user = await self._get_operating_user(default_user)
+        await self._get_operating_user(default_user)
 
         # 1. 查询所有相关文章
         # 直接查出所有文章，在内存中过滤，避免 SQL NULL/Empty String 问题
@@ -101,8 +101,6 @@ class ExportService(BaseGitOpsService):
         # 2. 逐篇执行导出
         for post in posts_to_export:
             async with collect_errors(stats, f"Exporting {post.title}"):
-                # 获取作者
-                author = post.author
                 category_slug = post.category.slug if post.category else None
                 tag_names = [t.name for t in post.tags]
 

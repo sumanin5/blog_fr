@@ -8594,8 +8594,7 @@
           },
           "hourlyTraffic": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/HourlyTraffic"
             },
             "type": "array",
             "title": "Hourlytraffic"
@@ -8704,6 +8703,29 @@
           "attachment"
         ],
         "title": "FileUsage"
+      },
+      "HourlyTraffic": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "title": "Time"
+          },
+          "visitors": {
+            "type": "integer",
+            "title": "Visitors"
+          },
+          "pageViews": {
+            "type": "integer",
+            "title": "Pageviews"
+          }
+        },
+        "type": "object",
+        "required": [
+          "time",
+          "visitors",
+          "pageViews"
+        ],
+        "title": "HourlyTraffic"
       },
       "MediaFileResponse": {
         "properties": {

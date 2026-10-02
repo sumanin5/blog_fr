@@ -2,7 +2,7 @@
 
 import React from "react";
 import { PostType } from "@/shared/api/generated";
-import { Category } from "@/shared/api/types";
+import { Category, CategoryCreate } from "@/shared/api/types";
 import { RefreshCw, Plus, Loader2 } from "lucide-react";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,7 +49,7 @@ export default function CategoriesPage() {
   }, [user, authLoading, isAuthorized, router]);
 
   // 处理保存 (新建或更新)
-  const handleSave = (data: any) => {
+  const handleSave = (data: Omit<CategoryCreate, "postType">) => {
     const onSuccess = () => setEditOpen(false);
 
     if (editingItem) {

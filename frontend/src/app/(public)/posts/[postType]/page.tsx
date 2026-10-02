@@ -1,4 +1,3 @@
-import { Metadata } from "next";
 import { PostListView } from "@/components/public/post/views/post-list-view";
 import { getPosts, getHotTags } from "@/lib/post-api";
 import type { PostType } from "@/shared/api/generated/types.gen";

@@ -1,9 +1,10 @@
-import pytest
 """
 AST 生成器测试
 
 测试 markdown-it tokens 到 AST 的转换
 """
+
+import pytest
 
 from app.posts.utils import PostProcessor
 

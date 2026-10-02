@@ -22,7 +22,6 @@ interface CategorySelectProps {
 }
 
 export function CategorySelect({
-  postType,
   value,
   onValueChange,
   categories,

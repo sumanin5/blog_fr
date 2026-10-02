@@ -58,7 +58,7 @@ export const ContentPerformanceTable: React.FC<
         </div>
       </CardHeader>
       <CardContent>
-        <AdminTable data={articles} columns={columns} />
+        <AdminTable data={articles} columns={columns} getRowId={(article) => article.postId} />
       </CardContent>
     </Card>
   );

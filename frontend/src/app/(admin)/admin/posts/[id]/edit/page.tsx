@@ -61,7 +61,7 @@ export default function EditPostPage({ params }: PageProps) {
           categoryId: post.category?.id,
           status: post.status,
           // Tags 需要从对象数组转为字符串数组
-          tags: post.tags?.map((t: any) => t.name) || [],
+          tags: post.tags?.map((t) => t.name) || [],
           excerpt: post.excerpt,
           isFeatured: post.isFeatured,
           enableJsx: post.enableJsx,

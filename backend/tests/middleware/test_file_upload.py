@@ -176,8 +176,6 @@ class TestFileSizeLimitMiddleware:
 
             from fastapi import Request
 
-            mock_scope = {"type": "http"}
-            mock_receive = Mock()
             mock_request = Mock(spec=Request)
             mock_request.method = "POST"
             mock_request.headers = {"content-type": content_type}

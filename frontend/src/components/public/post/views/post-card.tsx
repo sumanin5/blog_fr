@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,7 +43,10 @@ export function PostCard({ post, postType }: PostCardProps) {
         <Card className="flex flex-col h-full overflow-hidden border-border/40 bg-card/40 backdrop-blur-sm transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1.5 hover:border-primary/30 group-hover:ring-1 ring-primary/10">
           {/* 图片区域 */}
           <div className="relative aspect-video w-full overflow-hidden bg-muted">
-            <img
+            <Image
+              fill
+              unoptimized
+              sizes="(max-width: 768px) 100vw, 33vw"
               src={coverUrl}
               alt={post.title}
               className="w-full h-full object-cover transition-transform duration-1000 will-change-transform group-hover:scale-110"

@@ -46,7 +46,7 @@ export default function NewPostPage() {
         }}
         onSave={(data) =>
           createPost(
-            { type: postType, data: data as any },
+            { type: postType, data },
             { onSuccess: () => router.push("/admin/posts") },
           )
         }

@@ -1,369 +1,80 @@
-# 🚀 CI/CD 配置指南
+# CI/CD 与生产发布
 
-本项目使用 **GitHub Actions** 实现持续集成和持续部署。
+## 质量门槛
 
----
+`backend-ci.yml` 和 `frontend-ci.yml` 同时支持独立 Push/PR 检查及 `workflow_call`。生产发布复用这两个工作流，只有全部成功后才允许构建、推送和部署镜像。
 
-## 📋 当前配置状态
+- 后端：Python 3.13、冻结 uv 锁文件、PostgreSQL 17、Alembic 迁移、pytest 与覆盖率、部署失败路径测试、Ruff。
+- 前端：Node.js 22、pnpm 10、冻结 pnpm 锁文件、TypeScript、ESLint、Vitest 集成测试、生产构建。
+- Vitest 负责启动和清理测试后端，并使用临时 SQLite 数据库；CI 不重复启动同一个端口的服务。启动探测必须返回成功响应，并有等待上限。
 
-### ✅ 已配置（基础 CI）
+### 代码检查范围
 
-| Workflow         | 触发条件                    | 功能             | 状态      |
-| ---------------- | --------------------------- | ---------------- | --------- |
-| **Backend CI**   | Push/PR to `main`/`develop` | 运行后端测试     | ✅ 已配置 |
-| **Frontend CI**  | Push/PR to `main`/`develop` | 类型检查、构建   | ✅ 已配置 |
-| **Docker Build** | Push to `main`              | 构建 Docker 镜像 | ✅ 已配置 |
+前端历史 ESLint 抑制基线已移除，`pnpm lint` 使用 `--max-warnings 0`，错误和警告均阻断发布。生成 SDK 仍不参与手写代码 lint。AdminTable 显式退出 React 自动记忆化，并仅对 TanStack Table 的已知可变 API 兼容性提示保留局部说明；这不放宽其他规则。
 
-### 🔜 待配置（完整 CD）
+后端强制执行 Ruff 完整默认规则 `E4/E7/E9/F`。媒体模块的兼容命名空间必须先建立再导入服务和路由，因此仅对这两个有循环导入约束的位置保留 E402 说明。
 
-- ⏳ 自动部署到 Staging 环境
-- ⏳ 自动部署到 Production 环境
-- ⏳ 数据库迁移自动化
-- ⏳ 回滚机制
+流量图表增加 `HourlyTraffic` 后端响应模型，OpenAPI 与前端 SDK 同步生成。服务端 SDK 保留原始响应字段，由适配层转换一次；缓存标签通过 SDK 支持的 fetch 参数传递，携带用户凭证的请求不缓存。
 
----
+## 发布流程
 
-## 🎯 Workflow 详解
+`deploy.yml` 在 main push 或手动触发时执行。部署只允许 main，生产发布串行运行；进行中的发布不会被新提交取消。
 
-### 1. Backend CI (`backend-ci.yml`)
+1. 通过后端和前端检查。
+2. Checkout 本次提交，以完整 commit SHA 标记三个镜像，任一构建或推送失败即停止。
+3. 上传该提交的 Compose 和 `scripts/deploy-release.sh` 至服务器 `.deploy/<SHA>/`，不通过 `git pull main` 获取可能变化的代码。
+4. 使用服务器已有 `.env` 拉取镜像，启动并检查数据库。
+5. 在新后端镜像中执行 `alembic upgrade head`；失败时不替换应用容器。
+6. 保存上一版配置及版本，启动应用并等待健康检查。
+7. 验证 Next.js `/api/health` → FastAPI `/health/ready` → 数据库连接，全部成功后报告发布完成。
 
-**触发条件：**
+生产 Compose 要求显式 `IMAGE_TAG`，不挂载宿主机应用代码。内容、媒体、数据库等数据继续持久化。发布不会自动清理旧镜像，以保留回滚材料。
 
-- Push 到 `main` 或 `develop` 分支
-- Pull Request 到 `main` 或 `develop` 分支
-- 修改了 `backend/` 目录下的文件
+## 服务器准备
 
-**执行步骤：**
+服务器需要 Docker Compose v2，支持 `up --wait --wait-timeout`；原有项目目录、生产 `.env`、内容仓库及 SSH 凭证须提前配置。部署不会自动创建生产凭证或初始化内容仓库。
 
-1. ✅ 启动 PostgreSQL 17 测试数据库
-2. ✅ 安装 Python 3.13 + uv
-3. ✅ 安装项目依赖
-4. ✅ 运行 pytest 测试套件
-5. ✅ 代码风格检查（ruff）
+GitHub Secrets 延续现有配置：`ACR_USERNAME`、`ACR_PASSWORD`、`ECS_IP`、`ECS_USER`、`ECS_PASSWORD`，以及项目需要的 `NEXT_PUBLIC_API_URL`。`.env` 不上传为工作流产物。
 
-**预期结果：**
+部署脚本使用 Compose 项目名 `blog_fr`，与原生产目录的默认项目名一致。如果已有生产实例使用其他项目名，应先将脚本与实际名称对齐。
 
-- 所有测试通过 ✅
-- 代码符合规范 ✅
+## 运维命令
 
----
-
-### 2. Frontend CI (`frontend-ci.yml`)
-
-**触发条件：**
-
-- Push 到 `main` 或 `develop` 分支
-- Pull Request 到 `main` 或 `develop` 分支
-- 修改了 `frontend/` 目录下的文件
-
-**执行步骤：**
-
-1. ✅ 安装 Node.js 20 + pnpm
-2. ✅ 安装项目依赖（带缓存优化）
-3. ✅ TypeScript 类型检查
-4. ✅ ESLint 代码检查
-5. ✅ 构建生产版本
-
-**预期结果：**
-
-- 类型检查通过 ✅
-- 构建成功 ✅
-
----
-
-### 3. Docker Build (`docker-build.yml`)
-
-**触发条件：**
-
-- Push 到 `main` 分支
-- 创建版本标签（如 `v1.0.0`）
-
-**执行步骤：**
-
-1. ✅ 构建后端 Docker 镜像
-2. ✅ 构建前端 Docker 镜像
-3. ✅ 使用 GitHub Actions 缓存加速构建
-
-**预期结果：**
-
-- 镜像构建成功 ✅
-- 构建时间 < 5 分钟 ✅
-
----
-
-## 🔧 本地测试 CI
-
-### 测试后端 CI
+成功执行部署脚本后，服务器保存 `.release.env`。手动操作时必须同时加载基础配置和发布版本：
 
 ```bash
-# 1. 启动测试数据库
-docker run -d --name test-db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=blog_fr_test \
-  -p 5432:5432 \
-  postgres:17
+docker compose --project-name blog_fr --env-file .env --env-file .release.env up -d --wait --wait-timeout 180
+```
 
-# 2. 运行测试
+仅本地验证 Compose 配置时使用 `config --quiet`，避免把解析后的敏感环境变量打印到日志。
+
+## 失败与回滚边界
+
+- 拉取或迁移失败会终止发布；迁移失败不替换应用容器，但数据库是否已经有部分变更取决于迁移本身。
+- 应用启动或健康检查失败会终止发布，不报告成功；此时部分容器可能已更新，需要操作人员处理。
+- `.release.env` 记录本次尝试启动的版本；`.previous-release.env` 与 `.previous-compose.yml` 用于恢复此前配置。首次使用该流程可能没有完整上一版记录。
+- 不自动执行数据库降级。迁移应采用新旧应用兼容的分阶段变更；破坏性变更需要单独安排备份、维护和恢复方案。
+- 健康检查验证服务与数据库连通性，不证明所有业务、数据库结构或公网 DNS/TLS 正常。
+
+确认数据库与旧应用兼容，且上一版配置与镜像仍存在后，可人工恢复：
+
+```bash
+cp .previous-compose.yml docker-compose.yml
+cp .previous-release.env .release.env
+docker compose --project-name blog_fr --env-file .env --env-file .release.env up -d --wait --wait-timeout 180
+```
+
+## 本地验证
+
+```bash
+python3 -m unittest discover -s scripts/tests -v
+bash -n scripts/deploy-release.sh
 cd backend
-export ENVIRONMENT=test
-export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/blog_fr_test
-uv run pytest -v
-
-# 3. 清理
-docker rm -f test-db
+uv run ruff check .
+uv run pytest tests/unit/test_health.py
+cd ../frontend
+pnpm type-check
+pnpm lint
+pnpm test
+pnpm build
 ```
-
-### 测试前端 CI
-
-```bash
-cd frontend
-pnpm install
-pnpm run type-check
-pnpm run lint
-pnpm run build
-```
-
-### 测试 Docker 构建
-
-```bash
-# 后端
-docker build -t blog-fr-backend:test ./backend
-
-# 前端
-docker build -t blog-fr-frontend:test ./frontend
-```
-
----
-
-## 📊 查看 CI 状态
-
-### GitHub Actions 页面
-
-访问：`https://github.com/YOUR_USERNAME/blog_fr/actions`
-
-### 添加状态徽章（可选）
-
-在 `README.md` 中添加：
-
-```markdown
-![Backend CI](https://github.com/YOUR_USERNAME/blog_fr/workflows/Backend%20CI/badge.svg)
-![Frontend CI](https://github.com/YOUR_USERNAME/blog_fr/workflows/Frontend%20CI/badge.svg)
-```
-
----
-
-## 🚀 配置完整 CD（生产部署）
-
-### 方案 1：部署到 VPS（推荐）
-
-**适用场景**：自有服务器、低成本
-
-**步骤：**
-
-1. **添加 GitHub Secrets**
-
-在 GitHub 仓库设置中添加：
-
-- `SSH_HOST`: 服务器 IP
-- `SSH_USER`: SSH 用户名
-- `SSH_PRIVATE_KEY`: SSH 私钥
-- `DOCKER_REGISTRY_TOKEN`: Docker Hub Token（可选）
-
-2. **创建部署 Workflow**
-
-```yaml
-# .github/workflows/deploy-production.yml
-name: Deploy to Production
-
-on:
-  push:
-    branches: [main]
-    tags:
-      - "v*"
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/blog_fr
-            git pull origin main
-            docker compose down
-            docker compose up -d --build
-            docker compose exec -T backend alembic upgrade head
-```
-
----
-
-### 方案 2：部署到云平台
-
-#### Railway（最简单）
-
-1. 连接 GitHub 仓库
-2. 自动检测 Dockerfile
-3. 一键部署 ✅
-
-#### Render（免费额度）
-
-1. 创建 Web Service
-2. 连接 GitHub
-3. 配置环境变量
-4. 自动部署 ✅
-
-#### AWS/GCP/Azure（企业级）
-
-需要配置：
-
-- ECS/Cloud Run/App Service
-- RDS/Cloud SQL 数据库
-- S3/Cloud Storage 媒体存储
-- CloudFront/CDN 加速
-
----
-
-## 🔐 安全最佳实践
-
-### 1. 保护敏感信息
-
-**❌ 不要在代码中硬编码：**
-
-- 数据库密码
-- API 密钥
-- JWT Secret
-
-**✅ 使用 GitHub Secrets：**
-
-```yaml
-env:
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  SECRET_KEY: ${{ secrets.SECRET_KEY }}
-```
-
-### 2. 限制 Workflow 权限
-
-```yaml
-permissions:
-  contents: read
-  pull-requests: write
-```
-
-### 3. 使用环境保护规则
-
-在 GitHub 设置中配置：
-
-- 需要审批才能部署到生产环境
-- 限制部署分支（只允许 `main`）
-
----
-
-## 📈 性能优化
-
-### 1. 缓存依赖
-
-**Python (uv):**
-
-```yaml
-- uses: actions/cache@v4
-  with:
-    path: ~/.cache/uv
-    key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
-```
-
-**Node.js (pnpm):**
-
-```yaml
-- uses: pnpm/action-setup@v4
-  with:
-    version: 9
-```
-
-### 2. 并行执行
-
-```yaml
-jobs:
-  backend-test:
-    # ...
-  frontend-test:
-    # ...
-  # 两个 job 并行运行
-```
-
-### 3. 条件执行
-
-```yaml
-on:
-  push:
-    paths:
-      - "backend/**" # 只在后端代码变更时运行
-```
-
----
-
-## 🐛 故障排查
-
-### CI 失败常见原因
-
-1. **测试失败**
-
-   - 检查测试日志
-   - 本地复现问题
-   - 修复后重新 push
-
-2. **依赖安装失败**
-
-   - 检查 `pyproject.toml` / `package.json`
-   - 确认依赖版本兼容性
-
-3. **数据库连接失败**
-   - 检查 PostgreSQL service 配置
-   - 确认环境变量正确
-
-### 查看详细日志
-
-```bash
-# 在 GitHub Actions 页面点击失败的 workflow
-# 展开每个步骤查看详细输出
-```
-
----
-
-## 📚 下一步
-
-### 短期（1-2 周）
-
-- [ ] 添加测试覆盖率报告（pytest-cov）
-- [ ] 集成代码质量检查（SonarQube/CodeClimate）
-- [ ] 添加性能测试（Locust）
-
-### 中期（1-2 月）
-
-- [ ] 配置 Staging 环境自动部署
-- [ ] 添加数据库迁移自动化
-- [ ] 配置回滚机制
-
-### 长期（3+ 月）
-
-- [ ] 蓝绿部署
-- [ ] 金丝雀发布
-- [ ] 自动化压力测试
-
----
-
-## 🎓 学习资源
-
-- [GitHub Actions 官方文档](https://docs.github.com/en/actions)
-- [Docker 最佳实践](https://docs.docker.com/develop/dev-best-practices/)
-- [12-Factor App](https://12factor.net/)
-
----
-
-**CI/CD 配置完成！** 🎉
-
-现在每次 push 代码，GitHub Actions 会自动运行测试，确保代码质量。

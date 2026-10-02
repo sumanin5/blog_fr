@@ -1,174 +1,85 @@
 name: Deploy to Aliyun ECS
 
-# 部署前检查清单:
-# 1. 在阿里云 ACR 控制台创建以下仓库:
-#    - blog-project/blog-backend
-#    - blog-project/blog-frontend
-#    - blog-project/blog-caddy
-# 2. 确保 AccessKey 有 AliyunContainerRegistryFullAccess 权限
-# 3. 配置 GitHub Secrets: ALIYUN_AK_ID, ALIYUN_AK_SECRET, ECS_IP, ECS_USER, ECS_PASSWORD, NEXT_PUBLIC_API_URL
-
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   workflow_dispatch:
 
-env:
-  # 阿里云容器镜像服务配置
-  ACR_REGISTRY: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com
-  ACR_NAMESPACE: blog-project
-  # 部署服务器配置
-  DEPLOY_PATH: /home/tomy/blog_fr
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
+  backend-checks:
+    uses: ./.github/workflows/backend-ci.yml
+
+  frontend-checks:
+    uses: ./.github/workflows/frontend-ci.yml
+
   build-and-deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: [backend-checks, frontend-checks]
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      ACR_REGISTRY: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com
+      ACR_NAMESPACE: blog-project
+      DEPLOY_PATH: /home/tomy/blog_fr
+      IMAGE_TAG: ${{ github.sha }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout the checked release
         uses: actions/checkout@v4
-        # 不拉取 submodule，content 目录由服务器上的同步脚本管理
+        with:
+          ref: ${{ github.sha }}
 
-      # 1. 登录阿里云镜像服务
-      # 方式1: 使用 AccessKey (有时会有认证问题)
-      # 方式2: 使用固定密码 (推荐，更稳定)
-      - name: Login to Aliyun ACR
+      - name: Login to ACR
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
         run: |
-          echo "尝试登录阿里云容器镜像服务..."
-          echo "Registry: ${{ env.ACR_REGISTRY }}"
-          echo "Namespace: ${{ env.ACR_NAMESPACE }}"
+          set -euo pipefail
+          printf '%s' "$ACR_PASSWORD" | docker login "$ACR_REGISTRY" --username "$ACR_USERNAME" --password-stdin
 
-          # 方式1: AccessKey 登录 (如果有认证问题，注释掉这部分)
-          # echo "${{ secrets.ALIYUN_AK_SECRET }}" | docker login \
-          #   ${{ env.ACR_REGISTRY }} \
-          #   --username "${{ secrets.ALIYUN_AK_ID }}" \
-          #   --password-stdin
-
-          # 方式2: 固定密码登录 (推荐)
-          echo "${{ secrets.ACR_PASSWORD }}" | docker login \
-            ${{ env.ACR_REGISTRY }} \
-            --username "${{ secrets.ACR_USERNAME }}" \
-            --password-stdin
-
-          echo "✓ 登录成功"
-
-      # 2. 构建并推送 Backend 镜像
-      - name: Build and Push Backend
+      - name: Build and push release images
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: |
-          IMAGE_TAG=${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/blog-backend
-          echo "构建 Backend 镜像: $IMAGE_TAG"
-          cd backend
-          docker build -t $IMAGE_TAG:${{ github.sha }} -t $IMAGE_TAG:latest .
-          echo "推送 Backend 镜像到 ACR..."
-          docker push $IMAGE_TAG:${{ github.sha }} && echo "✓ 推送 SHA 标签成功" || echo "⚠ 推送 SHA 标签失败"
-          docker push $IMAGE_TAG:latest && echo "✓ 推送 latest 标签成功" || echo "⚠ 推送 latest 标签失败"
+          set -euo pipefail
+          for service in backend frontend caddy; do
+            image="$ACR_REGISTRY/$ACR_NAMESPACE/blog-$service:$IMAGE_TAG"
+            if [ "$service" = frontend ]; then
+              docker build --build-arg "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" -t "$image" "$service"
+            else
+              docker build -t "$image" "$service"
+            fi
+            docker push "$image"
+          done
 
-      # 3. 构建并推送 Frontend 镜像
-      - name: Build and Push Frontend
-        run: |
-          IMAGE_TAG=${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/blog-frontend
-          echo "构建 Frontend 镜像: $IMAGE_TAG"
-          cd frontend
-          # 前端使用相对路径 /api，不需要构建时传入
-          docker build --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}" -t $IMAGE_TAG:${{ github.sha }} -t $IMAGE_TAG:latest .
-          echo "推送 Frontend 镜像到 ACR..."
-          docker push $IMAGE_TAG:${{ github.sha }} && echo "✓ 推送 SHA 标签成功" || echo "⚠ 推送 SHA 标签失败"
-          docker push $IMAGE_TAG:latest && echo "✓ 推送 latest 标签成功" || echo "⚠ 推送 latest 标签失败"
-
-      # 4. 构建并推送 Caddy 镜像
-      - name: Build and Push Caddy
-        run: |
-          IMAGE_TAG=${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/blog-caddy
-          echo "构建 Caddy 镜像: $IMAGE_TAG"
-          cd caddy
-          docker build -t $IMAGE_TAG:${{ github.sha }} -t $IMAGE_TAG:latest .
-          echo "推送 Caddy 镜像到 ACR..."
-          docker push $IMAGE_TAG:${{ github.sha }} && echo "✓ 推送 SHA 标签成功" || echo "⚠ 推送 SHA 标签失败"
-          docker push $IMAGE_TAG:latest && echo "✓ 推送 latest 标签成功" || echo "⚠ 推送 latest 标签失败"
-
-      # 5. 远程部署
-      - name: Deploy to ECS via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Upload the checked release configuration
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.ECS_IP }}
           username: ${{ secrets.ECS_USER }}
           password: ${{ secrets.ECS_PASSWORD }}
+          source: docker-compose.yml,scripts/deploy-release.sh
+          target: ${{ env.DEPLOY_PATH }}/.deploy/${{ github.sha }}
+
+      - name: Migrate and deploy the release
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        with:
+          host: ${{ secrets.ECS_IP }}
+          username: ${{ secrets.ECS_USER }}
+          password: ${{ secrets.ECS_PASSWORD }}
+          envs: DEPLOY_PATH,IMAGE_TAG,ACR_REGISTRY,ACR_USERNAME,ACR_PASSWORD
+          command_timeout: 15m
           script: |
-            # 停止脚本若遇错则退出
-            set -e
-
-            echo "🚀 开始部署..."
-
-            # 确保项目目录存在
-            if [ ! -d "${{ env.DEPLOY_PATH }}" ]; then
-              echo "📁 项目目录不存在，正在克隆..."
-              cd /home/${{ secrets.ECS_USER }}
-              git config --global http.postBuffer 524288000
-              git clone --depth=1 https://github.com/${{ github.repository }}.git blog_fr || {
-                echo "⚠️ Git 克隆失败，尝试创建基本目录结构..."
-                mkdir -p blog_fr
-                cd blog_fr
-                # 从 GitHub 下载必要文件（设置超时）
-                echo "下载 docker-compose.yml..."
-                curl -L --connect-timeout 10 --max-time 30 --retry 2 \
-                  https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml \
-                  -o docker-compose.yml || echo "⚠️ 下载失败"
-
-                echo "下载 .env.production.template..."
-                curl -L --connect-timeout 10 --max-time 30 --retry 2 \
-                  https://raw.githubusercontent.com/${{ github.repository }}/main/.env.production.template \
-                  -o .env.production.template || echo "⚠️ 下载失败"
-
-                mkdir -p caddy content backend/data
-              }
-            fi
-
-            cd ${{ env.DEPLOY_PATH }}
-
-            # 尝试更新代码（优先使用 git）
-            echo "📥 尝试更新配置文件..."
-            if git pull origin main 2>/dev/null; then
-              echo "✅ Git pull 成功"
-            else
-              echo "⚠️ Git pull 失败，跳过代码更新"
-              echo "💡 提示: 如需更新配置文件，请手动执行 git pull"
-            fi
-
-            # 确保 .env 文件存在
-            if [ ! -f ".env" ]; then
-              echo "⚠️  警告: .env 文件不存在，请手动创建！"
-              echo "提示: cp .env.production.template .env"
-              exit 1
-            fi
-
-            # 登录 ACR
-            echo "🔐 登录阿里云容器镜像服务..."
-            # 方式1: AccessKey (如果有认证问题，注释掉这部分)
-            # echo "${{ secrets.ALIYUN_AK_SECRET }}" | docker login ${{ env.ACR_REGISTRY }} --username "${{ secrets.ALIYUN_AK_ID }}" --password-stdin
-
-            # 方式2: 固定密码 (推荐)
-            echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ env.ACR_REGISTRY }} --username "${{ secrets.ACR_USERNAME }}" --password-stdin
-
-            # 拉取最新镜像
-            echo "📥 拉取最新镜像..."
-            docker compose pull
-
-            # 重启服务 (只更新变化的容器)
-            echo "🔄 重启服务..."
-            docker compose up -d
-
-            # 等待后端容器启动
-            echo "⏳ 等待后端容器启动..."
-            sleep 5
-
-            # 执行数据库迁移
-            echo "🗄️  执行数据库迁移..."
-            docker compose exec -T backend alembic upgrade head || {
-              echo "⚠️  数据库迁移失败，但继续部署..."
-            }
-
-            # 清理无用镜像
-            echo "🧹 清理旧镜像..."
-            docker image prune -f
-
-            echo "✅ 部署完成！"
+            set -eu
+            printf '%s' "$ACR_PASSWORD" | docker login "$ACR_REGISTRY" --username "$ACR_USERNAME" --password-stdin
+            bash "$DEPLOY_PATH/.deploy/$IMAGE_TAG/scripts/deploy-release.sh" "$DEPLOY_PATH" "$IMAGE_TAG"

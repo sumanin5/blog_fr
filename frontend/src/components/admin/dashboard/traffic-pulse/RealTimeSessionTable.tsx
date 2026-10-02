@@ -23,7 +23,11 @@ import {
   ExternalLink,
   MousePointerClick,
 } from "lucide-react";
-import { ColumnDef } from "@tanstack/react-table";
+interface SessionColumn {
+  accessorKey: string;
+  header: React.ReactNode | (() => React.ReactNode);
+  cell: (context: { row: { original: AnalyticsSessionItem } }) => React.ReactNode;
+}
 import { useAnalyticsSessionDetail } from "@/hooks/admin/use-analytics-stats";
 
 interface RealTimeSessionTableProps {
@@ -54,7 +58,7 @@ export const RealTimeSessionTable: React.FC<RealTimeSessionTableProps> = ({
     return <Laptop className="size-4" />;
   };
 
-  const columns: ColumnDef<AnalyticsSessionItem>[] = [
+  const columns: SessionColumn[] = [
     {
       accessorKey: "ipAddress",
       header: "用户/IP",
@@ -144,19 +148,19 @@ export const RealTimeSessionTable: React.FC<RealTimeSessionTableProps> = ({
     },
   ];
 
-  const renderHeader = (col: ColumnDef<AnalyticsSessionItem>) => {
+  const renderHeader = (col: SessionColumn) => {
     if (typeof col.header === "function") {
-      return (col.header as any)({});
+      return col.header();
     }
     return col.header as React.ReactNode;
   };
 
   const renderCell = (
-    col: ColumnDef<AnalyticsSessionItem>,
+    col: SessionColumn,
     session: AnalyticsSessionItem
   ) => {
     if (typeof col.cell === "function") {
-      return (col.cell as any)({
+      return col.cell({
         row: { original: session },
       });
     }

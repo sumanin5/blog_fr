@@ -1,4 +1,4 @@
-import { denormalizeApiRequest } from "./transformers";
+import { denormalizeApiRequest, type Snakeize } from "./transformers";
 
 /**
  * 🔧 Mutation Helper：自动转换 camelCase -> snake_case
@@ -17,7 +17,7 @@ import { denormalizeApiRequest } from "./transformers";
  * });
  * ```
  */
-export function withSnakeCase<TArgs extends any[], TResult>(
+export function withSnakeCase<TArgs extends unknown[], TResult>(
   fn: (...args: TArgs) => TResult,
 ): (...args: TArgs) => TResult {
   return (...args: TArgs) => {
@@ -38,6 +38,6 @@ export function withSnakeCase<TArgs extends any[], TResult>(
  *
  * 用于手动转换单个对象，适用于需要精确控制转换时机的场景。
  */
-export function toSnakeCase<T>(data: T): any {
-  return denormalizeApiRequest(data);
+export function toSnakeCase<T>(data: T): Snakeize<T> {
+  return denormalizeApiRequest<Snakeize<T>>(data);
 }

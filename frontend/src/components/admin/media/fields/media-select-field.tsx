@@ -1,3 +1,4 @@
+import { normalizeApiResponse } from "@/shared/api/transformers";
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { X, Loader2, Pencil, FolderOpen } from "lucide-react";
@@ -8,7 +9,7 @@ import { MediaImage } from "../ui/media-image";
 import { toast } from "sonner";
 import type { MediaFile, MediaFilters } from "@/shared/api/types";
 import { MediaLibraryDialog } from "../dialogs/media-library-dialog";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 
 const containerVariants = cva(
   "relative group overflow-hidden transition-all duration-300 border-2 border-dashed rounded-xl bg-muted/5",
@@ -69,7 +70,7 @@ export function MediaSelectField({
           usage: variant === "cover" ? "cover" : "icon",
           isPublic: true,
         });
-        const uploaded = (res as any).file || res;
+        const uploaded = normalizeApiResponse(res.file);
         onChange(uploaded);
         toast.success("Uploaded successfully");
       } catch {}
@@ -221,7 +222,7 @@ function PreviewState({
   );
 }
 
-function EmptyState({ variant, onLibrary }: any) {
+function EmptyState({ variant, onLibrary }: { variant: "basic" | "cover" | "icon"; onLibrary: () => void }) {
   return (
     <div
       className="absolute inset-0 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/10 transition-colors"

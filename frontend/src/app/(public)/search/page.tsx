@@ -62,7 +62,7 @@ function SearchResults() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {allPosts.map((post) => (
-          <PostCard key={post.id} post={post as any} postType={post.postType} />
+          <PostCard key={post.id} post={post} postType={post.postType} />
         ))}
       </div>
     </div>

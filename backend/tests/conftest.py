@@ -12,15 +12,7 @@ os.environ["ENVIRONMENT"] = (
     "test"  # 设置环境变量为测试环境，以便导入的是.env.test 文件，实现环境隔离
 )
 
-"""
-代码解释：
-- __file__ ： 指的是 conftest.py 文件本身。
-- os.path.dirname(__file__) ：获取 conftest.py 所在的目录，即 /home/tomy/blog_fr/backend/tests 。
-- os.path.join(..., '..') ：从 tests 目录向上走一级，得到 /home/tomy/blog_fr/backend 。
-- os.path.abspath(...) ：确保我们得到的是一个绝对路径。
-- sys.path.insert(0, ...) ：将这个路径插入到 Python 搜索路径的 最前面 ，确保我们自己的 app 模块会被优先找到。
-创建好这个文件后，你再回到 backend 目录下运行 pytest ，导入错误就会消失。
-"""
+
 
 
 from app.core.base import Base

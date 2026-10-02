@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MdxClientRenderer } from "@/components/public/post/content/renderers/mdx-client-renderer";
 import { PostType, PostStatus } from "@/shared/api/generated";
-import { MediaFile, Category } from "@/shared/api/types";
+import { MediaFile, Category, PostCreate } from "@/shared/api/types";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { PostMetadataSidebar, PostMetadata } from "./post-metadata-sidebar";
 
@@ -43,7 +43,7 @@ interface PostEditorProps {
   initialData: PostEditorInitialData;
   postType?: PostType;
   categories: Category[];
-  onSave: (data: Record<string, unknown>) => void;
+  onSave: (data: PostCreate) => void;
   isSaving?: boolean;
 }
 
