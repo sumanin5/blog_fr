@@ -53,7 +53,10 @@ services:
     build:
       context: ./backend
       target: development # ← 关键：使用 development 阶段
-    user: "${UID}:${GID}"  # <--- 添加这一行
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    user: "${UID:-1000}:${GID:-1000}"  # <--- 与宿主机一致，避免挂载文件权限问题
     # 挂载源代码（热更新）
     volumes:
       - ./backend:/app
@@ -61,7 +64,6 @@ services:
       - ./.git/modules/content:/git_root/.git/modules/content  # submodule 支持
       - ./content:/git_root/content
       - ~/.ssh:/tmp/.ssh:ro  # SSH key 用于 Git 推送 (挂载到新的 HOME)
-      - ./backend/passwd.docker:/etc/passwd:ro  # 让容器认识 UID 1000
       - /app/.venv
 
     ports:
@@ -83,8 +85,9 @@ services:
       db:
         condition: service_healthy
 
-    # 开发模式：启用热更新（4 workers 提升性能）
-    command: fastapi run --workers 4 app/main.py --reload
+    # 开发模式：启用热更新（--reload 下 --workers 会被忽略，已去掉）
+    # 先执行迁移再启动：新机器首次 up 时空库无表，upgrade head 是幂等的，已是最新时直接跳过
+    command: sh -c "alembic upgrade head && exec fastapi run app/main.py --reload"
 
   # ==========================================
   # 前端（开发模式）
@@ -93,7 +96,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    user: "${UID}:${GID}"  # 使用宿主机用户，避免权限问题
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    user: "${UID:-1000}:${GID:-1000}"  # 使用宿主机用户，避免权限问题
 
     # 挂载源代码（热更新）
     volumes:
@@ -106,6 +112,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
       - BACKEND_INTERNAL_URL=http://backend:8000
+      - HOME=/tmp  # pnpm/Next 的运行时缓存写 /tmp，避免往 root 家目录写无权限
 
     depends_on:
       - backend

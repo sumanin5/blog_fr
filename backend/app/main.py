@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from app.analytics.router import router as analytics_router
@@ -11,6 +13,7 @@ from app.core.error_handlers import (
     validation_exception_handler,
 )
 from app.core.exceptions import BaseAppException
+from app.core.health import router as health_router
 from app.core.monitoring import setup_monitoring
 from app.core.schemas import ErrorResponse
 from app.core.tags_metadata import DESCRIPTION, TAGS_METADATA
@@ -31,6 +34,46 @@ from sqlalchemy.exc import SQLAlchemyError
 logger = logging.getLogger(__name__)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理：替代已废弃的 @app.on_event("startup")"""
+    from app.core.ip2region_manager import init_ip2region_database
+
+    try:
+        logger.info("开始初始化数据库数据...")
+        await init_db()
+        logger.info("数据库初始化完成")
+    except Exception as e:
+        logger.error(f"启动时初始化数据失败: {e}")
+        if "password authentication" in str(e):
+            logger.error(
+                "可能是 .env 中的数据库密码与已有 postgres 数据卷不一致"
+                "（改过密码后旧卷不会自动更新），开发环境可用 "
+                "`docker compose -f docker-compose.dev.yml down -v` 重建数据卷"
+            )
+        # 可选：根据需要决定是否让启动失败
+        # raise
+
+    # 初始化 ip2region 数据库（同步阻塞调用，放到线程池避免卡住事件循环）
+    try:
+        logger.info("开始初始化 ip2region 数据库...")
+        await asyncio.to_thread(init_ip2region_database)
+    except Exception as e:
+        logger.error(f"ip2region 数据库初始化失败: {e}")
+        # 不影响应用启动，只是 IP 解析功能不可用
+
+    yield
+
+    # --- shutdown：释放连接池 ---
+    try:
+        from app.core.db import async_engine
+
+        await async_engine.dispose()
+        logger.info("数据库连接池已释放")
+    except Exception as e:
+        logger.error(f"关闭时释放连接池失败: {e}")
+
+
 # ============================================================
 # API 文档控制
 # ============================================================
@@ -42,6 +85,7 @@ OPENAPI_URL = "/openapi.json" if settings.environment != "production" else None
 app = FastAPI(
     title="Blog API",
     version="0.1.0",
+    lifespan=lifespan,
     description=DESCRIPTION,
     openapi_tags=TAGS_METADATA,
     generate_unique_id_function=custom_generate_unique_id,
@@ -91,29 +135,8 @@ add_pagination(app)
 
 
 # ============================================================
-# 启动事件：初始化数据库数据
+# 启动事件已迁移至 lifespan（见上方 lifespan 函数）
 # ============================================================
-@app.on_event("startup")
-async def startup_event():
-    """在应用启动时运行初始化脚本"""
-    try:
-        logger.info("开始初始化数据库数据...")
-        await init_db()
-        logger.info("数据库初始化完成")
-    except Exception as e:
-        logger.error(f"启动时初始化数据失败: {e}")
-        # 可选：根据需要决定是否让启动失败
-        # raise
-
-    # 初始化 ip2region 数据库
-    try:
-        from app.core.ip2region_manager import init_ip2region_database
-
-        logger.info("开始初始化 ip2region 数据库...")
-        init_ip2region_database()
-    except Exception as e:
-        logger.error(f"ip2region 数据库初始化失败: {e}")
-        # 不影响应用启动，只是 IP 解析功能不可用
 
 
 @app.get("/")
@@ -137,6 +160,7 @@ if settings.environment != "production":
 # 包含路由
 # ============================================================
 # 主路由设置主标签，子路由可以设置更细的子标签
+app.include_router(health_router)
 app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["Users"])
 app.include_router(
     media_router, prefix=f"{settings.API_PREFIX}/media"

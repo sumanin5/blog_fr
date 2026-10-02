@@ -7,7 +7,7 @@
     "dev:fast": "NEXT_TELEMETRY_DISABLED=1 next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings 0",
     "test": "vitest run",
     "type-check": "tsc --noEmit",
     "api:generate": "openapi-ts -i openapi.json -o src/shared/api/generated -c @hey-api/client-fetch"
@@ -82,5 +82,13 @@
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.0.18"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@sentry/cli",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }

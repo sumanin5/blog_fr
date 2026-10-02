@@ -46,6 +46,14 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --all-extras
 
+# 运行时用户（与宿主机一致，由 compose 以 build args 传入）：
+# 1. /app/.venv 在运行时是匿名卷，会继承镜像内文件的属主，保持一致可写
+# 2. 把 UID 写入 /etc/passwd，替代过去挂载 backend/passwd.docker（写死 1000，在别的机器上失效）的做法
+ARG UID=1000
+ARG GID=1000
+RUN chown -R ${UID}:${GID} /app \
+    && echo "appuser:x:${UID}:${GID}:App User:/tmp:/bin/sh" >> /etc/passwd
+
 # ==========================================
 # 可选：运行测试（如果 tests 目录存在）
 # ==========================================
