@@ -1,199 +1,195 @@
 "use client";
 
-import type { Route } from "next";
-
-import { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { motion, Variants } from "framer-motion";
-import { ArrowLeft, Home, FileText } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  ArrowLeft,
+  Home,
+  BookOpen,
+  Lightbulb,
+  User,
+  Compass,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+interface NavShortcut {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  href: string;
+  color: string;
+}
+
+const NAV_SHORTCUTS: NavShortcut[] = [
+  {
+    icon: Home,
+    title: "花园首页",
+    description: "返回数字花园主入口与全景展台",
+    href: "/",
+    color: "emerald",
+  },
+  {
+    icon: BookOpen,
+    title: "专栏专题",
+    description: "探索体系化深度架构与技术专题",
+    href: "/posts/articles/categories",
+    color: "teal",
+  },
+  {
+    icon: Lightbulb,
+    title: "灵感便签流",
+    description: "按领域浏览即时思考与思维碎片",
+    href: "/posts/ideas",
+    color: "amber",
+  },
+  {
+    icon: User,
+    title: "关于本站",
+    description: "了解博主理念、技术栈与工程实践",
+    href: "/about",
+    color: "cyan",
+  },
+];
 
 export default function NotFound() {
   const router = useRouter();
-  const [currentTime, setCurrentTime] = useState<string>("");
-
-  useEffect(() => {
-    // 使用 setTimeout 避免同步 setState 警告
-    const timer = setTimeout(() => {
-      setCurrentTime(new Date().toLocaleTimeString());
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.2 },
-    },
-  };
-
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { type: "spring", stiffness: 100, damping: 10 },
-    },
-  };
-
-  const floatVariants: Variants = {
-    float: {
-      y: [0, -20, 0],
-      transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-    },
-  };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
-      <motion.div
-        variants={floatVariants}
-        animate="float"
-        className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-primary/20 blur-3xl"
-      />
-      <motion.div
-        variants={floatVariants}
-        animate="float"
-        transition={{ delay: 1 }}
-        className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-secondary/20 blur-3xl"
-      />
+    <div className="relative flex min-h-[90vh] flex-col items-center justify-center px-4 py-16 sm:py-24">
+      {/* 背景柔和翡翠极光光晕 */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 blur-[140px] rounded-full" />
+      <div className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-teal-500/10 blur-[100px] rounded-full" />
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-2xl"
-      >
-        <div className="mb-8 text-center">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="mb-6 flex justify-center gap-2 text-9xl font-black md:gap-4"
-          >
-            <motion.span
-              variants={itemVariants}
-              className="bg-gradient-to-b from-primary to-primary/60 bg-clip-text text-transparent"
-            >
-              4
-            </motion.span>
-            <motion.span
-              variants={itemVariants}
-              className="bg-gradient-to-b from-secondary to-secondary/60 bg-clip-text text-transparent"
-            >
-              0
-            </motion.span>
-            <motion.span
-              variants={itemVariants}
-              className="bg-gradient-to-b from-primary to-primary/60 bg-clip-text text-transparent"
-            >
-              4
-            </motion.span>
-          </motion.div>
+      <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
+        {/* 顶部微型 Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-medium mb-6 backdrop-blur-md"
+        >
+          <Compass className="w-3.5 h-3.5 animate-spin-slow" />
+          <span>Error 404 · Lost Coordinate</span>
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="space-y-2"
-          >
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-              哎呀，页面未找到
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              你访问的页面似乎已经飞到太空去了 🚀
-            </p>
-          </motion.div>
-        </div>
+        {/* 404 核心视觉：带有雷达脉冲光环的数字 */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative mb-6 flex items-center justify-center gap-2 sm:gap-4 font-mono font-black text-8xl sm:text-9xl tracking-tighter select-none"
+        >
+          <span className="text-transparent bg-clip-text bg-linear-to-b from-foreground to-foreground/50">
+            4
+          </span>
 
+          {/* 中间的 0 改造为发光星轨罗盘 */}
+          <div className="relative flex items-center justify-center w-20 h-20 sm:w-28 sm:h-28 mx-1">
+            {/* 外层脉冲微光波纹 */}
+            <div className="absolute inset-0 rounded-full border border-emerald-500/30 animate-ping opacity-30" />
+            <div className="absolute -inset-2 rounded-full border border-emerald-500/20 animate-pulse" />
+            {/* 核心内圆 */}
+            <div className="w-full h-full rounded-full border-2 border-emerald-500/40 bg-radial from-emerald-500/20 via-background/40 to-background flex items-center justify-center backdrop-blur-sm shadow-lg shadow-emerald-500/10">
+              <Sparkles className="w-8 h-8 sm:w-12 sm:h-12 text-emerald-400" />
+            </div>
+          </div>
+
+          <span className="text-transparent bg-clip-text bg-linear-to-b from-foreground to-foreground/50">
+            4
+          </span>
+        </motion.div>
+
+        {/* 沉浸式意境文案 */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="space-y-3 mb-10"
+        >
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            迷航在思维的未涉之地
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto leading-relaxed">
+            你所探索的知识坐标可能已被重构、归档，或尚未在此处生根发芽。
+          </p>
+        </motion.div>
+
+        {/* 核心操作卡片 (Compass Shortcuts) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
+          transition={{ delay: 0.25 }}
+          className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-xl p-6 sm:p-8 text-left shadow-xl hover:border-border/60 transition-colors mb-6"
         >
-          <Card className="backdrop-blur-md bg-card/50">
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                🔥 热门页面
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {[
-                  { icon: "🏠", label: "首页", path: "/" },
-                  { icon: "📝", label: "文章", path: "/posts/articles" },
-                  { icon: "💡", label: "想法", path: "/posts/ideas" },
-                  { icon: "👤", label: "关于", path: "/about" },
-                  { icon: "📊", label: "仪表盘", path: "/admin/dashboard" },
-                  { icon: "🔍", label: "搜索", path: "/search" },
-                ].map((item) => (
-                  <Link
-                    key={item.path}
-                    href={item.path as Route}
-                    className="group relative overflow-hidden rounded-lg border border-border/50 bg-background/50 p-3 transition-all hover:border-primary/50 hover:bg-background/80"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 opacity-0 transition-opacity group-hover:opacity-100" />
-                    <div className="relative text-center">
-                      <div className="text-lg">{item.icon}</div>
-                      <div className="text-xs font-medium text-foreground/80">
-                        {item.label}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-border/30">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 font-mono">
+              <Compass className="w-3.5 h-3.5 text-emerald-500" />
+              重新定向 · 推荐坐标
+            </span>
+          </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  onClick={() => router.back()}
-                  variant="outline"
-                  className="flex-1"
-                  size="lg"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  返回上一页
-                </Button>
-                <Button asChild className="flex-1" size="lg">
-                  <Link href="/">
-                    <Home className="mr-2 h-4 w-4" />
-                    返回首页
-                  </Link>
-                </Button>
-              </div>
+          {/* 4 个高质量快捷入口 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+            {NAV_SHORTCUTS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href as Route}
+                className="group flex items-start gap-3 p-3.5 rounded-xl border border-border/40 bg-background/50 hover:bg-muted/60 hover:border-emerald-500/30 transition-all duration-300"
+              >
+                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform">
+                  <item.icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-foreground group-hover:text-emerald-500 transition-colors">
+                    {item.title}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {item.description}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
 
-              <div className="border-t pt-4">
-                <p className="mb-3 text-sm text-muted-foreground">
-                  💡 或者你可以：
-                </p>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  asChild
-                >
-                  <Link href={"/posts/articles"}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    浏览所有文章
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* 双主操作按钮 */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Button
+              onClick={() => router.back()}
+              variant="outline"
+              size="lg"
+              className="flex-1 rounded-xl border-border/60 hover:bg-muted/70 cursor-pointer"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              返回上一页
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              className="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 cursor-pointer"
+            >
+              <Link href="/">
+                <Home className="mr-2 h-4 w-4" />
+                返回花园首页
+              </Link>
+            </Button>
+          </div>
         </motion.div>
 
-        <motion.div
+        {/* 底部轻量提示 */}
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.8 }}
-          className="mt-8 text-center text-xs text-muted-foreground"
+          transition={{ delay: 0.4 }}
+          className="text-xs text-muted-foreground/70 flex items-center justify-center gap-1.5"
         >
-          <p>
-            🎯 错误代码: 404 | 状态: 页面未找到
-            {currentTime && ` | 时间: ${currentTime}`}
-          </p>
-        </motion.div>
-      </motion.div>
+          <Search className="w-3.5 h-3.5 opacity-60" />
+          <span>找不到目标内容？可在页面顶部导航栏中使用全局搜索。</span>
+        </motion.p>
+      </div>
     </div>
   );
 }

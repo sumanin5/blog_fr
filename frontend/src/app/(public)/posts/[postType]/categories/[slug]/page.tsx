@@ -1,7 +1,11 @@
-import { normalizeApiResponse } from "@/shared/api/transformers";
+import { normalizeApiResponse, type ApiData } from "@/shared/api/transformers";
 import { notFound } from "next/navigation";
 import { serverClient } from "@/lib/server-api-client";
-import type { PostType } from "@/shared/api/generated/types.gen";
+import type {
+  PostType,
+  PostShortResponse,
+} from "@/shared/api/generated/types.gen";
+import type { Category } from "@/shared/api/types";
 import {
   listCategoriesByType,
   listPostsByType,
@@ -11,6 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { MdxServerRenderer } from "@/components/public/post/content/renderers/mdx-server-renderer";
 import { getThumbnailUrl, getMediaUrl } from "@/lib/media-utils";
+import {
+  MOCK_FEATURED_COLLECTIONS,
+  MOCK_LATEST_ARTICLES,
+} from "@/config/home-mock-data";
 
 export default async function CategoryPage({
   params,
@@ -31,24 +39,39 @@ export default async function CategoryPage({
 
   // SDK 保留后端字段，在页面数据边界转换为领域模型。
   const data = normalizeApiResponse(categoriesRes.data);
-  const category = data?.items?.find((c) => c.slug === slug);
+  let category: Category | undefined = data?.items?.find((c) => c.slug === slug);
+
+  // 🛡️ 优雅回退：若后端暂未录入该分类，自动匹配高保真展示专栏
+  if (!category) {
+    category = MOCK_FEATURED_COLLECTIONS.find((c) => c.slug === slug);
+  }
 
   if (!category) {
     notFound();
   }
 
   // 2. 获取该分类下的文章
-  const postsRes = await listPostsByType({
-    client: serverClient,
-    path: { post_type: postType as unknown as PostType },
-    query: {
-      category_id: category.id,
-      page: 1,
-      size: 50,
-    },
-  });
+  let posts: ApiData<PostShortResponse>[] = [];
+  try {
+    const postsRes = await listPostsByType({
+      client: serverClient,
+      path: { post_type: postType as unknown as PostType },
+      query: {
+        category_id: category.id,
+        page: 1,
+        size: 50,
+      },
+    });
+    posts = normalizeApiResponse(postsRes.data?.items ?? []);
+  } catch (error) {
+    console.warn("Failed to fetch posts for category, falling back to mock:", error);
+  }
 
-  const posts = normalizeApiResponse(postsRes.data?.items ?? []);
+  // 若该分类下后端文章为空，自动提供展示文章以保持视觉饱满
+  if (posts.length === 0) {
+    posts = MOCK_LATEST_ARTICLES;
+  }
+
   const coverImageUrl = getThumbnailUrl(category.coverMediaId, "xlarge");
   const iconUrl = getMediaUrl(category.iconId);
 
@@ -143,7 +166,7 @@ export default async function CategoryPage({
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold tracking-tight">最新文章</h2>
             <span className="text-sm text-muted-foreground">
-              {postsRes.data?.total || 0} 篇文章
+              {posts.length} 篇文章
             </span>
           </div>
 
