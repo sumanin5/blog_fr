@@ -1,4 +1,4 @@
-import { Home, BookOpen, Info, Lightbulb } from "lucide-react";
+import { Home, BookOpen, Info, Lightbulb, Rocket } from "lucide-react";
 import type React from "react";
 
 export type MenuItem = {
@@ -27,6 +27,12 @@ export const MenuArray: MenuItem[] = [
     link: "/posts/ideas",
     icon: Lightbulb,
     description: "按领域沉淀的灵感随笔与即时思考",
+  },
+  {
+    title: "精选项目",
+    link: "/projects",
+    icon: Rocket,
+    description: "独立孵化与开源的高质量工具与解决方案",
   },
   {
     title: "关于",
