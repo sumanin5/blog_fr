@@ -300,9 +300,24 @@ export const MOCK_THOUGHTS: ApiData<PostShortResponse>[] = [
 ];
 
 export function findMockPostDetail(slug: string): ApiData<PostDetailResponse> | null {
-  const article = MOCK_LATEST_ARTICLES.find(
+  // 1. 精确匹配 slug 或 id
+  let article = MOCK_LATEST_ARTICLES.find(
     (a) => a.slug === slug || a.id === slug,
   );
+
+  // 2. 友好容错：如果用户访问的是纯数字 (如 "1" 或 "2")，按索引自动映射
+  if (!article) {
+    const num = parseInt(slug, 10);
+    if (!isNaN(num) && num > 0 && num <= MOCK_LATEST_ARTICLES.length) {
+      article = MOCK_LATEST_ARTICLES[num - 1];
+    }
+  }
+
+  // 3. 兜底回退：如果依然未找到，默认呈现第 1 篇高质量长文
+  if (!article && MOCK_LATEST_ARTICLES.length > 0) {
+    article = MOCK_LATEST_ARTICLES[0];
+  }
+
   if (article) {
     return {
       id: article.id,
