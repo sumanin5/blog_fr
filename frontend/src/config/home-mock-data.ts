@@ -1,5 +1,8 @@
 import type { Category } from "@/shared/api/types";
-import type { PostShortResponse } from "@/shared/api/generated/types.gen";
+import type {
+  PostShortResponse,
+  PostDetailResponse,
+} from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
 
 /**
@@ -295,3 +298,90 @@ export const MOCK_THOUGHTS: ApiData<PostShortResponse>[] = [
     tags: [{ id: "tg6", name: "类型安全", slug: "typesafe" }],
   },
 ];
+
+export function findMockPostDetail(slug: string): ApiData<PostDetailResponse> | null {
+  const article = MOCK_LATEST_ARTICLES.find(
+    (a) => a.slug === slug || a.id === slug,
+  );
+  if (article) {
+    return {
+      id: article.id,
+      title: article.title,
+      slug: article.slug,
+      postType: "articles",
+      status: "published",
+      excerpt: article.excerpt,
+      contentMdx: `# ${article.title}
+
+> 架构的核心在于边界的划分与责任的收拢。本文探讨在现代全栈工程中如何让 FastAPI 与 Next.js 清晰协同。
+
+## 1. 架构背景与痛点
+
+在传统的全栈 Web 应用开发中，前后端往往面临接口契约不一致、手写模型差错以及重复状态管理的困境。通过明确的边界隔离与类型契约自动化，能够显著降低维护成本。
+
+\`\`\`typescript
+// 类型契约自动生成的 SDK 示例
+export async function fetchPostDetail(slug: string) {
+  const response = await client.get(\`/api/v1/posts/\${slug}\`);
+  return response.data;
+}
+\`\`\`
+
+## 2. 单向数据流与类型自愈
+
+以 OpenAPI Specification (OAS) 为唯一真理来源，自动化生成前端 TypeScript SDK：
+- **编译时类型守卫**：破坏性变更在构建期当场报警；
+- **零手写网络契约**：彻底消灭联调沟通偏差；
+- **分层隔离**：服务逻辑与展示组件完全解耦。
+
+## 3. 总结与演进
+
+架构从来不是一成不变的，保持微小步长的重构与持续自动化测试，是系统长期演进的底气。
+`,
+      readingTime: article.readingTime,
+      viewCount: article.viewCount,
+      likeCount: article.likeCount,
+      createdAt: article.createdAt,
+      publishedAt: article.publishedAt,
+      updatedAt: article.updatedAt,
+      author: article.author,
+      tags: article.tags,
+      category: article.category,
+      isFeatured: article.isFeatured,
+      allowComment: true,
+      pinStatus: 0,
+      commentCount: 8,
+    } as unknown as ApiData<PostDetailResponse>;
+  }
+
+  const thought = MOCK_THOUGHTS.find((t) => t.slug === slug || t.id === slug);
+  if (thought) {
+    return {
+      id: thought.id,
+      title: thought.title,
+      slug: thought.slug,
+      postType: "ideas",
+      status: "published",
+      excerpt: thought.excerpt,
+      contentMdx: `# ${thought.title}
+
+${thought.excerpt}
+`,
+      readingTime: thought.readingTime,
+      viewCount: thought.viewCount,
+      likeCount: thought.likeCount,
+      createdAt: thought.createdAt,
+      publishedAt: thought.publishedAt,
+      updatedAt: thought.updatedAt,
+      author: thought.author,
+      tags: thought.tags,
+      category: thought.category,
+      isFeatured: false,
+      allowComment: true,
+      pinStatus: 0,
+      commentCount: 3,
+    } as unknown as ApiData<PostDetailResponse>;
+  }
+
+  return null;
+}

@@ -27,6 +27,7 @@ import type {
 } from "@/shared/api/generated/types.gen";
 import { normalizeApiResponse, type ApiData } from "@/shared/api/transformers";
 import { cache } from "react";
+import { findMockPostDetail } from "@/config/home-mock-data";
 
 /**
  * 获取文章列表
@@ -150,41 +151,53 @@ export const getPostDetail = cache(
     postType: string,
     slug: string,
   ): Promise<ApiData<PostDetailResponse>> => {
-    const { data, error, response } = await getPostBySlug({
-      client: serverClient,
-      path: {
-        post_type: postType as PostType,
-        slug: slug,
-      },
-      fetch: createServerFetch({ tags: ["posts", `post-${slug}`] }),
-    });
+    try {
+      const { data, error, response } = await getPostBySlug({
+        client: serverClient,
+        path: {
+          post_type: postType as PostType,
+          slug: slug,
+        },
+        fetch: createServerFetch({ tags: ["posts", `post-${slug}`] }),
+      });
 
-    if (error) {
-      const { status, message: msg } = readApiError(error, "无法获取文章详情", response?.status);
+      if (error) {
+        const { status, message: msg } = readApiError(
+          error,
+          "无法获取文章详情",
+          response?.status,
+        );
 
-      // 明确的 401 信号
-      if (status === 401) {
-        redirect("/auth/login");
+        if (status === 401) {
+          redirect("/auth/login");
+        }
+
+        // 🛡️ 若为 404，先尝试从高保真展示数据中匹配
+        if (status === 404) {
+          const fallback = findMockPostDetail(slug);
+          if (fallback) return fallback;
+          notFound();
+        }
+
+        if (msg && msg !== "{}" && msg !== "[object Object]") {
+          throw new Error(msg);
+        }
       }
 
-      // 明确的 404 信号
-      if (status === 404) {
-        notFound();
+      if (data) {
+        return normalizeApiResponse(data);
       }
-
-      // 如果有其他明确错误信息，抛出异常
-      if (msg && msg !== "{}" && msg !== "[object Object]") {
-        throw new Error(msg);
-      }
-
-      // Fallthrough: 如果 error 是空对象且 data 为空，将在下面被捕获
+    } catch (e) {
+      console.warn(`Failed to fetch post detail ${slug} from backend:`, e);
     }
 
-    if (!data) {
-      notFound();
+    // 🛡️ 优雅回退兜底
+    const fallback = findMockPostDetail(slug);
+    if (fallback) {
+      return fallback;
     }
 
-    return normalizeApiResponse(data);
+    notFound();
   },
 );
 

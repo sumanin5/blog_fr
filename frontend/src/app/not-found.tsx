@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import {
   ArrowLeft,
   Home,
@@ -13,9 +14,20 @@ import {
   User,
   Compass,
   Search,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const LostCoordinate3D = dynamic(
+  () => import("@/components/public/not-found/lost-coordinate-3d"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-2 border-emerald-500/30 animate-pulse" />
+      </div>
+    ),
+  },
+);
 
 interface NavShortcut {
   icon: React.ComponentType<{ className?: string }>;
@@ -76,7 +88,7 @@ export default function NotFound() {
           <span>Error 404 · Lost Coordinate</span>
         </motion.div>
 
-        {/* 404 核心视觉：带有雷达脉冲光环的数字 */}
+        {/* 404 核心视觉：嵌入 3D 失重多面体与公转星轨 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -87,15 +99,9 @@ export default function NotFound() {
             4
           </span>
 
-          {/* 中间的 0 改造为发光星轨罗盘 */}
-          <div className="relative flex items-center justify-center w-20 h-20 sm:w-28 sm:h-28 mx-1">
-            {/* 外层脉冲微光波纹 */}
-            <div className="absolute inset-0 rounded-full border border-emerald-500/30 animate-ping opacity-30" />
-            <div className="absolute -inset-2 rounded-full border border-emerald-500/20 animate-pulse" />
-            {/* 核心内圆 */}
-            <div className="w-full h-full rounded-full border-2 border-emerald-500/40 bg-radial from-emerald-500/20 via-background/40 to-background flex items-center justify-center backdrop-blur-sm shadow-lg shadow-emerald-500/10">
-              <Sparkles className="w-8 h-8 sm:w-12 sm:h-12 text-emerald-400" />
-            </div>
+          {/* 中间的 0 改造为实时 3D 失重多面体与公转星环 */}
+          <div className="relative flex items-center justify-center w-24 h-24 sm:w-32 sm:h-32 mx-1">
+            <LostCoordinate3D />
           </div>
 
           <span className="text-transparent bg-clip-text bg-linear-to-b from-foreground to-foreground/50">
