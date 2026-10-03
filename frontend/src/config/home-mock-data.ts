@@ -300,24 +300,10 @@ export const MOCK_THOUGHTS: ApiData<PostShortResponse>[] = [
 ];
 
 export function findMockPostDetail(slug: string): ApiData<PostDetailResponse> | null {
-  // 1. 精确匹配 slug 或 id
-  let article = MOCK_LATEST_ARTICLES.find(
+  // 1. 精确匹配已知的文章 slug 或 id
+  const article = MOCK_LATEST_ARTICLES.find(
     (a) => a.slug === slug || a.id === slug,
   );
-
-  // 2. 友好容错：如果用户访问的是纯数字 (如 "1" 或 "2")，按索引自动映射
-  if (!article) {
-    const num = parseInt(slug, 10);
-    if (!isNaN(num) && num > 0 && num <= MOCK_LATEST_ARTICLES.length) {
-      article = MOCK_LATEST_ARTICLES[num - 1];
-    }
-  }
-
-  // 3. 兜底回退：如果依然未找到，默认呈现第 1 篇高质量长文
-  if (!article && MOCK_LATEST_ARTICLES.length > 0) {
-    article = MOCK_LATEST_ARTICLES[0];
-  }
-
   if (article) {
     return {
       id: article.id,
@@ -366,9 +352,12 @@ export async function fetchPostDetail(slug: string) {
       allowComment: true,
       pinStatus: 0,
       commentCount: 8,
+      enableJsx: true,
+      useServerRendering: true,
     } as unknown as ApiData<PostDetailResponse>;
   }
 
+  // 2. 精确匹配已知的想法 slug 或 id
   const thought = MOCK_THOUGHTS.find((t) => t.slug === slug || t.id === slug);
   if (thought) {
     return {
@@ -381,6 +370,8 @@ export async function fetchPostDetail(slug: string) {
       contentMdx: `# ${thought.title}
 
 ${thought.excerpt}
+
+> 本篇灵感记录于数字花园思维便签流，点击右上角可快速复制或分享。
 `,
       readingTime: thought.readingTime,
       viewCount: thought.viewCount,
@@ -395,8 +386,11 @@ ${thought.excerpt}
       allowComment: true,
       pinStatus: 0,
       commentCount: 3,
+      enableJsx: true,
+      useServerRendering: true,
     } as unknown as ApiData<PostDetailResponse>;
   }
 
+  // 3. 🛡️ 严格未匹配放行：绝不胡乱劫持，让未知路径正常进入 404 页面
   return null;
 }

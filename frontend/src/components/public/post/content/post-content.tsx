@@ -43,18 +43,7 @@ export async function PostContent({
     return <AstRenderer ast={ast} articleClassName={articleClassName} />;
   }
 
-  // 优先级 2：MDX 服务端渲染（最灵活，支持任意 JSX）
-  if (enableJsx && useServerRendering && mdx) {
-    return (
-      <MdxServerRenderer
-        mdx={mdx}
-        toc={toc}
-        articleClassName={articleClassName}
-      />
-    );
-  }
-
-  // 优先级 3：MDX 客户端渲染（灵活但慢）
+  // 优先级 2：显式要求客户端渲染
   if (enableJsx && !useServerRendering && mdx) {
     return (
       <MdxClientRenderer
@@ -65,5 +54,18 @@ export async function PostContent({
     );
   }
 
-  return <div>无内容</div>;
+  // 优先级 3：MDX 服务端渲染（只要有 mdx 内容，均支持完整服务端直出）
+  if (mdx) {
+    return (
+      <MdxServerRenderer
+        mdx={mdx}
+        toc={toc}
+        articleClassName={articleClassName}
+      />
+    );
+  }
+
+  return (
+    <div className="py-8 text-center text-muted-foreground">暂无正文内容</div>
+  );
 }
