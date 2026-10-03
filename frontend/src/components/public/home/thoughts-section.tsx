@@ -34,7 +34,7 @@ export function ThoughtsSection({ posts }: ThoughtsProps) {
           href="/posts/ideas"
           className="group inline-flex items-center text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors"
         >
-          <span>查看全部</span>
+          <span>漫游灵感流</span>
           <ArrowRight className="ml-1 w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>

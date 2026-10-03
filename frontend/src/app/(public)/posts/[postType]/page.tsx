@@ -1,6 +1,7 @@
 import { PostListView } from "@/components/public/post/views/post-list-view";
 import { getPosts, getHotTags } from "@/lib/post-api";
 import type { PostType } from "@/shared/api/generated/types.gen";
+import { redirect } from "next/navigation";
 
 interface PostsPageProps {
   params: Promise<{
@@ -16,6 +17,12 @@ export default async function PostsPage({
   searchParams,
 }: PostsPageProps) {
   const { postType } = await params;
+
+  // 🚀 核心架构革新：文章板块不再保留平铺大杂烩，统一收拢至“专栏专题地图”
+  if (postType === "articles") {
+    redirect("/posts/articles/categories");
+  }
+
   const { page: pageStr, tag: tagId } = await searchParams;
   const page = pageStr ? parseInt(pageStr, 10) : 1;
 

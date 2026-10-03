@@ -29,14 +29,14 @@ export function LatestArticlesSection({ articles }: LatestArticlesProps) {
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            最新文章
+            专栏精选文章
           </h2>
         </div>
         <Link
-          href="/posts/articles"
+          href="/posts/articles/categories"
           className="group inline-flex items-center text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors"
         >
-          <span>查看全部文章</span>
+          <span>探索所有专栏</span>
           <ArrowRight className="ml-1 w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
