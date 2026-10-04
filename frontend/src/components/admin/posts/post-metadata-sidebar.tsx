@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -125,8 +126,8 @@ export function PostMetadataSidebar({
 
         <div className="space-y-2">
           <Label className="text-xs">摘要 (Excerpt)</Label>
-          <textarea
-            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          <Textarea
+            className="min-h-[80px] text-xs"
             placeholder="输入文章摘要..."
             value={metadata.excerpt}
             onChange={(e) => updateField({ excerpt: e.target.value })}
@@ -210,9 +211,9 @@ export function PostMetadataSidebar({
           <Label htmlFor="metaDescription" className="text-xs">
             SEO 描述 (Meta Description)
           </Label>
-          <textarea
+          <Textarea
             id="metaDescription"
-            className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-[60px] text-xs"
             placeholder="简短的描述以提高搜索点击率..."
             value={metadata.metaDescription}
             onChange={(e) => updateField({ metaDescription: e.target.value })}

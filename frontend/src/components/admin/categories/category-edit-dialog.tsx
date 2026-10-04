@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -184,9 +185,9 @@ export function CategoryEditDialog({
                 {/* 摘要编辑区域 */}
                 <div className="space-y-2">
                   <Label htmlFor="edit-excerpt">摘要 (Excerpt)</Label>
-                  <textarea
+                  <Textarea
                     id="edit-excerpt"
-                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="min-h-[80px]"
                     placeholder="简短的分类介绍，用于卡片展示..."
                     value={formData.excerpt}
                     onChange={(e) =>
@@ -224,8 +225,8 @@ export function CategoryEditDialog({
 
                     <div className="bg-background min-h-[300px]">
                       <TabsContent value="edit" className="m-0 h-full">
-                        <textarea
-                          className="w-full h-[300px] p-4 text-sm font-mono resize-none focus:outline-none bg-transparent leading-relaxed"
+                        <Textarea
+                          className="w-full h-[300px] p-4 text-sm font-mono resize-none border-0 focus-visible:ring-0 shadow-none leading-relaxed"
                           placeholder="# 这是一个一级标题&#10;&#10;在这里以此支持 Markdown 格式编写分类的详细介绍..."
                           value={formData.description}
                           onChange={(e) =>

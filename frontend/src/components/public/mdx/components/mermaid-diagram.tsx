@@ -4,6 +4,12 @@ import { useEffect, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 import { CopyButton } from "../utils/copy-button";
 
 /**
@@ -116,24 +122,28 @@ export const MermaidDiagram = ({ code }: { code: string }) => {
       />
 
       {/* 可折叠的源码查看器 */}
-      <details className="mt-4 w-full">
-        <summary className="text-xs text-muted-foreground cursor-pointer hover:underline text-center">
-          查看Mermaid源码
-        </summary>
-        <div className="relative my-4 group rounded-lg border bg-muted/50">
-          <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 rounded-t-lg">
-            <span className="text-xs font-medium text-muted-foreground uppercase">
-              Mermaid
-            </span>
-            <CopyButton code={code} />
-          </div>
-          <div className="overflow-x-auto p-4 pt-2">
-            <pre className="m-0 p-0 bg-transparent text-xs text-muted-foreground whitespace-pre-wrap">
-              {code}
-            </pre>
-          </div>
-        </div>
-      </details>
+      <Accordion type="single" collapsible className="mt-4 w-full border-t border-border/30">
+        <AccordionItem value="mermaid-source" className="border-b-0">
+          <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline py-2 justify-center gap-2">
+            查看 Mermaid 源码
+          </AccordionTrigger>
+          <AccordionContent className="pt-2 pb-0">
+            <div className="relative my-2 group rounded-lg border bg-muted/50">
+              <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 rounded-t-lg">
+                <span className="text-xs font-medium text-muted-foreground uppercase">
+                  Mermaid
+                </span>
+                <CopyButton code={code} />
+              </div>
+              <div className="overflow-x-auto p-4 pt-2">
+                <pre className="m-0 p-0 bg-transparent text-xs text-muted-foreground whitespace-pre-wrap">
+                  {code}
+                </pre>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };

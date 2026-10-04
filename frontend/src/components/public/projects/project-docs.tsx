@@ -8,7 +8,6 @@ import {
   HelpCircle,
   Check,
   Copy,
-  ChevronDown,
   Info,
   Layers,
 } from "lucide-react";
@@ -17,7 +16,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 interface ProjectDocsProps {
   productName: string;
@@ -34,7 +38,6 @@ export function ProjectDocs({
     guides[0]?.id || (faqs.length > 0 ? "faq" : ""),
   );
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   if (guides.length === 0 && faqs.length === 0) {
     return null;
@@ -212,44 +215,27 @@ export function ProjectDocs({
                 </p>
               </div>
 
-              <div className="space-y-3">
-                {faqs.map((faq, idx) => {
-                  const isOpen = openFaqIndex === idx;
-                  return (
-                    <Card
-                      key={faq.question}
-                      className="rounded-xl border-border/40 bg-background/40 overflow-hidden transition-all py-0 gap-0"
-                    >
-                      <Button
-                        variant="ghost"
-                        type="button"
-                        onClick={() =>
-                          setOpenFaqIndex(isOpen ? null : idx)
-                        }
-                        className="w-full flex items-center justify-between p-4 sm:p-5 h-auto text-left font-medium text-foreground hover:bg-muted/30 transition-colors cursor-pointer rounded-none"
-                      >
-                        <span className="text-sm sm:text-base pr-4 text-left font-semibold">
-                          {faq.question}
-                        </span>
-                        <ChevronDown
-                          className={`w-4 h-4 text-muted-foreground transition-transform duration-200 flex-shrink-0 ${
-                            isOpen ? "rotate-180 text-emerald-500" : ""
-                          }`}
-                        />
-                      </Button>
-
-                      {isOpen && (
-                        <>
-                          <Separator className="opacity-30" />
-                          <div className="px-4 sm:px-5 py-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                            {faq.answer}
-                          </div>
-                        </>
-                      )}
-                    </Card>
-                  );
-                })}
-              </div>
+              <Accordion
+                type="single"
+                collapsible
+                defaultValue="item-0"
+                className="space-y-3"
+              >
+                {faqs.map((faq, idx) => (
+                  <AccordionItem
+                    key={faq.question}
+                    value={`item-${idx}`}
+                    className="rounded-xl border border-border/40 bg-background/40 px-4 sm:px-5 border-b-0"
+                  >
+                    <AccordionTrigger className="text-sm sm:text-base font-semibold hover:no-underline text-foreground py-4 sm:py-5">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-1 pb-4">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </TabsContent>
           )}
         </div>

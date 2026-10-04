@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { PenTool, Search } from "lucide-react";
+import { PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -16,6 +15,7 @@ import {
 import { MobileNav, DesktopNav } from "./nav-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CommandMenu } from "@/components/public/common/command-menu";
 import { useRouter } from "next/navigation";
 
 /**
@@ -50,27 +50,8 @@ export function Header() {
 
         {/* 3. 右侧 功能区 (自然宽度) */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* 搜索框 (桌面端) */}
-          <div className="hidden sm:flex">
-            <div className="relative">
-              <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
-              <Input
-                type="search"
-                placeholder="搜索文章..."
-                className="w-48 pl-8 lg:w-64"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const value = e.currentTarget.value;
-                    if (value.trim()) {
-                      router.push(
-                        `/search?search=${encodeURIComponent(value)}`,
-                      );
-                    }
-                  }
-                }}
-              />
-            </div>
-          </div>
+          {/* 全局命令与搜索面板 (快捷键 ⌘K / Ctrl+K) */}
+          <CommandMenu />
 
           {/* 主题切换按钮 */}
           <ThemeToggle />
