@@ -63,16 +63,19 @@ export function AdminSearchInput({
         <div className="absolute right-1 top-1 flex items-center gap-1">
           {/* 清除按钮 */}
           {localValue && (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => {
                 setLocalValue("");
                 onChange("");
               }}
-              className="p-1.5 text-muted-foreground/30 hover:text-destructive transition-colors"
+              className="size-7 text-muted-foreground/40 hover:text-destructive hover:bg-transparent"
               title="清除查询"
             >
               <XCircle className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           )}
 
           {/* 显式提交按钮：只有本地有值且与外部不一致时才高亮提示 */}

@@ -174,10 +174,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 className="px-9"
                 required
               />
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-muted-foreground hover:text-foreground absolute top-3 right-3 h-4 w-4 transition-colors focus:outline-none"
+                className="text-muted-foreground hover:text-foreground absolute top-1.5 right-1.5 h-7 w-7 transition-colors hover:bg-transparent cursor-pointer"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -185,7 +187,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 ) : (
                   <Eye className="h-4 w-4" />
                 )}
-              </button>
+              </Button>
             </div>
             {state?.errors?.password && (
               <p className="text-destructive text-xs italic">

@@ -175,35 +175,40 @@ export function TableOfContents({ toc, className }: TableOfContentsProps) {
                   style={{ paddingLeft: `${paddingLeft}px` }}
                 >
                   {hasChild ? (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleExpand(item.id);
                       }}
-                      className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100 flex items-center justify-center"
+                      className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100 flex items-center justify-center p-0 hover:bg-transparent cursor-pointer"
                     >
                       {isExpanded ? (
                         <ChevronDown className="h-3 w-3" />
                       ) : (
                         <ChevronRight className="h-3 w-3" />
                       )}
-                    </button>
+                    </Button>
                   ) : (
                     <span className="w-4 shrink-0" />
                   )}
 
-                  <button
+                  <Button
+                    variant="ghost"
+                    type="button"
                     onClick={() => handleItemClick(item.id)}
                     className={cn(
-                      "flex-1 text-left truncate leading-tight",
+                      "flex-1 text-left truncate leading-tight h-auto p-0 justify-start hover:bg-transparent font-normal cursor-pointer",
                       isActive
-                        ? "text-foreground"
+                        ? "text-foreground font-medium"
                         : "text-muted-foreground group-hover:text-foreground"
                     )}
                     title={item.title}
                   >
-                    {item.title}
-                  </button>
+                    <span className="truncate">{item.title}</span>
+                  </Button>
                 </div>
               );
             })}

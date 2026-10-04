@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import React from "react";
 
@@ -54,12 +55,14 @@ export function FooterEmail() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          className="group text-muted-foreground hover:text-primary transition-all duration-300 cursor-pointer border-none bg-transparent p-0 outline-none"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="group text-muted-foreground hover:text-primary transition-all duration-300 cursor-pointer h-8 w-8"
           title="Email"
         >
           <Mail className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       {/* 底部菜单向上弹出更合理 */}
       <DropdownMenuContent

@@ -188,9 +188,11 @@ export function MobileNav() {
               <div key={menu.title} className="flex flex-col gap-2">
                 {menu.items && menu.items.length > 0 ? (
                   <div className="border-border/40 border-b pb-4 last:border-0">
-                    <button
+                    <Button
+                      variant="ghost"
+                      type="button"
                       onClick={() => toggleGroup(menu.title)}
-                      className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between py-2 text-sm font-semibold tracking-widest uppercase transition-colors"
+                      className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between p-0 h-auto py-2 text-sm font-semibold tracking-widest uppercase transition-colors hover:bg-transparent rounded-none cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
                         {menu.icon && <menu.icon className="h-4 w-4" />}
@@ -202,7 +204,7 @@ export function MobileNav() {
                           openGroups[menu.title] && "rotate-180",
                         )}
                       />
-                    </button>
+                    </Button>
 
                     <div
                       className={cn(

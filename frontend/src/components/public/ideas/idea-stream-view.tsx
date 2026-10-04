@@ -14,6 +14,15 @@ import {
   BookOpen,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import type { PostShortResponse } from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
 import Link from "next/link";
@@ -119,27 +128,30 @@ export function IdeaStreamView({
             {domains.map((domain) => {
               const isSelected = selectedDomain === domain.slug;
               return (
-                <button
+                <Button
                   key={domain.id}
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setSelectedDomain(domain.slug)}
-                  className={`group relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 shrink-0 cursor-pointer ${
+                  className={`rounded-xl text-xs sm:text-sm font-medium transition-all shrink-0 cursor-pointer h-9 px-3.5 ${
                     isSelected
-                      ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-500/30"
-                      : "bg-card/50 hover:bg-muted/70 text-muted-foreground hover:text-foreground border border-border/40 backdrop-blur-sm"
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                      : "bg-card/50 hover:bg-muted/70 text-muted-foreground hover:text-foreground border-border/40 backdrop-blur-sm"
                   }`}
                 >
-                  <span>{domain.icon}</span>
+                  <span className="mr-1">{domain.icon}</span>
                   <span>{domain.name}</span>
-                  <span
-                    className={`ml-1 text-[11px] px-1.5 py-0.2 rounded-full ${
+                  <Badge
+                    variant={isSelected ? "secondary" : "outline"}
+                    className={`ml-1.5 px-1.5 py-0 text-[10px] h-4 font-mono ${
                       isSelected
-                        ? "bg-white/20 text-white"
-                        : "bg-muted text-muted-foreground group-hover:text-foreground"
+                        ? "bg-white/20 text-white border-transparent"
+                        : "border-border/60 text-muted-foreground"
                     }`}
                   >
                     {domain.slug === "all" ? totalCount : domain.count}
-                  </span>
-                </button>
+                  </Badge>
+                </Button>
               );
             })}
           </div>
@@ -168,10 +180,10 @@ export function IdeaStreamView({
                   {/* 左侧时间轴脉冲指示点 */}
                   <div className="absolute -left-[31px] sm:-left-[47px] top-6 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background ring-4 ring-emerald-500/20 group-hover:scale-125 transition-transform" />
 
-                  {/* 便签卡片本体 */}
-                  <div className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-md p-6 sm:p-8 transition-all duration-300 hover:border-emerald-500/30 hover:bg-card/70 hover:shadow-xl hover:shadow-emerald-500/5">
+                  {/* 便签卡片本体 (使用 shadcn Card 体系) */}
+                  <Card className="rounded-2xl border-border/40 bg-card/40 backdrop-blur-md transition-all duration-300 hover:border-emerald-500/30 hover:bg-card/70 hover:shadow-xl hover:shadow-emerald-500/5 py-0 gap-0 overflow-hidden">
                     {/* 卡片顶栏：领域分类 + 时间 */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-border/30">
+                    <CardHeader className="p-5 sm:p-7 pb-3 flex flex-row items-center justify-between space-y-0">
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
@@ -202,81 +214,89 @@ export function IdeaStreamView({
                           {formatDate(idea.publishedAt || idea.createdAt)}
                         </time>
                       </div>
-                    </div>
+                    </CardHeader>
 
-                    {/* 便签标题 (若有) */}
-                    {idea.title && (
-                      <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground mb-3 group-hover:text-emerald-500 transition-colors">
-                        {idea.title}
-                      </h2>
-                    )}
-
-                    {/* 便签核心正文 (直接直读) */}
-                    <div className="relative">
-                      <div
-                        className={`text-foreground/85 text-sm sm:text-base leading-relaxed whitespace-pre-line transition-all duration-300 ${
-                          isLongText && !isExpanded
-                            ? "max-h-36 overflow-hidden mask-linear-gradient"
-                            : ""
-                        }`}
-                      >
-                        {displayContent}
-                      </div>
-
-                      {/* 长文折叠遮罩与展开按钮 */}
-                      {isLongText && (
-                        <div className="mt-3 flex justify-start">
-                          <button
-                            onClick={() => toggleExpand(idea.id)}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors cursor-pointer"
-                          >
-                            <span>{isExpanded ? "收起部分" : "展开全文"}</span>
-                            {isExpanded ? (
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            ) : (
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
+                    {/* 卡片正文 */}
+                    <CardContent className="p-5 sm:p-7 pt-0 pb-3">
+                      {idea.title && (
+                        <CardTitle className="text-lg sm:text-xl font-bold tracking-tight text-foreground mb-3 group-hover:text-emerald-500 transition-colors">
+                          {idea.title}
+                        </CardTitle>
                       )}
-                    </div>
 
-                    {/* 便签底栏：交互与分享操作 */}
-                    <div className="flex items-center justify-between pt-5 mt-5 border-t border-border/20 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-4">
-                        <button
+                      <div className="relative">
+                        <div
+                          className={`text-foreground/85 text-sm sm:text-base leading-relaxed whitespace-pre-line transition-all duration-300 ${
+                            isLongText && !isExpanded
+                              ? "max-h-36 overflow-hidden mask-linear-gradient"
+                              : ""
+                          }`}
+                        >
+                          {displayContent}
+                        </div>
+
+                        {/* 长文折叠遮罩与展开按钮 (使用 shadcn Button) */}
+                        {isLongText && (
+                          <div className="mt-3 flex justify-start">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleExpand(idea.id)}
+                              className="h-7 px-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                            >
+                              <span>{isExpanded ? "收起部分" : "展开全文"}</span>
+                              {isExpanded ? (
+                                <ChevronUp className="w-3.5 h-3.5 ml-1" />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+
+                    <Separator className="opacity-40" />
+
+                    {/* 便签底栏：交互与分享操作 (使用 shadcn Button) */}
+                    <CardFooter className="p-5 sm:p-7 py-3 flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() =>
                             handleCopy(idea.id, `${idea.title ? idea.title + "\n\n" : ""}${displayContent}`)
                           }
-                          className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
-                          title="复制正文"
+                          className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                         >
                           {copiedId === idea.id ? (
                             <>
-                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                              <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
                               <span className="text-emerald-500 font-medium">已复制到剪贴板</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3.5 h-3.5" />
+                              <Copy className="w-3.5 h-3.5 mr-1.5" />
                               <span>复制内容</span>
                             </>
                           )}
-                        </button>
+                        </Button>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <Link
-                          href={linkHref}
-                          className="inline-flex items-center gap-1 hover:text-emerald-500 transition-colors"
-                          title="查看单篇详情"
-                        >
-                          <BookOpen className="w-3.5 h-3.5" />
-                          <span>单篇详情</span>
+                      <div className="flex items-center gap-2">
+                        <Link href={linkHref}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2.5 text-xs text-muted-foreground hover:text-emerald-500 cursor-pointer"
+                          >
+                            <BookOpen className="w-3.5 h-3.5 mr-1.5" />
+                            <span>单篇详情</span>
+                          </Button>
                         </Link>
                       </div>
-                    </div>
-                  </div>
+                    </CardFooter>
+                  </Card>
                 </motion.article>
               );
             })}

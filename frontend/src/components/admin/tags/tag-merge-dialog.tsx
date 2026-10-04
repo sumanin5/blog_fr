@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 interface TagMergeDialogProps {
   open: boolean;
@@ -84,11 +85,11 @@ export function TagMergeDialog({
           </div>
 
           <div className="flex justify-center py-1">
-            <div className="h-px bg-border flex-1 self-center" />
+            <Separator className="flex-1 self-center" />
             <span className="mx-4 text-[10px] font-mono text-muted-foreground uppercase bg-muted px-2 py-0.5 rounded">
               Merge Into
             </span>
-            <div className="h-px bg-border flex-1 self-center" />
+            <Separator className="flex-1 self-center" />
           </div>
 
           <div className="space-y-2">

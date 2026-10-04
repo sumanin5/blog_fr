@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import type { ProductGuideSection, ProductFAQ } from "@/config/products";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
 interface ProjectDocsProps {
   productName: string;
@@ -55,8 +59,6 @@ export function ProjectDocs({
     }
   };
 
-  const currentGuide = guides.find((g) => g.id === activeTab);
-
   return (
     <section id="docs" className="scroll-mt-24 mb-24">
       {/* 模块主标题 */}
@@ -75,75 +77,73 @@ export function ProjectDocs({
         </p>
       </div>
 
-      <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-2xl shadow-xl overflow-hidden">
-        {/* 顶部 Tab 切换横栏 */}
-        <div className="flex items-center gap-1 p-2 sm:p-3 bg-muted/40 border-b border-border/40 overflow-x-auto no-scrollbar">
-          {guides.map((guide) => {
-            const isActive = activeTab === guide.id;
-            return (
-              <button
+      {/* 基于 shadcn Tabs 体系打造的文档容器 */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-2xl shadow-xl overflow-hidden"
+      >
+        {/* 顶部 Tab 切换横栏 (使用 shadcn TabsList + TabsTrigger) */}
+        <div className="p-2 sm:p-3 bg-muted/40 border-b border-border/40 overflow-x-auto no-scrollbar">
+          <TabsList className="bg-transparent h-auto p-0 gap-1.5 flex justify-start">
+            {guides.map((guide) => (
+              <TabsTrigger
                 key={guide.id}
-                type="button"
-                onClick={() => setActiveTab(guide.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
-                  isActive
-                    ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-sm border border-border/60"
-                    : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-                }`}
+                value={guide.id}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 {getTabIcon(guide.icon)}
                 <span>{guide.title}</span>
-              </button>
-            );
-          })}
+              </TabsTrigger>
+            ))}
 
-          {faqs.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setActiveTab("faq")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === "faq"
-                  ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-sm border border-border/60"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-              }`}
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span>常见疑问 (FAQ)</span>
-            </button>
-          )}
+            {faqs.length > 0 && (
+              <TabsTrigger
+                value="faq"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>常见疑问 (FAQ)</span>
+              </TabsTrigger>
+            )}
+          </TabsList>
         </div>
 
         {/* Tab 内容视窗 */}
         <div className="p-6 sm:p-10">
-          {/* 指南模式 */}
-          {activeTab !== "faq" && currentGuide && (
-            <div className="space-y-8 animate-in fade-in duration-300">
+          {/* 指南模式 (遍历每个 guide 对应一个 TabsContent) */}
+          {guides.map((guide) => (
+            <TabsContent
+              key={guide.id}
+              value={guide.id}
+              className="space-y-8 mt-0 focus-visible:outline-none animate-in fade-in duration-300"
+            >
               {/* 指南头部副标 */}
               <div className="border-b border-border/30 pb-4">
                 <h3 className="text-xl font-bold text-foreground">
-                  {currentGuide.title}
+                  {guide.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  {currentGuide.tagline}
+                  {guide.tagline}
                 </p>
               </div>
 
               {/* 步骤列表 */}
               <div className="space-y-6">
-                {currentGuide.steps.map((stepItem) => (
-                  <div
+                {guide.steps.map((stepItem) => (
+                  <Card
                     key={stepItem.step}
-                    className="group relative flex flex-col md:flex-row gap-4 sm:gap-6 p-5 sm:p-6 rounded-xl border border-border/30 bg-background/40 hover:bg-background/70 hover:border-border/60 transition-all"
+                    className="group relative flex flex-col md:flex-row gap-4 sm:gap-6 p-5 sm:p-6 rounded-xl border-border/30 bg-background/40 hover:bg-background/70 hover:border-border/60 transition-all py-0 gap-0 overflow-hidden"
                   >
                     {/* 步骤大序号徽章 */}
-                    <div className="flex-shrink-0 flex items-center md:items-start">
+                    <div className="p-5 sm:p-6 pb-0 md:pb-6 flex-shrink-0 flex items-center md:items-start">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold flex items-center justify-center text-sm shadow-xs">
                         {stepItem.step}
                       </div>
                     </div>
 
                     {/* 步骤内容说明 */}
-                    <div className="flex-1 space-y-3">
+                    <div className="p-5 sm:p-6 pt-0 md:pt-6 md:pl-0 flex-1 space-y-3">
                       <h4 className="text-base font-semibold text-foreground">
                         {stepItem.title}
                       </h4>
@@ -156,24 +156,26 @@ export function ProjectDocs({
                         <div className="relative mt-3 rounded-lg overflow-hidden border border-border/60 bg-[#1e1e1e] font-mono text-xs">
                           <div className="flex items-center justify-between px-3 py-1.5 bg-black/40 border-b border-white/5 text-[11px] text-zinc-400">
                             <span>配置示例 (YAML / Key)</span>
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               type="button"
                               onClick={() => handleCopy(stepItem.code!)}
-                              className="flex items-center gap-1 hover:text-zinc-200 transition-colors cursor-pointer"
+                              className="h-6 px-2 text-[11px] text-zinc-400 hover:text-zinc-100 hover:bg-white/10 transition-colors cursor-pointer"
                               title="复制配置"
                             >
                               {copiedCode === stepItem.code ? (
                                 <>
-                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <Check className="w-3 h-3 mr-1 text-emerald-400" />
                                   <span className="text-emerald-400">已复制</span>
                                 </>
                               ) : (
                                 <>
-                                  <Copy className="w-3 h-3" />
+                                  <Copy className="w-3 h-3 mr-1" />
                                   <span>复制</span>
                                 </>
                               )}
-                            </button>
+                            </Button>
                           </div>
                           <pre className="p-4 text-emerald-300 overflow-x-auto leading-relaxed whitespace-pre-wrap">
                             {stepItem.code}
@@ -189,15 +191,18 @@ export function ProjectDocs({
                         </div>
                       )}
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
-            </div>
-          )}
+            </TabsContent>
+          ))}
 
-          {/* 常见问题 FAQ 模式 */}
-          {activeTab === "faq" && faqs.length > 0 && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+          {/* 常见问题 FAQ 模式 (TabsContent value="faq") */}
+          {faqs.length > 0 && (
+            <TabsContent
+              value="faq"
+              className="space-y-4 mt-0 focus-visible:outline-none animate-in fade-in duration-300"
+            >
               <div className="border-b border-border/30 pb-4 mb-6">
                 <h3 className="text-xl font-bold text-foreground">
                   常见疑问解答 (FAQ)
@@ -211,18 +216,19 @@ export function ProjectDocs({
                 {faqs.map((faq, idx) => {
                   const isOpen = openFaqIndex === idx;
                   return (
-                    <div
+                    <Card
                       key={faq.question}
-                      className="rounded-xl border border-border/40 bg-background/40 overflow-hidden transition-all"
+                      className="rounded-xl border-border/40 bg-background/40 overflow-hidden transition-all py-0 gap-0"
                     >
-                      <button
+                      <Button
+                        variant="ghost"
                         type="button"
                         onClick={() =>
                           setOpenFaqIndex(isOpen ? null : idx)
                         }
-                        className="w-full flex items-center justify-between p-4 sm:p-5 text-left font-medium text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
+                        className="w-full flex items-center justify-between p-4 sm:p-5 h-auto text-left font-medium text-foreground hover:bg-muted/30 transition-colors cursor-pointer rounded-none"
                       >
-                        <span className="text-sm sm:text-base pr-4">
+                        <span className="text-sm sm:text-base pr-4 text-left font-semibold">
                           {faq.question}
                         </span>
                         <ChevronDown
@@ -230,21 +236,24 @@ export function ProjectDocs({
                             isOpen ? "rotate-180 text-emerald-500" : ""
                           }`}
                         />
-                      </button>
+                      </Button>
 
                       {isOpen && (
-                        <div className="px-4 sm:px-5 pb-5 text-xs sm:text-sm text-muted-foreground leading-relaxed border-t border-border/20 pt-3">
-                          {faq.answer}
-                        </div>
+                        <>
+                          <Separator className="opacity-30" />
+                          <div className="px-4 sm:px-5 py-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                            {faq.answer}
+                          </div>
+                        </>
                       )}
-                    </div>
+                    </Card>
                   );
                 })}
               </div>
-            </div>
+            </TabsContent>
           )}
         </div>
-      </div>
+      </Tabs>
     </section>
   );
 }

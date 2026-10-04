@@ -1,9 +1,16 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Tabs as ShadcnTabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 
 /**
- * 交互式按钮组件
+ * 交互式按钮组件 (基于 shadcn Button)
  */
 export function InteractiveButton({
   text,
@@ -13,17 +20,17 @@ export function InteractiveButton({
   message: string;
 }) {
   return (
-    <button
+    <Button
+      variant="default"
       onClick={() => alert(message)}
-      className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50"
     >
       {text}
-    </button>
+    </Button>
   );
 }
 
 /**
- * 标签页组件
+ * 标签页组件 (基于 shadcn Tabs)
  */
 export function Tabs({
   tabs,
@@ -32,32 +39,29 @@ export function Tabs({
   tabs: string[];
   children: React.ReactNode;
 }) {
-  const [activeTab, setActiveTab] = React.useState(0);
+  const childrenArray = React.Children.toArray(children);
+  const defaultTab = tabs[0] || "0";
 
   return (
-    <div className="my-4 rounded-lg border border-border">
-      <div className="flex border-b border-border">
+    <ShadcnTabs defaultValue={defaultTab} className="my-4 rounded-lg border border-border">
+      <TabsList className="w-full justify-start rounded-b-none border-b border-border bg-muted/30 p-1">
         {tabs.map((tab, i) => (
-          <button
-            key={i}
-            onClick={() => setActiveTab(i)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === i
-                ? "border-b-2 border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
+          <TabsTrigger key={i} value={tab || String(i)}>
             {tab}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
-      <div className="p-4">{children}</div>
-    </div>
+      </TabsList>
+      {tabs.map((tab, i) => (
+        <TabsContent key={i} value={tab || String(i)} className="p-4 mt-0">
+          {childrenArray[i] ?? children}
+        </TabsContent>
+      ))}
+    </ShadcnTabs>
   );
 }
 
 /**
- * 代码组组件（多语言切换）
+ * 代码组组件（多语言切换，基于 shadcn Tabs）
  */
 export function CodeGroup({
   languages,
@@ -66,26 +70,23 @@ export function CodeGroup({
   languages: string[];
   children: React.ReactNode;
 }) {
-  const [activeLang, setActiveLang] = React.useState(0);
+  const childrenArray = React.Children.toArray(children);
+  const defaultLang = languages[0] || "0";
 
   return (
-    <div className="my-4 rounded-lg border border-border bg-muted/30">
-      <div className="flex gap-2 border-b border-border p-2">
+    <ShadcnTabs defaultValue={defaultLang} className="my-4 rounded-lg border border-border bg-muted/20">
+      <TabsList className="w-full justify-start rounded-b-none border-b border-border bg-muted/40 p-1 gap-1">
         {languages.map((lang, i) => (
-          <button
-            key={i}
-            onClick={() => setActiveLang(i)}
-            className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-              activeLang === i
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-muted"
-            }`}
-          >
+          <TabsTrigger key={i} value={lang || String(i)} className="text-xs">
             {lang}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
-      <div>{children}</div>
-    </div>
+      </TabsList>
+      {languages.map((lang, i) => (
+        <TabsContent key={i} value={lang || String(i)} className="p-0 mt-0">
+          {childrenArray[i] ?? children}
+        </TabsContent>
+      ))}
+    </ShadcnTabs>
   );
 }

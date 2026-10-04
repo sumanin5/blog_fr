@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Upload, X, Loader2, RefreshCw, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useUploadFile } from "@/hooks/admin/use-media";
 import { MediaImage } from "../ui/media-image";
@@ -205,7 +206,7 @@ export function CoverUpload({
                     </TooltipContent>
                   </Tooltip>
 
-                  <div className="w-px h-4 bg-border mx-0.5" />
+                  <Separator orientation="vertical" className="h-4 mx-0.5" />
 
                   <Tooltip>
                     <TooltipTrigger asChild>

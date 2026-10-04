@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { MdxClientRenderer } from "@/components/public/post/content/renderers/mdx-client-renderer";
 import {
   Select,
@@ -335,7 +336,7 @@ export function CategoryEditDialog({
                   </div>
                 </div>
 
-                <div className="h-px bg-border my-4" />
+                <Separator className="my-4" />
 
                 {/* 排序与状态 */}
                 <div className="space-y-4">

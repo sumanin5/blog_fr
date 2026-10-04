@@ -3,6 +3,7 @@
 import * as React from "react";
 import { X, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface TagSelectProps {
@@ -68,13 +69,15 @@ export function TagSelect({
               className="px-2 py-0.5 text-xs flex items-center gap-1 transition-all hover:bg-secondary/80"
             >
               {tag}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => handleRemove(tag)}
-                className="hover:text-destructive transition-colors rounded-full"
+                className="h-3.5 w-3.5 p-0 hover:bg-transparent hover:text-destructive rounded-full"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           ))
         ) : (

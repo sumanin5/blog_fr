@@ -3,6 +3,7 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { X, Loader2, Pencil, FolderOpen } from "lucide-react";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useUploadFile } from "@/hooks/admin/use-media";
 import { MediaImage } from "../ui/media-image";
@@ -202,7 +203,7 @@ function PreviewState({
           >
             <Pencil className="size-4" />
           </AdminActionButton>
-          <div className="w-px h-4 bg-border my-auto" />
+          <Separator orientation="vertical" className="h-4 my-auto" />
           <AdminActionButton
             type="button"
             size="icon"

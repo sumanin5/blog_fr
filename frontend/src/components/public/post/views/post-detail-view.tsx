@@ -3,6 +3,7 @@ import { PostMeta } from "@/components/public/post/components/post-meta";
 import { TableOfContents } from "@/components/public/mdx/utils/table-of-contents";
 import { PostDetailResponse } from "@/shared/api/generated/types.gen";
 import { ApiData } from "@/shared/api/transformers";
+import { Badge } from "@/components/ui/badge";
 
 import { ArticleTracker } from "@/components/admin/analytics/ArticleTracker";
 
@@ -61,12 +62,13 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
         {post.tags && post.tags.length > 0 && (
           <div className="mb-8 flex flex-wrap gap-2">
             {post.tags.map((tag) => (
-              <span
+              <Badge
                 key={tag.id}
-                className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary"
+                variant="secondary"
+                className="rounded-full bg-primary/10 hover:bg-primary/20 text-primary border-none px-3.5 py-1 text-sm font-normal"
               >
                 {tag.name}
-              </span>
+              </Badge>
             ))}
           </div>
         )}

@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "./category-select";
 import { TagSelect } from "./tag-select";
 import { CoverSelect } from "@/components/admin/media/uploader/cover-select";
@@ -133,7 +134,7 @@ export function PostMetadataSidebar({
         </div>
       </div>
 
-      <div className="h-px bg-border" />
+      <Separator />
 
       {/* 高级设置 */}
       <div className="space-y-4">
@@ -181,7 +182,7 @@ export function PostMetadataSidebar({
         </div>
       </div>
 
-      <div className="h-px bg-border" />
+      <Separator />
 
       {/* SEO 设置 */}
       <div className="space-y-4 pb-4">
