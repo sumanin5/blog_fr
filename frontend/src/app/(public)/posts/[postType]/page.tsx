@@ -6,12 +6,7 @@ import type {
 } from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
 import { redirect } from "next/navigation";
-import { IdeaStreamView } from "@/components/public/ideas/idea-stream-view";
-import {
-  MOCK_THOUGHTS,
-  MOCK_IDEA_DOMAINS,
-  type IdeaDomain,
-} from "@/config/home-mock-data";
+import { IdeaStreamView, type IdeaDomain } from "@/components/public/ideas/idea-stream-view";
 
 interface PostsPageProps {
   params: Promise<{
@@ -37,7 +32,7 @@ export default async function PostsPage({
   // 🚀 2. 想法板块：独立打造单篇即读流（Memos Stream）并支持领域分类切换
   if (postType === "ideas") {
     let ideas: ApiData<PostShortResponse>[] = [];
-    let domains: IdeaDomain[] = MOCK_IDEA_DOMAINS;
+    let domains: IdeaDomain[] = [];
 
     try {
       const [ideasRes, categoriesRes] = await Promise.allSettled([
@@ -49,6 +44,14 @@ export default async function PostsPage({
         ideas = ideasRes.value.items;
       }
 
+      const allDomain: IdeaDomain = {
+        id: "all",
+        name: "全部领域",
+        slug: "all",
+        icon: "✨",
+        count: ideas.length,
+      };
+
       if (
         categoriesRes.status === "fulfilled" &&
         categoriesRes.value?.items?.length
@@ -56,39 +59,31 @@ export default async function PostsPage({
         const rawCats = categoriesRes.value.items.filter(
           (c) => c.isActive !== false,
         );
-        const dynamicDomains: IdeaDomain[] = [
-          {
-            id: "all",
-            name: "全部领域",
-            slug: "all",
-            description: "所有维度的灵感随想",
-            icon: "✨",
-            count: ideas.length,
-          },
+        domains = [
+          allDomain,
           ...rawCats.map((cat, idx) => ({
             id: cat.id,
             name: cat.name,
             slug: cat.slug,
-            description: cat.description || cat.excerpt || "",
             icon: cat.iconPreset || (idx % 2 === 0 ? "💡" : "⚡"),
             count:
               cat.postCount ??
               ideas.filter((i) => i.category?.id === cat.id).length,
           })),
         ];
-        domains = dynamicDomains;
+      } else {
+        domains = [allDomain];
       }
     } catch (e) {
-      console.warn("Failed to load ideas from backend, fallback to showcase:", e);
+      console.warn("Failed to load ideas from backend:", e);
+      domains = [{ id: "all", name: "全部领域", slug: "all", icon: "✨", count: 0 }];
     }
-
-    const displayIdeas = ideas.length > 0 ? ideas : MOCK_THOUGHTS;
 
     return (
       <IdeaStreamView
-        initialIdeas={displayIdeas}
+        initialIdeas={ideas}
         domains={domains}
-        totalCount={displayIdeas.length}
+        totalCount={ideas.length}
       />
     );
   }

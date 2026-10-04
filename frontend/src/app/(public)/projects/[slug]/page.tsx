@@ -15,6 +15,7 @@ import {
 import { getProductBySlug } from "@/config/products";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ProjectDocs } from "@/components/public/projects/project-docs";
 
 interface ProjectPageProps {
   params: Promise<{
@@ -86,9 +87,9 @@ export default async function ProductDetailPage({ params }: ProjectPageProps) {
 
           {/* 行动按钮群 (CTA) */}
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {product.demoUrl && (
+            {product.releasesUrl && (
               <a
-                href={product.demoUrl}
+                href={product.releasesUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -96,8 +97,8 @@ export default async function ProductDetailPage({ params }: ProjectPageProps) {
                   size="lg"
                   className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-600/25 px-8 cursor-pointer h-12"
                 >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  <span>立即体验 Web 版</span>
+                  <Download className="w-4 h-4 mr-2" />
+                  <span>下载客户端 (Win/Mac/Linux)</span>
                 </Button>
               </a>
             )}
@@ -113,9 +114,26 @@ export default async function ProductDetailPage({ params }: ProjectPageProps) {
                 className="rounded-xl border-border/60 hover:bg-muted font-medium px-6 cursor-pointer h-12"
               >
                 <Github className="w-4 h-4 mr-2" />
-                <span>Star on GitHub</span>
+                <span>在 GitHub 查看源码</span>
               </Button>
             </a>
+
+            {product.demoUrl && (
+              <a
+                href={product.demoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-xl border-border/60 hover:bg-muted font-medium px-6 cursor-pointer h-12"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  <span>在线预览</span>
+                </Button>
+              </a>
+            )}
 
             {product.vscodeUrl && (
               <a
@@ -133,6 +151,30 @@ export default async function ProductDetailPage({ params }: ProjectPageProps) {
                 </Button>
               </a>
             )}
+          </div>
+
+          {/* 页面内部快速锚点导航 */}
+          <div className="flex items-center justify-center gap-3 pt-3 text-xs font-mono text-muted-foreground">
+            <a
+              href="#features"
+              className="hover:text-emerald-500 transition-colors underline-offset-4 hover:underline"
+            >
+              #核心特性
+            </a>
+            <span>·</span>
+            <a
+              href="#docs"
+              className="hover:text-emerald-500 transition-colors underline-offset-4 hover:underline text-emerald-600 dark:text-emerald-400 font-semibold"
+            >
+              #使用指南与文档
+            </a>
+            <span>·</span>
+            <a
+              href="#docs"
+              className="hover:text-emerald-500 transition-colors underline-offset-4 hover:underline"
+            >
+              #常见问答
+            </a>
           </div>
         </section>
 
@@ -183,7 +225,7 @@ export default async function ProductDetailPage({ params }: ProjectPageProps) {
         </section>
 
         {/* 3. 核心特性矩阵 (Feature Matrix) */}
-        <section className="mb-24">
+        <section id="features" className="scroll-mt-24 mb-24">
           <div className="text-center max-w-xl mx-auto mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-3">
               为专注而生的核心特性
@@ -223,7 +265,14 @@ export default async function ProductDetailPage({ params }: ProjectPageProps) {
           </div>
         </section>
 
-        {/* 4. 极客工程哲学与指标 */}
+        {/* 4. 使用指南与核心用法文档 (Interactive Documentation) */}
+        <ProjectDocs
+          productName={product.name}
+          guides={product.guides}
+          faqs={product.faqs}
+        />
+
+        {/* 5. 极客工程哲学与指标 */}
         <section className="mb-20 p-8 sm:p-10 rounded-2xl border border-border/40 bg-card/40 backdrop-blur-xl">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center divide-y sm:divide-y-0 sm:divide-x divide-border/30">
             <div className="space-y-2 pt-4 sm:pt-0">
@@ -259,9 +308,9 @@ export default async function ProductDetailPage({ params }: ProjectPageProps) {
             无需复杂的注册或安装门槛，即刻在浏览器中体验或接入你的 VS Code 工作流。
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {product.demoUrl && (
+            {product.releasesUrl && (
               <a
-                href={product.demoUrl}
+                href={product.releasesUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -269,8 +318,8 @@ export default async function ProductDetailPage({ params }: ProjectPageProps) {
                   size="lg"
                   className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-8 cursor-pointer h-12 shadow-lg shadow-emerald-600/20"
                 >
-                  <span>立即启动 Inkdown</span>
-                  <ExternalLink className="w-4 h-4 ml-2" />
+                  <Download className="w-4 h-4 mr-2" />
+                  <span>下载客户端 (Win/Mac/Linux)</span>
                 </Button>
               </a>
             )}

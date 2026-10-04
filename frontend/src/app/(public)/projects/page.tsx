@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowRight, Github, ExternalLink } from "lucide-react";
+import { ArrowRight, Github, ExternalLink, Download } from "lucide-react";
 import { PageHeader } from "@/components/public/common/page-header";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { Badge } from "@/components/ui/badge";
@@ -108,6 +108,23 @@ export default function ProjectsPage() {
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
+
+                {product.releasesUrl && (
+                  <a
+                    href={product.releasesUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button
+                      variant="outline"
+                      size="default"
+                      className="rounded-xl border-border/60 hover:bg-muted cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 mr-1.5" />
+                      <span>客户端</span>
+                    </Button>
+                  </a>
+                )}
 
                 {product.demoUrl && (
                   <a

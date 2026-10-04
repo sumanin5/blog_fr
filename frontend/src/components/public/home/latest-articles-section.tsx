@@ -41,9 +41,18 @@ export function LatestArticlesSection({ articles }: LatestArticlesProps) {
         </Link>
       </div>
 
-      {/* 文章列表流 (左图右文横向卡片) */}
-      <div className="space-y-6">
-        {items.map((post, index) => {
+      {/* 文章列表流 (左图右文横向卡片 或 空状态) */}
+      {items.length === 0 ? (
+        <div className="py-16 px-6 rounded-2xl border border-dashed border-border/60 text-center space-y-3 bg-card/20 backdrop-blur-xs">
+          <BookOpen className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+          <div className="text-sm font-semibold text-foreground">暂无公开发布的文章</div>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+            博主正在酝酿深度专栏内容，在后台发布文章后将在此自动呈现。
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {items.map((post, index) => {
           const linkHref = routes.postDetailSlug("articles", post.slug || post.id);
           // 缩略图：优先使用真实后端封面，若无则使用高分辨率艺术生成封面
           const thumbSrc =
@@ -127,6 +136,7 @@ export function LatestArticlesSection({ articles }: LatestArticlesProps) {
           );
         })}
       </div>
+      )}
     </section>
   );
 }

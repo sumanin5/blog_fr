@@ -16,9 +16,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { PostShortResponse } from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
-import type { IdeaDomain } from "@/config/home-mock-data";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
+
+export interface IdeaDomain {
+  id: string;
+  name: string;
+  slug: string;
+  icon?: string;
+  count: number;
+}
 
 interface IdeaStreamViewProps {
   initialIdeas: ApiData<PostShortResponse>[];

@@ -15,10 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { MdxServerRenderer } from "@/components/public/post/content/renderers/mdx-server-renderer";
 import { getThumbnailUrl, getMediaUrl } from "@/lib/media-utils";
-import {
-  MOCK_FEATURED_COLLECTIONS,
-  MOCK_LATEST_ARTICLES,
-} from "@/config/home-mock-data";
 
 export default async function CategoryPage({
   params,
@@ -39,12 +35,7 @@ export default async function CategoryPage({
 
   // SDK 保留后端字段，在页面数据边界转换为领域模型。
   const data = normalizeApiResponse(categoriesRes.data);
-  let category: Category | undefined = data?.items?.find((c) => c.slug === slug);
-
-  // 🛡️ 优雅回退：若后端暂未录入该分类，自动匹配高保真展示专栏
-  if (!category) {
-    category = MOCK_FEATURED_COLLECTIONS.find((c) => c.slug === slug);
-  }
+  const category: Category | undefined = data?.items?.find((c) => c.slug === slug);
 
   if (!category) {
     notFound();
@@ -64,12 +55,7 @@ export default async function CategoryPage({
     });
     posts = normalizeApiResponse(postsRes.data?.items ?? []);
   } catch (error) {
-    console.warn("Failed to fetch posts for category, falling back to mock:", error);
-  }
-
-  // 若该分类下后端文章为空，自动提供展示文章以保持视觉饱满
-  if (posts.length === 0) {
-    posts = MOCK_LATEST_ARTICLES;
+    console.warn("Failed to fetch posts for category:", error);
   }
 
   const coverImageUrl = getThumbnailUrl(category.coverMediaId, "xlarge");

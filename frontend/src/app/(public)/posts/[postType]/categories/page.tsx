@@ -4,7 +4,6 @@ import type { PostType } from "@/shared/api/generated/types.gen";
 import { listCategoriesByType } from "@/shared/api/generated/sdk.gen";
 import { CategoryCard } from "@/components/public/category/category-card";
 import { PageHeader } from "@/components/public/common/page-header";
-import { MOCK_FEATURED_COLLECTIONS } from "@/config/home-mock-data";
 import type { Category } from "@/shared/api/types";
 
 // 映射 PostType 到温润专业的中文专题地图文案
@@ -56,10 +55,6 @@ export default async function CategoryListPage({
     console.warn("Failed to fetch categories, falling back to showcase data:", error);
   }
 
-  // 优雅回退：若后端暂未录入分类，自动呈现高保真专题合集案例
-  const displayCategories =
-    activeCategories.length > 0 ? activeCategories : MOCK_FEATURED_COLLECTIONS;
-
   const config = HEADER_CONFIG[postType] || {
     tagline: "知识体系",
     title: "主题与",
@@ -75,21 +70,33 @@ export default async function CategoryListPage({
             tagline={config.tagline}
             title={config.title}
             subtitle={config.subtitle}
-            description={config.description(displayCategories.length)}
+            description={config.description(activeCategories.length)}
           />
         </section>
 
-        {/* Categories Grid */}
+        {/* Categories Grid or Empty State */}
         <div className="container px-4 md:px-6 mx-auto pb-32">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {displayCategories.map((category) => (
-              <CategoryCard
-                key={category.id}
-                category={category}
-                postType={postType}
-              />
-            ))}
-          </div>
+          {activeCategories.length === 0 ? (
+            <div className="py-20 px-6 rounded-3xl border border-dashed border-border/60 text-center space-y-4 max-w-lg mx-auto bg-card/20 backdrop-blur-sm">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto text-xl">
+                📂
+              </div>
+              <h3 className="text-lg font-bold text-foreground">专栏筹备中</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                当前暂未发布公开专栏分类。您可以在管理后台创建专题分类，它将自动呈现于此。
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {activeCategories.map((category) => (
+                <CategoryCard
+                  key={category.id}
+                  category={category}
+                  postType={postType}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

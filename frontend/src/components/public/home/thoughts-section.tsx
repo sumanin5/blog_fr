@@ -39,47 +39,57 @@ export function ThoughtsSection({ posts }: ThoughtsProps) {
         </Link>
       </div>
 
-      {/* 想法单篇列表流 (绿点指示 + 单篇核心思考) */}
-      <div className="space-y-4">
-        {items.map((post, index) => {
-          const linkHref = routes.postDetailSlug("ideas", post.slug || post.id);
+      {/* 想法单篇列表流 (绿点指示 + 单篇核心思考 或 空状态) */}
+      {items.length === 0 ? (
+        <div className="py-16 px-6 rounded-2xl border border-dashed border-border/60 text-center space-y-3 bg-card/20 backdrop-blur-xs">
+          <Lightbulb className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+          <div className="text-sm font-semibold text-foreground">暂无即时随想</div>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+            当灵感闪现时，新的想法与随想会实时流淌在这里。
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {items.map((post, index) => {
+            const linkHref = routes.postDetailSlug("ideas", post.slug || post.id);
 
-          return (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, x: 16 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.08 }}
-            >
-              <Link
-                href={linkHref}
-                className="group block p-4 rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:border-emerald-500/30 hover:bg-muted/40"
+            return (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, x: 16 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.08 }}
               >
-                <div className="space-y-2">
-                  {/* 标题带绿点 */}
-                  <div className="flex items-start gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform" />
-                    <h3 className="font-semibold text-sm sm:text-base text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-snug">
-                      {post.title}
-                    </h3>
-                  </div>
+                <Link
+                  href={linkHref}
+                  className="group block p-4 rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:border-emerald-500/30 hover:bg-muted/40"
+                >
+                  <div className="space-y-2">
+                    {/* 标题带绿点 */}
+                    <div className="flex items-start gap-2.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0 group-hover:scale-125 transition-transform" />
+                      <h3 className="font-semibold text-sm sm:text-base text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-snug">
+                        {post.title}
+                      </h3>
+                    </div>
 
-                  {/* 核心随笔摘录 */}
-                  <p className="pl-4 text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-2 font-light">
-                    {post.excerpt}
-                  </p>
+                    {/* 核心随笔摘录 */}
+                    <p className="pl-4 text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-2 font-light">
+                      {post.excerpt}
+                    </p>
 
-                  {/* 发布日期 */}
-                  <div className="pl-4 pt-1 text-[11px] font-mono text-muted-foreground/60">
-                    {formatDate(post.publishedAt || post.createdAt)}
+                    {/* 发布日期 */}
+                    <div className="pl-4 pt-1 text-[11px] font-mono text-muted-foreground/60">
+                      {formatDate(post.publishedAt || post.createdAt)}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            </motion.div>
-          );
-        })}
-      </div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

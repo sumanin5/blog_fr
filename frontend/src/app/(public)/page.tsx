@@ -1,4 +1,3 @@
-import React from "react";
 import { getFeaturedCategories } from "@/lib/categories-api";
 import { getFeaturedPosts, getPosts } from "@/lib/post-api";
 import { HeroSection } from "@/components/public/home/hero-section";
@@ -6,11 +5,6 @@ import { FeaturedCategoriesSection } from "@/components/public/home/featured-cat
 import { LatestArticlesSection } from "@/components/public/home/latest-articles-section";
 import { ThoughtsSection } from "@/components/public/home/thoughts-section";
 import { ConnectSection } from "@/components/public/home/connect-section";
-import {
-  MOCK_FEATURED_COLLECTIONS,
-  MOCK_LATEST_ARTICLES,
-  MOCK_THOUGHTS,
-} from "@/config/home-mock-data";
 import type { Category } from "@/shared/api/types";
 import type { PostShortResponse } from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
@@ -18,7 +12,7 @@ import type { ApiData } from "@/shared/api/transformers";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // 1. 数据获取：优先拉取后端动态数据，若后端未就绪或为空，无缝平滑回退至高保真展示案例数据
+  // 1. 数据获取：100% 走后端真实 API 动态获取
   let categoryItems: Category[] = [];
   let articleItems: ApiData<PostShortResponse>[] = [];
   let thoughtItems: ApiData<PostShortResponse>[] = [];
@@ -30,28 +24,17 @@ export default async function Home() {
       getFeaturedPosts("ideas", 4).catch(() => null),
     ]);
 
-    if (categoriesData && categoriesData.items && categoriesData.items.length > 0) {
+    if (categoriesData?.items?.length) {
       categoryItems = categoriesData.items as Category[];
     }
-    if (articlesData && articlesData.items && articlesData.items.length > 0) {
+    if (articlesData?.items?.length) {
       articleItems = articlesData.items as ApiData<PostShortResponse>[];
     }
-    if (thoughtsData && thoughtsData.items && thoughtsData.items.length > 0) {
+    if (thoughtsData?.items?.length) {
       thoughtItems = thoughtsData.items as ApiData<PostShortResponse>[];
     }
-  } catch {
-    // 后端未运行或异常时，平滑捕获
-  }
-
-  // 2. 优雅 Fallback 到高保真案例展示数据（无需强依赖后端即可完美呈现设计图）
-  if (categoryItems.length === 0) {
-    categoryItems = MOCK_FEATURED_COLLECTIONS;
-  }
-  if (articleItems.length === 0) {
-    articleItems = MOCK_LATEST_ARTICLES;
-  }
-  if (thoughtItems.length === 0) {
-    thoughtItems = MOCK_THOUGHTS;
+  } catch (error) {
+    console.warn("Failed to fetch home page data from backend:", error);
   }
 
   return (
