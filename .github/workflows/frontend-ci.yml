@@ -85,6 +85,9 @@ jobs:
         env:
           # Point to the background test server
           VITE_API_BASE_URL: http://localhost:8001
+          FIRST_SUPERUSER: admin@example.com
+          FIRST_SUPERUSER_EMAIL: admin@example.com
+          FIRST_SUPERUSER_PASSWORD: changethis
         run: |
            pnpm run test
 

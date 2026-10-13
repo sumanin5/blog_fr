@@ -17,6 +17,11 @@ export default async function setup() {
     stdio: "inherit",
     env: {
       ...process.env,
+      FIRST_SUPERUSER: process.env.FIRST_SUPERUSER || "admin@example.com",
+      FIRST_SUPERUSER_EMAIL:
+        process.env.FIRST_SUPERUSER_EMAIL || "admin@example.com",
+      FIRST_SUPERUSER_PASSWORD:
+        process.env.FIRST_SUPERUSER_PASSWORD || "changethis",
       TEST_DATABASE_URL: `sqlite+aiosqlite:///${path.join(databaseDir, "test.db")}`,
     },
   });

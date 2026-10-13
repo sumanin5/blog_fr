@@ -16,6 +16,10 @@ if __name__ == "__main__":
     os.environ["DATABASE_URL"] = os.environ.get(
         "TEST_DATABASE_URL", "sqlite+aiosqlite:///./test_server.db"
     )
+    # 设置测试专用超级管理员账密默认值，确保无 .env 环境下（如 CI）能与前端测试工具保持一致
+    os.environ.setdefault("FIRST_SUPERUSER", "admin@example.com")
+    os.environ.setdefault("FIRST_SUPERUSER_EMAIL", "admin@example.com")
+    os.environ.setdefault("FIRST_SUPERUSER_PASSWORD", "changethis")
 
     print(f"🌍 环境: {os.environ['ENVIRONMENT']}")
     print(f"📦 数据库: {os.environ['DATABASE_URL']}")
