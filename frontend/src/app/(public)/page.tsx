@@ -9,7 +9,8 @@ import type { Category } from "@/shared/api/types";
 import type { PostShortResponse } from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
 
-export const dynamic = "force-dynamic";
+// 启用 ISR（增量静态再生成），保留静态秒开优势，每 60 秒或内容变更时按需更新
+export const revalidate = 60;
 
 export default async function Home() {
   // 1. 数据获取：100% 走后端真实 API 动态获取

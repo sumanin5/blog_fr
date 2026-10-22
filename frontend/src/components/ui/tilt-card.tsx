@@ -28,8 +28,8 @@ export function TiltCard({
   ...props
 }: TiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const spotlightRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
 
   // 物理弹性动画值配置 (柔和高档阻尼感)
   const springConfig = { damping: 20, stiffness: 180, mass: 0.5 };
@@ -50,11 +50,12 @@ export function TiltCard({
     mouseX.set(x);
     mouseY.set(y);
 
-    // 聚光光斑真实像素坐标
-    setSpotlightPos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
+    // 聚光光斑通过 ref 直接更新 DOM 样式，彻底绕过 React 状态树高频重渲染
+    if (spotlightRef.current) {
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      spotlightRef.current.style.background = `radial-gradient(400px circle at ${px}px ${py}px, rgba(16, 185, 129, ${glareOpacity}), transparent 80%)`;
+    }
   };
 
   const handleMouseEnter = () => {
@@ -91,10 +92,10 @@ export function TiltCard({
 
         {/* 鼠标动态聚光高光层 (Spotlight Glare) */}
         <div
+          ref={spotlightRef}
           className="pointer-events-none absolute inset-0 z-20 rounded-2xl transition-opacity duration-300"
           style={{
             opacity: isHovered ? 1 : 0,
-            background: `radial-gradient(400px circle at ${spotlightPos.x}px ${spotlightPos.y}px, rgba(16, 185, 129, ${glareOpacity}), transparent 80%)`,
           }}
         />
 
