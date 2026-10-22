@@ -36,12 +36,12 @@ compose run --rm --no-deps backend alembic upgrade head
 phase=application-start
 # Keep the previous desired release for explicit operator rollback.
 if [[ -f "$project_dir/.release.env" ]]; then
-    cp "$project_dir/.release.env" "$project_dir/.previous-release.env"
+    cp -f "$project_dir/.release.env" "$project_dir/.previous-release.env"
 fi
 if [[ -f "$project_dir/docker-compose.yml" ]]; then
-    cp "$project_dir/docker-compose.yml" "$project_dir/.previous-compose.yml"
+    cp -f "$project_dir/docker-compose.yml" "$project_dir/.previous-compose.yml"
 fi
-cp "$compose_file" "$project_dir/docker-compose.yml"
+cp -f "$compose_file" "$project_dir/docker-compose.yml"
 printf 'IMAGE_TAG=%s\n' "$IMAGE_TAG" > "$project_dir/.release.env"
 compose up -d --wait --wait-timeout 180
 

@@ -82,6 +82,32 @@ if (fail == "pull" and args[-1] == "pull"
         self.assertEqual(result.returncode, 2)
         self.assertEqual(calls, [])
 
+    def test_read_only_compose_file_does_not_break_deploy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            release_dir = root / ".deploy" / RELEASE
+            release_dir.mkdir(parents=True)
+            (release_dir / "docker-compose.yml").write_text("services: {}\n")
+            old_compose = root / "docker-compose.yml"
+            old_compose.write_text("old configuration\n")
+            old_compose.chmod(0o444)
+            (root / ".env").write_text("ENVIRONMENT=production\n")
+            (root / ".release.env").write_text(f"IMAGE_TAG={PREVIOUS}\n")
+            log = root / "calls.jsonl"
+            docker = root / "docker"
+            docker.write_text('''#!/usr/bin/env python3
+import sys
+sys.exit(0)
+''')
+            docker.chmod(0o755)
+            environment = dict(os.environ, PATH=f"{root}:{os.environ['PATH']}",
+                               DEPLOY_TEST_LOG=str(log))
+            result = subprocess.run(["bash", str(SCRIPT), str(root), RELEASE],
+                                    env=environment, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((root / "docker-compose.yml").read_text(), "services: {}\n")
+            self.assertEqual((root / ".previous-compose.yml").read_text(), "old configuration\n")
+
 
 if __name__ == "__main__":
     unittest.main()
