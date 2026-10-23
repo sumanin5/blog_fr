@@ -3,6 +3,7 @@ import React from "react";
 import { CodeBlock } from "@/components/public/mdx/components/code-block";
 import { MermaidDiagram } from "@/components/public/mdx/components/mermaid-diagram";
 import { KatexMath } from "@/components/public/mdx/components/katex-math";
+import { cn } from "@/lib/utils";
 
 interface AstRendererProps {
   ast: Record<string, unknown>;
@@ -10,7 +11,11 @@ interface AstRendererProps {
 }
 
 export function AstRenderer({ ast, articleClassName }: AstRendererProps) {
-  return <article className={articleClassName}>{renderNode(ast)}</article>;
+  return (
+    <article className={cn(articleClassName, "markdown-body")}>
+      {renderNode(ast)}
+    </article>
+  );
 }
 
 function renderNode(node: Record<string, unknown>, i = 0): React.ReactNode {

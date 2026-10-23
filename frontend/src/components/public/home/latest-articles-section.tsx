@@ -1,141 +1,118 @@
-"use client";
-
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Clock } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
+import { routes } from "@/lib/routes";
 import type { PostShortResponse } from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
-import { routes } from "@/lib/routes";
-import { motion } from "framer-motion";
 
 interface LatestArticlesProps {
   articles: ApiData<PostShortResponse>[];
 }
 
+function formatDate(dateString?: string) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export function LatestArticlesSection({ articles }: LatestArticlesProps) {
   const items = articles || [];
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "2026-09-28";
-    const d = new Date(dateString);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  };
-
   return (
     <section className="space-y-6">
-      {/* 头部标题与查看全部 */}
       <div className="flex items-center justify-between border-b border-border/40 pb-4">
         <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            专栏精选文章
+          <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            文章合集
           </h2>
         </div>
         <Link
-          href="/posts/articles/categories"
-          className="group inline-flex items-center text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors"
+          href={routes.postCategories("articles")}
+          className="group inline-flex items-center text-xs font-medium text-emerald-600 transition-colors hover:text-emerald-700 dark:text-emerald-400 sm:text-sm"
         >
           <span>探索所有专栏</span>
-          <ArrowRight className="ml-1 w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
 
-      {/* 文章列表流 (左图右文横向卡片 或 空状态) */}
       {items.length === 0 ? (
-        <div className="py-16 px-6 rounded-2xl border border-dashed border-border/60 text-center space-y-3 bg-card/20 backdrop-blur-xs">
-          <BookOpen className="w-8 h-8 text-muted-foreground/40 mx-auto" />
-          <div className="text-sm font-semibold text-foreground">暂无公开发布的文章</div>
-          <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
-            博主正在酝酿深度专栏内容，在后台发布文章后将在此自动呈现。
+        <div className="space-y-3 rounded-2xl border border-dashed border-border/60 bg-card/20 px-6 py-16 text-center backdrop-blur-xs">
+          <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/40" />
+          <div className="text-sm font-semibold text-foreground">
+            暂无公开发布的文章
+          </div>
+          <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted-foreground">
+            在后台发布文章后，它们会按专栏与阅读顺序出现在这里。
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="divide-y divide-border/60 border-y border-border/60">
           {items.map((post, index) => {
-          const linkHref = routes.postDetailSlug("articles", post.slug || post.id);
-          // 缩略图：优先使用真实后端封面，若无则使用高分辨率艺术生成封面
-          const thumbSrc =
-            post.coverMediaId
-              ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/${post.coverMediaId}/thumbnail/medium`
-              : index % 2 === 0
-                ? "/images/article-1.jpg"
-                : "/images/article-2.jpg";
+            const date = formatDate(post.publishedAt || post.createdAt);
 
-          return (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-            >
+            return (
               <Link
-                href={linkHref}
-                className="group flex flex-col sm:flex-row gap-5 p-4 -mx-4 rounded-2xl transition-all duration-300 hover:bg-muted/40"
+                key={post.id}
+                href={routes.postDetailSlug(
+                  "articles",
+                  post.slug || post.id,
+                )}
+                className="group grid gap-3 py-5 transition-colors hover:bg-muted/20 sm:grid-cols-[40px_minmax(0,1fr)] sm:gap-5"
               >
-                {/* 缩略图 */}
-                <div className="relative w-full sm:w-48 md:w-56 aspect-[16/10] shrink-0 rounded-xl overflow-hidden bg-muted border border-border/40 shadow-xs">
-                  <Image
-                    src={thumbSrc}
-                    alt={post.title}
-                    fill
-                    unoptimized
-                    className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
+                <span className="pt-1 font-mono text-xs tabular-nums text-muted-foreground/50">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
 
-                {/* 文字内容 */}
-                <div className="flex flex-col justify-between flex-1 py-0.5 space-y-2.5">
-                  <div className="space-y-2">
-                    {/* 标签 */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {post.tags && post.tags.length > 0 ? (
-                        post.tags.slice(0, 2).map((tag) => (
-                          <Badge
-                            key={tag.id}
-                            variant="secondary"
-                            className="text-[11px] px-2.5 py-0.5 font-normal bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20"
-                          >
-                            {tag.name}
-                          </Badge>
-                        ))
-                      ) : (
-                        <Badge
-                          variant="secondary"
-                          className="text-[11px] px-2 py-0 font-normal bg-muted text-muted-foreground border-none"
-                        >
-                          系统设计
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* 标题 */}
-                    <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
-                      {post.title}
-                    </h3>
-
-                    {/* 摘要 */}
-                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-2 font-light">
-                      {post.excerpt}
-                    </p>
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {post.category?.name && (
+                      <Badge
+                        variant="outline"
+                        className="border-border/60 px-2 py-0 text-[10px] font-normal text-muted-foreground"
+                      >
+                        {post.category.name}
+                      </Badge>
+                    )}
+                    {post.tags?.slice(0, 2).map((tag) => (
+                      <Badge
+                        key={tag.id}
+                        variant="secondary"
+                        className="border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0 text-[10px] font-normal text-emerald-800 dark:text-emerald-300"
+                      >
+                        {tag.name}
+                      </Badge>
+                    ))}
                   </div>
 
-                  {/* 底部元信息 */}
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground/80 font-mono pt-1">
-                    <span>{formatDate(post.publishedAt || post.createdAt)}</span>
-                    <span>·</span>
+                  <h3 className="line-clamp-1 text-lg font-bold tracking-tight text-foreground transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400 sm:text-xl">
+                    {post.title}
+                  </h3>
+
+                  {post.excerpt && (
+                    <p className="line-clamp-2 text-xs font-light leading-relaxed text-muted-foreground sm:text-sm">
+                      {post.excerpt}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1 font-mono text-[11px] text-muted-foreground/70">
+                    {date && (
+                      <time dateTime={post.publishedAt || post.createdAt}>
+                        {date}
+                      </time>
+                    )}
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {post.readingTime || 10} 分钟阅读
+                      <Clock className="h-3 w-3" />
+                      {post.readingTime || 1} 分钟阅读
                     </span>
                   </div>
                 </div>
               </Link>
-            </motion.div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
       )}
     </section>
   );

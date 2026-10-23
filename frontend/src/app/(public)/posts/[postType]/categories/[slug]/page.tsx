@@ -1,20 +1,37 @@
-import { normalizeApiResponse, type ApiData } from "@/shared/api/transformers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Layers } from "lucide-react";
+
+import { ArticleNavigation } from "@/components/public/docs/article-navigation";
+import { CollectionArticleList } from "@/components/public/docs/collection-article-list";
+import { MdxServerRenderer } from "@/components/public/post/content/renderers/mdx-server-renderer";
+import { TanStackMarkdownRenderer } from "@/components/public/post/content/renderers/tanstack-markdown-renderer";
+import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { sortSeriesPosts } from "@/lib/article-series";
+import {
+  parseArticleMarkdown,
+  requiresMdxRenderer,
+} from "@/lib/markdown/article-markdown";
+import { routes } from "@/lib/routes";
 import { serverClient } from "@/lib/server-api-client";
-import type {
-  PostType,
-  PostShortResponse,
-} from "@/shared/api/generated/types.gen";
-import type { Category } from "@/shared/api/types";
 import {
   listCategoriesByType,
   listPostsByType,
 } from "@/shared/api/generated/sdk.gen";
-import { PostCard } from "@/components/public/post/views/post-card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { MdxServerRenderer } from "@/components/public/post/content/renderers/mdx-server-renderer";
-import { getThumbnailUrl, getMediaUrl } from "@/lib/media-utils";
+import type {
+  PostShortResponse,
+  PostType,
+} from "@/shared/api/generated/types.gen";
+import { normalizeApiResponse, type ApiData } from "@/shared/api/transformers";
+import type { Category } from "@/shared/api/types";
 
 export default async function CategoryPage({
   params,
@@ -23,150 +40,149 @@ export default async function CategoryPage({
 }) {
   const { postType, slug } = await params;
 
-  // 1. 获取所有分类以查找当前分类详情
   const categoriesRes = await listCategoriesByType({
     client: serverClient,
-    path: { post_type: postType as unknown as PostType },
+    path: { post_type: postType as PostType },
   });
 
   if (categoriesRes.error || !categoriesRes.data) {
     console.error("Failed to fetch categories list", categoriesRes.error);
   }
 
-  // SDK 保留后端字段，在页面数据边界转换为领域模型。
   const data = normalizeApiResponse(categoriesRes.data);
-  const category: Category | undefined = data?.items?.find((c) => c.slug === slug);
+  const category: Category | undefined = data?.items?.find(
+    (item) => item.slug === slug,
+  );
 
   if (!category) {
     notFound();
   }
 
-  // 2. 获取该分类下的文章
   let posts: ApiData<PostShortResponse>[] = [];
   try {
     const postsRes = await listPostsByType({
       client: serverClient,
-      path: { post_type: postType as unknown as PostType },
+      path: { post_type: postType as PostType },
       query: {
         category_id: category.id,
         page: 1,
-        size: 50,
+        size: 100,
       },
     });
-    posts = normalizeApiResponse(postsRes.data?.items ?? []);
+    posts = sortSeriesPosts(normalizeApiResponse(postsRes.data?.items ?? []));
   } catch (error) {
     console.warn("Failed to fetch posts for category:", error);
   }
 
-  const coverImageUrl = getThumbnailUrl(category.coverMediaId, "xlarge");
-  const iconUrl = getMediaUrl(category.iconId);
+  const tanstackDescription =
+    category.description && !requiresMdxRenderer(category.description)
+      ? parseArticleMarkdown(category.description, {
+          stripLeadingHeading: true,
+        })
+      : null;
 
   return (
     <div className="min-h-screen">
-      <div className="container py-8 mx-auto z-10 relative">
-        {/* 分类头部：封面 + 标题 */}
-        <div className="relative mb-12 flex flex-col gap-6">
-          {/* 封面背景层 */}
-          {coverImageUrl ? (
-            <div className="h-80 md:h-[550px] w-full relative rounded-2xl overflow-hidden group shadow-2xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={coverImageUrl}
-                alt={category.name}
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-              />
-              {/* 遮罩层：提供多重渐变以实现平滑融合 */}
-              <div className="absolute inset-0 bg-linear-to-t from-background via-background/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 h-48 bg-linear-to-t from-background to-transparent" />
-            </div>
-          ) : (
-            // 无封面时的多彩背景
-            <div className="h-48 md:h-80 w-full relative bg-linear-to-br from-primary/10 via-background to-accent/20 rounded-2xl shadow-sm" />
-          )}
+      <div className="border-b border-border/50 bg-background/60 backdrop-blur-sm">
+        <div className="container mx-auto max-w-[1440px] px-4 py-8 md:px-6 lg:py-10">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href={routes.postCategories(postType)}>专栏</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{category.name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
 
-          {/* 内容层：整体居中排列 */}
-          <div className="flex flex-col items-center text-center">
-            <div className="flex items-center justify-center gap-3 mb-4 opacity-80">
-              <Badge
-                variant="secondary"
-                className="px-3 py-0.5 rounded-full font-medium"
-              >
-                Category
-              </Badge>
-              {/* 图标（如果有） */}
-              {iconUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={iconUrl}
-                  alt={category.name}
-                  className="w-10 h-10 object-contain"
-                />
-              ) : (
-                category.iconPreset && (
-                  <span className="text-3xl">{category.iconPreset}</span>
-                )
+          <div className="mt-6 flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/40 text-2xl">
+              {category.iconPreset || (
+                <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               )}
             </div>
 
-            <h1 className="text-4xl md:text-7xl font-bold tracking-tight mb-6 text-foreground drop-shadow-sm">
-              {category.name}
-            </h1>
-
-            {/* 显示 excerpt 作为简介 */}
-            {category.excerpt && (
-              <p className="text-lg md:text-xl max-w-4xl text-pretty text-muted-foreground leading-relaxed mb-8">
-                {category.excerpt}
-              </p>
-            )}
-
-            {/* 显示完整的 description (markdown 正文) */}
-            {category.description && (
-              <div
-                className={cn(
-                  "max-w-4xl mx-auto prose dark:prose-invert prose-lg",
-                  "prose-headings:font-bold prose-headings:tracking-tight",
-                  "prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl",
-                  "prose-p:text-muted-foreground prose-p:leading-relaxed",
-                  "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-                  "prose-blockquote:border-l-primary prose-blockquote:italic prose-blockquote:text-muted-foreground",
-                  "prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
-                  "prose-pre:bg-muted prose-pre:border prose-pre:border-border",
-                  "prose-ul:text-muted-foreground prose-ol:text-muted-foreground",
-                  "prose-li:my-1",
-                  "prose-strong:text-foreground prose-strong:font-semibold",
-                  "text-left",
-                )}
-              >
-                <MdxServerRenderer
-                  mdx={category.description}
-                  toc={[]}
-                  articleClassName="mx-auto"
-                />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge
+                  variant="secondary"
+                  className="rounded-full px-3 py-0.5 text-[11px] font-normal"
+                >
+                  Collection
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {posts.length} 篇文章
+                </span>
               </div>
-            )}
+
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                {category.name}
+              </h1>
+
+              {category.excerpt && (
+                <p className="mt-3 max-w-4xl text-sm font-light leading-relaxed text-muted-foreground sm:text-base">
+                  {category.excerpt}
+                </p>
+              )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* 文章列表 */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight">最新文章</h2>
-            <span className="text-sm text-muted-foreground">
-              {posts.length} 篇文章
-            </span>
+      <div className="container mx-auto max-w-[1440px] px-4 py-8 md:px-6">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <ArticleNavigation
+            posts={posts}
+            postType={postType}
+            category={category}
+          />
+
+          <div className="min-w-0">
+            {category.description && (
+              <div className="mb-10 max-w-4xl text-sm text-muted-foreground">
+                {tanstackDescription ? (
+                  <TanStackMarkdownRenderer
+                    document={tanstackDescription.document}
+                    articleClassName="prose prose-sm max-w-none dark:prose-invert prose-headings:scroll-mt-28 prose-p:leading-relaxed prose-a:text-primary"
+                  />
+                ) : (
+                  <MdxServerRenderer
+                    mdx={category.description}
+                    toc={[]}
+                    articleClassName="prose prose-sm max-w-none dark:prose-invert prose-headings:scroll-mt-28 prose-p:leading-relaxed prose-a:text-primary"
+                  />
+                )}
+              </div>
+            )}
+
+            <section className="max-w-4xl">
+              <div className="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                    文章目录
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    按发布时间顺序排列
+                  </p>
+                </div>
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  {posts.length} entries
+                </span>
+              </div>
+
+              {posts.length > 0 ? (
+                <CollectionArticleList posts={posts} postType={postType} />
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/20 py-16 text-sm text-muted-foreground">
+                  该专栏下暂无文章
+                </div>
+              )}
+            </section>
           </div>
-
-          {posts.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground border border-dashed rounded-xl bg-card/20 backdrop-blur-sm">
-              <p>该分类下暂无文章</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

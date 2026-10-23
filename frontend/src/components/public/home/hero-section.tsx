@@ -6,17 +6,17 @@ import { BookOpen, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
-// 客户端按需异步加载 3D 场景，保证 SSR 纯净与首屏秒开
-const DigitalGarden3D = dynamic(
-  () => import("@/components/public/home/digital-garden-3d"),
+// 客户端按需异步加载数学动画，保证 SSR 纯净与首屏秒开
+const FourierOrbit = dynamic(
+  () => import("@/components/public/home/fourier-orbit").then((mod) => mod.FourierOrbit),
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full min-h-[360px] flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+      <div className="flex min-h-[360px] w-full items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" />
       </div>
     ),
-  }
+  },
 );
 
 export function HeroSection() {
@@ -25,11 +25,11 @@ export function HeroSection() {
       {/* 顶部柔和环境光晕 */}
       <div className="absolute top-10 right-1/4 w-[500px] h-[350px] bg-emerald-500/10 dark:bg-emerald-500/15 blur-[120px] rounded-full pointer-events-none -z-10" />
 
-      <div className="container mx-auto px-4 md:px-6">
+      <div className="container mx-auto max-w-[1440px] px-4 md:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* 左侧文字与操作区 (占 7 列) */}
           <motion.div
-            initial={{ opacity: 0, x: -24 }}
+            initial={false}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="lg:col-span-7 space-y-6 text-left"
@@ -70,19 +70,26 @@ export function HeroSection() {
             </div>
           </motion.div>
 
-          {/* 右侧：实时原生 3D 展台区 (占 5 列，支持鼠标跟随与平滑微动) */}
+          {/* 右侧：实时傅里叶本轮展台区 (占 5 列) */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
             className="lg:col-span-5 relative flex justify-center lg:justify-end"
           >
-            <div className="relative w-full max-w-[480px] aspect-[4/3] rounded-3xl overflow-hidden border border-border/50 bg-card/25 backdrop-blur-md shadow-2xl shadow-emerald-950/10 group">
-              {/* 实时原生 3D WebGL 视口 */}
-              <DigitalGarden3D />
+            <div className="relative aspect-[4/3] w-full max-w-[480px]">
+              {/* 实时傅里叶本轮动画：不套卡片，直接作为裸视觉元素显示 */}
+              <FourierOrbit />
 
-              {/* 底部柔和边缘羽化渐变，自然沉入背景 */}
-              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/40 to-transparent pointer-events-none" />
+              {/* 数学标注：让视觉不只是装饰，而是可以继续阅读的公式 */}
+              <div className="pointer-events-none absolute left-1 top-1 z-10 space-y-1">
+                <div className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-emerald-700/70 dark:text-emerald-300/70">
+                  Fourier Epicycles
+                </div>
+                <div className="font-mono text-[11px] text-muted-foreground/70">
+                  z(t) = Σ cₙ e<sup>int</sup>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>

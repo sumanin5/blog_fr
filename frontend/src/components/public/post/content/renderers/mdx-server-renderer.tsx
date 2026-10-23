@@ -3,6 +3,8 @@ import { createMdxComponents } from "@/components/public/mdx/registry/mdx-compon
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import { stripLeadingMarkdownHeading } from "@/lib/markdown/leading-heading";
+import { cn } from "@/lib/utils";
 import "katex/dist/katex.min.css";
 
 /**
@@ -53,11 +55,13 @@ export async function MdxServerRenderer({
   toc,
   articleClassName,
 }: MdxServerRendererProps) {
-  // 预处理：转换 HTML style 为 JSX 格式
-  const processedMdx = convertHtmlStyleToJsx(mdx);
+  // 预处理：去掉重复的正文 H1，并转换 HTML style 为 JSX 格式
+  const processedMdx = convertHtmlStyleToJsx(
+    stripLeadingMarkdownHeading(mdx),
+  );
 
   return (
-    <article className={articleClassName}>
+    <article className={cn(articleClassName, "markdown-body")}>
       <MDXRemote
         source={processedMdx}
         components={createMdxComponents(toc)}

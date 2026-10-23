@@ -12,6 +12,7 @@ mdx/
 │   ├── code-block.tsx
 │   ├── mermaid-diagram.tsx
 │   ├── interactive-button.tsx
+│   ├── tanstack-chart.tsx
 │   ├── katex-math.tsx
 │   └── custom-components.tsx
 └── utils/              # 工具组件
@@ -95,8 +96,10 @@ import { createMdxComponents } from "@/components/mdx/registry/mdx-components";
 
 - 提取 `pre > code` 的内容和语言
 - 判断是否为 Mermaid 图表
-- 渲染语法高亮的代码块
+- 使用 `@tanstack/highlight` 渲染语法高亮
 - 集成复制按钮
+
+> MDX 只是兼容链路；普通文章正文由 `@tanstack/markdown` 渲染，两者共用同一套代码高亮 tokenizer。
 
 ### components/mermaid-diagram.tsx
 
@@ -114,6 +117,25 @@ Mermaid 图表渲染组件（客户端组件）。
 
 - `message?: string` - 点击后显示的消息
 - `children: React.ReactNode` - 按钮文本
+
+### components/tanstack-chart.tsx
+
+TanStack Charts 示例组件（客户端组件）。
+
+**Props**：
+
+- `initialDataset?: "pipeline" | "reading"` - 初始数据集
+- `className?: string` - 外层样式
+
+**MDX 用法**：
+
+```mdx
+<TanStackChart />
+
+<TanStackChart initialDataset="reading" />
+```
+
+图表支持 tooltip、点击选中和数据集切换，用于验证 MDX 自定义组件的 hydration 与交互。
 
 ### components/katex-math.tsx
 

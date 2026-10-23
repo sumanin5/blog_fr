@@ -12,6 +12,7 @@
 import React from "react";
 import { CodeBlock } from "../components/code-block";
 import { InteractiveButton } from "../components/interactive-button";
+import { TanStackChart } from "../components/tanstack-chart";
 
 type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {
   id?: string;
@@ -130,5 +131,6 @@ export function createMdxComponents(
 
     // 自定义组件
     InteractiveButton: InteractiveButton as React.ComponentType,
+    TanStackChart: TanStackChart as React.ComponentType,
   };
 }

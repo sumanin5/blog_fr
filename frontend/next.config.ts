@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
 
   // 优化服务器组件编译 - Next.js 16 已移到顶层
-  serverExternalPackages: ["highlight.js", "katex", "mermaid"],
+  serverExternalPackages: ["mermaid"],
 
   // API 代理配置
   async rewrites() {

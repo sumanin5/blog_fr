@@ -13,44 +13,45 @@ post/
 ├── content/            # 内容渲染
 │   ├── post-content.tsx
 │   ├── post-content-styles.ts
-│   └── renderers/      # 三种渲染器
-│       ├── html-renderer.tsx
-│       ├── mdx-server-renderer.tsx
-│       └── mdx-client-renderer.tsx
+│   └── renderers/
+│       ├── tanstack-markdown-renderer.tsx  # 默认正文链路
+│       ├── mdx-server-renderer.tsx         # JSX / 数学公式兼容
+│       ├── mdx-client-renderer.tsx         # 管理端预览
+│       └── ast-renderer.tsx                # 无 source 时兜底
 └── components/         # 原子组件
     └── post-meta.tsx
 ```
 
 ## 🎯 架构原则
 
-### 1. 按职责分层
+### 1. 默认一条 Markdown 真相
 
-- **views/**：页面级组件，组合多个组件
-- **content/**：内容渲染逻辑
-- **components/**：可复用的原子组件
+普通文章优先走 `@tanstack/markdown`：
 
-### 2. 渲染器职责单一
+- 服务端解析并直出
+- 稳定 heading id
+- 文档型 callout
+- 标题收集用于右侧目录
+- 代码高亮使用 `@tanstack/highlight`
 
-每个渲染器只负责一种渲染模式
+### 2. MDX 是兼容边界
+
+以下场景回退到 `next-mdx-remote`：
+
+- `enable_jsx=true`
+- TeX 数学公式
+- 已有 MDX 内容
 
 ### 3. 入口组件只做路由
 
-`post-content.tsx` 只负责判断和路由，不包含渲染逻辑
+`post-content.tsx` 只负责判断和路由，不包含渲染逻辑。
 
 ## 🔄 使用流程
 
 ```typescript
-import { PostDetailView } from "@/components/post/views/post-detail-view";
-import { PostContent } from "@/components/post/content/post-content";
+import { PostDetailView } from "@/components/public/post/views/post-detail-view";
 
-// 在页面中使用
-<PostDetailView post={post} />
-
-// 直接渲染内容
-<PostContent
-  html={post.content_html}
-  mdx={post.content_mdx}
-  enableJsx={post.enable_jsx}
-  useServerRendering={post.use_server_rendering}
-/>
+<PostDetailView post={post} />;
 ```
+
+详情页会在服务端预解析 Markdown，并把同一份 document 同时用于正文与目录，避免重复解析。

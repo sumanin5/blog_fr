@@ -13,7 +13,7 @@ export function Footer() {
 
   return (
     <footer className="relative py-8 mt-4 text-xs font-mono text-muted-foreground/50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+      <div className="container mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-2.5 px-4 sm:flex-row sm:px-6 lg:px-8">
         <div>
           © {currentYear} BLOG_FR · Crafted with care & digital garden philosophy.
         </div>

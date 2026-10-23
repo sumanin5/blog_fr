@@ -27,7 +27,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-md transition-colors">
-      <div className="container mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8 gap-4">
+      <div className="container mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
         {/* 1. 左侧 Logo (自然宽度) */}
         <div className="flex items-center gap-2">
           <div className="md:hidden">

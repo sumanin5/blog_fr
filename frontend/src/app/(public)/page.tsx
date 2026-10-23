@@ -44,7 +44,7 @@ export default async function Home() {
       <HeroSection />
 
       {/* 2. 核心内容区域 */}
-      <div className="container mx-auto px-4 md:px-6 py-10 md:py-16 space-y-16 md:space-y-20">
+      <div className="container mx-auto max-w-[1440px] space-y-16 px-4 py-10 md:space-y-20 md:px-6 md:py-16">
         {/* 板块 A：3 列专栏合集卡片（带 3D 物理倾斜与聚光） */}
         <FeaturedCategoriesSection categories={categoryItems} />
 

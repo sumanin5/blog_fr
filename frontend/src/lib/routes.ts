@@ -7,7 +7,11 @@ export const routes = {
   postList: (postType: string) => `/posts/${postType}` as Route,
   postCategories: (postType: string) =>
     `/posts/${postType}/categories` as Route,
+  postCategory: (postType: string, slug: string) =>
+    `/posts/${postType}/categories/${slug}` as Route,
   postTags: (postType: string) => `/posts/${postType}/tags` as Route,
   postDetailSlug: (postType: PostType, slug: string) =>
     `/posts/${postType}/${slug}` as Route,
+  postMarkdown: (postType: string, slug: string) =>
+    `/posts/${postType}/${slug}/raw` as Route,
 };

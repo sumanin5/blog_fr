@@ -79,7 +79,7 @@
 
 ### 场景 A：服务端渲染（SSR）- 内容展示
 
-**典型场景**：用户访问文章详情页 `/posts/my-article`
+**典型场景**：用户访问文章详情页 `/posts/articles/my-article`
 
 这是 SEO 友好的核心路径，爬虫和用户首次访问都走这条路。
 
@@ -90,19 +90,19 @@ sequenceDiagram
     participant FastAPI as FastAPI Backend
     participant DB as PostgreSQL
 
-    User->>NextServer: GET /posts/my-article
+    User->>NextServer: GET /posts/articles/my-article
     Note over NextServer: Server Component 开始执行
 
-    NextServer->>FastAPI: fetch("http://backend:8000/api/v1/posts/article/slug/my-article")
+    NextServer->>FastAPI: fetch("http://backend:8000/api/v1/posts/articles/slug/my-article")
     Note over NextServer,FastAPI: 内网通信 (0-1ms)
 
     FastAPI->>DB: SELECT * FROM posts WHERE slug = 'my-article'
     DB-->>FastAPI: Post Record
 
-    FastAPI-->>NextServer: JSON Response (title, content_html, toc, author...)
+    FastAPI-->>NextServer: JSON Response (title, content_mdx, toc, author...)
 
     Note over NextServer: 1. generateMetadata() 生成 SEO 标签
-    Note over NextServer: 2. Server Component 渲染 JSX → HTML
+    Note over NextServer: 2. TanStack Markdown 解析 + Server Component 渲染 HTML
 
     NextServer-->>User: 完整 HTML 文档
 
@@ -114,8 +114,10 @@ sequenceDiagram
 
 **关键代码位置**：
 
-- `frontend/src/app/posts/[slug]/page.tsx` - 服务端组件
-- `frontend/src/components/post/post-detail-view.tsx` - 客户端渲染组件
+- `frontend/src/app/(public)/posts/[postType]/[slug]/page.tsx` - 服务端路由
+- `frontend/src/components/public/post/views/post-detail-view.tsx` - 文档布局与目录
+- `frontend/src/lib/markdown/article-markdown.ts` - TanStack Markdown 解析计划
+- `frontend/src/app/(public)/posts/[postType]/[slug]/raw/route.ts` - 纯 Markdown 出口
 
 **优势**：
 

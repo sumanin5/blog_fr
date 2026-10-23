@@ -1,11 +1,9 @@
-"use client";
-
 import Link from "next/link";
-import { ArrowRight, Layers, Layout, Cpu, Code2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { TiltCard } from "@/components/ui/tilt-card";
+import { ArrowRight, Layers } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { routes } from "@/lib/routes";
 import type { Category } from "@/shared/api/types";
-import { motion } from "framer-motion";
 
 interface FeaturedCategoriesProps {
   categories: Category[];
@@ -22,95 +20,59 @@ export function FeaturedCategoriesSection({
 
   return (
     <section className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex items-center justify-between border-b border-border/40 pb-4">
+        <div className="flex items-center gap-2">
+          <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            专栏合集
+          </h2>
+        </div>
+        <Link
+          href={routes.postCategories("articles")}
+          className="group inline-flex items-center text-xs font-medium text-emerald-600 transition-colors hover:text-emerald-700 dark:text-emerald-400 sm:text-sm"
+        >
+          <span>查看全部</span>
+          <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </div>
+
+      <div className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((category, index) => (
-          <GardenCollectionCard
+          <Link
             key={category.id}
-            category={category}
-            index={index}
-          />
+            href={routes.postCategory("articles", category.slug)}
+            className="group flex flex-col border-t border-border/60 py-5 transition-colors hover:border-emerald-500/40"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-[11px] tabular-nums text-muted-foreground/50">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                  {category.name}
+                </h3>
+              </div>
+
+              <ArrowRight className="mt-0.5 h-4 w-4 text-muted-foreground/40 transition-all group-hover:translate-x-0.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+            </div>
+
+            <p className="mt-3 line-clamp-3 text-xs font-light leading-relaxed text-muted-foreground sm:text-sm">
+              {category.excerpt ||
+                category.description ||
+                "查看该专栏下的文章目录与阅读顺序。"}
+            </p>
+
+            <div className="mt-4">
+              <Badge
+                variant="secondary"
+                className="border-none bg-muted px-2.5 py-0 text-[10px] font-normal text-muted-foreground"
+              >
+                {category.postCount ?? 0} 篇文章
+              </Badge>
+            </div>
+          </Link>
         ))}
       </div>
     </section>
-  );
-}
-
-/**
- * 数字花园风格的合集/专栏卡片 (集成 3D 景深倾斜与鼠标聚光)
- */
-function GardenCollectionCard({
-  category,
-  index,
-}: {
-  category: Category;
-  index: number;
-}) {
-  const renderCategoryIcon = (name: string) => {
-    if (name.includes("前端")) {
-      return <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
-    }
-    if (name.includes("工程") || name.includes("实践")) {
-      return <Cpu className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
-    }
-    return <Layout className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="h-full"
-    >
-      <TiltCard tiltAngle={12} className="h-full">
-        <Link
-          href={`/posts/articles/categories/${category.slug}`}
-          className="group block h-full outline-hidden"
-        >
-          <Card className="relative h-full flex flex-col justify-between overflow-hidden rounded-2xl border border-border/60 bg-card/60 backdrop-blur-md p-6 sm:p-7 transition-colors duration-300 group-hover:border-emerald-500/40">
-            {/* 1. 顶部：图标 + 专栏名称 + "查看全部 ->" */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                  {renderCategoryIcon(category.name)}
-                </div>
-                <span className="font-semibold text-base text-foreground tracking-tight">
-                  {category.name}
-                </span>
-              </div>
-
-              <div className="inline-flex items-center text-xs font-medium text-muted-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                <span>查看全部</span>
-                <ArrowRight className="ml-1 w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-              </div>
-            </div>
-
-            {/* 2. 中部：专栏核心标题与描述 */}
-            <div className="mt-5 space-y-2.5 flex-1">
-              <h3 className="text-xl font-bold tracking-tight text-foreground group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
-                {category.name === "系统设计" && "FastAPI 与 Next.js 的边界设计"}
-                {category.name === "前端工程" && "从 OpenAPI 到类型安全 SDK"}
-                {category.name === "工程实践" && "GitOps 内容同步实践"}
-                {!["系统设计", "前端工程", "工程实践"].includes(category.name) && category.name}
-              </h3>
-
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-3 font-light">
-                {category.excerpt || category.description || "探索该专栏下的系统架构与技术思考。"}
-              </p>
-            </div>
-
-            {/* 3. 底部：日期与微发光透视卡片 */}
-            <div className="mt-6 pt-4 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground font-mono">
-              <span>2026-09-28</span>
-              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-sans font-medium text-[11px]">
-                <Layers className="w-3.5 h-3.5" />
-                <span>{category.postCount ?? 8} 篇连载</span>
-              </div>
-            </div>
-          </Card>
-        </Link>
-      </TiltCard>
-    </motion.div>
   );
 }

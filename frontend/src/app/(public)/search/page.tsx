@@ -71,7 +71,7 @@ function SearchResults() {
 
 export default function SearchPage() {
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12 max-w-7xl min-h-screen">
+    <div className="container mx-auto min-h-screen max-w-[1440px] px-4 py-8 md:py-12">
       <Suspense fallback={<div className="h-32" />}>
         <SearchResults />
       </Suspense>

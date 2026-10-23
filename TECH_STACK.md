@@ -74,11 +74,14 @@
 - **Zustand** - 客户端状态管理
 
 ### 内容渲染
-- **next-mdx-remote** - MDX 远程渲染
+- **@tanstack/markdown** - 默认 Markdown 解析与 React 渲染（稳定标题 id、文档目录、Callout）
+- **@tanstack/highlight** - 代码高亮 tokenizer（服务端直出，MDX 兼容链路共用）
+- **@tanstack/charts** - MDX 文章中的交互式图表（可选客户端组件）
+- **next-mdx-remote** - MDX/JSX 兼容渲染
 - **Mermaid** - 图表渲染
 - **KaTeX** - 数学公式渲染
-- **highlight.js** - 代码高亮
-- **rehype-katex, remark-math** - MDX 插件
+- **rehype-katex, remark-math** - MDX 数学公式插件
+- **纯 Markdown 出口** - `/posts/[postType]/[slug]/raw` 返回 `text/markdown`
 
 ### API 集成
 - **hey-api SDK** - 自动生成类型安全 API 客户端
