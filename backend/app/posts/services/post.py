@@ -138,20 +138,8 @@ async def get_post_detail(
             )
             raise InsufficientPermissionsError("无权访问此草稿")
 
-    # 3. 浏览量统计逻辑
-    # 只有当用户不是管理员时，才增加浏览量
-    # - 匿名用户 (None): +1
-    # - 普通用户 (USER): +1
-    # - 管理员 (ADMIN/SUPERADMIN): 不计数
-    should_increment_view = True
-    if current_user and current_user.is_admin:
-        should_increment_view = False
-        logger.debug(
-            f"Admin user {current_user.username} accessing post, view count skipped"
-        )
-
-    if should_increment_view:
-        await crud.increment_view_count(session, post.id)
+    # 浏览量不在这里统计：公开详情页走 ISR，请求只在页面重新生成时到达后端，
+    # 计数改由前端 article_view 埋点驱动（见 app.analytics.service.log_event）
 
     logger.debug(
         f"Post detail accessed: post_id={post_id}, status={post.status}, user={'guest' if not current_user else current_user.username}"

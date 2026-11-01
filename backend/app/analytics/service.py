@@ -1,9 +1,12 @@
 from typing import Optional
 
 from app.analytics import crud, model, schema
+from app.posts.cruds import post as post_crud
 from app.users.model import User
 from fastapi_pagination import Page, Params
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+ARTICLE_VIEW_EVENT = "article_view"
 
 
 async def log_event(
@@ -18,7 +21,20 @@ async def log_event(
     if current_user:
         event.user_id = current_user.id
 
-    return await crud.create_event(session, event)
+    created = await crud.create_event(session, event)
+
+    # 文章浏览量以真实浏览器的 article_view 事件为准（详情页 ISR 缓存后不再逐次请求后端）
+    # 爬虫与管理员不计数（超级管理员的事件在 router 层已被丢弃）
+    is_admin = bool(current_user and current_user.is_admin)
+    if (
+        created.event_type == ARTICLE_VIEW_EVENT
+        and created.post_id
+        and not created.is_bot
+        and not is_admin
+    ):
+        await post_crud.increment_view_count(session, created.post_id)
+
+    return created
 
 
 async def get_overview(session: AsyncSession) -> schema.AnalyticsStatsOverview:

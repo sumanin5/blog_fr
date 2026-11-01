@@ -50,12 +50,24 @@ async def get_post_by_slug(session: AsyncSession, slug: str) -> Optional[Post]:
     return result.one_or_none()
 
 
+def _counter_values(**values):
+    """计数器更新的 values：显式写回 updated_at，避免 onupdate 把“内容修改时间”刷成“最后访问时间”
+
+    updated_at 会被用于 sitemap lastModified 与文章结构化数据 dateModified。
+    """
+    return {**values, "updated_at": Post.updated_at}
+
+
 async def increment_view_count(session: AsyncSession, post_id: UUID) -> None:
     """原子化递增浏览量"""
     # 这种写法避开了先查后改的竞态条件，也更高效
     from sqlalchemy import update
 
-    stmt = update(Post).where(Post.id == post_id).values(view_count=Post.view_count + 1)  # type: ignore
+    stmt = (
+        update(Post)
+        .where(Post.id == post_id)
+        .values(**_counter_values(view_count=Post.view_count + 1))
+    )  # type: ignore
     await session.exec(stmt)
     await session.commit()
 
@@ -65,7 +77,11 @@ async def increment_like_count(session: AsyncSession, post_id: UUID) -> int:
     from sqlalchemy import update
 
     # 执行更新
-    stmt = update(Post).where(Post.id == post_id).values(like_count=Post.like_count + 1)  # type: ignore
+    stmt = (
+        update(Post)
+        .where(Post.id == post_id)
+        .values(**_counter_values(like_count=Post.like_count + 1))
+    )  # type: ignore
     await session.exec(stmt)
     await session.commit()
 
@@ -82,7 +98,7 @@ async def decrement_like_count(session: AsyncSession, post_id: UUID) -> int:
     stmt = (
         update(Post)
         .where(Post.id == post_id, Post.like_count > 0)  # type: ignore
-        .values(like_count=Post.like_count - 1)
+        .values(**_counter_values(like_count=Post.like_count - 1))
     )
     await session.exec(stmt)
     await session.commit()
@@ -98,7 +114,7 @@ async def increment_bookmark_count(session: AsyncSession, post_id: UUID) -> int:
     stmt = (
         update(Post)
         .where(Post.id == post_id)  # type: ignore
-        .values(bookmark_count=Post.bookmark_count + 1)
+        .values(**_counter_values(bookmark_count=Post.bookmark_count + 1))
     )
     await session.exec(stmt)
     await session.commit()
@@ -114,7 +130,7 @@ async def decrement_bookmark_count(session: AsyncSession, post_id: UUID) -> int:
     stmt = (
         update(Post)
         .where(Post.id == post_id, Post.bookmark_count > 0)  # type: ignore
-        .values(bookmark_count=Post.bookmark_count - 1)
+        .values(**_counter_values(bookmark_count=Post.bookmark_count - 1))
     )
     await session.exec(stmt)
     await session.commit()
