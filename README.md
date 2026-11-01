@@ -26,25 +26,28 @@
   </tr>
 </table>
 
-> 💡 基于 `next-themes` 实现，支持系统主题自动跟随，用户偏好自动保存。[查看更多功能展示 →](./SHOWCASE.md)
+> 💡 主题状态由 `next-themes` 管理，支持跟随系统与偏好保存；切换时使用 View Transitions API 做页面级水波纹过渡，不支持该 API 或开启“减少动态效果”时直接切换。首页右侧为可交互的傅里叶本轮（Fourier Epicycles）手稿。[查看更多功能展示 →](./SHOWCASE.md)
 
 ---
 
 ## ✨ 核心特性
 
 - 🎨 **现代设计**: Tailwind CSS 4 + shadcn/ui，深色/浅色主题无缝切换，响应式布局
-- 📝 **增强型 MDX**: Mermaid 图表、代码高亮 (highlight.js)、数学公式 (KaTeX)、交互式组件
+- 📝 **增强型 MDX**: Mermaid 图表、代码高亮 (@tanstack/highlight)、数学公式 (KaTeX)、交互式组件
 - ⚡ **混合渲染架构**:
-  - **SSR**: 博客文章页面，最佳 SEO 和首屏加载
+  - **ISR**: 公开页面静态生成 + 定时重验证（首页 60s、文章页 300s），内容同步后通过 revalidate webhook 主动刷新
   - **CSR**: 管理后台，流畅的 SPA 体验
   - **后端**: FastAPI + SQLModel，异步高性能
+- 🗂️ **内容组织**: 文章 (articles) 与想法 (ideas) 两种内容类型，各自下设专栏；专栏页提供地形图式导航
 - 🔗 **OpenAPI 驱动**: hey-api 自动生成类型安全的前端 SDK
 - 🖼️ **媒体管理**: 多规格缩略图自动生成，SVG 图标支持
-- 🔍 **SEO 友好**: 语义化 HTML、动态元数据、OpenGraph 标签
-- 🐳 **容器化部署**: Docker Compose 一键启动开发/生产环境
-- 🧪 **质量保证**: Pytest 测试框架 + 代码覆盖率
-- 🔄 **GitOps 同步**: 依赖注入容器模式，支持增量/全量同步
-- 🛡️ **统一错误处理**: 标准化错误响应格式 + 全链路追踪
+- 🔍 **SEO 与可发现性**: 动态元数据、OpenGraph、sitemap、robots、RSS；为 AI 爬虫提供 `llms.txt` / `llms-full.txt` 与每篇文章的纯 Markdown 版本
+- 📊 **访问分析**: 浏览量与 PV 统计、Core Web Vitals 真实用户监控、基于 ip2region 的离线 IP 归属地查询
+- 🔭 **可观测性**: OpenTelemetry 打通 Next.js → FastAPI → SQL 全链路追踪，可选接入 Jaeger
+- 🐳 **容器化部署**: Docker Compose + Caddy（自动 HTTPS），CI 检查通过后按 commit SHA 构建镜像并发布
+- 🧪 **质量保证**: Pytest + 覆盖率、Vitest、类型检查与 Lint，均在 CI 中作为发布门禁
+- 🔄 **GitOps 同步**: 依赖注入容器模式，支持增量/全量同步，后台提交与同步共用仓库锁
+- 🛡️ **统一错误处理**: 标准化错误响应格式，所有错误响应携带 `request_id`
 
 > 📸 **查看效果**: 想要直观了解这些特性？访问 [功能展示文档](./SHOWCASE.md) 查看完整的界面截图和功能演示！
 
@@ -68,8 +71,14 @@
 - **样式**: [Tailwind CSS 4](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/)
 - **状态管理**: [TanStack Query v5](https://tanstack.com/query)
 - **数据获取**: [hey-api SDK](https://www.heypi.com/) (基于 OpenAPI 自动生成)
-- **主题系统**: [next-themes](https://github.com/pacocoursey/next-themes) - 支持深色/浅色模式，自动跟随系统主题
-- **内容渲染**: MDX + Mermaid + KaTeX + highlight.js
+- **主题系统**: [next-themes](https://github.com/pacocoursey/next-themes) + View Transitions API
+- **内容渲染**: MDX + Mermaid + KaTeX + @tanstack/highlight
+
+### 基础设施 (Infrastructure)
+
+- **反向代理**: [Caddy](https://caddyserver.com/)（自动申请 HTTPS 证书）
+- **可观测性**: [OpenTelemetry](https://opentelemetry.io/) + [Jaeger](https://www.jaegertracing.io/)
+- **CI/CD**: GitHub Actions + Docker Buildx（GHA 缓存）+ 阿里云 ACR 镜像仓库
 
 ---
 
@@ -99,15 +108,15 @@ cp frontend/.env.example frontend/.env
 # 开发环境（支持热重载）
 docker compose -f docker-compose.dev.yml up
 
-# 生产环境
-docker compose up -d
 ```
 
 访问：
 
-- 前端: `http://localhost:3000` (开发) 或 `http://localhost:80` (生产)
+- 前端: `http://localhost:3000`
 - API 文档: `http://localhost:8000/scalar`
 - 后端健康检查: `http://localhost:8000/`
+
+> 生产环境的 `docker-compose.yml` 引用 CI 构建好的镜像，必须指定 `IMAGE_TAG`，不适合直接在本地启动。本地模拟生产请使用 `./scripts/test-prod-local.sh`（读取 `.env.prod.local` 与 `docker-compose.prod.local.yml`）。
 
 ---
 
@@ -120,7 +129,9 @@ cd frontend
 pnpm install
 pnpm dev        # 启动开发服务器 (http://localhost:3000)
 pnpm build      # 构建生产版本
-./scripts/generate-api.sh  # 从 OpenAPI schema 生成类型安全的 SDK
+pnpm test       # 运行测试
+pnpm type-check # 类型检查
+pnpm lint       # 代码检查
 ```
 
 ### 后端开发
@@ -141,6 +152,10 @@ uv run pytest      # 运行测试
 | `./scripts/generate-api.sh`   | **全自动生成 API SDK** | 后端接口变更后，一键更新前端 TypeScript 类型定义 |
 | `./scripts/db-migrate.sh`     | 数据库迁移辅助         | 创建新表或修改模型后使用                         |
 | `./scripts/docker-rebuild.sh` | 重建所有 Docker 容器   | 修改了依赖或 Dockerfile 后使用                   |
+| `./scripts/docker-rebuild-frontend.sh` | 仅重建前端容器 | 前端 `package.json` 变更后使用 |
+| `./scripts/sync-posts.sh`     | 同步 `content/` 文章   | 本地将 Git 内容目录同步到数据库                  |
+| `./scripts/test-prod-local.sh` | 本地模拟生产部署      | 发布前在本机验证生产配置                         |
+| `./scripts/deploy-release.sh` | 服务器端发布脚本       | 由 CI 调用：拉取镜像 → 迁移 → 启动 → 健康检查   |
 
 ### API SDK 生成
 
@@ -148,7 +163,7 @@ uv run pytest      # 运行测试
 
 1. 后端自动生成 OpenAPI schema: `http://localhost:8000/openapi.json`
 2. 前端使用 hey-api/openapi-ts 自动生成 TypeScript SDK
-3. 修改后端 API 后运行 `npm run api:generate` 更新前端类型
+3. 修改后端 API 后在根目录运行 `./scripts/generate-api.sh`（或在 `frontend/` 下执行 `pnpm api:generate`）更新前端类型
 
 ---
 
@@ -160,8 +175,10 @@ blog_fr/
 │   ├── app/
 │   │   ├── core/                # 核心配置和工具
 │   │   ├── users/               # 用户认证和授权
-│   │   ├── posts/               # 文章管理
+│   │   ├── posts/               # 文章、专栏、标签
 │   │   ├── media/               # 媒体文件管理
+│   │   ├── git_ops/             # GitOps 内容同步
+│   │   ├── analytics/           # 访问分析与 Web Vitals
 │   │   └── middleware/          # 自定义中间件
 │   ├── tests/                   # Pytest 测试
 │   ├── alembic/                 # 数据库迁移
@@ -174,9 +191,13 @@ blog_fr/
 │   │   └── config/              # 配置文件
 │   ├── public/                  # 静态资源
 │   └── package.json             # Node.js 项目配置
+├── content/                     # Git 管理的文章内容（articles/、ideas/）
+├── caddy/                       # Caddy 反向代理镜像与配置
 ├── scripts/                     # 自动化脚本
+├── .github/workflows/           # CI 与发布流水线
 ├── docker-compose.yml           # 生产环境配置
 ├── docker-compose.dev.yml       # 开发环境配置
+├── docker-compose.observability.yml  # 可选：Jaeger 链路追踪
 ├── ARCHITECTURE.md              # 架构详细文档
 └── README.md                    # 本文件
 ```
@@ -185,7 +206,7 @@ blog_fr/
 
 - **混合渲染**: Next.js App Router 支持 SSR 和 CSR，根据页面特性自动选择最佳渲染策略
 - **类型安全**: OpenAPI schema 自动生成 TypeScript SDK，确保前后端接口类型一致
-- **模块化设计**: 后端按功能模块划分（users、posts、media、git_ops），前端按组件和功能组织
+- **模块化设计**: 后端按功能模块划分（users、posts、media、git_ops、analytics），前端按组件和功能组织
 - **开发体验**: 支持 Hot Reload、TypeScript 检查、自动格式化
 
 ### GitOps 内容同步模块
@@ -242,15 +263,24 @@ GitOpsContainer (容器)
 ```bash
 cd backend
 # 运行所有测试
-pytest
+uv run pytest
 
 # 运行测试并生成覆盖率报告
-pytest --cov=app --cov-report=html
+uv run pytest --cov=app --cov-report=html
 
 # 运行特定模块的测试
-pytest tests/api/posts/
-pytest tests/api/users/
-pytest tests/api/media/
+uv run pytest tests/api/posts/
+uv run pytest tests/api/users/
+uv run pytest tests/api/media/
+```
+
+### 前端测试
+
+```bash
+cd frontend
+pnpm test
+pnpm type-check
+pnpm lint
 ```
 
 ### 数据库迁移
@@ -258,31 +288,38 @@ pytest tests/api/media/
 ```bash
 cd backend
 # 创建新的迁移
-alembic revision --autogenerate -m "描述"
+uv run alembic revision --autogenerate -m "描述"
 
 # 应用迁移
-alembic upgrade head
+uv run alembic upgrade head
 
 # 回滚迁移
-alembic downgrade -1
+uv run alembic downgrade -1
 ```
 
 ---
 
 ## 🚀 部署
 
-### 生产环境部署
+### 发布流程
+
+推送到 `main` 后由 [`deploy.yml`](./.github/workflows/deploy.yml) 自动完成，同一时间只运行一个发布：
+
+1. **检查门禁**: 并行运行后端 CI（pytest + 覆盖率）与前端 CI（type-check、lint、测试、构建），全部通过才继续
+2. **构建镜像**: 使用 Buildx + GitHub Actions 缓存构建 backend / frontend / caddy 镜像，以 commit SHA 为标签推送到阿里云 ACR
+3. **服务器发布**: 上传本次的 `docker-compose.yml` 与 `scripts/deploy-release.sh`，由脚本依次执行：
+   - 只拉取本次发布的应用镜像
+   - 用新镜像执行 `alembic upgrade head`
+   - 启动全部服务并等待健康检查通过
+   - 保留上一个版本号，便于手动回滚
+
+### 可选：链路追踪
 
 ```bash
-# 构建并启动所有服务
-docker compose up -d
-
-# 查看日志
-docker compose logs -f
-
-# 停止服务
-docker compose down
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 ```
+
+Jaeger UI 仅绑定在服务器本机 `127.0.0.1:16686`，需通过 SSH 隧道访问。
 
 ### 环境变量配置
 
@@ -298,9 +335,10 @@ docker compose down
    ```
 
 2. **GitHub Secrets**: 配置 CI/CD 所需的密钥
-   - `ALIYUN_AK_ID` / `ALIYUN_AK_SECRET` - 阿里云访问密钥
+   - `ACR_USERNAME` / `ACR_PASSWORD` - 阿里云容器镜像服务 (ACR) 登录凭据
    - `ECS_IP` / `ECS_USER` / `ECS_PASSWORD` - 服务器连接信息
-   - `NEXT_PUBLIC_API_URL` - 前端 API 地址
+   - `NEXT_PUBLIC_API_URL` - 前端 API 地址（构建时注入）
+   - `CODECOV_TOKEN` - 上传后端覆盖率报告
 
 主要环境变量（参考 `.env.production.template`）：
 
@@ -316,9 +354,14 @@ docker compose down
 后端提供的主要 API 接口：
 
 - **用户认证**: `/api/v1/users/register`, `/api/v1/users/login`
-- **文章管理**: `/api/v1/posts/`, `/api/v1/posts/article/{slug}`
-- **媒体文件**: `/api/v1/media/upload`, `/api/v1/media/files/`
+- **文章管理**: `/api/v1/posts/{post_type}`, `/api/v1/posts/{post_type}/slug/{slug}`（`post_type` 为 `articles` 或 `ideas`）
+- **专栏**: `/api/v1/posts/{post_type}/categories`
+- **媒体文件**: `/api/v1/media/upload`, `/api/v1/media/`
+- **内容同步**: `/api/v1/ops/git/*`
+- **访问分析**: `/api/v1/analytics/*`
 - **API 文档**: `/scalar` (交互式 API 文档)
+
+前端额外提供的公开路由：`/rss.xml`、`/sitemap.xml`、`/llms.txt`、`/llms-full.txt`、`/posts/{postType}/{slug}/raw`（文章 Markdown 原文）、`/api/health`。
 
 ---
 
