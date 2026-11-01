@@ -95,10 +95,11 @@ ENV PYTHONPATH=/app
 # ==========================================
 # 这一步排除了 pytest、jupyter 等开发工具
 # 最终的生产镜像会很轻量
+# monitoring extra（OpenTelemetry）必须安装：否则 ENABLE_OPENTELEMETRY=true 时只会告警而不产生任何 trace
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project
+    uv sync --frozen --no-install-project --extra monitoring
 
 # ==========================================
 # 复制代码
@@ -109,7 +110,7 @@ COPY . /app
 # 再次同步（安装项目本身）
 # ==========================================
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
+    uv sync --frozen --extra monitoring
 
 # ==========================================
 # 下载 ip2region 数据库（自动模式）

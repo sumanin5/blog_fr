@@ -1,0 +1,37 @@
+# 可选：前后端全链路追踪（OpenTelemetry → Jaeger）
+#
+# 启用：docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+# 查看：ssh -L 16686:127.0.0.1:16686 <server>，然后浏览器打开 http://localhost:16686
+#
+# 链路：Next.js 服务端渲染 → fetch(traceparent) → FastAPI 路由 → SQLAlchemy 查询
+# - 前端：未配置 Sentry DSN 时使用 @vercel/otel；配置了 DSN 时由 Sentry 导出（见 frontend/src/instrumentation.ts）
+# - 后端：app/core/monitoring/otel.py
+#
+# 注意：Jaeger all-in-one 使用内存存储，重启即丢失数据，适合排查问题而非长期留存。
+
+services:
+    jaeger:
+        image: jaegertracing/jaeger:2.11.0
+        restart: unless-stopped
+        ports:
+            # UI 只绑定本机，不对公网暴露
+            - "127.0.0.1:16686:16686"
+        deploy:
+            resources:
+                limits:
+                    memory: 512M
+        networks:
+            - blog-network
+
+    backend:
+        environment:
+            - ENABLE_OPENTELEMETRY=true
+            - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
+        depends_on:
+            - jaeger
+
+    frontend:
+        environment:
+            - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+        depends_on:
+            - jaeger
