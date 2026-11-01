@@ -3,7 +3,9 @@ import Link from "next/link";
 import { ArrowUpRight, BookOpen } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { CategoryTerrainMap } from "@/components/public/categories/category-terrain-map";
 import { routes } from "@/lib/routes";
+import { toPlainExcerpt } from "@/lib/seo";
 import { createServerFetch, serverClient } from "@/lib/server-api-client";
 import { listCategoriesByType } from "@/shared/api/generated/sdk.gen";
 import type { PostType } from "@/shared/api/generated/types.gen";
@@ -124,41 +126,60 @@ export default async function CategoryListPage({
             </p>
           </div>
         ) : (
-          <div className="mt-12 divide-y divide-border/60 border-y border-border/60">
-            {activeCategories.map((category, index) => (
-              <Link
-                key={category.id}
-                href={routes.postCategory(postType, category.slug)}
-                className="group grid grid-cols-[42px_minmax(0,1fr)_auto] items-start gap-4 py-6 transition-colors hover:bg-muted/20 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:gap-6"
-              >
-                <span className="pt-1 font-mono text-xs tabular-nums text-muted-foreground/60">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
+          <>
+            {activeCategories.length >= 2 && (
+              // 地图是导航增强：窄屏只保留下方列表，列表也保证搜索引擎与读屏可读
+              <div className="mt-10 hidden md:block">
+                <CategoryTerrainMap
+                  categories={activeCategories.map((category) => ({
+                    id: category.id,
+                    name: category.name,
+                    href: routes.postCategory(postType, category.slug),
+                    postCount: category.postCount ?? 0,
+                    summary: toPlainExcerpt(
+                      category.excerpt || category.description || "",
+                      80,
+                    ),
+                  }))}
+                />
+              </div>
+            )}
+            <div className="mt-12 divide-y divide-border/60 border-y border-border/60">
+              {activeCategories.map((category, index) => (
+                <Link
+                  key={category.id}
+                  href={routes.postCategory(postType, category.slug)}
+                  className="group grid grid-cols-[42px_minmax(0,1fr)_auto] items-start gap-4 py-6 transition-colors hover:bg-muted/20 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:gap-6"
+                >
+                  <span className="pt-1 font-mono text-xs tabular-nums text-muted-foreground/60">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
 
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400 sm:text-lg">
-                      {category.name}
-                    </h2>
-                    <Badge
-                      variant="secondary"
-                      className="border-none bg-muted px-2 py-0 text-[10px] font-normal text-muted-foreground"
-                    >
-                      {category.postCount ?? 0} 篇
-                    </Badge>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400 sm:text-lg">
+                        {category.name}
+                      </h2>
+                      <Badge
+                        variant="secondary"
+                        className="border-none bg-muted px-2 py-0 text-[10px] font-normal text-muted-foreground"
+                      >
+                        {category.postCount ?? 0} 篇
+                      </Badge>
+                    </div>
+
+                    <p className="mt-2 line-clamp-2 text-sm font-light leading-relaxed text-muted-foreground">
+                      {category.excerpt ||
+                        category.description ||
+                        "查看该专栏下的文章目录与阅读顺序。"}
+                    </p>
                   </div>
 
-                  <p className="mt-2 line-clamp-2 text-sm font-light leading-relaxed text-muted-foreground">
-                    {category.excerpt ||
-                      category.description ||
-                      "查看该专栏下的文章目录与阅读顺序。"}
-                  </p>
-                </div>
-
-                <ArrowUpRight className="mt-1 h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
-              </Link>
-            ))}
-          </div>
+                  <ArrowUpRight className="mt-1 h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                </Link>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

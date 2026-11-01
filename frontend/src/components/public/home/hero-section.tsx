@@ -12,7 +12,7 @@ const FourierOrbit = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex min-h-[360px] w-full items-center justify-center">
+      <div className="flex aspect-square w-full items-center justify-center">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" />
       </div>
     ),
@@ -77,19 +77,19 @@ export function HeroSection() {
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
             className="lg:col-span-5 relative flex justify-center lg:justify-end"
           >
-            <div className="relative aspect-[4/3] w-full max-w-[480px]">
-              {/* 实时傅里叶本轮动画：不套卡片，直接作为裸视觉元素显示 */}
-              <FourierOrbit />
-
+            <div className="flex w-full max-w-[440px] flex-col gap-2">
               {/* 数学标注：让视觉不只是装饰，而是可以继续阅读的公式 */}
-              <div className="pointer-events-none absolute left-1 top-1 z-10 space-y-1">
-                <div className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-emerald-700/70 dark:text-emerald-300/70">
+              <div className="flex items-baseline justify-between gap-3 font-mono">
+                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-emerald-700/70 dark:text-emerald-300/70">
                   Fourier Epicycles
-                </div>
-                <div className="font-mono text-[11px] text-muted-foreground/70">
-                  z(t) = Σ cₙ e<sup>int</sup>
-                </div>
+                </span>
+                <span className="text-[11px] text-muted-foreground/80">
+                  z(t) ≈ Σ<sub>|n|≤N</sub> cₙ e<sup>int</sup>
+                </span>
               </div>
+
+              {/* 首页唯一的动态焦点：拖动 N 观察图形从圆逐步逼近轮廓 */}
+              <FourierOrbit />
             </div>
           </motion.div>
         </div>
