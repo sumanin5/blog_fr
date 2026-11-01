@@ -117,26 +117,8 @@ async def get_post_detail(
         InvalidCredentialsError: 未登录访问草稿
         InsufficientPermissionsError: 无权访问草稿
     """
-    from app.users.exceptions import InvalidCredentialsError
-
-    # 1. 查询文章
     post = await crud.get_post_by_id(session, post_id)
-    if not post or post.post_type != post_type:
-        raise PostNotFoundError()
-
-    # 2. 权限检查（只针对草稿）
-    if post.status == PostStatus.DRAFT:
-        # 草稿必须登录
-        if not current_user:
-            logger.warning(f"Unauthorized access to draft post: post_id={post_id}")
-            raise InvalidCredentialsError("请先登录")
-
-        # 只有作者或超级管理员可以访问
-        if post.author_id != current_user.id and not current_user.is_superadmin:
-            logger.warning(
-                f"Forbidden access to draft post: post_id={post_id}, user_id={current_user.id}"
-            )
-            raise InsufficientPermissionsError("无权访问此草稿")
+    _ensure_post_readable(post, post_type, current_user)
 
     # 浏览量不在这里统计：公开详情页走 ISR，请求只在页面重新生成时到达后端，
     # 计数改由前端 article_view 埋点驱动（见 app.analytics.service.log_event）
@@ -144,6 +126,45 @@ async def get_post_detail(
     logger.debug(
         f"Post detail accessed: post_id={post_id}, status={post.status}, user={'guest' if not current_user else current_user.username}"
     )
+    return post
+
+
+async def get_post_detail_by_slug(
+    session: AsyncSession,
+    slug: str,
+    post_type: PostType,
+    current_user: Optional[User] = None,
+) -> Post:
+    """按 slug 获取文章详情（权限规则同 get_post_detail）
+
+    直接按 slug 预加载一次；此前先按 slug 查出 id 再按 id 全量重查，关联查询执行两遍。
+    """
+    post = await crud.get_post_by_slug(session, slug)
+    return _ensure_post_readable(post, post_type, current_user)
+
+
+def _ensure_post_readable(
+    post: Optional[Post], post_type: PostType, current_user: Optional[User]
+) -> Post:
+    """校验板块类型与草稿访问权限"""
+    from app.users.exceptions import InvalidCredentialsError
+
+    if not post or post.post_type != post_type:
+        raise PostNotFoundError()
+
+    if post.status == PostStatus.DRAFT:
+        # 草稿必须登录
+        if not current_user:
+            logger.warning(f"Unauthorized access to draft post: post_id={post.id}")
+            raise InvalidCredentialsError("请先登录")
+
+        # 只有作者或超级管理员可以访问
+        if post.author_id != current_user.id and not current_user.is_superadmin:
+            logger.warning(
+                f"Forbidden access to draft post: post_id={post.id}, user_id={current_user.id}"
+            )
+            raise InsufficientPermissionsError("无权访问此草稿")
+
     return post
 
 

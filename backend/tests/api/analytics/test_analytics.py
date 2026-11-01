@@ -516,3 +516,35 @@ async def test_counter_updates_preserve_updated_at(
     await session.refresh(post)
     assert post.view_count == 1
     assert post.updated_at == original_updated_at
+
+
+@pytest.mark.asyncio
+async def test_post_detail_by_slug_queries_post_once(
+    async_client: AsyncClient,
+    session: AsyncSession,
+    superadmin_user,
+    api_urls,
+):
+    """按 slug 获取详情只查询一次文章主表（此前先按 slug 再按 id，关联预加载执行两遍）"""
+    from sqlalchemy import event
+
+    await _make_post(session, superadmin_user.id, "single-query")
+    engine = session.bind.sync_engine
+    statements: list[str] = []
+
+    def record(conn, cursor, statement, *args):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        res = await async_client.get(
+            f"{api_urls.API_PREFIX}/posts/articles/slug/single-query"
+        )
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+
+    assert res.status_code == 200
+    main_selects = [
+        s for s in statements if s.lstrip().startswith("SELECT posts_post.id")
+    ]
+    assert len(main_selects) == 1, main_selects

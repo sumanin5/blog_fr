@@ -165,13 +165,7 @@ async def get_post_by_slug(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     current_user: Annotated[Optional[User], Depends(get_optional_current_user)],
 ):
-    from app.posts.exceptions import PostNotFoundError
-
-    # 先通过 slug 查找文章 ID
-    post = await cruds.get_post_by_slug(session, slug)
-    if not post or post.post_type != post_type:
-        raise PostNotFoundError()
-
-    # 复用 service 层的权限检查逻辑
-    post = await services.get_post_detail(session, post.id, post_type, current_user)
+    post = await services.get_post_detail_by_slug(
+        session, slug, post_type, current_user
+    )
     return PostDetailResponse.model_validate(post)
