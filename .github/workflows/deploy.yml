@@ -44,20 +44,49 @@ jobs:
           set -euo pipefail
           printf '%s' "$ACR_PASSWORD" | docker login "$ACR_REGISTRY" --username "$ACR_USERNAME" --password-stdin
 
-      - name: Build and push release images
-        env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-        run: |
-          set -euo pipefail
-          for service in backend frontend caddy; do
-            image="$ACR_REGISTRY/$ACR_NAMESPACE/blog-$service:$IMAGE_TAG"
-            if [ "$service" = frontend ]; then
-              docker build --build-arg "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" -t "$image" "$service"
-            else
-              docker build -t "$image" "$service"
-            fi
-            docker push "$image"
-          done
+      # buildx + GitHub Actions 缓存：依赖未变时复用缓存层，层 digest 不变，
+      # 推送到 ACR 时这些层已存在而被跳过，跨境只上传代码变化的层。
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        timeout-minutes: 20
+        with:
+          context: backend
+          push: true
+          tags: ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/blog-backend:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+          # 保持单一镜像清单，与此前 docker build/push 的产物一致
+          provenance: false
+          sbom: false
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        timeout-minutes: 20
+        with:
+          context: frontend
+          push: true
+          tags: ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/blog-frontend:${{ env.IMAGE_TAG }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+          provenance: false
+          sbom: false
+
+      - name: Build and push caddy image
+        uses: docker/build-push-action@v6
+        timeout-minutes: 10
+        with:
+          context: caddy
+          push: true
+          tags: ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/blog-caddy:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=caddy
+          cache-to: type=gha,scope=caddy,mode=max
+          provenance: false
+          sbom: false
 
       - name: Upload the checked release configuration
         uses: appleboy/scp-action@v0.1.7

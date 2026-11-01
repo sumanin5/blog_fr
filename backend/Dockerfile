@@ -102,6 +102,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --extra monitoring
 
 # ==========================================
+# 下载 ip2region 数据库（自动模式）
+# ==========================================
+# 放在复制源码之前：脚本只依赖标准库，这一层不随代码变化而失效，
+# 构建缓存命中时无需重新下载、也无需再次推送这约 10MB 的层。
+# 生产环境挂载 ./backend/data 覆盖 /app/data，启动时会再检查一次。
+COPY scripts/download_ip2region.py /app/scripts/download_ip2region.py
+RUN python scripts/download_ip2region.py --auto || echo "⚠ ip2region 数据库下载失败，将在启动时重试"
+
+# ==========================================
 # 复制代码
 # ==========================================
 COPY . /app
@@ -112,10 +121,6 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --extra monitoring
 
-# ==========================================
-# 下载 ip2region 数据库（自动模式）
-# ==========================================
-RUN python scripts/download_ip2region.py --auto || echo "⚠ ip2region 数据库下载失败，将在启动时重试"
 
 # ==========================================
 # 启动命令
