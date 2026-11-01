@@ -26,7 +26,10 @@ compose() {
 # Avoid printing the resolved configuration, which includes secrets.
 compose config --quiet
 phase=pull
-compose pull
+# Only pull the per-release images from ACR. Third-party images such as postgres
+# come from Docker Hub, which this server cannot reach reliably; `up` still pulls
+# them if they are missing, and not re-pulling avoids silent database upgrades.
+compose pull backend frontend caddy
 phase=database-start
 compose up -d --wait --wait-timeout 90 db
 phase=migration

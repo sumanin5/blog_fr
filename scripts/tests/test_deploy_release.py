@@ -30,7 +30,7 @@ args = sys.argv[1:]
 with open(os.environ["DEPLOY_TEST_LOG"], "a") as log:
     log.write(json.dumps({"args": args, "tag": os.environ.get("IMAGE_TAG")}) + "\\n")
 fail = os.environ.get("DEPLOY_TEST_FAIL")
-if (fail == "pull" and args[-1] == "pull"
+if (fail == "pull" and "pull" in args
     or fail == "migration" and "run" in args
     or fail == "health" and "--wait-timeout" in args and args[-1] == "180"
     or fail == "smoke" and "exec" in args):
@@ -58,6 +58,12 @@ if (fail == "pull" and args[-1] == "pull"
         result, calls, _, _ = self.run_release("pull")
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(any("run" in call["args"] for call in calls))
+
+    def test_pull_only_fetches_release_images(self):
+        result, calls, _, _ = self.run_release()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        pull = next(call["args"] for call in calls if "pull" in call["args"])
+        self.assertEqual(pull[pull.index("pull") + 1:], ["backend", "frontend", "caddy"])
 
     def test_success_uses_one_release_and_preserves_previous_tag(self):
         result, calls, current, previous = self.run_release()
