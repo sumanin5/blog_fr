@@ -101,6 +101,26 @@ class HourlyTraffic(BaseModel):
     pageViews: int
 
 
+class WebVitalMetricStat(BaseModel):
+    name: str
+    p75: Optional[float] = None
+    samples: int
+
+
+class WebVitalPageStat(BaseModel):
+    page_path: str
+    lcp: Optional[float] = None
+    inp: Optional[float] = None
+    cls: Optional[float] = None
+    samples: int
+
+
+class WebVitalsSummary(BaseModel):
+    days: int
+    metrics: list[WebVitalMetricStat]
+    slowest_pages: list[WebVitalPageStat]
+
+
 class DashboardStats(BaseModel):
     totalVisits: int
     realUserCount: int

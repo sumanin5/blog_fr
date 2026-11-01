@@ -116,3 +116,19 @@ STATS_SESSIONS_DOC = """
 ## 权限
 - 仅限 **超级管理员** 访问。
 """
+
+STATS_WEB_VITALS_DOC = """
+获取真实用户的 Core Web Vitals（RUM）汇总。
+
+## 权限
+- 仅限 **超级管理员** 访问。
+
+## 查询参数
+- `days`: 统计天数（默认 7）。
+
+## 口径
+- 数据来自前端 `web_vitals` 事件，每次页面加载最多一条，已排除爬虫。
+- 按 Google 口径取 **p75**：LCP / INP / FCP / TTFB 单位为毫秒，CLS 无单位。
+- `slowest_pages` 按 LCP p75 降序，最多 10 个页面。
+- `web_vitals` 事件不计入 PV / UV / 会话等任何流量统计。
+"""

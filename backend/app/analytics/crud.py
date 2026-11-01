@@ -5,8 +5,15 @@ from app.analytics.model import AnalyticsEvent
 from app.posts.model import Post
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
-from sqlalchemy import Date, cast, desc, func, select
+from sqlalchemy import Date, Float, cast, desc, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+# 性能遥测事件：每次页面加载最多一条，不代表访问行为，不计入任何流量统计
+WEB_VITALS_EVENT = "web_vitals"
+WEB_VITAL_METRICS = ("LCP", "INP", "CLS", "FCP", "TTFB")
+
+# 流量统计口径：排除非访问类事件
+is_traffic_event = AnalyticsEvent.event_type != WEB_VITALS_EVENT
 
 
 async def create_event(session: AsyncSession, event: AnalyticsEvent) -> AnalyticsEvent:
@@ -25,7 +32,7 @@ async def get_stats_overview(session: AsyncSession):
     base_query = select(
         func.count(AnalyticsEvent.id).label("pv"),
         func.count(func.distinct(AnalyticsEvent.visitor_id)).label("uv"),
-    ).where(AnalyticsEvent.is_bot.is_(False))
+    ).where(AnalyticsEvent.is_bot.is_(False), is_traffic_event)
 
     # 全量
     total_res = await session.execute(base_query)
@@ -38,11 +45,15 @@ async def get_stats_overview(session: AsyncSession):
     today_stats = today_res.one()
 
     # 2. 爬虫占比计算
-    total_count_res = await session.execute(select(func.count(AnalyticsEvent.id)))
+    total_count_res = await session.execute(
+        select(func.count(AnalyticsEvent.id)).where(is_traffic_event)
+    )
     total_count = total_count_res.scalar_one() or 1
 
     bot_count_res = await session.execute(
-        select(func.count(AnalyticsEvent.id)).where(AnalyticsEvent.is_bot.is_(True))
+        select(func.count(AnalyticsEvent.id)).where(
+            AnalyticsEvent.is_bot.is_(True), is_traffic_event
+        )
     )
     bot_count = bot_count_res.scalar_one() or 0
 
@@ -66,6 +77,7 @@ async def get_daily_trend(session: AsyncSession, days: int = 7):
             func.count(func.distinct(AnalyticsEvent.visitor_id)).label("uv"),
         )
         .where(AnalyticsEvent.is_bot.is_(False))
+        .where(is_traffic_event)
         .where(AnalyticsEvent.created_at >= start_date)
         .group_by(cast(AnalyticsEvent.created_at, Date))
         .order_by("date")
@@ -111,7 +123,7 @@ async def get_dashboard_stats(session: AsyncSession, days: int = 30):
 
     # --- 1. 核心指标聚合 ---
     # 筛选条件: 时间范围内
-    base_filter = AnalyticsEvent.created_at >= start_date
+    base_filter = (AnalyticsEvent.created_at >= start_date) & is_traffic_event
 
     # 构造查询
     stats_query = select(
@@ -192,6 +204,7 @@ async def get_dashboard_stats(session: AsyncSession, days: int = 30):
         )
         .where(AnalyticsEvent.created_at >= yesterday)
         .where(AnalyticsEvent.is_bot.is_(False))
+        .where(is_traffic_event)
         .group_by(hour_expr)
         .order_by(hour_expr)
     )
@@ -239,6 +252,7 @@ async def get_sessions_list(
             # PostgreSQL specific aggregation for boolean
             func.bool_or(AnalyticsEvent.is_bot).label("is_bot"),
         )
+        .where(is_traffic_event)
         .group_by(AnalyticsEvent.session_id)
         .order_by(desc("last_active"))
     )
@@ -265,7 +279,7 @@ async def get_session_stats(session: AsyncSession, session_id: str):
             func.count(AnalyticsEvent.id).label("page_count"),
             func.bool_or(AnalyticsEvent.is_bot).label("is_bot"),
         )
-        .where(AnalyticsEvent.session_id == session_id)
+        .where(AnalyticsEvent.session_id == session_id, is_traffic_event)
         .group_by(AnalyticsEvent.session_id)
     )
     result = await session.execute(query)
@@ -281,3 +295,71 @@ async def get_session_events(session: AsyncSession, session_id: str):
     )
     result = await session.execute(query)
     return result.scalars().all()
+
+
+async def get_web_vitals_summary(
+    session: AsyncSession, days: int = 7, page_limit: int = 10
+):
+    """
+    Core Web Vitals 汇总：按 Google 口径取 p75。
+    返回全站各指标 p75，以及 LCP p75 最差的页面。
+    """
+    start_date = datetime.now() - timedelta(days=days)
+    metrics_json = AnalyticsEvent.payload["metrics"]
+
+    # payload 键为小写（前端请求体会被 decamelize，"LCP" 会变成 "l_c_p"）
+    def metric(name: str):
+        return cast(metrics_json[name.lower()].as_string(), Float)
+
+    def p75(name: str):
+        return func.percentile_cont(0.75).within_group(metric(name))
+
+    base = (
+        AnalyticsEvent.event_type == WEB_VITALS_EVENT,
+        AnalyticsEvent.is_bot.is_(False),
+        AnalyticsEvent.created_at >= start_date,
+    )
+
+    overall_query = select(
+        *[p75(name).label(name) for name in WEB_VITAL_METRICS],
+        *[func.count(metric(name)).label(f"{name}_n") for name in WEB_VITAL_METRICS],
+    ).where(*base)
+    overall = (await session.execute(overall_query)).one()
+
+    pages_query = (
+        select(
+            AnalyticsEvent.page_path,
+            p75("LCP").label("lcp"),
+            p75("INP").label("inp"),
+            p75("CLS").label("cls"),
+            func.count(AnalyticsEvent.id).label("samples"),
+        )
+        .where(*base)
+        .group_by(AnalyticsEvent.page_path)
+        .having(func.count(metric("LCP")) > 0)
+        .order_by(desc("lcp"))
+        .limit(page_limit)
+    )
+    pages = (await session.execute(pages_query)).all()
+
+    return {
+        "days": days,
+        "metrics": [
+            {
+                "name": name,
+                "p75": getattr(overall, name),
+                "samples": getattr(overall, f"{name}_n") or 0,
+            }
+            for name in WEB_VITAL_METRICS
+        ],
+        "slowest_pages": [
+            {
+                "page_path": row.page_path,
+                "lcp": row.lcp,
+                "inp": row.inp,
+                "cls": row.cls,
+                "samples": row.samples,
+            }
+            for row in pages
+        ],
+    }

@@ -2249,6 +2249,68 @@ export type UserUpdate = {
 };
 
 /**
+ * WebVitalMetricStat
+ */
+export type WebVitalMetricStat = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * P75
+     */
+    p75?: number | null;
+    /**
+     * Samples
+     */
+    samples: number;
+};
+
+/**
+ * WebVitalPageStat
+ */
+export type WebVitalPageStat = {
+    /**
+     * Page Path
+     */
+    page_path: string;
+    /**
+     * Lcp
+     */
+    lcp?: number | null;
+    /**
+     * Inp
+     */
+    inp?: number | null;
+    /**
+     * Cls
+     */
+    cls?: number | null;
+    /**
+     * Samples
+     */
+    samples: number;
+};
+
+/**
+ * WebVitalsSummary
+ */
+export type WebVitalsSummary = {
+    /**
+     * Days
+     */
+    days: number;
+    /**
+     * Metrics
+     */
+    metrics: Array<WebVitalMetricStat>;
+    /**
+     * Slowest Pages
+     */
+    slowest_pages: Array<WebVitalPageStat>;
+};
+
+/**
  * WebhookResponse
  *
  * Webhook 响应
@@ -6171,6 +6233,58 @@ export type GetAnalyticsDashboardResponses = {
 };
 
 export type GetAnalyticsDashboardResponse = GetAnalyticsDashboardResponses[keyof GetAnalyticsDashboardResponses];
+
+export type GetAnalyticsWebVitalsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Days
+         *
+         * 统计天数
+         */
+        days?: number;
+    };
+    url: '/api/v1/analytics/stats/web-vitals';
+};
+
+export type GetAnalyticsWebVitalsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: ErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetAnalyticsWebVitalsError = GetAnalyticsWebVitalsErrors[keyof GetAnalyticsWebVitalsErrors];
+
+export type GetAnalyticsWebVitalsResponses = {
+    /**
+     * Successful Response
+     */
+    200: WebVitalsSummary;
+};
+
+export type GetAnalyticsWebVitalsResponse = GetAnalyticsWebVitalsResponses[keyof GetAnalyticsWebVitalsResponses];
 
 export type GetAnalyticsSessionsData = {
     body?: never;

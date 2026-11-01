@@ -6,6 +6,7 @@ import {
   getAnalyticsTrend,
   getAnalyticsTopPosts,
   getAnalyticsSessionDetail,
+  getAnalyticsWebVitals,
 } from "@/shared/api";
 import type {
   AnalyticsDashboard,
@@ -19,6 +20,8 @@ import type {
   GetAnalyticsTopPostsData,
   AnalyticsSessionDetail,
   GetAnalyticsSessionDetailData,
+  AnalyticsWebVitals,
+  GetAnalyticsWebVitalsData,
 } from "@/shared/api/types";
 
 // ==========================================
@@ -36,6 +39,8 @@ export const analyticsKeys = {
   trend: (days: number) => [...analyticsKeys.all, "trend", days] as const,
   topPosts: (limit: number) =>
     [...analyticsKeys.all, "topPosts", limit] as const,
+  webVitals: (days: number) =>
+    [...analyticsKeys.all, "webVitals", days] as const,
 };
 
 // ==========================================
@@ -138,6 +143,22 @@ export function useAnalyticsTopPosts(limit: number = 10) {
         throwOnError: true,
       });
       return response.data as unknown as AnalyticsTopPost[];
+    },
+  });
+}
+
+/**
+ * 获取 Core Web Vitals 汇总 (p75)
+ */
+export function useAnalyticsWebVitals(days: number = 7) {
+  return useQuery({
+    queryKey: analyticsKeys.webVitals(days),
+    queryFn: async () => {
+      const response = await getAnalyticsWebVitals({
+        query: { days } as unknown as GetAnalyticsWebVitalsData["query"],
+        throwOnError: true,
+      });
+      return response.data as unknown as AnalyticsWebVitals;
     },
   });
 }

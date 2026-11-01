@@ -234,6 +234,20 @@ async def get_analytics_dashboard(
 
 
 @router.get(
+    "/stats/web-vitals",
+    response_model=schema.WebVitalsSummary,
+    dependencies=[Depends(get_current_superuser)],
+    summary="Core Web Vitals 汇总",
+    description=api_doc.STATS_WEB_VITALS_DOC,
+)
+async def get_analytics_web_vitals(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    days: int = Query(7, ge=1, le=90, description="统计天数"),
+):
+    return await service.get_web_vitals(session, days)
+
+
+@router.get(
     "/stats/sessions",
     response_model=Page[schema.SessionListItem],
     dependencies=[Depends(get_current_superuser)],

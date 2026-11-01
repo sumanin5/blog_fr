@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { AnalyticsTracker } from "@/components/admin/analytics/AnalyticsTracker";
+import { WebVitalsReporter } from "@/components/admin/analytics/WebVitalsReporter";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
 import "@/app/globals.css";
@@ -60,6 +61,7 @@ export default function RootLayout({
       >
         <Providers>
           <AnalyticsTracker />
+          <WebVitalsReporter />
           {children}
           {auth}
           <Toaster richColors closeButton position="top-right" />

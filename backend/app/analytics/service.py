@@ -36,6 +36,11 @@ async def get_top_posts(session: AsyncSession, limit: int) -> list[schema.TopPos
     return [schema.TopPostStat(**p) for p in top_posts]
 
 
+async def get_web_vitals(session: AsyncSession, days: int) -> schema.WebVitalsSummary:
+    summary = await crud.get_web_vitals_summary(session, days)
+    return schema.WebVitalsSummary(**summary)
+
+
 async def get_sessions_list(
     session: AsyncSession, params: Params
 ) -> Page[schema.SessionListItem]:
