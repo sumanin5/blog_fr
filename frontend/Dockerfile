@@ -33,6 +33,8 @@ RUN npm install -g pnpm@10
 # Next.js rewrites 会自动将 /api/* 代理到后端
 ARG NEXT_PUBLIC_API_URL=""
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG NEXT_PUBLIC_SITE_URL=""
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 
 # 执行构建
 RUN pnpm run build

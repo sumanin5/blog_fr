@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { Layers } from "lucide-react";
 
@@ -21,7 +23,8 @@ import {
   requiresMdxRenderer,
 } from "@/lib/markdown/article-markdown";
 import { routes } from "@/lib/routes";
-import { serverClient } from "@/lib/server-api-client";
+import { toPlainExcerpt } from "@/lib/seo";
+import { createServerFetch, serverClient } from "@/lib/server-api-client";
 import {
   listCategoriesByType,
   listPostsByType,
@@ -33,26 +36,58 @@ import type {
 import { normalizeApiResponse, type ApiData } from "@/shared/api/transformers";
 import type { Category } from "@/shared/api/types";
 
+export const revalidate = 300;
+
+// 不在构建期预渲染（构建环境不一定能访问后端），首次访问后生成并缓存
+export function generateStaticParams() {
+  return [];
+}
+
+// generateMetadata 与页面共用，同一次渲染只请求一次
+const getCategoryBySlug = cache(
+  async (postType: string, slug: string): Promise<Category | undefined> => {
+    const categoriesRes = await listCategoriesByType({
+      client: serverClient,
+      path: { post_type: postType as PostType },
+      fetch: createServerFetch({ tags: ["categories"] }),
+    });
+
+    if (categoriesRes.error || !categoriesRes.data) {
+      console.error("Failed to fetch categories list", categoriesRes.error);
+    }
+
+    const data = normalizeApiResponse(categoriesRes.data);
+    return data?.items?.find((item) => item.slug === slug);
+  },
+);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ postType: string; slug: string }>;
+}): Promise<Metadata> {
+  const { postType, slug } = await params;
+  const category = await getCategoryBySlug(postType, slug);
+  if (!category) return { title: "分类不存在" };
+
+  const description = category.description
+    ? toPlainExcerpt(category.description)
+    : `${category.name}：专栏文章合集`;
+  return {
+    title: category.name,
+    description,
+    alternates: { canonical: routes.postCategory(postType, slug) },
+    openGraph: { title: category.name, description, type: "website" },
+  };
+}
+
 export default async function CategoryPage({
   params,
 }: {
   params: Promise<{ postType: string; slug: string }>;
 }) {
   const { postType, slug } = await params;
-
-  const categoriesRes = await listCategoriesByType({
-    client: serverClient,
-    path: { post_type: postType as PostType },
-  });
-
-  if (categoriesRes.error || !categoriesRes.data) {
-    console.error("Failed to fetch categories list", categoriesRes.error);
-  }
-
-  const data = normalizeApiResponse(categoriesRes.data);
-  const category: Category | undefined = data?.items?.find(
-    (item) => item.slug === slug,
-  );
+  const category = await getCategoryBySlug(postType, slug);
 
   if (!category) {
     notFound();
@@ -68,6 +103,7 @@ export default async function CategoryPage({
         page: 1,
         size: 100,
       },
+      fetch: createServerFetch({ tags: ["posts", "posts-list"] }),
     });
     posts = sortSeriesPosts(normalizeApiResponse(postsRes.data?.items ?? []));
   } catch (error) {

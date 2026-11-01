@@ -10,7 +10,11 @@
 
 import { notFound, redirect } from "next/navigation";
 import { readApiError } from "@/shared/api/errors";
-import { serverClient, createServerFetch } from "@/lib/server-api-client";
+import {
+  serverClient,
+  createServerFetch,
+  createAuthServerFetch,
+} from "@/lib/server-api-client";
 import {
   listPostsByType,
   listCategoriesByType,
@@ -196,6 +200,7 @@ export const getAdminPostDetail = cache(
       path: {
         post_id: postId,
       },
+      fetch: createAuthServerFetch(),
     });
 
     if (error) {

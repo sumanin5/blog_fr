@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { siteConfig } from "@/config/site";
 import { getFeaturedCategories } from "@/lib/categories-api";
 import { getFeaturedPosts, getPosts } from "@/lib/post-api";
 import { HeroSection } from "@/components/public/home/hero-section";
@@ -11,6 +13,13 @@ import type { ApiData } from "@/shared/api/transformers";
 
 // 启用 ISR（增量静态再生成），保留静态秒开优势，每 60 秒或内容变更时按需更新
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+    types: { "application/rss+xml": [{ url: "/rss.xml", title: siteConfig.name }] },
+  },
+};
 
 export default async function Home() {
   // 1. 数据获取：100% 走后端真实 API 动态获取

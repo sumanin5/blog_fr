@@ -11,6 +11,7 @@ import { PRODUCTS } from "@/config/products";
 export const metadata = {
   title: "精选项目与产品矩阵 · 数字花园",
   description: "探索独立孵化与开源的现代工具与软件解决方案，聚焦开发效率与纯粹体验。",
+  alternates: { canonical: "/projects" },
 };
 
 export default function ProjectsPage() {

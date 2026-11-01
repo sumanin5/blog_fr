@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Zap,
 } from "lucide-react";
-import { getProductBySlug } from "@/config/products";
+import { PRODUCTS, getProductBySlug } from "@/config/products";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProjectDocs } from "@/components/public/projects/project-docs";
@@ -21,6 +21,10 @@ interface ProjectPageProps {
   params: Promise<{
     slug: string;
   }>;
+}
+
+export function generateStaticParams() {
+  return PRODUCTS.map((product) => ({ slug: product.slug }));
 }
 
 export async function generateMetadata({
@@ -36,6 +40,7 @@ export async function generateMetadata({
   return {
     title: `${product.name} — ${product.tagline} · 产品落地页`,
     description: product.summary,
+    alternates: { canonical: `/projects/${product.slug}` },
     openGraph: {
       title: `${product.name} — ${product.tagline}`,
       description: product.summary,

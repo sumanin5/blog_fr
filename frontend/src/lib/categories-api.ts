@@ -55,7 +55,9 @@ export async function getCategories(
     path: {
       post_type: postType,
     },
+    query: { include_inactive: false },
     client: serverClient,
+    fetch: createServerFetch({ tags: ["categories"] }),
   });
 
   if (error) {

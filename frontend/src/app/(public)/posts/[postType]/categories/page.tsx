@@ -1,9 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, BookOpen } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/lib/routes";
-import { serverClient } from "@/lib/server-api-client";
+import { createServerFetch, serverClient } from "@/lib/server-api-client";
 import { listCategoriesByType } from "@/shared/api/generated/sdk.gen";
 import type { PostType } from "@/shared/api/generated/types.gen";
 import { normalizeApiResponse } from "@/shared/api/transformers";
@@ -15,6 +16,7 @@ const HEADER_CONFIG: Record<
     eyebrow: string;
     title: string;
     description: (count: number) => string;
+    seoDescription: string;
   }
 > = {
   articles: {
@@ -22,14 +24,39 @@ const HEADER_CONFIG: Record<
     title: "专栏合集",
     description: (count) =>
       `${count} 个体系化专栏。每篇文章都放在可持续阅读的上下文中，而不是一次性卡片流。`,
+    seoDescription:
+      "体系化技术专栏合集：FastAPI、Next.js 与全栈工程实践，每篇文章都放在可持续阅读的上下文中。",
   },
   ideas: {
     eyebrow: "Ideas · Domains",
     title: "想法领域",
     description: (count) =>
       `按领域浏览 ${count} 组碎片随想。想法保持单篇即读，不强行包装成系列。`,
+    seoDescription: "按领域浏览碎片随想。想法保持单篇即读，不强行包装成系列。",
   },
 };
+
+export const revalidate = 300;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ postType: string }>;
+}): Promise<Metadata> {
+  const { postType } = await params;
+  const header = HEADER_CONFIG[postType];
+  if (!header) return {};
+  return {
+    title: header.title,
+    description: header.seoDescription,
+    alternates: { canonical: routes.postCategories(postType) },
+  };
+}
+
+// 板块类型是固定枚举，构建期即可预渲染；动态参数之外的值仍按需生成并走 ISR
+export function generateStaticParams() {
+  return [{ postType: "articles" }, { postType: "ideas" }];
+}
 
 export default async function CategoryListPage({
   params,
@@ -44,6 +71,7 @@ export default async function CategoryListPage({
       client: serverClient,
       path: { post_type: postType as PostType },
       query: { include_inactive: false },
+      fetch: createServerFetch({ tags: ["categories"] }),
     });
 
     const data = normalizeApiResponse(categoriesRes.data);

@@ -46,6 +46,17 @@ const nextConfig: NextConfig = {
   // 优化服务器组件编译 - Next.js 16 已移到顶层
   serverExternalPackages: ["mermaid"],
 
+  // 文章板块统一收拢到专栏页；308 让搜索引擎把权重转移到目标页
+  async redirects() {
+    return [
+      {
+        source: "/posts/articles",
+        destination: "/posts/articles/categories",
+        permanent: true,
+      },
+    ];
+  },
+
   // API 代理配置
   async rewrites() {
     // 优先读取内部网络地址，如果没有则回退到公开 API 地址，最后兜底到 Docker 内部默认地址

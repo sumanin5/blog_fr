@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { AnalyticsTracker } from "@/components/admin/analytics/AnalyticsTracker";
 import { Toaster } from "@/components/ui/sonner";
+import { siteConfig } from "@/config/site";
 import "@/app/globals.css";
 
 const geistSans = Geist({
@@ -16,8 +17,33 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Blog FR - Powerful Blogging Platform",
-  description: "A modern blogging platform built with Next.js and FastAPI",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: `${siteConfig.title} | ${siteConfig.name}`,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  authors: [{ name: siteConfig.author.name, url: siteConfig.url }],
+  // canonical 由各页面自行声明：写在根布局会被所有子页面继承，导致全站指向首页
+  alternates: {
+    types: { "application/rss+xml": [{ url: "/rss.xml", title: siteConfig.name }] },
+  },
+  openGraph: {
+    type: "website",
+    locale: "zh_CN",
+    siteName: siteConfig.name,
+    title: siteConfig.title,
+    description: siteConfig.description,
+    // 不写 url：与 canonical 同理，会被子页面继承成首页地址
+    images: [siteConfig.ogImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+  },
 };
 
 export default function RootLayout({
@@ -28,7 +54,7 @@ export default function RootLayout({
   auth: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="zh-CN" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
