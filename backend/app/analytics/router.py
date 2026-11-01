@@ -3,6 +3,7 @@ from typing import Annotated, Optional
 
 import user_agents
 from app.analytics import api_doc, schema, service
+from app.analytics.geo import lookup_region
 from app.core.db import get_async_session
 from app.users.dependencies import (
     get_current_superuser,
@@ -85,63 +86,8 @@ async def log_analytics_event(
     # 提取时长 (如果前端上传)
     duration = event_in.payload.get("duration", 0)
 
-    # ip2region 地理位置解析（国内 IP 更准确）
-    country = "Unknown"
-    city = "Unknown"
-    province = "Unknown"
-    isp = "Unknown"
-
-    if ip_addr:
-        try:
-            import ip2region.searcher as xdb
-            import ip2region.util as util
-
-            # 使用 VectorIndex 缓存模式（推荐）
-            db_path = "data/ip2region.xdb"
-            version = util.IPv4  # 目前只支持 IPv4
-
-            import os
-
-            if os.path.exists(db_path):
-                # 创建查询对象（使用 VectorIndex 缓存以提升性能）
-                # 注意：生产环境应该全局缓存 v_index，这里为了简化每次都加载
-                v_index = util.load_vector_index_from_file(db_path)
-                searcher = xdb.new_with_vector_index(version, db_path, v_index)
-
-                # 查询 IP
-                # 返回格式: 国家|区域|省份|城市|ISP
-                # 例如: 中国|0|浙江省|杭州市|电信
-                result = searcher.search(ip_addr)
-                searcher.close()
-
-                if result:
-                    parts = result.split("|")
-                    # 实际返回格式: 国家|省份|城市|ISP|国家代码
-                    # 例如: 中国|浙江省|绍兴市|移动|CN
-                    if len(parts) >= 5:
-                        country = (
-                            parts[0] if parts[0] and parts[0] != "0" else "Unknown"
-                        )
-                        province = (
-                            parts[1] if parts[1] and parts[1] != "0" else "Unknown"
-                        )
-                        city = parts[2] if parts[2] and parts[2] != "0" else "Unknown"
-                        isp = parts[3] if parts[3] and parts[3] != "0" else "Unknown"
-                    elif len(parts) >= 4:
-                        # 兼容旧格式或不完整数据
-                        country = (
-                            parts[0] if parts[0] and parts[0] != "0" else "Unknown"
-                        )
-                        province = (
-                            parts[1] if parts[1] and parts[1] != "0" else "Unknown"
-                        )
-                        city = parts[2] if parts[2] and parts[2] != "0" else "Unknown"
-                        isp = parts[3] if parts[3] and parts[3] != "0" else "Unknown"
-
-        except Exception as e:
-            # IP 解析失败，记录日志但不影响主流程
-            logger.warning(f"ip2region resolution failed for IP {ip_addr}: {str(e)}")
-            pass
+    # ip2region 地理位置解析（国内 IP 更准确），数据库常驻内存
+    region = lookup_region(ip_addr)
 
     # 将解析结果注入到 service 调用中
     # 注意：我们直接修改 event_in 对象，service 中的 model_validate 会自动处理这些字段
@@ -159,10 +105,10 @@ async def log_analytics_event(
         # 新增字段注入
         "ip_address": ip_addr,
         "duration": duration,
-        "country": country,
-        "city": city,
-        "region": province,  # 使用 region 字段存储省份
-        "isp": isp,  # 运营商信息
+        "country": region["country"],
+        "city": region["city"],
+        "region": region["province"],  # 使用 region 字段存储省份
+        "isp": region["isp"],  # 运营商信息
     }
 
     # 使用 model_copy 创建一个带有新字段的 Pydantic 模型
