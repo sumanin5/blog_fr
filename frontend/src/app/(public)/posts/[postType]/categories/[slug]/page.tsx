@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { cache } from "react";
 import { notFound } from "next/navigation";
@@ -18,6 +19,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { sortSeriesPosts } from "@/lib/article-series";
+import { getSafeImageUrl } from "@/lib/media-utils";
 import {
   parseArticleMarkdown,
   requiresMdxRenderer,
@@ -117,10 +119,33 @@ export default async function CategoryPage({
         })
       : null;
 
+  const coverUrl = getSafeImageUrl(category.coverMedia, "xlarge");
+  const iconUrl = category.iconPreset
+    ? null
+    : getSafeImageUrl(category.icon, "small");
+
   return (
     <div className="min-h-screen">
-      <div className="border-b border-border/50 bg-background/60 backdrop-blur-sm">
-        <div className="container mx-auto max-w-[1440px] px-4 py-8 md:px-6 lg:py-10">
+      <div className="relative overflow-hidden border-b border-border/50 bg-background/60 backdrop-blur-sm">
+        {/* 专栏封面：铺在标题区右侧，向左、向下渐隐到背景色 */}
+        {coverUrl && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-full animate-in fade-in duration-1000 [mask-composite:intersect] [mask-image:linear-gradient(to_right,transparent,black_65%),linear-gradient(to_bottom,black_40%,transparent)] motion-reduce:animate-none md:w-3/4 lg:w-3/5"
+          >
+            <Image
+              src={coverUrl}
+              alt=""
+              fill
+              priority
+              unoptimized
+              sizes="(min-width: 1024px) 60vw, 100vw"
+              className="object-cover opacity-45 dark:opacity-40"
+            />
+          </div>
+        )}
+
+        <div className="container relative mx-auto max-w-[1440px] px-4 py-8 md:px-6 lg:py-10">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -137,9 +162,19 @@ export default async function CategoryPage({
 
           <div className="mt-6 flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/40 text-2xl">
-              {category.iconPreset || (
-                <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              )}
+              {category.iconPreset ||
+                (iconUrl ? (
+                  <Image
+                    src={iconUrl}
+                    alt=""
+                    width={28}
+                    height={28}
+                    unoptimized
+                    className="h-7 w-7 object-contain"
+                  />
+                ) : (
+                  <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                ))}
             </div>
 
             <div className="min-w-0 flex-1">
