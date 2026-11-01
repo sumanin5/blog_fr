@@ -13,5 +13,5 @@ export const routes = {
   postDetailSlug: (postType: PostType, slug: string) =>
     `/posts/${postType}/${slug}` as Route,
   postMarkdown: (postType: string, slug: string) =>
-    `/posts/${postType}/${slug}/raw` as Route,
+    `/posts/${postType}/${slug}.md` as Route,
 };

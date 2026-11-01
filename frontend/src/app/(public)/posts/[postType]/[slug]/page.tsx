@@ -50,7 +50,14 @@ export async function generateMetadata({
     description: summary,
     keywords: post.tags?.map((t) => t.name),
     authors: authorName ? [{ name: authorName }] : undefined,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      types: {
+        // 供 AI 工具发现干净的 Markdown 版本
+        "text/markdown": routes.postMarkdown(postType, slug),
+        "application/rss+xml": [{ url: "/rss.xml", title: siteConfig.name }],
+      },
+    },
     openGraph: {
       title: post.title,
       description: summary,

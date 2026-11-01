@@ -51,6 +51,7 @@ export function toPlainExcerpt(markdown: string, maxLength = 150): string {
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // 图片
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // 链接保留文字
     .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, "") // 标题、引用、列表标记
+    .replace(/\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/gi, "") // GitHub 风格提示块标记
     .replace(/[`*_~|]/g, "")
     .replace(/\s+/g, " ")
     .trim();
