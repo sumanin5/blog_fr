@@ -259,21 +259,25 @@ export function CategoryTerrainMap({ categories }: { categories: TerrainCategory
               onMouseLeave={() => setActive(null)}
               onFocus={() => setActive(landmark.id)}
               onBlur={() => setActive(null)}
-              className="group absolute flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              // 链接本身是固定尺寸的圆点，按像素居中定位；标签与摘要绝对定位挂在旁边。
+              // 摘要出现时不会改变链接尺寸，圆点不会从指针下移开（否则会出现悬停闪烁、点击落空）。
+              className="group absolute rounded-full outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               style={{
                 left: `${landmark.x * 100}%`,
                 top: `${landmark.y * 100}%`,
-                transform: `translate(${flip ? "calc(-100% + " + size / 2 + "px)" : -size / 2 + "px"}, -50%)`,
-                flexDirection: flip ? "row-reverse" : "row",
+                width: size,
+                height: size,
+                margin: `${-size / 2}px 0 0 ${-size / 2}px`,
               }}
             >
-              <span
-                className="flex shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 bg-background transition-transform group-hover:scale-110 dark:border-emerald-400"
-                style={{ width: size, height: size }}
-              >
+              <span className="flex h-full w-full items-center justify-center rounded-full border-2 border-emerald-600 bg-background transition-transform group-hover:scale-110 dark:border-emerald-400">
                 <span className="h-1/2 w-1/2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
               </span>
-              <span className={`flex flex-col ${flip ? "items-end text-right" : "items-start"}`}>
+              <span
+                className={`absolute top-1/2 flex -translate-y-1/2 flex-col ${
+                  flip ? "right-full mr-2.5 items-end text-right" : "left-full ml-2.5 items-start"
+                }`}
+              >
                 <span className="whitespace-nowrap rounded bg-background/70 px-1 text-sm font-semibold text-foreground backdrop-blur-sm transition-colors group-hover:text-emerald-700 dark:group-hover:text-emerald-300">
                   {landmark.name}
                 </span>
@@ -281,7 +285,11 @@ export function CategoryTerrainMap({ categories }: { categories: TerrainCategory
                   {landmark.postCount} 篇
                 </span>
                 {isActive && landmark.summary && (
-                  <span className="mt-1 max-w-[260px] rounded-md border border-border/60 bg-background/95 px-2.5 py-1.5 text-xs leading-relaxed text-muted-foreground shadow-sm">
+                  <span
+                    className={`absolute top-full mt-1.5 w-max max-w-[260px] rounded-md border border-border/60 bg-background/95 px-2.5 py-1.5 text-xs leading-relaxed text-muted-foreground shadow-sm ${
+                      flip ? "right-0" : "left-0"
+                    }`}
+                  >
                     {landmark.summary}
                   </span>
                 )}
