@@ -14,6 +14,7 @@ from app.users.model import User
 from fastapi import HTTPException
 
 from .base import BaseGitOpsService
+from .sync_service import SyncService
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,10 @@ class ResyncService(BaseGitOpsService):
         重新同步指定文章的元数据（读取磁盘文件 -> 更新数据库）
         如果文件不存在或不是 file-backed，抛出异常。
         """
+        async with SyncService.repository_lock(self.session):
+            await self._resync_post_metadata(post_id, default_user)
+
+    async def _resync_post_metadata(self, post_id, default_user) -> None:
         # 1. 查找文章
 
         post_id = UUID(post_id) if isinstance(post_id, str) else post_id

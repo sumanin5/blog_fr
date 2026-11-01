@@ -60,7 +60,8 @@ Content.
 
     # 同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
 
     assert response.status_code == 200
@@ -104,7 +105,8 @@ Content.
 
     # 同步（应该跳过该文件）
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
 
     # 可能返回 200 但有错误，或者直接失败
@@ -123,7 +125,8 @@ async def test_sync_empty_directory(
 
     # 同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
 
     assert response.status_code == 200
@@ -145,7 +148,8 @@ async def test_sync_without_admin_permission(
     """测试：非管理员无法触发同步"""
     # 尝试同步（使用普通用户 token）
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=normal_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=normal_user_token_headers,
     )
 
     # 应该返回 403 权限不足

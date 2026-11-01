@@ -28,7 +28,7 @@ async def handle_post_update(
     update_dict.pop("tag_ids", None)
 
     if is_move:
-        update_dict["source_path"] = file_path
+        update_dict["source_path"] = file_path.as_posix()
 
     post_in = PostUpdate(**update_dict)
     updated_post = await post_service.update_post(

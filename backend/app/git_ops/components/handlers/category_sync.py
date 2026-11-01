@@ -61,6 +61,7 @@ async def handle_category_sync(
     if content:
         # 转换分类索引中的内部链接
         from app.git_ops.components.processors.content import ContentProcessor
+
         content_processor = ContentProcessor()
         content = await content_processor._transform_internal_links(
             content, scanned.file_path, session

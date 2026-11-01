@@ -61,6 +61,9 @@ async def test_incremental_sync_handles_renamed_file(
     ).status_code == 200
 
     original = next(p for p in await _posts(session) if p.title == "Moved")
+    original.view_count = 42
+    await session.commit()
+    original_id, original_slug = original.id, original.slug
 
     subprocess.run(
         ["git", "mv", "articles/py/moved.md", "articles/go/moved.md"],
@@ -73,8 +76,24 @@ async def test_incremental_sync_handles_renamed_file(
 
     matches = [p for p in await _posts(session) if p.title == "Moved"]
     assert len(matches) == 1
-    assert matches[0].id == original.id
+    assert matches[0].id == original_id
+    assert matches[0].slug == original_slug
+    assert matches[0].view_count == 42
     assert matches[0].source_path == "articles/go/moved.md"
+
+    moved = mock_content_dir / "articles/go/moved.md"
+    moved.write_text(moved.read_text() + "\n移动后的修改\n", encoding="utf-8")
+    git_commit_helper("edit moved file")
+    response = await async_client.post(SYNC_URL, headers=superadmin_user_token_headers)
+    assert response.status_code == 200, response.text
+    matches = [p for p in await _posts(session) if p.title == "Moved"]
+    assert len(matches) == 1
+    assert (matches[0].id, matches[0].slug, matches[0].view_count) == (
+        original_id,
+        original_slug,
+        42,
+    )
+    assert "移动后的修改" in matches[0].content_mdx
 
 
 @pytest.mark.asyncio
@@ -133,6 +152,7 @@ async def test_one_bad_file_does_not_block_the_others(
 
 @pytest.mark.asyncio
 @pytest.mark.git_ops
+@pytest.mark.parametrize("pull_new_commit", [False, True])
 async def test_failed_file_is_retried_on_next_sync(
     async_client: AsyncClient,
     superadmin_user_token_headers: dict,
@@ -141,6 +161,7 @@ async def test_failed_file_is_retried_on_next_sync(
     session,
     superadmin_user,
     mocker,
+    pull_new_commit,
 ):
     """处理失败的文件不能因为同步进度前移而被永久跳过"""
     (mock_content_dir / "seed.md").write_text(
@@ -160,6 +181,8 @@ async def test_failed_file_is_retried_on_next_sync(
         _post("other", "Other", superadmin_user.username), encoding="utf-8"
     )
     git_commit_helper("add flaky")
+    hash_file = mock_content_dir / ".gitops_last_sync"
+    successful_hash = hash_file.read_text()
 
     # 第一次同步：flaky.md 处理时发生一次性故障（如网络/磁盘抖动）
     from app.git_ops.components.handlers import file_processor
@@ -172,19 +195,47 @@ async def test_failed_file_is_retried_on_next_sync(
         return await real_create(session_, scanned, file_path, *args, **kwargs)
 
     mocker.patch.object(file_processor, "handle_post_create", side_effect=flaky_create)
-    await async_client.post(SYNC_URL, headers=superadmin_user_token_headers)
+    first = await async_client.post(SYNC_URL, headers=superadmin_user_token_headers)
+    assert first.status_code == 200, first.text
+    assert first.json()["errors"]
+    assert hash_file.read_text() == successful_hash
+    other = next(p for p in await _posts(session) if p.title == "Other")
+    other_identity = (other.id, other.slug)
     mocker.patch.object(file_processor, "handle_post_create", side_effect=real_create)
 
-    # 第二次同步：故障已消失，没有新提交，flaky.md 也应被补上
-    response = await async_client.post(SYNC_URL, headers=superadmin_user_token_headers)
-    assert response.status_code in (200, 400, 500), response.text
+    # 第二次同步：pull 又带来新提交，仍须覆盖上次失败的提交区间。
+    from app.git_ops.components.github import GitHubComponent
 
-    titles = {p.title for p in await _posts(session)}
-    assert "Flaky" in titles
+    real_pull = GitHubComponent.pull
+
+    async def pull_with_new_commit(github):
+        before = await github.git_client.get_current_hash()
+        (mock_content_dir / "latest.md").write_text(
+            _post("latest", "Latest", "superadmin_user"), encoding="utf-8"
+        )
+        git_commit_helper("new commit during pull")
+        output, _, after = await real_pull(github)
+        return output, before, after
+
+    if pull_new_commit:
+        mocker.patch.object(GitHubComponent, "pull", new=pull_with_new_commit)
+    response = await async_client.post(SYNC_URL, headers=superadmin_user_token_headers)
+    assert response.status_code == 200, response.text
+    assert response.json()["errors"] == []
+
+    posts = await _posts(session)
+    assert "Flaky" in {p.title for p in posts}
+    if pull_new_commit:
+        assert "Latest" in {p.title for p in posts}
+    others = [p for p in posts if p.title == "Other"]
+    assert len(others) == 1
+    assert (others[0].id, others[0].slug) == other_identity
+    assert hash_file.read_text() != successful_hash
 
 
 @pytest.mark.asyncio
 @pytest.mark.git_ops
+@pytest.mark.parametrize("operation", ["sync?force_full=true", "sync", "push"])
 async def test_sync_waits_for_lock_held_by_another_process(
     async_client: AsyncClient,
     superadmin_user_token_headers: dict,
@@ -192,6 +243,7 @@ async def test_sync_waits_for_lock_held_by_another_process(
     git_commit_helper,
     superadmin_user,
     db_engine,
+    operation,
 ):
     """
     生产环境是多 worker 进程，进程内的 asyncio.Lock 无法互斥。
@@ -207,6 +259,12 @@ async def test_sync_waits_for_lock_held_by_another_process(
         _post("locked", "Locked", superadmin_user.username), encoding="utf-8"
     )
     git_commit_helper("add locked")
+    # 为增量同步建立起点，避免把缺失进度误判为锁失败。
+    if operation == "sync":
+        initial_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD^"], cwd=mock_content_dir, text=True
+        ).strip()
+        (mock_content_dir / ".gitops_last_sync").write_text(initial_hash)
 
     # 用独立连接模拟另一个 worker 进程持有同步锁
     async with db_engine.connect() as other_worker:
@@ -215,7 +273,8 @@ async def test_sync_waits_for_lock_held_by_another_process(
         )
         sync_task = asyncio.create_task(
             async_client.post(
-                f"{SYNC_URL}?force_full=true", headers=superadmin_user_token_headers
+                f"{settings.API_PREFIX}/ops/git/{operation}",
+                headers=superadmin_user_token_headers,
             )
         )
         await asyncio.sleep(1.5)
@@ -275,3 +334,219 @@ async def test_webhook_mixed_push_with_skip_ci_commit_still_syncs(
     assert response.status_code == 200
     assert response.json()["status"] == "triggered"
     mock_bg_sync.assert_called_once()
+
+
+@pytest.mark.parametrize("force_full", [False, True])
+async def test_failure_after_frontmatter_write_rolls_back_file_and_stats(
+    async_client,
+    superadmin_user_token_headers,
+    mock_content_dir,
+    git_commit_helper,
+    session,
+    superadmin_user,
+    mocker,
+    force_full,
+):
+    """处理器已写盘、添加统计后发生 SQL 错误，数据库和统计都必须回滚。"""
+    import frontmatter
+    from sqlalchemy import text
+    from app.git_ops.components.handlers import file_processor
+
+    headers = superadmin_user_token_headers
+    (mock_content_dir / "seed.md").write_text(
+        _post("seed", "Seed", superadmin_user.username), encoding="utf-8"
+    )
+    git_commit_helper("seed")
+    assert (
+        await async_client.post(f"{SYNC_URL}?force_full=true", headers=headers)
+    ).status_code == 200
+    hash_file = mock_content_dir / ".gitops_last_sync"
+    successful_hash = hash_file.read_text()
+    for name in ("aa-bad", "zz-good"):
+        (mock_content_dir / f"{name}.md").write_text(
+            _post(name, name, superadmin_user.username), encoding="utf-8"
+        )
+    git_commit_helper("batch")
+    real_create = file_processor.handle_post_create
+
+    async def fail_after_write(session_, scanned, file_path, *args, **kwargs):
+        result = await real_create(session_, scanned, file_path, *args, **kwargs)
+        if file_path == "aa-bad.md":
+            await session_.exec(text("SELECT 1/0"))
+        return result
+
+    patched = mocker.patch.object(
+        file_processor, "handle_post_create", side_effect=fail_after_write
+    )
+    url = f"{SYNC_URL}?force_full={str(force_full).lower()}"
+    response = await async_client.post(url, headers=headers)
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert len(data["errors"]) == 1
+    assert "aa-bad.md" not in data["added"] + data["updated"] + data["deleted"]
+    assert "zz-good.md" in data["added"]
+    assert "aa-bad" not in {p.title for p in await _posts(session)}
+    assert hash_file.read_text() == successful_hash
+    assert frontmatter.load(mock_content_dir / "aa-bad.md").get("slug")
+
+    patched.side_effect = real_create
+    response = await async_client.post(url, headers=headers)
+    assert response.status_code == 200, response.text
+    assert response.json()["errors"] == []
+    posts = await _posts(session)
+    assert sum(p.title == "aa-bad" for p in posts) == 1
+    assert sum(p.title == "zz-good" for p in posts) == 1
+    failed_post = next(p for p in posts if p.title == "aa-bad")
+    assert frontmatter.load(mock_content_dir / "aa-bad.md")["slug"] == failed_post.slug
+
+
+@pytest.mark.parametrize("force_full", [False, True])
+async def test_slug_recovers_move_even_when_git_reports_add_and_delete(
+    async_client,
+    superadmin_user_token_headers,
+    mock_content_dir,
+    git_commit_helper,
+    session,
+    superadmin_user,
+    mocker,
+    force_full,
+):
+    """全量同步及 A+D 均按稳定 slug 找回文章，移动失败时保留旧记录。"""
+    from sqlalchemy import text
+    from app.git_ops.components.handlers import file_processor
+
+    headers = superadmin_user_token_headers
+    source = mock_content_dir / "old.md"
+    source.write_text(
+        _post("stable", "Stable", superadmin_user.username), encoding="utf-8"
+    )
+    git_commit_helper("seed")
+    assert (
+        await async_client.post(f"{SYNC_URL}?force_full=true", headers=headers)
+    ).status_code == 200
+    original = (await _posts(session))[0]
+    original_id, original_slug = original.id, original.slug
+    source.rename(mock_content_dir / "new.md")
+    git_commit_helper("move")
+    if not force_full:
+        mocker.patch(
+            "app.git_ops.git_client.GitClient.get_changed_files_with_status",
+            return_value=[("D", "old.md"), ("A", "new.md")],
+        )
+    real_update = file_processor.handle_post_update
+
+    async def fail_update(session_, *args, **kwargs):
+        await real_update(session_, *args, **kwargs)
+        await session_.exec(text("SELECT 1/0"))
+
+    patched = mocker.patch.object(
+        file_processor, "handle_post_update", side_effect=fail_update
+    )
+    url = f"{SYNC_URL}?force_full={str(force_full).lower()}"
+    response = await async_client.post(url, headers=headers)
+    # 分类索引仍可成功处理；失败的移动不能留下成功统计或触发删除。
+    assert response.status_code == 200, response.text
+    assert len(response.json()["errors"]) == 1
+    assert "new.md" not in response.json()["updated"]
+    assert response.json()["deleted"] == []
+    posts = await _posts(session)
+    assert len(posts) == 1
+    assert (posts[0].id, posts[0].slug, posts[0].source_path) == (
+        original_id,
+        original_slug,
+        "old.md",
+    )
+
+    patched.side_effect = real_update
+    response = await async_client.post(url, headers=headers)
+    assert response.status_code == 200, response.text
+    assert response.json()["errors"] == []
+    posts = await _posts(session)
+    assert len(posts) == 1
+    assert (posts[0].id, posts[0].slug, posts[0].source_path) == (
+        original_id,
+        original_slug,
+        "new.md",
+    )
+
+
+@pytest.mark.parametrize(
+    "message,expected",
+    [
+        ("auto [skip ci]", "skipped"),
+        ("auto [ci skip]", "skipped"),
+        ("human edit", "triggered"),
+    ],
+)
+@pytest.mark.parametrize("commits", [None, []])
+async def test_webhook_uses_head_commit_when_commits_are_empty(
+    async_client,
+    monkeypatch,
+    mocker,
+    message,
+    expected,
+    commits,
+):
+    import hashlib
+    import hmac
+    import json
+    from app.git_ops.router import _recent_webhook_commits
+
+    _recent_webhook_commits.clear()
+    secret = "test_webhook_secret"
+    monkeypatch.setattr(settings, "WEBHOOK_SECRET", secret)
+    background = mocker.patch("app.git_ops.router.run_background_sync")
+    data = {"head_commit": {"id": "head-only", "message": message}}
+    if commits is not None:
+        data["commits"] = commits
+    payload = json.dumps(data).encode()
+    signature = (
+        "sha256=" + hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    )
+    response = await async_client.post(
+        f"{settings.API_PREFIX}/ops/git/webhook",
+        content=payload,
+        headers={"X-Hub-Signature-256": signature},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == expected
+    assert background.call_count == int(expected == "triggered")
+    if expected == "skipped":
+        assert response.json()["reason"] == "automated commit with [skip ci]"
+        assert "head-only" not in _recent_webhook_commits
+
+
+@pytest.mark.parametrize("cancel", [False, True])
+async def test_repository_lock_is_released_after_failure(session, db_engine, cancel):
+    import asyncio
+    from contextlib import suppress
+    from sqlalchemy import text
+    from app.git_ops.services.sync_service import SyncService, SYNC_ADVISORY_LOCK_KEY
+
+    entered = asyncio.Event()
+
+    async def fail():
+        async with SyncService.repository_lock(session):
+            entered.set()
+            if cancel:
+                await asyncio.Event().wait()
+            raise RuntimeError("failure while holding lock")
+
+    task = asyncio.create_task(fail())
+    await asyncio.wait_for(entered.wait(), 5)
+    if cancel:
+        task.cancel()
+    with suppress(asyncio.CancelledError, RuntimeError):
+        await task
+    async with db_engine.connect() as connection:
+        acquired = await connection.scalar(
+            text("SELECT pg_try_advisory_lock(:key)"), {"key": SYNC_ADVISORY_LOCK_KEY}
+        )
+        try:
+            assert acquired is True
+        finally:
+            if acquired:
+                await connection.execute(
+                    text("SELECT pg_advisory_unlock(:key)"),
+                    {"key": SYNC_ADVISORY_LOCK_KEY},
+                )

@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from .base import BaseGitOpsService
+from .sync_service import SyncService
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,10 @@ class ExportService(BaseGitOpsService):
         2. 写入物理文件
         3. 执行 Git Commit & Push
         """
+        async with SyncService.repository_lock(self.session):
+            return await self._export_to_git(post_id, default_user, force_export)
+
+    async def _export_to_git(self, post_id, default_user, force_export) -> SyncStats:
         stats = SyncStats()
         await self._get_operating_user(default_user)
 

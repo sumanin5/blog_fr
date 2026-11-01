@@ -126,6 +126,8 @@ async def get_or_create_tag(session: AsyncSession, name: str, slug: str) -> Tag:
             await session.flush()
         except Exception as e:
             # 防御性处理：如果在并发或极端情况下 flush 失败，回退并重新查询
+            if session.in_nested_transaction():
+                raise
             await session.rollback()
             stmt = select(Tag).where(or_(Tag.slug == slug, Tag.name == name))
             result = await session.exec(stmt)

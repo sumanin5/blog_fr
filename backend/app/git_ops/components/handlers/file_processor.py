@@ -3,6 +3,7 @@
 """
 
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict
 
@@ -12,6 +13,7 @@ from app.git_ops.components.handlers.post_update import handle_post_update
 from app.git_ops.components.scanner import MDXScanner
 from app.git_ops.components.serializer import PostSerializer
 from app.git_ops.schema import SyncStats
+from app.posts import cruds as post_crud
 from app.posts import services as post_service
 from app.posts.model import Post
 from app.users.model import User
@@ -34,7 +36,7 @@ class SyncProcessor:
         self.content_dir = content_dir
 
     async def resolve_internal_links_for_posts(
-        self, session: AsyncSession, post_ids: set
+        self, session: AsyncSession, post_ids: set, stats: SyncStats
     ):
         """
         后处理：对指定的一组文章重新进行链接解析
@@ -63,7 +65,9 @@ class SyncProcessor:
             if not post.source_path or not post.content_mdx:
                 continue
 
-            try:
+            async with self._file_savepoint(
+                session, stats, set(), f"Resolving links for {post.source_path}"
+            ):
                 # 2. 尝试解析链接
                 # 注意：_transform_internal_links 是为了处理磁盘文件上的链接转换
                 # 这里我们直接对 DB 中的 content_mdx 进行转换，如果有变动，则更新 DB 和 磁盘
@@ -83,8 +87,6 @@ class SyncProcessor:
                         post.source_path, new_content
                     )
                     count += 1
-            except Exception as e:
-                logger.warning(f"⚠️ Failed to resolve links for {post.source_path}: {e}")
 
         if count > 0:
             logger.info(f"✅ Fixed links for {count} posts.")
@@ -92,15 +94,33 @@ class SyncProcessor:
             # 由于这是后处理，最好先 commit 一次确保安全
             await session.commit()
 
+    @asynccontextmanager
+    async def _file_savepoint(self, session, stats, processed_post_ids, context):
+        """只合并成功释放 savepoint 的文件统计，异常交给外层收集。"""
+        from app.git_ops.exceptions import collect_errors
+
+        async with collect_errors(stats, context):
+            file_stats = SyncStats()
+            file_post_ids = set()
+            async with session.begin_nested():
+                yield file_stats, file_post_ids
+            stats.added.extend(file_stats.added)
+            stats.updated.extend(file_stats.updated)
+            stats.deleted.extend(file_stats.deleted)
+            stats.errors.extend(file_stats.errors)
+            processed_post_ids.update(file_post_ids)
+
     async def process_file_change(
         self,
         session: AsyncSession,
         file_path: str,
-        status: str,  # "A" (added), "M" (modified), "D" (deleted)
+        status: str,  # A/M/D/R
         existing_map: Dict[str, Post],
         operating_user: User,
         stats: SyncStats,
         processed_post_ids: set,
+        old_path: str | None = None,
+        pending_moves: set[str] | None = None,
     ):
         """
         统一处理文件变更（新增、修改、删除）
@@ -108,7 +128,7 @@ class SyncProcessor:
         Args:
             session: 数据库会话
             file_path: 文件路径
-            status: 变更状态 ("A", "M", "D")
+            status: 变更状态 ("A", "M", "D", "R")
             existing_map: 现有文章映射 {source_path: Post}
             operating_user: 操作用户
             stats: 统计信息
@@ -117,7 +137,10 @@ class SyncProcessor:
 
         # 删除文件
         if status == "D":
-            post = existing_map.get(file_path)
+            if pending_moves is not None and file_path in pending_moves:
+                return
+            posts = await post_crud.get_posts_by_source_paths(session, [file_path])
+            post = posts[0] if posts else None
             if post:
                 logger.info(f"🗑️  Deleting post: {file_path}")
                 await post_service.delete_post(
@@ -131,56 +154,21 @@ class SyncProcessor:
             return
 
         # 新增或修改文件
-        if status in ("A", "M"):
+        if status in ("A", "M", "R"):
             # 扫描文件
             scanned = await self.scanner.scan_file(file_path)
 
-            # 处理分类 index
-            if scanned.is_category_index:
-                logger.info(f"🔄 Processing category index: {scanned.file_path}")
-                category = await handle_category_sync(
-                    session,
-                    scanned,
-                    operating_user,
-                    self.content_dir,
-                )
-                if category:
-                    logger.info(
-                        f"✅ Category synced: {category.name} (slug={category.slug})"
-                    )
-                stats.updated.append(str(scanned.file_path))
-                return
-
-            # 处理文章：判断是新增还是更新
-            if file_path not in existing_map:
-                # 新增文章
-                logger.info(f"➕ Creating new post: {file_path}")
-                await handle_post_create(
-                    session,
-                    scanned,
-                    file_path,
-                    self.serializer,
-                    operating_user,
-                    self.content_dir,
-                    stats,
-                    processed_post_ids,
-                )
-            else:
-                # 更新已有文章
-                post = existing_map[file_path]
-                logger.info(f"📝 Updating existing post: {file_path}")
-                await handle_post_update(
-                    session,
-                    post,
-                    scanned,
-                    Path(file_path) if isinstance(file_path, str) else file_path,
-                    False,  # is_move
-                    self.serializer,
-                    operating_user,
-                    self.content_dir,
-                    stats,
-                    processed_post_ids,
-                )
+            await self.process_scanned_file(
+                session,
+                file_path,
+                scanned,
+                existing_map,
+                operating_user,
+                stats,
+                processed_post_ids,
+                old_path=old_path,
+                pending_moves=pending_moves,
+            )
             return
 
         # 未知状态
@@ -195,6 +183,8 @@ class SyncProcessor:
         operating_user: User,
         stats: SyncStats,
         processed_post_ids: set,
+        old_path: str | None = None,
+        pending_moves: set[str] | None = None,
     ):
         """
         处理已扫描的文件（用于全量同步）
@@ -225,8 +215,28 @@ class SyncProcessor:
             stats.updated.append(str(scanned.file_path))
             return
 
-        # 处理文章：显式判断是新增还是更新
-        if file_path not in existing_map:
+        # 路径优先；重命名使用旧路径，未识别为 R 的移动以系统回写的 slug 兜底。
+        post = existing_map.get(file_path) or existing_map.get(old_path)
+        if post is None and scanned.frontmatter.get("slug"):
+            candidate = await post_crud.get_post_by_slug(
+                session, scanned.frontmatter["slug"]
+            )
+            if (
+                candidate is not None
+                and candidate.source_path
+                and not (self.content_dir / candidate.source_path).exists()
+            ):
+                post = candidate
+
+        if (
+            post is not None
+            and post.source_path != file_path
+            and pending_moves is not None
+        ):
+            # 在更新前记录：即使移动失败，也不能随后把旧记录当作删除处理。
+            pending_moves.add(post.source_path)
+
+        if post is None:
             # 新增文章
             logger.info(f"➕ Creating new post: {file_path}")
             await handle_post_create(
@@ -241,14 +251,13 @@ class SyncProcessor:
             )
         else:
             # 更新已有文章
-            post = existing_map[file_path]
             logger.info(f"📝 Updating existing post: {file_path}")
             await handle_post_update(
                 session,
                 post,
                 scanned,
                 Path(file_path) if isinstance(file_path, str) else file_path,
-                False,  # is_move
+                post.source_path != file_path,  # is_move
                 self.serializer,
                 operating_user,
                 self.content_dir,
@@ -266,8 +275,8 @@ class SyncProcessor:
     ):
         """
         全量同步的核心协调逻辑：
-        1. 对比找出孤儿记录并删除 (DB - Disk)
-        2. 遍历处理所有磁盘文件 (Disk -> DB)
+        1. 先处理所有磁盘文件，识别移动 (Disk -> DB)
+        2. 删除没有磁盘文件或移动候选的孤儿记录 (DB - Disk)
 
         Args:
             session: 数据库会话
@@ -276,31 +285,41 @@ class SyncProcessor:
             operating_user: 操作用户
             stats: 统计对象
         """
-        from app.git_ops.exceptions import collect_errors
-
-        # 1. 删除数据库中多余的记录（文件系统中不存在的）
-        for db_path, post in existing_map.items():
-            if db_path not in scanned_map:
-                async with collect_errors(stats, f"Deleting orphaned {db_path}"):
-                    logger.info(f"Deleting orphaned post: {db_path} (slug={post.slug})")
-                    await post_service.delete_post(
-                        session, post.id, current_user=operating_user
-                    )
-                    stats.deleted.append(str(db_path))
-
-        # 2. 处理扫描到的文件 (Disk -> DB)
         processed_post_ids = set()
+        # 先处理新路径，避免全量同步先删除移动前的文章。
+        # 即使移动失败，也保留具有相同 slug 的孤儿，供下次重试。
+        scanned_slugs = {
+            scanned.frontmatter.get("slug")
+            for scanned in scanned_map.values()
+            if not scanned.is_category_index
+        }
         for file_path, scanned in scanned_map.items():
-            async with collect_errors(stats, f"Processing {file_path}"):
+            async with self._file_savepoint(
+                session, stats, processed_post_ids, f"Processing {file_path}"
+            ) as (file_stats, file_post_ids):
                 await self.process_scanned_file(
                     session,
                     file_path,
                     scanned,
                     existing_map,
                     operating_user,
-                    stats,
-                    processed_post_ids,
+                    file_stats,
+                    file_post_ids,
                 )
+
+        # 重新查询，避免使用失败回滚后过期的 ORM 对象。
+        remaining_posts = await post_crud.get_posts_with_source_path(session)
+        for post in remaining_posts:
+            db_path = post.source_path
+            if db_path not in scanned_map and post.slug not in scanned_slugs:
+                async with self._file_savepoint(
+                    session, stats, processed_post_ids, f"Deleting orphaned {db_path}"
+                ) as (file_stats, _):
+                    logger.info(f"Deleting orphaned post: {db_path} (slug={post.slug})")
+                    await post_service.delete_post(
+                        session, post.id, current_user=operating_user
+                    )
+                    file_stats.deleted.append(str(db_path))
 
         # 3. 🆕 后处理：批量修复内部链接
         # 因为在第一遍扫描时，目标文章可能还未入库，导致 ContentProcessor 无法解析链接
@@ -308,7 +327,9 @@ class SyncProcessor:
         if processed_post_ids:
             # 获取这批文章的路径映射（只有发生过变更的才需要重试）
             # 注意：这里我们重新查询 DB 确保状态最新
-            await self.resolve_internal_links_for_posts(session, processed_post_ids)
+            await self.resolve_internal_links_for_posts(
+                session, processed_post_ids, stats
+            )
 
     async def sync_categories_to_disk(
         self, session: AsyncSession, writer, stats: SyncStats
@@ -427,15 +448,19 @@ class SyncProcessor:
             operating_user: 操作用户
             stats: 统计对象
         """
-        from app.git_ops.exceptions import collect_errors
-
         processed_post_ids = set()
+        pending_moves = set()
 
         if changed_files:
             logger.info(
                 f"Incremental sync: processing {len(changed_files)} changed files."
             )
-            for status, file_path in changed_files:
+            # 先处理新增/移动，再删除，保留未被 Git 识别为 R 的文章身份。
+            for status, *paths in sorted(
+                changed_files, key=lambda change: change[0] == "D"
+            ):
+                file_path = paths[-1]
+                old_path = paths[0] if status == "R" else None
                 if not file_path.endswith((".md", ".mdx")):
                     continue
 
@@ -448,13 +473,20 @@ class SyncProcessor:
                     )
                     continue
 
-                async with collect_errors(stats, f"Processing {status} {file_path}"):
+                async with self._file_savepoint(
+                    session,
+                    stats,
+                    processed_post_ids,
+                    f"Processing {status} {file_path}",
+                ) as (file_stats, file_post_ids):
                     await self.process_file_change(
                         session,
                         file_path,
                         status,
                         existing_map,
                         operating_user,
-                        stats,
-                        processed_post_ids,
+                        file_stats,
+                        file_post_ids,
+                        old_path=old_path,
+                        pending_moves=pending_moves,
                     )

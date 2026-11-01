@@ -114,3 +114,33 @@ async def test_git_add_and_commit():
             text=True,
         )
         assert "Add test file" in result.stdout
+
+
+@pytest.mark.parametrize("since_hash", ["abc123", "abc123..def456"])
+async def test_diff_preserves_rename_paths_and_treats_copy_as_add(
+    tmp_path, mocker, since_hash
+):
+    client = GitClient(tmp_path)
+    client._config_initialized = True
+    mocker.patch.object(
+        client,
+        "run",
+        side_effect=[
+            (
+                0,
+                "R100\tarticles/旧.md\tarticles/新.md\nC75\tsource.md\tcopy.md\nM\tedit.md",
+                "",
+            ),
+            (0, "copy.md\nuntracked.md", ""),
+        ],
+    )
+    changes = await client.get_changed_files_with_status(since_hash)
+    assert changes[:3] == [
+        ("R", "articles/旧.md", "articles/新.md"),
+        ("A", "copy.md"),
+        ("M", "edit.md"),
+    ]
+    if ".." not in since_hash:
+        assert changes[3:] == [("A", "untracked.md")]
+    else:
+        assert len(changes) == 3

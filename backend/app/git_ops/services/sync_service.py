@@ -5,6 +5,10 @@
 import asyncio
 import logging
 import time
+from contextlib import asynccontextmanager
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 from app.core.config import settings
 from app.git_ops.components import (
@@ -18,6 +22,9 @@ from app.users.model import User
 from .base import BaseGitOpsService
 
 logger = logging.getLogger(__name__)
+
+# 固定 bigint：所有 worker 和同一工作目录的写入入口共用。
+SYNC_ADVISORY_LOCK_KEY: int = 0x4749544F5053
 
 
 class SyncService(BaseGitOpsService):
@@ -33,14 +40,38 @@ class SyncService(BaseGitOpsService):
             cls._sync_lock = asyncio.Lock()
         return cls._sync_lock
 
+    @classmethod
+    @asynccontextmanager
+    async def repository_lock(cls, session):
+        """等待进程内锁和跨进程锁；独立连接持锁，不受业务 commit 影响。"""
+        async with cls._get_sync_lock():
+            bind = session.bind
+            engine = bind.engine if isinstance(bind, AsyncConnection) else bind
+            async with engine.connect() as connection:
+                try:
+                    await connection.execute(
+                        text("SELECT pg_advisory_lock(:key)"),
+                        {"key": SYNC_ADVISORY_LOCK_KEY},
+                    )
+                    # session 级锁跨事务保留，避免长时间闲置事务。
+                    await connection.commit()
+                    yield
+                finally:
+                    # 即使业务异常或等待被取消，也不把持锁连接归还连接池。
+                    try:
+                        await connection.rollback()
+                        await connection.execute(
+                            text("SELECT pg_advisory_unlock(:key)"),
+                            {"key": SYNC_ADVISORY_LOCK_KEY},
+                        )
+                        await connection.commit()
+                    except BaseException:
+                        await connection.invalidate()
+                        raise
+
     async def sync_all(self, default_user: User = None) -> SyncStats:
         """执行全量同步（扫描本地文件 -> 更新数据库）"""
-        sync_lock = self._get_sync_lock()
-
-        if sync_lock.locked():
-            logger.warning("GitOps sync is already in progress, waiting for lock...")
-
-        async with sync_lock:
+        async with self.repository_lock(self.session):
             start_time = time.time()
             stats = SyncStats()
 
@@ -89,7 +120,8 @@ class SyncService(BaseGitOpsService):
                 )
 
             # 9. 保存 hash
-            await self.hash_manager.save_current_hash()
+            if not stats.errors:
+                await self.hash_manager.save_current_hash()
 
             stats.duration = time.time() - start_time
             logger.info(
@@ -109,41 +141,13 @@ class SyncService(BaseGitOpsService):
 
         Args:
             default_user: 默认操作用户
-            old_hash: 可选，指定旧的 commit hash（用于 webhook 场景）
-            new_hash: 可选，指定新的 commit hash（用于 webhook 场景）
+            old_hash: 兼容旧调用方；同步范围始终由上次成功记录决定
+            new_hash: 兼容旧调用方；同步目标始终为当前工作区（包含 HEAD）
         """
-        sync_lock = self._get_sync_lock()
-
-        if sync_lock.locked():
-            logger.warning("GitOps sync is already in progress, waiting for lock...")
-
-        async with sync_lock:
-            # 1. 先 Git Pull (把远程变更拉下来)
-            pull_output, pull_old_hash, pull_new_hash = await self.github.pull()
-
-            # 2. 再获取变更文件
-            # 如果提供了 hash 范围（webhook 场景），使用提供的范围
-            # 否则使用 last_sync 记录和当前 HEAD 对比
-            if old_hash and new_hash:
-                logger.info(
-                    f"Using provided hash range: {old_hash[:7]}..{new_hash[:7]}"
-                )
-                changed_files = await self.hash_manager.get_changed_files_between(
-                    old_hash, new_hash
-                )
-            elif pull_old_hash != pull_new_hash:
-                # Pull 产生了变更，使用 pull 前后的 hash
-                logger.info(
-                    f"Using pull hash range: {pull_old_hash[:7]}..{pull_new_hash[:7]}"
-                )
-                changed_files = await self.hash_manager.get_changed_files_between(
-                    pull_old_hash, pull_new_hash
-                )
-            else:
-                # Pull 没有变更，使用传统的 last_sync 对比
-                changed_files = (
-                    await self.hash_manager.get_changed_files_since_last_sync()
-                )
+        async with self.repository_lock(self.session):
+            # 始终从上次成功同步的位置重放，不能被本次 pull/webhook 范围截断。
+            await self.github.pull()
+            changed_files = await self.hash_manager.get_changed_files_since_last_sync()
 
             if changed_files is None:
                 logger.warning(
@@ -165,7 +169,10 @@ class SyncService(BaseGitOpsService):
 
             # 6. 处理变更文件 (Disk -> DB 阶段)
             target_paths = [
-                path for _, path in changed_files if path.endswith((".md", ".mdx"))
+                path
+                for _, *paths in changed_files
+                for path in paths
+                if path.endswith((".md", ".mdx"))
             ]
 
             if target_paths:
@@ -193,6 +200,8 @@ class SyncService(BaseGitOpsService):
             # 8. 检查是否真的有产出
             if not stats.added and not stats.updated and not stats.deleted:
                 logger.info("No changes detected in incremental sync.")
+                if not stats.errors:
+                    await self.hash_manager.save_current_hash()
                 return stats
 
             # 9. 提交元数据变更到 GitHub
@@ -208,7 +217,8 @@ class SyncService(BaseGitOpsService):
             )
 
             # 11. 保存 hash
-            await self.hash_manager.save_current_hash()
+            if not stats.errors:
+                await self.hash_manager.save_current_hash()
 
             logger.info(
                 f"Incremental sync completed: "

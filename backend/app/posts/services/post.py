@@ -197,7 +197,11 @@ async def delete_post(session: AsyncSession, post_id: UUID, current_user: User) 
         logger.error(f"Failed to delete physical file for post {post.id}: {e}")
 
     await session.delete(post)
-    await session.commit()
+    # GitOps 用 savepoint 管理单文件事务，提交由同步服务统一负责。
+    if session.in_nested_transaction():
+        await session.flush()
+    else:
+        await session.commit()
     logger.info(f"文章已删除: {post.id} by user {current_user.id}")
 
 
@@ -312,7 +316,11 @@ async def create_post(
         await sync_post_tags(session, db_post, tags_to_sync)
         await session.flush()  # 确保标签关联已保存
 
-    await session.commit()
+    # GitOps 用 savepoint 管理单文件事务，提交由同步服务统一负责。
+    if session.in_nested_transaction():
+        await session.flush()
+    else:
+        await session.commit()
     # 使用 CRUD 层重新查询（带关联预加载），避免懒加载问题
     db_post = await crud.get_post_by_id(session, db_post.id)
 
@@ -435,7 +443,11 @@ async def update_post(
             setattr(db_post, field, value)
 
     session.add(db_post)
-    await session.commit()
+    # GitOps 用 savepoint 管理单文件事务，提交由同步服务统一负责。
+    if session.in_nested_transaction():
+        await session.flush()
+    else:
+        await session.commit()
     # 强制刷新关联对象，确保返回最新的数据
     await session.refresh(db_post, attribute_names=["category", "tags"])
     # 使用 CRUD 层重新查询（带关联预加载），确保所有字段（包括 author 等）都已加载

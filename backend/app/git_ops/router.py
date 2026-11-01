@@ -143,17 +143,19 @@ async def github_webhook(
         payload_json = {}
 
     # 防止循环触发 - 第一道防线：检查 commit message 中的 [skip ci] 标记
-    if "commits" in payload_json:
-        for commit in payload_json["commits"]:
-            message = commit.get("message", "")
-            if "[skip ci]" in message or "[ci skip]" in message:
-                logger.info(
-                    f"⏭️  Skipping webhook for automated commit: {commit.get('id', 'unknown')[:7]} - {message[:50]}"
-                )
-                return {
-                    "status": "skipped",
-                    "reason": "automated commit with [skip ci]",
-                }
+    commits = payload_json.get("commits") or []
+    if not commits and payload_json.get("head_commit"):
+        commits = [payload_json["head_commit"]]
+    if commits and all(
+        "[skip ci]" in commit.get("message", "")
+        or "[ci skip]" in commit.get("message", "")
+        for commit in commits
+    ):
+        logger.info("⏭️  Skipping webhook: all commits carry a CI skip marker")
+        return {
+            "status": "skipped",
+            "reason": "automated commit with [skip ci]",
+        }
 
     # 防止循环触发 - 第二道防线：SHA 去重（防止重复处理、网络重试等）
     commit_sha = payload_json.get("after") or payload_json.get("head_commit", {}).get(
