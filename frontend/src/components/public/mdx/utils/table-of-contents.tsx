@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { List } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -88,6 +88,7 @@ function TocList({
         return (
           <li key={item.id}>
             <a
+              data-toc-id={item.id}
               href={`#${item.id}`}
               onClick={() => onSelect(item.id)}
               style={{ paddingLeft: `${12 + depth * 12}px` }}
@@ -113,7 +114,32 @@ export function TableOfContents({
   mode = "sidebar",
 }: TableOfContentsProps) {
   const { activeId, setActiveId } = useActiveHeading(toc);
+  const listRef = useRef<HTMLDivElement>(null);
   const title = "On this page";
+
+  // 目录较长时，让当前高亮的标题保持在目录可视范围内。
+  // 只滚动目录容器本身：scrollIntoView 会连带滚动页面，打断阅读。
+  useEffect(() => {
+    const container = listRef.current;
+    if (!container || !activeId) return;
+    const link = container.querySelector<HTMLElement>(
+      `[data-toc-id="${CSS.escape(activeId)}"]`,
+    );
+    if (!link) return;
+
+    const margin = 48;
+    // 容器为 relative，offsetTop 即相对目录容器的位置
+    const top = link.offsetTop;
+    const bottom = top + link.offsetHeight;
+    if (top < container.scrollTop + margin) {
+      container.scrollTo({ top: Math.max(0, top - margin), behavior: "smooth" });
+    } else if (bottom > container.scrollTop + container.clientHeight - margin) {
+      container.scrollTo({
+        top: bottom - container.clientHeight + margin,
+        behavior: "smooth",
+      });
+    }
+  }, [activeId]);
 
   if (toc.length === 0) return null;
 
@@ -161,9 +187,17 @@ export function TableOfContents({
         <span>{title}</span>
       </div>
 
-      <ScrollArea className="max-h-[calc(100vh-11rem)] pr-3">
+      {/*
+        用原生滚动而不是 ScrollArea：Radix 视口是 size-full，父级只有 max-h 时
+        百分比高度失效，内容会撑出容器而不出现滚动条。
+        高度 = 视口 - 粘性 top(5rem) - 标题行 - 底部留白，保证整个目录始终在屏内。
+      */}
+      <div
+        ref={listRef}
+        className="relative max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-contain pr-3 [scrollbar-width:thin]"
+      >
         <TocList toc={toc} activeId={activeId} onSelect={setActiveId} />
-      </ScrollArea>
+      </div>
     </nav>
   );
 }
