@@ -10,7 +10,7 @@ from typing import Any, Dict
 from app.git_ops.components.handlers.category_sync import handle_category_sync
 from app.git_ops.components.handlers.post_create import handle_post_create
 from app.git_ops.components.handlers.post_update import handle_post_update
-from app.git_ops.components.scanner import MDXScanner
+from app.git_ops.components.scanner import MDXScanner, is_content_file
 from app.git_ops.components.serializer import PostSerializer
 from app.git_ops.schema import SyncStats
 from app.posts import cruds as post_crud
@@ -443,17 +443,16 @@ class SyncProcessor:
             ):
                 file_path = paths[-1]
                 old_path = paths[0] if status == "R" else None
-                if not file_path.endswith((".md", ".mdx")):
-                    continue
+                if old_path is not None and not is_content_file(old_path):
+                    old_path = None
 
-                # 🚫 安全检查：忽略隐藏文件/目录（与 scan_all 保持一致）
-                # 即使强制提交了隐藏文件，增量同步也会忽略它们
-                is_hidden = any(part.startswith(".") for part in Path(file_path).parts)
-                if is_hidden:
-                    logger.debug(
-                        f"🙈 Skipping hidden file in incremental sync: {file_path}"
-                    )
-                    continue
+                # 🚫 与 scan_all 共用过滤规则：跳过非 md/mdx、说明文档与隐藏路径
+                if not is_content_file(file_path):
+                    if old_path is None:
+                        logger.debug(f"🙈 Skipping non-content file: {file_path}")
+                        continue
+                    # 文章被移出内容范围（如改名为 README.md），按删除旧路径处理
+                    status, file_path, old_path = "D", old_path, None
 
                 async with self._file_savepoint(
                     session,

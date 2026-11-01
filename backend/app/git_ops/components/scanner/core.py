@@ -9,7 +9,7 @@ from app.git_ops.exceptions import GitOpsConfigurationError, ScanError
 
 from .models import ScannedPost
 from .path_parser import PathParser
-from .utils import calc_hash
+from .utils import calc_hash, is_ignored_path
 
 logger = logging.getLogger(__name__)
 
@@ -81,19 +81,16 @@ class MDXScanner:
 
         # 1. 发现并收集路径 (单次递归遍历物理磁盘，效率更高)
         target_path_set = set()
-        ignore_names = {"README.MD", "README.MDX", "LICENSE.MD", ".GITIGNORE"}
 
         # 仅执行一次 rglob，在循环内进行后缀匹配
         for path in self.content_root.rglob("*"):
-            # 获取相对于根目录的内容，检查每一级是否包含隐藏目录/文件
             rel_path_obj = path.relative_to(self.content_root)
 
             if (
-                # 四重过滤条件：文件、后缀、名称、非隐藏路径
+                # 过滤条件：文件、后缀、非说明文档且非隐藏路径（与增量同步共用规则）
                 path.is_file()
                 and path.suffix.lower() in target_extensions
-                and path.name.upper() not in ignore_names
-                and not any(part.startswith(".") for part in rel_path_obj.parts)
+                and not is_ignored_path(rel_path_obj.as_posix())
             ):
                 target_path_set.add(path)
 
