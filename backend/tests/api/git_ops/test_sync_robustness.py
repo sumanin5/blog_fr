@@ -444,11 +444,17 @@ async def test_slug_recovers_move_even_when_git_reports_add_and_delete(
     )
     url = f"{SYNC_URL}?force_full={str(force_full).lower()}"
     response = await async_client.post(url, headers=headers)
-    # 分类索引仍可成功处理；失败的移动不能留下成功统计或触发删除。
-    assert response.status_code == 200, response.text
-    assert len(response.json()["errors"]) == 1
-    assert "new.md" not in response.json()["updated"]
-    assert response.json()["deleted"] == []
+    if force_full:
+        # 全量同步仍会处理分类索引；失败的移动不能留下成功统计或触发删除。
+        assert response.status_code == 200, response.text
+        assert len(response.json()["errors"]) == 1
+        assert "new.md" not in response.json()["updated"]
+        assert response.json()["deleted"] == []
+    else:
+        # 增量批次中唯一的变更失败、没有任何成功操作：按既有约定返回 400
+        # （同 test_sync_author）；分类索引内容未变，不再被误记为 updated。
+        assert response.status_code == 400, response.text
+        assert "SELECT 1/0" in response.text
     posts = await _posts(session)
     assert len(posts) == 1
     assert (posts[0].id, posts[0].slug, posts[0].source_path) == (
@@ -550,3 +556,129 @@ async def test_repository_lock_is_released_after_failure(session, db_engine, can
                     text("SELECT pg_advisory_unlock(:key)"),
                     {"key": SYNC_ADVISORY_LOCK_KEY},
                 )
+
+
+@pytest.mark.asyncio
+@pytest.mark.git_ops
+async def test_background_commit_waits_for_repository_lock(
+    mock_content_dir: Path, db_engine, mocker
+):
+    """后台保存触发的 git pull/commit/push 必须与同步共用跨进程锁"""
+    import asyncio
+
+    from sqlalchemy import text
+
+    from app.git_ops.background_tasks import run_background_commit
+    from app.git_ops.schema import SyncStats
+    from app.git_ops.services.sync_service import SYNC_ADVISORY_LOCK_KEY
+
+    mocker.patch(
+        "app.git_ops.service.GitOpsService.export_to_git", return_value=SyncStats()
+    )
+    git_add = mocker.patch("app.git_ops.git_client.GitClient.add")
+    git_commit = mocker.patch("app.git_ops.git_client.GitClient.commit")
+
+    async with db_engine.connect() as other_worker:
+        await other_worker.execute(
+            text("SELECT pg_advisory_lock(:key)"), {"key": SYNC_ADVISORY_LOCK_KEY}
+        )
+        task = asyncio.create_task(
+            run_background_commit(message="Update post", force_commit=True)
+        )
+        await asyncio.sleep(1.5)
+        assert not task.done()
+        git_add.assert_not_called()
+        git_commit.assert_not_called()
+
+        await other_worker.execute(
+            text("SELECT pg_advisory_unlock(:key)"), {"key": SYNC_ADVISORY_LOCK_KEY}
+        )
+
+    await asyncio.wait_for(task, timeout=30)
+    git_commit.assert_called_once_with("Update post")
+
+
+@pytest.mark.asyncio
+@pytest.mark.git_ops
+async def test_export_commits_inside_lock_without_deadlock(
+    async_client: AsyncClient,
+    superadmin_user_token_headers: dict,
+    mock_content_dir: Path,
+    created_article_post,
+    mocker,
+):
+    """导出在持锁状态下提交：不能再次获取同一把（不可重入的）锁而自我阻塞"""
+    import asyncio
+
+    git_commit = mocker.patch("app.git_ops.git_client.GitClient.commit")
+    # 创建文章时已写盘；删除文件让导出判定“数据库有、磁盘无”，从而真正导出并提交
+    for markdown in mock_content_dir.rglob("*.md"):
+        if markdown.name != "index.md":
+            markdown.unlink()
+
+    response = await asyncio.wait_for(
+        async_client.post(
+            f"{settings.API_PREFIX}/ops/git/push",
+            headers=superadmin_user_token_headers,
+        ),
+        timeout=30,
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["updated"]
+    git_commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.git_ops
+async def test_retry_does_not_report_unchanged_files_or_refresh_cache(
+    async_client: AsyncClient,
+    superadmin_user_token_headers: dict,
+    mock_content_dir: Path,
+    git_commit_helper,
+    superadmin_user,
+    mocker,
+):
+    """存在永久失败的文件时，重放的批次中未变化的文章与分类索引不应计入 updated，也不应刷新缓存"""
+    (mock_content_dir / "seed.md").write_text(
+        _post("seed", "Seed", superadmin_user.username), encoding="utf-8"
+    )
+    git_commit_helper("seed")
+    assert (
+        await async_client.post(
+            f"{SYNC_URL}?force_full=true", headers=superadmin_user_token_headers
+        )
+    ).status_code == 200
+
+    (mock_content_dir / "good.md").write_text(
+        _post("good", "Good", superadmin_user.username), encoding="utf-8"
+    )
+    (mock_content_dir / "broken.md").write_text(
+        _post("broken", "Broken", superadmin_user.username), encoding="utf-8"
+    )
+    git_commit_helper("add good and broken")
+
+    from app.git_ops.components.handlers import file_processor
+
+    real_create = file_processor.handle_post_create
+
+    async def always_fail(session_, scanned, file_path, *args, **kwargs):
+        if str(file_path).endswith("broken.md"):
+            raise RuntimeError("permanent failure")
+        return await real_create(session_, scanned, file_path, *args, **kwargs)
+
+    mocker.patch.object(file_processor, "handle_post_create", side_effect=always_fail)
+    revalidate = mocker.patch(
+        "app.git_ops.services.sync_service.revalidate_nextjs_cache"
+    )
+
+    first = await async_client.post(SYNC_URL, headers=superadmin_user_token_headers)
+    assert first.status_code == 200, first.text
+    assert "good.md" in first.json()["added"]
+    assert revalidate.call_count == 1
+
+    second = await async_client.post(SYNC_URL, headers=superadmin_user_token_headers)
+    # 只剩永久失败的文件：没有任何实际变更，按既有约定返回 400
+    assert second.status_code == 400, second.text
+    assert "permanent failure" in second.text
+    assert revalidate.call_count == 1

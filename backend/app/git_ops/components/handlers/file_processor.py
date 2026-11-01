@@ -348,7 +348,6 @@ class SyncProcessor:
             writer:FileWriter 实例
             stats: 统计对象
         """
-        import frontmatter
         from app.posts.cruds import category as category_crud
 
         categories = await category_crud.get_all_categories(session)
@@ -358,25 +357,8 @@ class SyncProcessor:
             try:
                 target_path = writer.path_calculator.calculate_category_path(category)
 
-                # 构建期望的内容
-                meta = {"title": category.name, "hidden": not category.is_active}
-                if category.icon_preset:
-                    meta["icon"] = category.icon_preset
-                if category.sort_order != 0:
-                    meta["order"] = category.sort_order
-                if category.excerpt:
-                    meta["excerpt"] = category.excerpt
-                # 新增 post_sort 支持
-                if category.post_sort_order:
-                    meta["post_sort"] = category.post_sort_order.value
-                if category.cover_media_id:
-                    meta["cover_media_id"] = str(category.cover_media_id)
-                    if hasattr(category, "cover_media") and category.cover_media:
-                        meta["cover"] = category.cover_media.original_filename
-
-                expected_content = frontmatter.dumps(
-                    frontmatter.Post(category.description or "", **meta)
-                )
+                # 与 write_category 使用同一份渲染结果，避免每次都判定为变更
+                expected_content = writer.render_category_index(category)
 
                 should_write = False
                 if not target_path.exists():

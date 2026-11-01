@@ -24,6 +24,7 @@ class TestCategoryIndexWriteback:
         from app.git_ops.components.handlers.file_processor import SyncProcessor
         from app.git_ops.components.scanner import MDXScanner
         from app.git_ops.components.serializer import PostSerializer
+        from app.git_ops.components.writer.writer import FileWriter
         from app.git_ops.schema import SyncStats
 
         mock_scanner = mocker.Mock(spec=MDXScanner)
@@ -35,6 +36,8 @@ class TestCategoryIndexWriteback:
         # Mock writer
         mock_writer = mocker.MagicMock()
         mock_writer.write_category = mocker.AsyncMock()
+        # 渲染与比较使用真实实现（其中的 frontmatter.dumps 仍可被各用例 patch）
+        mock_writer.render_category_index.side_effect = FileWriter.render_category_index
         mock_writer.path_calculator.calculate_category_path.side_effect = (
             lambda c: Path(f"/content/articles/{c.slug}/index.md")
         )

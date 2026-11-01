@@ -13,10 +13,21 @@ class CommitService(BaseGitOpsService):
     """Git 提交服务 - 负责自动提交和推送"""
 
     async def auto_commit(self, message: str):
-        """执行自动提交和推送
+        """执行自动提交和推送（对外入口，与同步、导出共用仓库锁）
 
         Args:
             message: 提交信息
+        """
+        from .sync_service import SyncService
+
+        async with SyncService.repository_lock(self.session):
+            await self.auto_commit_unlocked(message)
+
+    async def auto_commit_unlocked(self, message: str):
+        """执行自动提交和推送；调用方必须已持有 SyncService.repository_lock
+
+        仓库锁不可重入（进程内 asyncio.Lock + 新连接上的 advisory lock），
+        已在锁内的流程（如导出）必须调用本方法，否则会自我阻塞。
         """
         if not (self.content_dir / ".git").exists():
             logger.warning("Skipping auto-commit: Not a git repository")

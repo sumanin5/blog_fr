@@ -97,47 +97,51 @@ class FileWriter:
                 "Unexpected error during post delete", path=str(abs_path), detail=str(e)
             ) from e
 
+    @staticmethod
+    def render_category_index(category: Any) -> str:
+        """生成分类 index.md 的完整内容
+
+        写入与“是否需要写入”的比较必须使用同一份内容，否则会每次都判定为变更。
+        """
+        import frontmatter
+
+        meta = {
+            "title": category.name,
+            "hidden": not category.is_active,
+            "category_id": str(category.id),
+        }
+        if category.icon_preset:
+            meta["icon"] = category.icon_preset
+        if category.sort_order != 0:
+            meta["order"] = category.sort_order
+
+        # 添加摘要字段
+        if category.excerpt:
+            meta["excerpt"] = category.excerpt
+
+        # 封面处理（参考 posts 的做法）
+        if category.cover_media_id:
+            # 添加 UUID 格式的 ID
+            meta["cover_media_id"] = str(category.cover_media_id)
+
+            # 如果预加载了 cover_media，添加人类可读的文件名
+            if hasattr(category, "cover_media") and category.cover_media:
+                cover = category.cover_media
+                if hasattr(cover, "original_filename"):
+                    meta["cover"] = cover.original_filename
+
+        # 添加 post_sort 字段 (API 更新回写)
+        if category.post_sort_order:
+            # 写入 post_sort 字段，保持与 GIT_SYNC_GUIDE 一致
+            meta["post_sort"] = category.post_sort_order.value
+
+        return frontmatter.dumps(frontmatter.Post(category.description or "", **meta))
+
     async def write_category(self, category: Any) -> Path:
         """将分类元数据写入 index.md"""
         try:
             target_path = self.path_calculator.calculate_category_path(category)
-
-            # 构建 metadata
-            meta = {
-                "title": category.name,
-                "hidden": not category.is_active,
-                "category_id": str(category.id),
-            }
-            if category.icon_preset:
-                meta["icon"] = category.icon_preset
-            if category.sort_order != 0:
-                meta["order"] = category.sort_order
-
-            # 添加摘要字段
-            if category.excerpt:
-                meta["excerpt"] = category.excerpt
-
-            # 封面处理（参考 posts 的做法）
-            if category.cover_media_id:
-                # 添加 UUID 格式的 ID
-                meta["cover_media_id"] = str(category.cover_media_id)
-
-                # 如果预加载了 cover_media，添加人类可读的文件名
-                if hasattr(category, "cover_media") and category.cover_media:
-                    cover = category.cover_media
-                    if hasattr(cover, "original_filename"):
-                        meta["cover"] = cover.original_filename
-
-            # 添加 post_sort 字段 (API 更新回写)
-            if category.post_sort_order:
-                # 写入 post_sort 字段，保持与 GIT_SYNC_GUIDE 一致
-                meta["post_sort"] = category.post_sort_order.value
-
-            # 使用 frontmatter 库生成
-            import frontmatter
-
-            post_obj = frontmatter.Post(category.description or "", **meta)
-            content = frontmatter.dumps(post_obj)
+            content = self.render_category_index(category)
 
             # 确保目录存在
             if not target_path.parent.exists():

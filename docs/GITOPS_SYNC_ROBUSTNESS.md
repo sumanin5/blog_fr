@@ -72,3 +72,20 @@ $ cd backend && uv run ruff check app tests && uv run ruff format --check app/gi
 All checks passed!
 66 files already formatted
 ```
+
+## 返工（审查后）
+
+审查确认五项修复正确，另外补了两处：
+
+1. **后台提交未加锁**：`run_background_commit` 在导出释放锁后单独调用 `auto_commit`，git pull/commit/push 不受保护。
+   `CommitService.auto_commit` 改为在 `repository_lock` 内执行；新增 `auto_commit_unlocked` 供已持锁的导出流程调用，
+   避免不可重入的锁自我阻塞。测试：`test_background_commit_waits_for_repository_lock`、`test_export_commits_inside_lock_without_deadlock`。
+2. **未变化的内容被计入 updated**：失败重试会重放已成功的文件，`handle_post_update` 无条件计入 `updated`，
+   每次同步都触发缓存刷新。现在比较更新前后数据库中的实际行（含标签）与磁盘文件内容，有变化才计入。
+   同时修复既有问题：分类 `index.md` 的写入内容含 `category_id`，比较用的期望内容却没有，导致每次同步都重写并计入 `updated`；
+   两处改为共用 `FileWriter.render_category_index`。测试：`test_retry_does_not_report_unchanged_files_or_refresh_cache`。
+
+连带调整：`test_slug_recovers_move_even_when_git_reports_add_and_delete[False]` 原先的 200 依赖于分类索引被误记为 `updated`；
+修复后该增量批次唯一的变更失败，按既有约定（同 `test_sync_author`）返回 400，其余断言不变。
+
+验证：`uv run pytest -q` 680 passed；`ruff check app tests` 通过；`ruff format --check app/git_ops tests/api/git_ops` 通过。

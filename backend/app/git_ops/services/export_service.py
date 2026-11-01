@@ -125,6 +125,7 @@ class ExportService(BaseGitOpsService):
         # 3. 如果有变更，执行 Git 提交
         if stats.updated:
             message = f"chore: sync {len(stats.updated)} articles from dashboard"
-            await self.container.commit_service.auto_commit(message)
+            # 已在 repository_lock 内，使用不加锁的实现避免重入死锁
+            await self.container.commit_service.auto_commit_unlocked(message)
 
         return stats
