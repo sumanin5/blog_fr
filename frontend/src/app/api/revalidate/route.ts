@@ -1,4 +1,4 @@
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest } from "next/server";
 
 /**
@@ -12,13 +12,11 @@ export async function POST(request: NextRequest) {
     const secret = process.env.REVALIDATE_SECRET;
 
     if (!secret || authHeader !== `Bearer ${secret}`) {
-      console.error("❌ Unauthorized revalidate request");
-      console.error(`Received: ${authHeader}`);
-      console.error(`Expected: Bearer ${secret}`);
-      return Response.json(
-        { error: "Unauthorized", received: authHeader },
-        { status: 401 },
+      // 不记录/回显任何凭据：日志与响应体都可能被第三方看到
+      console.error(
+        `❌ Unauthorized revalidate request (secret configured: ${Boolean(secret)}, header present: ${Boolean(authHeader)})`,
       );
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 2. 解析请求体
@@ -28,8 +26,9 @@ export async function POST(request: NextRequest) {
     // 3. 失效 tags
     if (Array.isArray(tags) && tags.length > 0) {
       for (const tag of tags) {
-        // 在 Next.js 16 中使用 updateTag 代替 revalidateTag
-        await updateTag(tag);
+        // updateTag 只能在 Server Action 中调用，Route Handler 里会直接抛错；
+        // webhook 场景用 expire: 0 让标签立即过期，下一次请求即取到新数据
+        revalidateTag(tag, { expire: 0 });
         console.log(`✅ Revalidated tag: ${tag}`);
       }
     }
