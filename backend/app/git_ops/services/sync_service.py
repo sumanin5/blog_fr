@@ -131,17 +131,41 @@ class SyncService(BaseGitOpsService):
                         )
 
             if existing_map and not scanned_map:
-                self.scanner.last_scan_incomplete = True
-                stats.errors.append(
-                    SyncError(
-                        context="Full sync safety check",
-                        code="SCAN_INCOMPLETE",
-                        message=(
-                            "扫描结果为空但数据库仍有 Git 来源文章，"
-                            "已跳过孤儿删除；请检查 CONTENT_DIR 和仓库挂载。"
-                        ),
+                # 空扫描可能是挂载错误，也可能是最后一个文件被合法删除。
+                # 只有 Git 历史能证明数据库中的每个源文件都被删除时才允许清理。
+                deletion_proven = False
+                try:
+                    last_hash = self.hash_manager.get_last_hash()
+                    current_hash = await self.git_client.get_current_hash()
+                    if last_hash and current_hash:
+                        changes = await self.hash_manager.get_changed_files_between(
+                            last_hash, current_hash
+                        )
+                        deleted_paths = {
+                            path.replace("\\", "/")
+                            for status, path in changes
+                            if status == "D"
+                        }
+                        deletion_proven = set(existing_map).issubset(deleted_paths)
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to verify empty-scan deletions against Git history: %s",
+                        exc,
                     )
-                )
+
+                if not deletion_proven:
+                    self.scanner.last_scan_incomplete = True
+                    stats.errors.append(
+                        SyncError(
+                            context="Full sync safety check",
+                            code="SCAN_INCOMPLETE",
+                            message=(
+                                "扫描结果为空但数据库仍有 Git 来源文章，"
+                                "且 Git 历史无法证明这些文件已被删除；"
+                                "已跳过孤儿删除。请检查 CONTENT_DIR 和仓库挂载。"
+                            ),
+                        )
+                    )
 
             # 4. 获取操作用户
             operating_user = await self._get_operating_user(default_user)

@@ -238,6 +238,7 @@ async def test_metadata_completion(
     await session.commit()
     await session.refresh(tech_category)
     tech_cat_id = tech_category.id  # 立即获取 ID，避免后续访问过期对象
+    superadmin_id = superadmin_user.id
 
     # 创建文章：只写了最少的必要字段
     articles_dir = mock_content_dir / "Articles" / "Tech"
@@ -269,4 +270,4 @@ Content here.
     assert post.category_id == tech_cat_id
     assert post.post_type == PostType.ARTICLES
     assert post.slug.startswith("minimal-post-")
-    assert post.author_id == superadmin_user.id
+    assert post.author_id == superadmin_id

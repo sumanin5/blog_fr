@@ -20,6 +20,7 @@ async def test_resync_metadata_success(
     """测试成功重新同步元数据"""
     post, test_file, new_author = resync_test_post
     post_id = post.id  # 提前获取 ID，避免后续访问触发懒加载
+    new_author_id = new_author.id
     original_bytes = test_file.read_bytes()
 
     # 调用 resync API
@@ -39,7 +40,7 @@ async def test_resync_metadata_success(
 
     session.expire_all()
     refreshed = await session.get(Post, post_id)
-    assert refreshed.author_id == new_author.id
+    assert refreshed.author_id == new_author_id
     assert test_file.read_bytes() == original_bytes
 
 
@@ -395,7 +396,7 @@ category: "life"
 
     # 文件中的旧分类保持不变；路径优先只影响数据库
     assert test_file.read_bytes() == original_bytes
-    assert "category: life" in test_file.read_text(encoding="utf-8")
+    assert 'category: "life"' in test_file.read_text(encoding="utf-8")
 
 
 @pytest.mark.asyncio
