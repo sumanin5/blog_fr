@@ -154,14 +154,24 @@ ssh -T git@github.com
 
 ### 2. 初始化 content 目录
 
+`content` 不是 Git submodule；它是独立的 `blog-content` 仓库克隆，位于网站仓库下的 `./content` 并被 `.gitignore` 忽略。
+
 ```bash
 cd /home/tomy/blog_fr
-git submodule update --init --recursive
 
+# 目录不存在或为空时，克隆内容仓库（使用只读地址）
+git clone git@github.com:your-account/blog-content.git content
 cd content
 git remote -v
 # 应为 blog-content 的只读地址
+git rev-parse --abbrev-ref HEAD
+# Deploy Key 只读即可，但工作区必须可写，因为 git pull 需要更新文件
 ```
+
+三份 Compose 文件都使用 `./content:/git_root/content` 和
+`CONTENT_DIR=/git_root/content`，因此宿主机 `./content` 必须包含上一步的
+`blog-content` 工作区。后端本地直接运行时，`CONTENT_DIR` 以 `backend/`
+为工作目录解析：可用 `../content`，或直接指向相邻内容仓库的绝对路径。
 
 本地 `content` 目录和 `.git` 必须可写，因为 `git pull` 需要更新工作区，同步游标写在 `.git/.gitops_last_sync`。
 

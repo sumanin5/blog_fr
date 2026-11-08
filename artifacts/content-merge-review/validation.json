@@ -1,0 +1,10 @@
+{
+  "articles": 27,
+  "categories": 9,
+  "ids_stable": true,
+  "source_unchanged": true,
+  "incremental_empty": true,
+  "geb_cover_hash_matches_local_image": true,
+  "database": "blog_completion_test",
+  "git_pull": "mocked; local working files tested"
+}

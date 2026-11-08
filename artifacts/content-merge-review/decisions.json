@@ -1,0 +1,10 @@
+{
+  "GEB": {
+    "decision": "local image is authoritative; remove conflicting database-specific cover ID",
+    "previous_fields": [
+      "cover_media_id: 019c7bd8-128c-7b27-a6c5-906978b8cf23"
+    ],
+    "image": "ideas/geb-zi-zhi-de-guai-quan/media/cover.png",
+    "sha256": "800a2f53bcac24f814f17990890f78cfc972846283d02080be582f0cac07c1b8"
+  }
+}
