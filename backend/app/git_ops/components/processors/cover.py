@@ -42,12 +42,13 @@ class CoverProcessor(FieldProcessor):
                 result["cover_media_id"] = None  # 清空无效的 ID
 
         cover_path = meta.get("cover") or meta.get("image")
-        if cover_path and not dry_run:
+        if cover_path:
             result["cover_media_id"] = await self._resolve_cover_media_id(
                 session,
                 cover_path,
                 mdx_file_path=scanned.file_path,
                 content_dir=Path(settings.CONTENT_DIR),
+                dry_run=dry_run,
             )
         elif not cover_path and not meta.get("cover_media_id"):
             # Git 中没有封面时，清空旧封面，保持源文件为唯一来源。
@@ -59,8 +60,9 @@ class CoverProcessor(FieldProcessor):
         cover_value: str,
         mdx_file_path: str | None = None,
         content_dir: Path | None = None,
+        dry_run: bool = False,
     ) -> Optional[UUID]:
-        """根据文件路径、文件名或外部 URL 查询/注入媒体库 ID"""
+        """按明确 ID、源文件内容哈希或精确存储路径解析；不模糊匹配。"""
         from app.media import crud as media_crud
         from app.media import service as media_service
         from app.users import crud as user_crud
@@ -81,28 +83,29 @@ class CoverProcessor(FieldProcessor):
         if cover_value.startswith(("http://", "https://")):
             return None
 
-        # 3. Local Auto-upload
+        # 3. Local source: identical bytes share media, equal names do not.
         if mdx_file_path and content_dir:
             mdx_dir = (content_dir / mdx_file_path).parent
             img_abs_path = (mdx_dir / cover_value).resolve()
 
-            if (
-                img_abs_path.exists()
-                and img_abs_path.is_file()
-                and str(img_abs_path).startswith(str(content_dir))
-            ):
-                filename = img_abs_path.name
-                media = await media_crud.get_media_file_by_path(session, filename)
+            if not img_abs_path.is_relative_to(content_dir.resolve()):
+                return None
+            if img_abs_path.is_file():
+                import asyncio
+                import hashlib
 
-                if not media:
+                filename = img_abs_path.name
+                file_content = await asyncio.to_thread(img_abs_path.read_bytes)
+                media = await media_crud.get_media_file_by_hash(
+                    session, hashlib.sha256(file_content).hexdigest()
+                )
+
+                if not media and not dry_run:
                     try:
                         admin = await user_crud.get_superuser(session)
                         if not admin:
                             raise Exception("No superadmin found")
 
-                        import asyncio
-
-                        file_content = await asyncio.to_thread(img_abs_path.read_bytes)
                         from app.media.model import FileUsage
 
                         media = await media_service.create_media_file(
@@ -120,18 +123,15 @@ class CoverProcessor(FieldProcessor):
 
                 if media:
                     return media.id
+                return None
 
         # 4. Path match
-        media = await media_crud.get_media_file_by_path(session, cover_value)
-        if media:
-            return media.id
-
-        # 5. Filename match
-        filename = Path(cover_value).name
-        results = await media_service.search_media_files(
-            session, query=filename, limit=1
-        )
-        if results:
-            return results[0].id
+        # Only an explicit storage path may refer to an existing media record.
+        # A missing local basename must never pick an unrelated image.
+        path = Path(cover_value.replace("\\", "/"))
+        if not path.is_absolute() and ".." not in path.parts and len(path.parts) > 1:
+            media = await media_crud.get_media_file_by_path(session, path.as_posix())
+            if media:
+                return media.id
 
         return None

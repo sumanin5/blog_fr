@@ -81,11 +81,6 @@ async def sync_from_git_task():
 
     except Exception as e:
         logger.error(f"❌ [Scheduled Task] Git sync failed: {e}", exc_info=True)
-        if service is not None:
-            try:
-                service.container.hash_manager.mark_failed()
-            except Exception:
-                logger.exception("Failed to mark scheduled sync for full retry")
 
 
 async def cleanup_old_logs_task():

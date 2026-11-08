@@ -9,6 +9,7 @@ from app.git_ops.exceptions import GitOpsConfigurationError, ScanError
 
 from .models import ScannedPost
 from .path_parser import PathParser
+from .policy import is_content_path
 from .utils import calc_hash
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,10 @@ class MDXScanner:
         # source_path 在数据库和 Git diff 中统一使用 POSIX 分隔符，避免 Windows
         # 全量扫描（反斜杠）与 Git 输出（正斜杠）无法匹配。
         rel_path = Path(rel_path).as_posix()
-        full_path = self.content_root / rel_path
+        root = self.content_root.resolve()
+        full_path = (self.content_root / rel_path).resolve()
+        if not full_path.is_relative_to(root):
+            raise ScanError(rel_path, "Path escapes content repository")
         if not full_path.is_file():
             return None
 
@@ -91,16 +95,7 @@ class MDXScanner:
         self.last_scan_incomplete = False
         target_path_set = set()
         # 内容仓库约定：说明类文档不是文章，不参与导入。
-        ignore_names = {
-            "README.MD",
-            "README.MDX",
-            "AGENTS.MD",
-            "CLAUDE.MD",
-            "LICENSE.MD",
-            "CONTRIBUTING.MD",
-            "CHANGELOG.MD",
-            ".GITIGNORE",
-        }
+
 
         # 仅执行一次 rglob，在循环内进行后缀匹配
         for path in self.content_root.rglob("*"):
@@ -111,8 +106,7 @@ class MDXScanner:
                 # 四重过滤条件：文件、后缀、名称、非隐藏路径
                 path.is_file()
                 and path.suffix.lower() in target_extensions
-                and path.name.upper() not in ignore_names
-                and not any(part.startswith(".") for part in rel_path_obj.parts)
+                and is_content_path(rel_path_obj)
             ):
                 target_path_set.add(path)
 

@@ -24,11 +24,6 @@ async def run_background_sync():
             stats = await service.sync_incremental()
         except Exception:
             logger.exception("Background Git sync failed")
-            # 让下一次增量同步先做全量对账，避免失败区间被跳过。
-            try:
-                service.container.hash_manager.mark_failed()
-            except Exception:
-                logger.exception("Failed to mark sync as needing full retry")
             return
 
         logger.info(

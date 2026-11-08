@@ -9,8 +9,11 @@ from typing import Any, Dict
 from app.git_ops.components.handlers.category_sync import handle_category_sync
 from app.git_ops.components.handlers.post_create import handle_post_create
 from app.git_ops.components.handlers.post_update import handle_post_update
+from app.git_ops.components.path_utils import is_same_path, normalize_source_path
 from app.git_ops.components.scanner import MDXScanner
 from app.git_ops.components.serializer import PostSerializer
+from app.git_ops.components.scanner.policy import is_content_path
+from app.git_ops.exceptions import GitOpsSyncError
 from app.git_ops.schema import SyncError, SyncStats
 from app.posts import cruds as post_crud
 from app.posts import services as post_service
@@ -33,6 +36,26 @@ class SyncProcessor:
         self.scanner = scanner
         self.serializer = serializer
         self.content_dir = content_dir
+
+    def _validate_move(self, post: Post, new_path: str):
+        """A matching slug alone cannot transfer ownership of a database row."""
+        old_path = post.source_path
+        if not isinstance(old_path, str) or not old_path:
+            raise GitOpsSyncError(
+                f"Slug '{post.slug}' conflicts with a database-only post: {new_path}"
+            )
+        old_path = normalize_source_path(old_path, self.content_dir)
+        if Path(old_path).is_absolute():
+            raise GitOpsSyncError(
+                f"Slug '{post.slug}' points outside the content repository: {old_path}"
+            )
+        if not is_same_path(old_path, new_path) and (
+            self.content_dir / old_path
+        ).exists():
+            raise GitOpsSyncError(
+                f"Slug '{post.slug}' is used by both {old_path} and {new_path}; "
+                "the original source still exists."
+            )
 
     async def resolve_internal_links_for_posts(
         self, session: AsyncSession, post_ids: set
@@ -112,6 +135,9 @@ class SyncProcessor:
             processed_post_ids: 已处理的文章 ID 集合
         """
 
+        if not is_content_path(file_path):
+            return
+
         # 删除文件
         if status == "D":
             post = existing_map.get(file_path)
@@ -158,6 +184,7 @@ class SyncProcessor:
                         session, str(fm_slug)
                     )
                     if moved_post:
+                        self._validate_move(moved_post, file_path)
                         logger.info(
                             f"🔀 Reusing post {moved_post.id} by slug '{fm_slug}' "
                             f"for new path: {file_path}"
@@ -264,6 +291,7 @@ class SyncProcessor:
                     session, str(fm_slug)
                 )
                 if reused_post:
+                    self._validate_move(reused_post, file_path)
                     logger.info(
                         f"🔀 Reusing post {reused_post.id} by slug '{fm_slug}' "
                         f"for new path: {file_path}"
@@ -433,28 +461,38 @@ class SyncProcessor:
 
             # 预扫描显式 slug 的移动/改名。重命名在 --no-renames 下会表现为
             # 删除 + 新增；先识别要复用的旧记录，删除阶段跳过它，保留 ID 和互动数据。
+            # 任一新文件预扫描失败时，本轮不允许删除旧记录，避免目标解析失败
+            # 导致旧文章在重试前已经丢失。
             moved_post_ids = set()
+            pre_scan_failed = False
             for status, file_path in changed_files:
-                if status not in ("A", "M") or not file_path.endswith(
-                    (".md", ".mdx")
+                if status not in ("A", "M"):
+                    continue
+                if not is_content_path(file_path):
+                    continue
+                if any(
+                    part.startswith(".") for part in Path(file_path).parts
                 ):
                     continue
                 if file_path in existing_map:
                     continue
                 try:
                     scanned = await self.scanner.scan_file(file_path)
-                except Exception:
-                    continue
-                if not scanned or scanned.is_category_index:
-                    continue
-                fm_slug = scanned.frontmatter.get("slug")
-                if not fm_slug:
-                    continue
-                try:
+                    if not scanned or scanned.is_category_index:
+                        continue
+                    fm_slug = scanned.frontmatter.get("slug")
+                    if not fm_slug:
+                        continue
                     old_post = await post_crud.get_post_by_slug(
                         session, str(fm_slug)
                     )
-                except Exception:
+                except Exception as exc:
+                    pre_scan_failed = True
+                    logger.warning(
+                        "Pre-scan failed for %s; deletions will be skipped: %s",
+                        file_path,
+                        exc,
+                    )
                     continue
                 if old_post:
                     moved_post_ids.add(old_post.id)
@@ -465,7 +503,23 @@ class SyncProcessor:
                 changed_files, key=lambda item: 0 if item[0] == "D" else 1
             )
             for status, file_path in ordered_changes:
+                # 与 scan_all 保持一致：隐藏路径不参与增量导入。
+                if any(
+                    part.startswith(".") for part in Path(file_path).parts
+                ):
+                    logger.debug(
+                        f"🙈 Skipping hidden file in incremental sync: {file_path}"
+                    )
+                    continue
+
                 if status == "D":
+                    if pre_scan_failed:
+                        logger.warning(
+                            "Skipping deletion of %s because an added/modified "
+                            "file failed pre-scan.",
+                            file_path,
+                        )
+                        continue
                     old_post = existing_map.get(file_path)
                     if old_post and old_post.id in moved_post_ids:
                         logger.info(
@@ -473,16 +527,8 @@ class SyncProcessor:
                             f"{file_path} -> new path"
                         )
                         continue
-                if not file_path.endswith((".md", ".mdx")):
-                    continue
 
-                # 🚫 安全检查：忽略隐藏文件/目录（与 scan_all 保持一致）
-                # 即使强制提交了隐藏文件，增量同步也会忽略它们
-                is_hidden = any(part.startswith(".") for part in Path(file_path).parts)
-                if is_hidden:
-                    logger.debug(
-                        f"🙈 Skipping hidden file in incremental sync: {file_path}"
-                    )
+                if not is_content_path(file_path):
                     continue
 
                 async with collect_errors(

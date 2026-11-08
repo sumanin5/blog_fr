@@ -55,14 +55,29 @@ class ContentProcessor(FieldProcessor):
             if not self._should_process_image(image_path):
                 return match.group(0)  # 保持原样
 
-            # 预览模式只读，不上传图片
+            # 预览只查询已导入媒体，生成与正式导入相同的展示 URL。
             if dry_run:
-                return match.group(0)
+                import asyncio
 
-            # 上传图片并获取 media_id
-            media_id = await self._upload_and_get_media_id(
-                image_path, mdx_file_path, session
-            )
+                from app.media import crud as media_crud
+
+                root = Path(settings.CONTENT_DIR).resolve()
+                source = ((root / mdx_file_path).parent / image_path).resolve()
+                existing = None
+                if source.is_relative_to(root) and source.is_file():
+                    import hashlib
+
+                    content_hash = hashlib.sha256(
+                        await asyncio.to_thread(source.read_bytes)
+                    ).hexdigest()
+                    existing = await media_crud.get_media_file_by_hash(
+                        session, content_hash
+                    )
+                media_id = existing.id if existing else None
+            else:
+                media_id = await self._upload_and_get_media_id(
+                    image_path, mdx_file_path, session
+                )
 
             if not media_id:
                 return match.group(0)  # 上传失败，保持原样
@@ -226,7 +241,6 @@ class ContentProcessor(FieldProcessor):
         from pathlib import Path
 
         from app.core.config import settings
-        from app.media import crud as media_crud
         from app.media import service as media_service
         from app.media.model import FileUsage
         from app.users import crud as user_crud
@@ -238,19 +252,16 @@ class ContentProcessor(FieldProcessor):
             img_abs_path = (mdx_dir / relative_path).resolve()
 
             # 验证文件存在且在 content_dir 内
-            if not img_abs_path.exists() or not str(img_abs_path).startswith(
-                str(content_dir)
+            if (
+                not img_abs_path.exists()
+                or not img_abs_path.is_relative_to(content_dir.resolve())
             ):
                 return None
 
             filename = img_abs_path.name
 
-            # 检查是否已经上传过
-            existing_media = await media_crud.get_media_file_by_path(session, filename)
-            if existing_media:
-                return existing_media.id
-
-            # 上传新图片
+            # 上传新图片；create_media_file 会用内容哈希去重，
+            # 不能仅凭同名文件复用媒体，否则不同目录的同名图片会串图。
             admin = await user_crud.get_superuser(session)
             if not admin:
                 return None

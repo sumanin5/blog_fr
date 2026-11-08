@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.git_ops.components.github import GitHubComponent
 from app.git_ops.components.handlers.file_processor import SyncProcessor
 from app.git_ops.components.hash_manager import HashManager
+from app.git_ops.components.repository_lock import lock_repository
 from app.git_ops.components.scanner import MDXScanner
 from app.git_ops.components.serializer import PostSerializer
 from app.git_ops.git_client import GitClient
@@ -34,6 +35,11 @@ class GitOpsContainer:
         self._resync_service = None
         self._commit_service = None
         self._export_service = None
+
+    def repository_lock(self):
+        return lock_repository(
+            self.hash_manager.last_sync_file.with_name(".gitops_sync.lock")
+        )
 
     @property
     def export_service(self):
