@@ -118,14 +118,14 @@ Content here.
 
 
 @pytest.mark.asyncio
-async def test_sync_with_cover_by_filename(
+async def test_sync_does_not_guess_cover_by_filename(
     async_client: AsyncClient,
     superadmin_user_token_headers: dict,
     mock_content_dir: Path,
     superadmin_user,
     session,
 ):
-    """测试：MDX 文件使用文件名匹配封面图"""
+    """源图片不存在时，不得绑定媒体库中仅仅同名的其他图片。"""
     # 1. 创建媒体文件
     media_file = MediaFile(
         original_filename="my-cover.jpg",
@@ -166,14 +166,15 @@ Content here.
     data = response.json()
     assert len(data["added"]) == 1  # 只导入文章，不再自动创建分类 index.md
 
-    # 4. 验证封面图关联（通过文件名匹配）
+    # 4. 同名媒体存在也不能猜测关联。
     session.expire_all()
     stmt = select(Post).where(Post.source_path == "post-cover-filename.mdx")
     result = await session.exec(stmt)
     post = result.one()
     await session.refresh(post)
 
-    assert post.cover_media_id == media_id
+    assert post.cover_media_id is None
+    assert (await session.get(MediaFile, media_id)) is not None
 
 
 @pytest.mark.asyncio

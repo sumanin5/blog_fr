@@ -315,7 +315,7 @@ async def test_failed_sync_forces_full_reconciliation_on_retry(
     mock_container.hash_manager.needs_full_sync.return_value = True
     full_stats = SyncStats()
     full = mocker.patch.object(
-        SyncService, "sync_all", new_callable=mocker.AsyncMock,
+        SyncService, "_sync_all_locked", new_callable=mocker.AsyncMock,
         return_value=full_stats,
     )
     result = await SyncService(mock_session, mock_container).sync_incremental(

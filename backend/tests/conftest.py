@@ -84,8 +84,10 @@ async def db_engine():
             returncode=2,
         )
 
-    # 创建所有表
+    # 先清空可能残留的表（例如上一次会话被中断，或真实内容同步脚本写入过
+    # 同一个 _test 库），再建表，避免测试读到外部数据导致断言失真。
     async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     yield async_engine
