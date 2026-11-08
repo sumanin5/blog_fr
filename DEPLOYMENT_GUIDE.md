@@ -502,4 +502,12 @@ docker exec -it blog_fr-backend-1 ls -la /app/content
 
 ---
 
+## 文章封面与分享图片
+
+文章封面配置在文章 Markdown 的 `cover`，分类封面配置在该分类的 `index.md`，两者独立。图片路径相对于对应 Markdown，随内容提交；后端导入媒体库，前端通过媒体接口显示列表缩略图和详情封面。新增文章、暂存检查与发布步骤见内容仓库分支的 `README.md`。
+
+构建前端时设置 `NEXT_PUBLIC_SITE_URL=https://ty1547.com`（自行部署时改为自己的公开站点地址）。Next.js 用它作为 metadataBase，将分享图片的相对接口地址转换为完整 URL；它不是后端内部地址或 API 地址。Docker 构建也需要向前端构建步骤提供此变量，仅修改已构建容器的运行时变量未必生效。此次未修改用户现有 Dockerfile，实际部署配置待上线时核对。
+
+普通 PNG/JPEG/WebP 使用缩略图，SVG 使用原图；文章没有封面时不继承分类封面。分享平台可能缓存旧预览，更新后须重新抓取。仅改图片字节时请手动重导引用文章，或换图片名并同时修改 Markdown 的路径。
+
 **祝部署顺利！** 🎉

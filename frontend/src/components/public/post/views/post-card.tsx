@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -11,6 +12,7 @@ import { PostShortResponse, PostType } from "@/shared/api/generated/types.gen";
 import { ApiData } from "@/shared/api/transformers";
 import { Calendar, Clock, ArrowRight } from "lucide-react";
 import { routes } from "@/lib/routes";
+import { getSafeImageUrl, getThumbnailUrl } from "@/lib/media-utils";
 
 interface PostCardProps {
   post: ApiData<PostShortResponse>;
@@ -27,10 +29,9 @@ export function PostCard({ post, postType }: PostCardProps) {
   const authorName = post.author?.fullName || post.author?.username || "管理员";
   const type = (postType || post.postType || "articles") as PostType;
 
-  // 根据 cover_media_id 拼接缩略图 URL
-  const coverUrl = post.coverMediaId
-    ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/${post.coverMediaId}/thumbnail/medium`
-    : null;
+  const coverUrl =
+    getSafeImageUrl(post.coverMedia, "medium") ||
+    getThumbnailUrl(post.coverMediaId, "medium");
 
   const linkHref = routes.postDetailSlug(type, post.slug || "");
   const cardClassName = "group block h-full outline-hidden";
@@ -42,10 +43,13 @@ export function PostCard({ post, postType }: PostCardProps) {
         <Card className="flex flex-col h-full overflow-hidden border-border/40 bg-card/40 backdrop-blur-sm transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1.5 hover:border-primary/30 group-hover:ring-1 ring-primary/10">
           {/* 图片区域 */}
           <div className="relative aspect-video w-full overflow-hidden bg-muted">
-            <img
+            <Image
               src={coverUrl}
-              alt={post.title}
-              className="w-full h-full object-cover transition-transform duration-1000 will-change-transform group-hover:scale-110"
+              alt={post.coverMedia?.altText || post.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              unoptimized
+              className="object-cover transition-transform duration-1000 will-change-transform group-hover:scale-110 motion-reduce:transform-none motion-reduce:transition-none"
             />
             {/* 渐变遮罩 */}
             <div className="absolute inset-0 bg-linear-to-t from-background/95 via-background/20 to-transparent opacity-90 transition-opacity duration-500 group-hover:opacity-100" />

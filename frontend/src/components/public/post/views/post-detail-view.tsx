@@ -5,6 +5,9 @@ import { PostDetailResponse } from "@/shared/api/generated/types.gen";
 import { ApiData } from "@/shared/api/transformers";
 
 import { ArticleTracker } from "@/components/admin/analytics/ArticleTracker";
+import Image from "next/image";
+import { Card } from "@/components/ui/card";
+import { getSafeImageUrl, getThumbnailUrl } from "@/lib/media-utils";
 
 interface TocItem {
   id: string;
@@ -17,6 +20,10 @@ interface PostDetailViewProps {
 }
 
 export async function PostDetailView({ post }: PostDetailViewProps) {
+  const coverUrl =
+    getSafeImageUrl(post.coverMedia, "xlarge") ||
+    getThumbnailUrl(post.coverMediaId, "xlarge");
+
   return (
     <div className="container mx-auto px-4 py-8">
       <ArticleTracker postId={post.id} />
@@ -48,6 +55,19 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
             viewCount={post.viewCount || 0}
             className="mb-8"
           />
+        )}
+
+        {coverUrl && (
+          <Card className="relative mb-8 aspect-video overflow-hidden p-0">
+            <Image
+              src={coverUrl}
+              alt={post.coverMedia?.altText || post.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 1152px"
+              className="object-cover"
+              unoptimized
+            />
+          </Card>
         )}
 
         {/* 文章摘要 (Summary/Excerpt) */}

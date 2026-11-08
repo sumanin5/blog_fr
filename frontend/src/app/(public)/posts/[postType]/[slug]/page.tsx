@@ -4,6 +4,7 @@ import { PostDetailView } from "@/components/public/post/views/post-detail-view"
 import { getPostDetail } from "@/lib/post-api";
 
 import { PostType } from "@/shared/api/generated";
+import { getSafeImageUrl, getThumbnailUrl } from "@/lib/media-utils";
 
 interface PageProps {
   params: Promise<{
@@ -27,6 +28,9 @@ export async function generateMetadata({
 
   const summary =
     post.excerpt || post.contentMdx?.substring(0, 150) || post.title;
+  const coverUrl =
+    getSafeImageUrl(post.coverMedia, "xlarge") ||
+    getThumbnailUrl(post.coverMediaId, "xlarge");
 
   return {
     title: post.title,
@@ -38,13 +42,13 @@ export async function generateMetadata({
       type: "article",
       publishedTime: post.publishedAt || undefined,
       authors: post.author?.username || post.author?.fullName,
-      images: [], // 目前 PostDetailResponse 中没有直接的 cover_image URL，先置空
+      images: coverUrl ? [coverUrl] : [],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: summary,
-      images: [],
+      images: coverUrl ? [coverUrl] : [],
     },
   };
 }
