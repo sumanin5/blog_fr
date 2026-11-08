@@ -2,8 +2,9 @@
 
 import React from "react";
 import { PostType } from "@/shared/api/generated";
-import { Category } from "@/shared/api/types";
-import { RefreshCw, Plus, Loader2 } from "lucide-react";
+import { Category, CategoryCreate, CategoryUpdate } from "@/shared/api/types";
+import { Info, RefreshCw, Plus, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
@@ -49,13 +50,19 @@ export default function CategoriesPage() {
   }, [user, authLoading, isAuthorized, router]);
 
   // 处理保存 (新建或更新)
-  const handleSave = (data: any) => {
+  const handleSave = (data: Record<string, unknown>) => {
     const onSuccess = () => setEditOpen(false);
 
     if (editingItem) {
-      updateCategory({ id: editingItem.id, data }, { onSuccess });
+      updateCategory(
+        { id: editingItem.id, data: data as unknown as CategoryUpdate },
+        { onSuccess },
+      );
     } else {
-      createCategory({ ...data, postType: activeTab }, { onSuccess });
+      createCategory(
+        { ...(data as unknown as CategoryCreate), postType: activeTab },
+        { onSuccess },
+      );
     }
   };
 
@@ -91,8 +98,9 @@ export default function CategoriesPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">分类运维</h1>
-          <p className="text-muted-foreground text-sm">
-            管理全站内容的分层结构。Slug 变更将自动触发物理资源重命名。
+          <p className="max-w-prose text-muted-foreground text-sm">
+            分类只修改数据库，不会创建、移动或删除 Git 目录和 index.md。Git
+            来源分类的修改可能被后续同步覆盖。
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -119,6 +127,15 @@ export default function CategoriesPage() {
           </AdminActionButton>
         </div>
       </div>
+
+      <Alert>
+        <Info />
+        <AlertTitle>Git 单向同步边界</AlertTitle>
+        <AlertDescription>
+          Git 是分类 index.md 的来源。后台改名、排序或删除只影响数据库；删除分类不会删除 Git
+          目录，全量同步可能重新导入分类。
+        </AlertDescription>
+      </Alert>
 
       {/* 切换面板 */}
       <Tabs

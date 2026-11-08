@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMyPosts, pushToGit, triggerSync, previewSync } from "@/shared/api";
+import { getMyPosts, triggerSync, previewSync } from "@/shared/api";
 import {
   MyPostList,
   SyncStatus as DomainSyncStatus,
@@ -13,7 +13,7 @@ import { usePostMutations } from "./posts/mutations";
 
 /**
  * 🔄 Git 同步与运维核心 Hook
- * 管理 Git 状态、手动同步触发以及数据库反向推送
+ * 管理 Git 状态和 Git → 数据库的单向导入
  * 遵循“全驼峰业务逻辑 + 自动化 API 转换”规范
  */
 export function useGitSync() {
@@ -123,46 +123,6 @@ export function useGitSync() {
     },
   });
 
-  /**
-   * 触发反向推送 (DB -> Git)
-   */
-  const pushMutation = useMutation({
-    mutationFn: () => pushToGit({ throwOnError: true }),
-    onSuccess: (response) => {
-      const stats = response.data as unknown as DomainSyncStatus;
-      if (!stats) return;
-
-      toast.success("数据库导出已启动", {
-        description: React.createElement(
-          "div",
-          { className: "mt-2 space-y-1 text-sm" },
-          [
-            React.createElement(
-              "p",
-              { className: "text-primary", key: "exported" },
-              `📊 导出: ${stats.updated?.length ?? 0} 篇`,
-            ),
-            React.createElement(
-              "p",
-              { className: "text-xs text-muted-foreground pt-1", key: "hint" },
-              "这些文章现在已转化为 MDX 文件并受 Git 管辖。",
-            ),
-          ],
-        ),
-      });
-      queryClient.invalidateQueries({ queryKey });
-      queryClient.invalidateQueries({
-        queryKey: ["admin", "posts", "sync-preview"],
-      });
-      queryClient.invalidateQueries({ queryKey: ["admin", "posts"] });
-    },
-    onError: (error: Error) => {
-      toast.error("导出失败", {
-        description: error.message || "请确认您有管理员权限",
-      });
-    },
-  });
-
   const { deletePost } = usePostMutations();
 
   return {
@@ -176,7 +136,6 @@ export function useGitSync() {
       await Promise.all([refetchWithFeedback(), previewQuery.refetch()]);
     },
     syncMutation,
-    pushMutation,
     deletePost,
   };
 }

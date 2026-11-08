@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import type { Route } from "next";
 import { useAuth } from "@/hooks/use-auth";
 
 // Components from the new sub-directory
@@ -35,12 +36,10 @@ import {
 } from "lucide-react";
 
 const SIDEBAR_CONFIG = {
-  personal: [
-    { icon: FileText, label: "博文管理", href: "/admin/posts" },
-    { icon: GitBranch, label: "同步状态", href: "/admin/sync" },
-  ],
+  personal: [{ icon: FileText, label: "博文管理", href: "/admin/posts" }],
   admin: [
     { icon: LayoutDashboard, label: "数据中台", href: "/admin/dashboard" }, // 工作台 -> 数据中台
+    { icon: GitBranch, label: "同步状态", href: "/admin/sync" },
     { icon: Users, label: "用户管理", href: "/admin/users" },
     { icon: ShieldCheck, label: "全站内容", href: "/admin/posts/all" },
     { icon: FolderTree, label: "分类运维", href: "/admin/categories" },
@@ -78,7 +77,7 @@ export function AdminSidebar({
                     isActive={pathname === item.href}
                     tooltip={item.label}
                   >
-                    <Link href={item.href as any}>
+                    <Link href={item.href as Route}>
                       <item.icon className="size-4" />
                       <span className="font-medium">{item.label}</span>
                     </Link>
@@ -104,7 +103,7 @@ export function AdminSidebar({
                       isActive={pathname === item.href}
                       tooltip={item.label}
                     >
-                      <Link href={item.href as any}>
+                      <Link href={item.href as Route}>
                         <item.icon className="size-4" />
                         <span className="font-medium">{item.label}</span>
                       </Link>

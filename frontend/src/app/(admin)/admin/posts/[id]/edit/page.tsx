@@ -4,9 +4,10 @@ import React from "react";
 import { useRouter, notFound } from "next/navigation";
 import { usePostAdmin } from "@/hooks/admin/posts";
 import { useCategoriesQuery } from "@/hooks/admin/categories/queries";
-import { Loader2 } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { PostType } from "@/shared/api/generated";
 import { PostEditor } from "@/components/admin/posts/post-editor";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PageProps {
   params: Promise<{
@@ -50,6 +51,16 @@ export default function EditPostPage({ params }: PageProps) {
 
   return (
     <div className="h-full">
+      {post.sourcePath && (
+        <Alert className="mb-4">
+          <Info />
+          <AlertTitle>Git 来源内容</AlertTitle>
+          <AlertDescription>
+            后台修改只写入数据库，下次 Git 同步可能用源文件覆盖这些修改；后台删除也不会删除 Git
+            文件，全量同步时可能重新导入。长期修改请在内容仓库中编辑。
+          </AlertDescription>
+        </Alert>
+      )}
       <PostEditor
         postType={normalizedType}
         categories={categories}
@@ -61,7 +72,7 @@ export default function EditPostPage({ params }: PageProps) {
           categoryId: post.category?.id,
           status: post.status,
           // Tags 需要从对象数组转为字符串数组
-          tags: post.tags?.map((t: any) => t.name) || [],
+          tags: post.tags?.map((t) => t.name) || [],
           excerpt: post.excerpt,
           isFeatured: post.isFeatured,
           enableJsx: post.enableJsx,

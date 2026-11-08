@@ -3,7 +3,6 @@
 import React from "react";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -36,9 +35,10 @@ export function CategoryDeleteDialog({
             确认删除此分类吗？
           </AlertDialogTitle>
           <AlertDialogDescription>
-            此操作无法撤销。系统将尝试清理数据库记录及物理空目录。
+            此操作只删除数据库中的分类记录，不会删除 Git 目录或 index.md。
             <br />
-            如果该分类下仍有关联文章，删除操作将会失败。
+            如果该分类下仍有关联文章，删除操作将会失败；全量同步可能重新导入
+            Git 中的分类。
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

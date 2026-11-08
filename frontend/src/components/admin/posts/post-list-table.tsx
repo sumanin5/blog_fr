@@ -80,11 +80,23 @@ export function PostListTable({
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除这篇文章吗？</AlertDialogTitle>
             <AlertDialogDescription>
-              此操作无法撤销。这将永久删除文章
-              <span className="font-bold text-foreground mx-1">
-                {deletingPost?.title}
-              </span>
-              及其所有关联数据。
+              {deletingPost?.sourcePath ? (
+                <>
+                  此操作只删除数据库记录，不会删除 Git 文件；全量同步可能重新导入
+                  <span className="font-bold text-foreground mx-1">
+                    {deletingPost.title}
+                  </span>
+                  。长期删除请在内容仓库中删除源文件。
+                </>
+              ) : (
+                <>
+                  此操作无法撤销。这将永久删除数据库中的文章
+                  <span className="font-bold text-foreground mx-1">
+                    {deletingPost?.title}
+                  </span>
+                  及其关联数据；该文章不会自动导出到 Git。
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

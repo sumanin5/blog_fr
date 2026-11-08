@@ -32,7 +32,6 @@ export default function GitSyncPage() {
     isFetching,
     refetch,
     syncMutation,
-    pushMutation,
     preview,
     deletePost,
   } = useGitSync();
@@ -49,25 +48,31 @@ export default function GitSyncPage() {
 
   const stats = [
     {
-      label: "全站博文总数",
+      label: "当前列表文章",
       value: isLoading ? "..." : posts.length,
       icon: Database,
       color: "text-primary",
-      description: "当前系统内所有文章索引",
+      description: "当前分页中的文章数",
     },
     {
       label: "仓库待入库",
-      value: isFetching ? "..." : pendingChanges,
+      value: isFetching ? "..." : (preview?.gitPendingCount ?? pendingChanges),
       icon: RefreshCw,
-      color: pendingChanges > 0 ? "text-warning" : "text-success",
+      color:
+        (preview?.gitPendingCount ?? pendingChanges) > 0
+          ? "text-warning"
+          : "text-success",
       description: "Git 变更尚未应用至数据库",
     },
     {
-      label: "数据库待出库",
-      value: isLoading ? "..." : dbOnlyPosts.length,
+      label: "数据库独立文章",
+      value: isLoading ? "..." : (preview?.dbOnlyCount ?? dbOnlyPosts.length),
       icon: GitBranch,
-      color: dbOnlyPosts.length > 0 ? "text-info" : "text-muted-foreground",
-      description: "本地修改尚未写回 MDX 文件",
+      color:
+        (preview?.dbOnlyCount ?? dbOnlyPosts.length) > 0
+          ? "text-info"
+          : "text-muted-foreground",
+      description: "仅保存在数据库，不会导出到 Git",
     },
     {
       label: "系统状态",
@@ -91,21 +96,20 @@ export default function GitSyncPage() {
           ? `检测到 ${preview?.errors?.length} 个同步冲突`
           : pendingChanges > 0
             ? "Git 变更尚未应用，请点击同步"
-            : "数据库与 Git 记录完全对齐",
+            : "本地仓库预览未发现待导入变更",
     },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Git 同步状态</h1>
-          <p className="text-muted-foreground">
-            管理基于 Git (MDX)
-            的文章同步状态。本系统支持自动从代码库同步博文内容。
+          <p className="max-w-prose text-muted-foreground">
+            Git → 网站单向同步。文章和分类从仓库导入，网站不会回写文件或推送 Git。
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* 刷新按钮 */}
           <AdminActionButton
             variant="outline"
@@ -118,21 +122,7 @@ export default function GitSyncPage() {
             刷新状态
           </AdminActionButton>
 
-          {/* 导出按钮 */}
-          <AdminActionButton
-            variant="outline"
-            size="sm"
-            icon={Database}
-            isLoading={pushMutation.isPending}
-            loadingText="导出中"
-            disabled={dbOnlyPosts.length === 0}
-            onClick={() => pushMutation.mutate()}
-          >
-            导出原生文章
-            {dbOnlyPosts.length > 0 && ` (${dbOnlyPosts.length})`}
-          </AdminActionButton>
-
-          {/* 同步按钮组 */}
+          {/* Git import actions */}
           <div className="flex items-center">
             <AdminActionButton
               size="sm"
@@ -151,6 +141,7 @@ export default function GitSyncPage() {
                   size="sm"
                   className="rounded-l-none px-2 h-9 border-l border-primary-foreground/20"
                   disabled={syncMutation.isPending}
+                  aria-label="选择同步方式"
                 >
                   <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -194,7 +185,7 @@ export default function GitSyncPage() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <GitBranch className="size-5 text-primary" />
-          <h2 className="text-xl font-semibold">Git 追踪列表</h2>
+          <h2 className="text-xl font-semibold">我的 Git 追踪列表（当前页）</h2>
         </div>
 
         <PostListTable
@@ -211,10 +202,10 @@ export default function GitSyncPage() {
         {gitManagedPosts.length > 0 && (
           <div className="flex items-center gap-2 rounded-lg border border-info/20 bg-info/5 p-4 text-sm text-info">
             <AlertCircle className="size-4 shrink-0" />
-            <p>
+            <p className="max-w-prose">
               上方列出的文章源自本地 MDX 文件。任何在后台 UI
               进行的修改，在下次同步时都可能被 Git
-              源内容覆盖，建议在代码编辑器中修改源码。
+              源内容覆盖；后台删除也不会删除源文件，全量同步时可能重新导入。建议在 Git 中修改或删除源文件。
             </p>
           </div>
         )}

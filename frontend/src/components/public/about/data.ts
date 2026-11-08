@@ -56,7 +56,7 @@ export const FEATURES = [
   },
   {
     title: "高度自动化",
-    description: "Git 仓库双向同步，文章即代码，发布即提交。",
+    description: "Git 仓库单向导入，文章即代码；在内容仓库提交后同步到网站。",
     icon: Layers,
   },
 ];

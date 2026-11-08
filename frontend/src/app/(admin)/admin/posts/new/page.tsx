@@ -6,7 +6,9 @@ import { useCategoriesQuery } from "@/hooks/admin/categories/queries";
 import { usePostsAdmin } from "@/hooks/admin/posts";
 import { PostEditor } from "@/components/admin/posts/post-editor";
 import { PostType } from "@/shared/api/generated";
-import { Loader2 } from "lucide-react";
+import type { PostCreate } from "@/shared/api/types";
+import { Info, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -36,6 +38,14 @@ export default function NewPostPage() {
 
   return (
     <div className="h-full">
+      <Alert className="mb-4">
+        <Info />
+        <AlertTitle>数据库独立文章</AlertTitle>
+        <AlertDescription>
+          这里创建的文章只保存在数据库，不会自动导出到 Git。需要进入内容仓库时，请在 Git
+          中添加 Markdown/MDX 文件后同步。
+        </AlertDescription>
+      </Alert>
       <PostEditor
         postType={postType}
         categories={categories}
@@ -46,7 +56,7 @@ export default function NewPostPage() {
         }}
         onSave={(data) =>
           createPost(
-            { type: postType, data: data as any },
+            { type: postType, data: data as unknown as PostCreate },
             { onSuccess: () => router.push("/admin/posts") },
           )
         }
