@@ -1,8 +1,21 @@
-import { spawn } from "child_process";
+import { spawn, spawnSync, type ChildProcess } from "child_process";
 import path from "path";
 import fs from "fs";
 
-let serverProcess: any = null;
+let serverProcess: ChildProcess | null = null;
+
+function stopServer() {
+  if (!serverProcess) return;
+  if (process.platform === "win32") {
+    // uv 是父进程，真正的 Python 服务是子进程；需要结束整棵进程树。
+    spawnSync("taskkill", ["/pid", String(serverProcess.pid), "/T", "/F"], {
+      stdio: "ignore",
+    });
+  } else {
+    serverProcess.kill();
+  }
+  serverProcess = null;
+}
 
 export default async function setup() {
   console.log(
@@ -33,6 +46,12 @@ export default async function setup() {
   serverProcess = spawn("uv", ["run", "python", backendScript], {
     cwd: path.resolve(__dirname, "../../../backend"),
     stdio: "inherit",
+    env: {
+      ...process.env,
+      // Windows 控制台默认 GBK，脚本里的 emoji 会触发 UnicodeEncodeError。
+      PYTHONIOENCODING: "utf-8",
+      PYTHONUTF8: "1",
+    },
   });
 
   // Wait for the server to be ready
@@ -51,7 +70,7 @@ export default async function setup() {
         console.log("✅ Python Test Server is ready!");
         break;
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     await new Promise((r) => setTimeout(r, 500));
@@ -59,7 +78,7 @@ export default async function setup() {
   }
 
   if (!connected) {
-    if (serverProcess) serverProcess.kill();
+    stopServer();
     throw new Error(
       "❌ Failed to connect to Python Test Server after 15 seconds.",
     );
@@ -67,11 +86,7 @@ export default async function setup() {
 
   // Return teardown function
   return async () => {
-    if (serverProcess) {
-      console.log("\n🛑 Stopping Python Test Server...");
-      serverProcess.kill();
-      // Ensure it's dead
-      // process.kill(-serverProcess.pid) if detached
-    }
+    console.log("\n🛑 Stopping Python Test Server...");
+    stopServer();
   };
 }
