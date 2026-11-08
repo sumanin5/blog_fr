@@ -6,7 +6,7 @@
 2. 跳过外部链接图片
 3. 跳过已转换的媒体库链接
 4. 转换相对路径图片为完整 URL
-5. 写回源文件
+5. 转换结果只进入数据库，源文件保持原样
 """
 
 from unittest.mock import AsyncMock, Mock, patch
@@ -295,36 +295,29 @@ class TestImageTransformation:
 
 
 class TestProcessMethod:
-    """测试 process 方法的完整流程"""
+    """测试 process 方法：只更新数据库内容，绝不写源文件。"""
 
     @pytest.mark.asyncio
     async def test_process_without_images(
         self, content_processor, mock_session, mock_scanned_post
     ):
-        """测试处理无图片的内容"""
+        """处理无图片内容时不改变正文。"""
         content = "# Test\n\nJust some text"
         mock_scanned_post.content = content
 
         result = {}
+        await content_processor.process(
+            result, {}, mock_scanned_post, mock_session, dry_run=False
+        )
 
-        with patch.object(
-            content_processor, "_write_transformed_content"
-        ) as mock_write:
-            await content_processor.process(
-                result, {}, mock_scanned_post, mock_session, dry_run=False
-            )
-
-            # 无图片时不应该调用写回
-            mock_write.assert_not_called()
-
-        # 内容应该保持不变
         assert result["content_mdx"] == content
+        assert mock_scanned_post.content == content
 
     @pytest.mark.asyncio
     async def test_process_with_relative_images(
         self, content_processor, mock_session, mock_scanned_post
     ):
-        """测试处理有相对路径图片的内容"""
+        """相对图片只在返回值中转换，源文件内容保持不变。"""
         original_content = "# Test\n\n![test](./test.png)\n\nSome text"
         mock_scanned_post.content = original_content
 
@@ -332,130 +325,54 @@ class TestProcessMethod:
         transformed_content = f"# Test\n\n![test](http://localhost:8000/api/v1/media/{test_media_id}/thumbnail/large)\n\nSome text"
 
         result = {}
-
         with patch.object(
             content_processor,
             "_transform_image_paths",
             return_value=transformed_content,
         ) as mock_transform:
-            with patch.object(
-                content_processor, "_write_transformed_content"
-            ) as mock_write:
-                await content_processor.process(
-                    result, {}, mock_scanned_post, mock_session, dry_run=False
-                )
+            await content_processor.process(
+                result, {}, mock_scanned_post, mock_session, dry_run=False
+            )
 
-                # 应该调用转换
-                mock_transform.assert_called_once()
-
-                # 应该调用写回
-                mock_write.assert_called_once_with(
-                    mock_scanned_post.file_path, transformed_content
-                )
-
-        # 结果应该是转换后的内容
+        mock_transform.assert_called_once()
         assert result["content_mdx"] == transformed_content
+        assert mock_scanned_post.content == original_content
 
     @pytest.mark.asyncio
     async def test_process_with_external_images(
         self, content_processor, mock_session, mock_scanned_post
     ):
-        """测试处理只有外部链接图片的内容"""
+        """外部图片链接保持原样。"""
         content = "# Test\n\n![test](https://example.com/test.png)\n\nSome text"
         mock_scanned_post.content = content
 
         result = {}
+        await content_processor.process(
+            result, {}, mock_scanned_post, mock_session, dry_run=False
+        )
 
-        with patch.object(
-            content_processor, "_write_transformed_content"
-        ) as mock_write:
-            await content_processor.process(
-                result, {}, mock_scanned_post, mock_session, dry_run=False
-            )
-
-            # 只有外部链接时不应该调用写回
-            mock_write.assert_not_called()
-
-        # 内容应该保持不变
         assert result["content_mdx"] == content
+        assert mock_scanned_post.content == content
 
     @pytest.mark.asyncio
     async def test_process_dry_run_mode(
         self, content_processor, mock_session, mock_scanned_post
     ):
-        """测试 dry_run 模式不执行转换"""
+        """dry_run 模式同样不写源文件。"""
         content = "# Test\n\n![test](./test.png)\n\nSome text"
         mock_scanned_post.content = content
 
         result = {}
-
         with patch.object(
-            content_processor, "_transform_image_paths"
+            content_processor, "_transform_image_paths", return_value=content
         ) as mock_transform:
-            # 模拟 Pattern.finditer 需要的字符串，防止 re.finditer 报错
-            # 虽然 dry_run 模式下 _transform_image_paths 不会被调用，
-            # 但 process 方法内部会先执行正则匹配。
-            # 这里我们让 mock_transform 不做任何操作，或者直接绕过正则检查（如果有的话）。
+            await content_processor.process(
+                result, {}, mock_scanned_post, mock_session, dry_run=True
+            )
 
-            # 更好的做法是：确保 process 方法内的逻辑在 dry_run 时不要甚至去尝试 regex 匹配，
-            # 或者如果无法避免，确保传入的是字符串。
-            # 这里的实际错误是：content_processor._transform_image_paths 被 mock 成 AsyncMock，
-            # 但代码逻辑中可能并没有调用它？
-            # 不，看错误栈：
-            # app/git_ops/components/processors/content.py:26: in process
-            # transformed_content = await self._transform_internal_links(
-            # app/git_ops/components/processors/content.py:124: in _transform_internal_links
-            # matches = list(re.finditer(link_pattern, content))
-            #
-            # 原来是 _transform_internal_links 出错！但测试里都没 mock 这个！
-            # 等等，错误信息说：
-            # E       TypeError: expected string or bytes-like object, got 'AsyncMock'
-            # 这意味着传入 re.finditer 的 content 参数是一个 AsyncMock 对象。
-
-            # 回看代码：
-            # await content_processor.process(result, {}, mock_scanned_post, mock_session, dry_run=True)
-            # 在 process 方法中，content 是从 mock_scanned_post.content 获取的。
-            # 我们在测试里设置了 mock_scanned_post.content = content （字符串）。
-
-            # 再看：
-            #     with patch.object(
-            #         content_processor, "_transform_image_paths"
-            #     ) as mock_transform:
-
-            # 之前的测试通过 patch _transform_image_paths 来 mock 并且 return_value 设置了字符串。
-            # 但是在 test_process_dry_run_mode 里，默认的 DEFAULT 是 AsyncMock。
-
-            # 如果 content_processor.py 的 process 方法是链式调用：
-            # content = await self._transform_image_paths(content, ...)
-            # 那么 content 就变成了 AsyncMock。
-            # 然后下一行 await self._transform_internal_links(content, ...) 就会报错。
-
-            # 即使是 dry_run=True，代码逻辑可能是：
-            # if not dry_run:
-            #    content = await self._transform_image_paths(...)
-            # else:
-            #    # 这里可能也调用了，或者没处理好？
-            pass  # 占位
-
-            # 让我们看 process 源码（无法直接看，只能推测）。
-            # 如果 process 方法无条件调用了 _transform_image_paths 并重新赋值给 content。
-
-            # 修复方法：让 mock_transform 返回原始 content 字符串，而不是默认的 AsyncMock。
-            mock_transform.return_value = content
-            with patch.object(
-                content_processor, "_write_transformed_content"
-            ) as mock_write:
-                await content_processor.process(
-                    result, {}, mock_scanned_post, mock_session, dry_run=True
-                )
-
-                # dry_run 模式下，_transform_image_paths 仍然会被调用（因为 _transform_internal_links 会调用它），
-                # 但 _write_transformed_content 不应该被调用。
-                mock_transform.assert_called_once()
-                mock_write.assert_not_called()
-
-        # 内容应该保持原样
+        mock_transform.assert_called_once()
         assert result["content_mdx"] == content
+        assert mock_scanned_post.content == content
 
     @pytest.mark.asyncio
     async def test_process_title_fallback(
@@ -476,60 +393,29 @@ class TestProcessMethod:
         assert result["title"] == "my-awesome-post"
 
 
-class TestWriteTransformedContent:
-    """测试写回转换后的内容"""
+def test_content_processor_has_no_file_writeback_method(content_processor):
+    """单向同步下不存在写回源文件的方法。"""
+    assert not hasattr(content_processor, "_write_transformed_content")
 
-    @pytest.mark.asyncio
-    async def test_write_transformed_content_success(self, content_processor):
-        """测试成功写回内容"""
-        file_path = "articles/test/post.md"
-        new_content = (
-            "# Test\n\n![test](http://localhost:8000/api/v1/media/123/thumbnail/large)"
+
+@pytest.mark.asyncio
+async def test_dry_run_does_not_upload_media(
+    content_processor, mock_session, mock_scanned_post
+):
+    """预览 dry_run 不能上传图片或写媒体库。"""
+    content = "# Test\n\n![test](./test.png)\n"
+    mock_scanned_post.content = content
+
+    with patch.object(
+        content_processor, "_upload_and_get_media_id"
+    ) as upload:
+        result = {}
+        await content_processor.process(
+            result, {}, mock_scanned_post, mock_session, dry_run=True
         )
 
-        mock_post = Mock()
-        mock_post.content = "old content"
-        mock_post.metadata = {"title": "Test"}
-
-        with patch("app.core.config.settings") as mock_settings:
-            mock_settings.CONTENT_DIR = "/tmp/content"
-
-            # Mock frontmatter at the import location
-            with patch("builtins.open", create=True):
-                with patch("asyncio.to_thread") as mock_thread:
-                    # Mock the read operation
-                    def mock_read_fn():
-                        return mock_post
-
-                    # Mock the write operation
-                    def mock_write_fn():
-                        pass
-
-                    # First call is read, second is write
-                    mock_thread.side_effect = [mock_read_fn(), mock_write_fn()]
-
-                    # This test just verifies no exception is raised
-                    await content_processor._write_transformed_content(
-                        file_path, new_content
-                    )
-
-    @pytest.mark.asyncio
-    async def test_write_transformed_content_failure(self, content_processor):
-        """测试写回失败不抛出异常"""
-        file_path = "articles/test/post.md"
-        new_content = (
-            "# Test\n\n![test](http://localhost:8000/api/v1/media/123/thumbnail/large)"
-        )
-
-        with patch("app.core.config.settings") as mock_settings:
-            mock_settings.CONTENT_DIR = "/tmp/content"
-
-            with patch("builtins.open", side_effect=IOError("File not found")):
-                with patch("asyncio.to_thread", side_effect=lambda f: f()):
-                    # 不应该抛出异常
-                    await content_processor._write_transformed_content(
-                        file_path, new_content
-                    )
+    upload.assert_not_called()
+    assert result["content_mdx"] == content
 
 
 if __name__ == "__main__":

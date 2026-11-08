@@ -35,7 +35,8 @@ async def test_git_directory_mapping(
     # 创建文章：路径是 Articles/Tech，但 frontmatter 故意写错
     articles_dir = mock_content_dir / "Articles" / "Tech"
     articles_dir.mkdir(parents=True)
-    (articles_dir / "test-post.mdx").write_text(
+    post_file = articles_dir / "test-post.mdx"
+    post_file.write_text(
         f"""---
 title: "Test Post"
 author: "{superadmin_user.username}"
@@ -46,6 +47,7 @@ Content
 """,
         encoding="utf-8",
     )
+    original_bytes = post_file.read_bytes()
 
     # 执行同步
     response = await async_client.post(
@@ -60,20 +62,8 @@ Content
     assert post.category_id == tech_cat_id  # 路径优先
     assert post.post_type == PostType.ARTICLES  # 路径优先
 
-    # 验证回写：文件中应该纠正了错误的值
-    file_content = (articles_dir / "test-post.mdx").read_text(encoding="utf-8")
-
-    # 验证 ID 已回写
-    assert f"category_id: {tech_cat_id}" in file_content
-
-    # 验证错误的字符串字段已被纠正
-    assert "category: tech" in file_content  # 纠正为正确的 slug
-
-    # 确认错误值已被替换（不再存在）
-    assert "category: wrong-category" not in file_content
-
-    # post_type 不应该写入 frontmatter（从路径推断）
-    assert "post_type:" not in file_content
+    # 验证源文件字节不变：路径推导和 ID 只进入数据库
+    assert post_file.read_bytes() == original_bytes
 
 
 @pytest.mark.asyncio
@@ -252,7 +242,8 @@ async def test_metadata_completion(
     # 创建文章：只写了最少的必要字段
     articles_dir = mock_content_dir / "Articles" / "Tech"
     articles_dir.mkdir(parents=True)
-    (articles_dir / "minimal-post.mdx").write_text(
+    minimal_file = articles_dir / "minimal-post.mdx"
+    minimal_file.write_text(
         f"""---
 title: "Minimal Post"
 author: "{superadmin_user.username}"
@@ -261,6 +252,7 @@ Content here.
 """,
         encoding="utf-8",
     )
+    original_bytes = minimal_file.read_bytes()
 
     # 执行同步
     response = await async_client.post(
@@ -268,25 +260,13 @@ Content here.
     )
     assert response.status_code == 200
 
-    # 验证：文件中应该补充了完整的元数据
-    file_content = (articles_dir / "minimal-post.mdx").read_text(encoding="utf-8")
+    # 验证：源文件字节不变，补充的元数据只存在数据库中
+    assert minimal_file.read_bytes() == original_bytes
 
-    # 验证必要字段已补充
-    assert "slug:" in file_content  # 自动生成的 slug
-    assert "author_id:" in file_content  # 作者 ID
-    assert "category_id:" in file_content  # 分类 ID
-    assert "category: tech" in file_content  # 分类 slug
-    assert "status:" in file_content  # 状态
-    assert "is_featured:" in file_content  # 是否推荐
-    assert "allow_comments:" in file_content  # 是否允许评论
-    assert "enable_jsx:" in file_content  # 是否启用 JSX
-    assert "use_server_rendering:" in file_content  # 是否使用服务端渲染
-
-    # post_type 不应该写入 frontmatter（从路径推断，符合 Git-First 原则）
-    assert "post_type:" not in file_content
-
-    # 验证数据库
+    # 验证数据库自动补全
     session.expire_all()
     post = (await session.exec(select(Post).where(Post.title == "Minimal Post"))).one()
-    assert post.category_id == tech_cat_id  # 使用之前保存的 ID
+    assert post.category_id == tech_cat_id
     assert post.post_type == PostType.ARTICLES
+    assert post.slug.startswith("minimal-post-")
+    assert post.author_id == superadmin_user.id

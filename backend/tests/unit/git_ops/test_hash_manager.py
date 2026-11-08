@@ -34,7 +34,8 @@ async def test_hash_manager_save_current_hash(mock_git_client, tmp_path):
     saved_hash = await manager.save_current_hash()
 
     assert saved_hash == current_hash
-    assert (tmp_path / LAST_SYNC_FILE).read_text().strip() == current_hash
+    assert manager.last_sync_file.read_text().strip() == current_hash
+    assert not (tmp_path / LAST_SYNC_FILE).exists()
 
 
 @pytest.mark.unit
@@ -68,4 +69,4 @@ async def test_hash_manager_get_changed_files(mock_git_client, tmp_path):
     changed = await manager.get_changed_files_since_last_sync()
 
     assert changed == [("M", "file.md")]
-    mock_git_client.get_changed_files_with_status.assert_called_with(hash_val)
+    mock_git_client.get_changed_files_with_status.assert_called_with(f"{hash_val}..HEAD")

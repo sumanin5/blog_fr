@@ -24,10 +24,12 @@ def mock_session(mocker):
     mock_result.scalars.return_value.all.return_value = []
 
     session.execute = mocker.AsyncMock(return_value=mock_result)
+    session.exec = mocker.AsyncMock(return_value=mock_result)
     session.add = mocker.MagicMock()
     session.flush = mocker.AsyncMock()
     session.commit = mocker.AsyncMock()
     session.refresh = mocker.AsyncMock()
+    session.rollback = mocker.AsyncMock()
 
     return session
 
@@ -63,6 +65,7 @@ def mock_git_client(mocker):
     client = mocker.MagicMock()
     client.get_current_hash = mocker.AsyncMock(return_value="abc123")
     client.get_changed_files_with_status = mocker.AsyncMock(return_value=[])
+    client.list_tracked_markdown_files = mocker.AsyncMock(return_value=[])
     client.get_file_status = mocker.AsyncMock(return_value=[])  # Critical fix
     client.add = mocker.AsyncMock()
     client.commit = mocker.AsyncMock()
@@ -106,6 +109,9 @@ def mock_container(mocker, mock_session, mock_git_client, mock_content_dir):
     container.hash_manager.get_last_hash = mocker.MagicMock(return_value="abc123")
     container.hash_manager.save_current_hash = mocker.AsyncMock(return_value="abc123")
     container.hash_manager.has_new_commits = mocker.AsyncMock(return_value=True)
+    container.hash_manager.needs_full_sync = mocker.MagicMock(return_value=False)
+    container.hash_manager.mark_failed = mocker.MagicMock()
+    container.hash_manager.clear_failed = mocker.MagicMock()
     container.hash_manager.get_changed_files_since_last_sync = mocker.AsyncMock(
         return_value=[]
     )

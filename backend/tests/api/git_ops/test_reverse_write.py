@@ -1,164 +1,102 @@
+"""后台文章 CRUD 只修改数据库，不创建、移动或删除内容仓库文件。"""
+
+from pathlib import Path
+
 import pytest
 from app.core.config import settings
 
 
+def snapshot(root: Path) -> dict[str, bytes]:
+    return {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in root.rglob("*")
+        if p.is_file() and ".git" not in p.relative_to(root).parts
+    }
+
+
 @pytest.mark.asyncio
-async def test_create_post_generates_file(
+async def test_admin_post_crud_never_writes_source_files(
     async_client,
     superadmin_user_token_headers,
     mock_content_dir,
-    mock_git_background_commit,  # 添加这个fixture来阻止后台Git提交任务抛出异常
 ):
-    """测试创建文章时，自动生成物理文件"""
-    import asyncio
-
-    post_data = {
-        "title": "My New Post",
-        "slug": "my-new-post",
-        "content_mdx": "# Hello World\\nThis is a test post.",
-        "status": "published",
-        "post_type": "articles",
-    }
+    """创建、更新、删除文章都不应产生源文件副作用。"""
+    before = snapshot(mock_content_dir)
 
     response = await async_client.post(
         f"{settings.API_PREFIX}/posts/articles",
-        json=post_data,
+        json={
+            "title": "My New Post",
+            "slug": "my-new-post",
+            "content_mdx": "# Hello World\nThis is a test post.",
+            "status": "published",
+            "post_type": "articles",
+        },
         headers=superadmin_user_token_headers,
     )
-
     assert response.status_code == 201
-    data = response.json()
-    assert data["title"] == "My New Post"
+    created = response.json()
+    assert created["source_path"] is None
+    assert snapshot(mock_content_dir) == before
 
-    # API 创建时会自动添加随机后缀，所以我们需要从响应中获取实际的 slug
-    actual_slug = data["slug"]
-    assert actual_slug.startswith("my-new-post")
-
-    # 等待后台任务完成文件生成
-    # 注意: 后台Git提交任务可能会抛出 "response already started" 异常
-    # 这是因为响应已经发送,但后台任务还在执行,可以忽略
-    await asyncio.sleep(2.0)
-
-    # 验证文件是否生成
-    # 注意: PathCalculator 将 'article' 映射为 'articles' (复数形式)
-    # 路径规则: content/articles/uncategorized/{title}.md (默认 enable_jsx=False)
-    expected_path = mock_content_dir / "articles" / "uncategorized" / "My New Post.md"
-
-    assert expected_path.exists(), f"文件未生成: {expected_path}"
-
-    content = expected_path.read_text(encoding="utf-8")
-    assert "title: My New Post" in content
-    assert f"slug: {actual_slug}" in content
-    assert "# Hello World" in content
-
-
-@pytest.mark.asyncio
-async def test_update_post_updates_file(
-    async_client,
-    superadmin_user_token_headers,
-    mock_content_dir,
-    created_article_post,
-):
-    """测试更新文章时，更新物理文件"""
-    import asyncio
-
-    post_id = created_article_post["id"]
-
-    # 等待初始文件生成
-    await asyncio.sleep(1.0)
-
-    file_path = mock_content_dir / "articles" / "uncategorized" / "Test Article.md"
-    assert file_path.exists(), f"初始文件未生成: {file_path}"
-
-    assert "# Test Content" in file_path.read_text(encoding="utf-8")
-
-    # 调用 Update API
-    update_data = {"title": "New Title", "content_mdx": "Updated Content"}
-
+    post_id = created["id"]
     response = await async_client.patch(
         f"{settings.API_PREFIX}/posts/articles/{post_id}",
-        json=update_data,
+        json={"title": "New Title", "content_mdx": "Updated Content"},
         headers=superadmin_user_token_headers,
     )
     assert response.status_code == 200
+    assert snapshot(mock_content_dir) == before
 
-    # 等待文件更新
-    await asyncio.sleep(1.0)
-
-    # 验证文件内容变化 - 更新标题会导致文件重命名
-    new_file_path = mock_content_dir / "articles" / "uncategorized" / "New Title.md"
-    assert new_file_path.exists(), f"更新后的文件未生成: {new_file_path}"
-
-    assert not file_path.exists()
-
-    new_content = new_file_path.read_text(encoding="utf-8")
-    assert "title: New Title" in new_content
-    assert "Updated Content" in new_content
-
-
-@pytest.mark.asyncio
-async def test_rename_post_moves_file(
-    async_client,
-    superadmin_user_token_headers,
-    mock_content_dir,
-    created_article_post,
-):
-    """测试修改 Slug 时，物理文件被移动"""
-    import asyncio
-
-    post_id = created_article_post["id"]
-
-    # 等待初始文件生成
-    await asyncio.sleep(1.0)
-
-    old_path = mock_content_dir / "articles" / "uncategorized" / "Test Article.md"
-    if not old_path.exists():
-        pytest.skip(f"初始文件未生成: {old_path}")
-
-    # 更新 Slug (Slug 变更不再影响文件名，因为文件名基于 Title)
-    response = await async_client.patch(
-        f"{settings.API_PREFIX}/posts/articles/{post_id}",
-        json={"slug": "new-slug"},
-        headers=superadmin_user_token_headers,
-    )
-    assert response.status_code == 200
-
-    # 等待文件更新
-    await asyncio.sleep(1.0)
-
-    # 验证文件仍然存在（文件名没变）但内容更新了 slug
-    assert old_path.exists()
-    content = old_path.read_text(encoding="utf-8")
-    assert "slug: new-slug" in content
-
-
-@pytest.mark.asyncio
-async def test_delete_post_removes_file(
-    async_client,
-    superadmin_user_token_headers,
-    mock_content_dir,
-    created_article_post,
-):
-    """测试删除文章时，物理文件被删除"""
-    import asyncio
-
-    post_id = created_article_post["id"]
-
-    # 等待初始文件生成
-    await asyncio.sleep(1.0)
-
-    file_path = mock_content_dir / "articles" / "uncategorized" / "Test Article.md"
-    assert file_path.exists(), f"初始文件未生成: {file_path}"
-
-    # 删除文章
     response = await async_client.delete(
         f"{settings.API_PREFIX}/posts/articles/{post_id}",
         headers=superadmin_user_token_headers,
     )
     assert response.status_code == 204
+    assert snapshot(mock_content_dir) == before
 
-    # 等待文件删除
-    await asyncio.sleep(1.0)
 
-    # 验证文件已删除
-    assert not file_path.exists()
+@pytest.mark.asyncio
+async def test_admin_post_delete_does_not_remove_git_file(
+    async_client,
+    superadmin_user_token_headers,
+    mock_content_dir,
+    session,
+    superadmin_user,
+):
+    """删除 Git 来源文章只删数据库记录，源文件必须保留。"""
+    from app.posts.model import Post, PostStatus, PostType
+
+    source = mock_content_dir / "articles" / "tech" / "git-post.md"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        f"""---
+title: "Git Post"
+author: "{superadmin_user.username}"
+status: published
+---
+Git body
+""",
+        encoding="utf-8",
+    )
+
+    post = Post(
+        title="Git Post",
+        slug="git-post",
+        content_mdx="Git body",
+        status=PostStatus.PUBLISHED,
+        post_type=PostType.ARTICLES,
+        author_id=superadmin_user.id,
+        source_path="articles/tech/git-post.md",
+    )
+    session.add(post)
+    await session.commit()
+    await session.refresh(post)
+
+    response = await async_client.delete(
+        f"{settings.API_PREFIX}/posts/articles/{post.id}",
+        headers=superadmin_user_token_headers,
+    )
+    assert response.status_code == 204
+    assert source.exists()
+    assert source.read_text(encoding="utf-8").startswith("---\ntitle: \"Git Post\"")

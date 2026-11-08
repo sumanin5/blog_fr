@@ -67,6 +67,7 @@ Check out [this link](./target.md).
 """,
         encoding="utf-8",
     )
+    original_bytes = source_path.read_bytes()
 
     git_commit_helper("Add source post")
 
@@ -90,7 +91,6 @@ Check out [this link](./target.md).
     # 验证不再包含相对路径
     assert "./target.md" not in source_post.content_mdx
 
-    # 5. 验证物理文件是否也被写回修复了
-    file_content = source_path.read_text(encoding="utf-8")
-    assert expected_link_prefix in file_content
-    print(f"Verified link repair in file: {expected_link_prefix}...")
+    # 5. 验证物理文件保持原样：链接转换只进入数据库
+    assert source_path.read_bytes() == original_bytes
+    assert "./target.md" in source_path.read_text(encoding="utf-8")

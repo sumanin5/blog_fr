@@ -66,9 +66,8 @@ Content.
     assert response.status_code == 200
     data = response.json()
 
-    # 验证结果
-    # 注意：added 包含 2 个文件：valid-post.mdx + 自动创建的分类 index.md
-    assert len(data["added"]) == 2
+    # 验证结果：只导入有效文章，不再自动创建分类 index.md
+    assert len(data["added"]) == 1
     assert any("valid-post.mdx" in path for path in data["added"])
 
     assert len(data["errors"]) == 2  # 两个错误
@@ -80,6 +79,9 @@ Content.
         "Missing required field 'author'" in get_msg(err) for err in data["errors"]
     )
     assert any("Author not found" in get_msg(err) for err in data["errors"])
+
+    # 有错误时不能推进游标
+    assert not (mock_content_dir / ".git" / ".gitops_last_sync").exists()
 
 
 @pytest.mark.asyncio
@@ -107,9 +109,11 @@ Content.
         f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
     )
 
-    # 可能返回 200 但有错误，或者直接失败
-    # 具体取决于 scanner 的实现
-    assert response.status_code in [200, 400, 500]
+    # 全量扫描失败且没有成功导入时，路由返回 400；失败不能静默成功。
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"]["code"] == "GITOPS_SYNC_ERROR"
+    assert not (mock_content_dir / ".git" / ".gitops_last_sync").exists()
 
 
 @pytest.mark.asyncio

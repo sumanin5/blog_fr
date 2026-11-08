@@ -48,6 +48,7 @@ async def test_process_scanned_file_post_create(
 
     mock_scanned = mocker.MagicMock()
     mock_scanned.is_category_index = False
+    mock_scanned.frontmatter = {}
 
     # Mock handle_post_create
     mock_create = mocker.patch(

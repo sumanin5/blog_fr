@@ -26,9 +26,8 @@ async def test_sync_add_post(
     assert response.status_code == 200, f"Sync failed: {response.text}"
     data = response.json()
 
-    # 验证响应
-    # 注意：added 包含 2 个文件：文章本身 + 自动创建的分类 index.md
-    assert len(data["added"]) == 2
+    # 验证响应：只导入文章，不再自动创建分类 index.md
+    assert len(data["added"]) == 1
     assert any("git-post.mdx" in path for path in data["added"])
     assert len(data["updated"]) == 0
     assert len(data["deleted"]) == 0
@@ -44,7 +43,7 @@ async def test_sync_add_post(
     assert post.excerpt == "This is a summary from frontmatter"
     assert post.content_mdx.strip() == "# Hello Git\n\nThis is a test post from git."
     assert post.source_path == "git-post.mdx"
-    assert post.slug.startswith("git-sync-test-")  # slug 会添加随机后缀
+    assert post.slug == "git-sync-test"  # 显式 slug 必须保持不变
 
 
 @pytest.mark.asyncio
@@ -70,7 +69,7 @@ async def test_sync_update_post(
     sample_git_post.write_text(
         f"""---
 title: "Git Sync Test Updated"
-slug: "git-sync-test"
+slug: "changed-url-must-not-apply"
 published: true
 author: "{superadmin_user.username}"
 ---
@@ -89,17 +88,15 @@ author: "{superadmin_user.username}"
     assert response.status_code == 200
     data = response.json()
 
-    # 注意：updated 可能包含 git-post.mdx 和 .gitops_last_sync
-    # 我们只验证至少有一个更新
-    assert len(data["updated"]) >= 1
     assert any("git-post.mdx" in path for path in data["updated"])
 
-    # 4. 验证更新
+    # 4. 验证更新：标题变化，但已有 URL 不能被 frontmatter 的 slug 改掉
     session.expire_all()
     stmt = select(Post).where(Post.source_path == "git-post.mdx")
     result = await session.exec(stmt)
     post = result.one()
     assert post.title == "Git Sync Test Updated"
+    assert post.slug == "git-sync-test"
 
 
 @pytest.mark.asyncio

@@ -45,7 +45,7 @@ Content here.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
+    assert len(data["added"]) == 1  # 只导入文章，不再自动创建分类 index.md
     assert len(data["errors"]) == 0
 
     # 验证标签
@@ -92,7 +92,7 @@ Content here.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
+    assert len(data["added"]) == 1  # 只导入文章，不再自动创建分类 index.md
 
     # 验证标签
     session.expire_all()
@@ -140,7 +140,7 @@ Content here.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
+    assert len(data["added"]) == 1  # 只导入文章，不再自动创建分类 index.md
 
     # 验证 SEO 字段
     session.expire_all()
@@ -187,7 +187,7 @@ This is an idea post.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
+    assert len(data["added"]) == 1  # 只导入文章，不再自动创建分类 index.md
 
     # 验证文章类型
     session.expire_all()
@@ -231,7 +231,7 @@ This is a featured post.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
+    assert len(data["added"]) == 1  # 只导入文章，不再自动创建分类 index.md
 
     # 验证标志
     session.expire_all()
@@ -285,7 +285,7 @@ Complete post content.
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
+    assert len(data["added"]) == 1  # 只导入文章，不再自动创建分类 index.md
 
     # 验证所有字段
     session.expire_all()

@@ -62,7 +62,7 @@ Content
 
 @pytest.mark.asyncio
 @pytest.mark.git_ops
-async def test_incremental_sync_fallback_on_git_diff_failure(
+async def test_incremental_sync_fails_on_git_diff_error(
     async_client: AsyncClient,
     superadmin_user_token_headers: dict,
     mock_content_dir: Path,
@@ -70,7 +70,7 @@ async def test_incremental_sync_fallback_on_git_diff_failure(
     mocker,
     superadmin_user,
 ):
-    """测试 git diff 失败时回退到全量同步"""
+    """增量 diff 失败时返回错误，不能静默回退或推进游标。"""
     # 1. 创建初始文件并同步
     file1 = mock_content_dir / "file1.mdx"
     file1.write_text(
@@ -107,24 +107,19 @@ Content 2
     )
     git_commit_helper("Add file 2")
 
-    # 3. Mock get_changed_files 失败
+    # 3. Mock diff 失败
     mocker.patch(
-        "app.git_ops.git_client.GitClient.get_changed_files",
+        "app.git_ops.git_client.GitClient.get_changed_files_with_status",
         side_effect=GitError("Invalid commit hash"),
     )
 
-    # 4. 执行增量同步（应该自动回退到全量同步）
+    # 4. 执行增量同步（应该报错，不能假装成功或推进游标）
     response = await async_client.post(
         f"{settings.API_PREFIX}/ops/git/sync",
         headers=superadmin_user_token_headers,
     )
 
-    assert response.status_code == 200
-    data = response.json()
-
-    # 验证：新文件被同步（说明执行了全量同步）
-    assert len(data["added"]) >= 1
-    assert any("file2.mdx" in path for path in data["added"])
+    assert response.status_code != 200
 
 
 @pytest.mark.asyncio
@@ -284,11 +279,10 @@ Content
     assert response.status_code == 200
     data = response.json()
 
-    # 验证：没有变更
-    assert len(data["added"]) == 0
-    updated_files = [f for f in data["updated"] if "uncategorized/index.md" not in f]
-    assert len(updated_files) == 0
-    assert len(data["deleted"]) == 0
+    # 验证：没有变更，也不会自动创建/更新分类 index.md
+    assert data["added"] == []
+    assert data["updated"] == []
+    assert data["deleted"] == []
 
 
 @pytest.mark.asyncio
@@ -341,6 +335,7 @@ Content
     # Mock get_changed_files 返回空列表
     mocker.patch(
         "app.git_ops.git_client.GitClient.get_changed_files_with_status",
+        new_callable=mocker.AsyncMock,
         return_value=[],
     )
 
@@ -369,7 +364,7 @@ async def test_sync_with_partial_git_operations_failure(
     mocker,
     superadmin_user,
 ):
-    """测试部分 Git 操作失败但同步继续"""
+    """测试 Git pull 失败时同步失败，不静默继续"""
     # 1. 创建多个文件
     for i in range(3):
         file = mock_content_dir / f"post-{i}.mdx"
@@ -430,6 +425,7 @@ Content
     # 2. 第一次同步：pull 失败
     mock_pull = mocker.patch(
         "app.git_ops.git_client.GitClient.pull",
+        new_callable=mocker.AsyncMock,
         side_effect=GitError("Temporary network error"),
     )
 

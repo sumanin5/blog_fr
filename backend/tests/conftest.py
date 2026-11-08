@@ -12,6 +12,13 @@ os.environ["ENVIRONMENT"] = (
     "test"  # 设置环境变量为测试环境，以便导入的是.env.test 文件，实现环境隔离
 )
 
+# 安全默认值：即使忘记设置 DATABASE_URL，也不能落到开发库并执行 drop_all。
+# 需要真实测试库时，显式覆盖这个环境变量，并确保库名以 _test 结尾。
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql+asyncpg://test:test@127.0.0.1:1/blog_oneway_test",
+)
+
 """
 代码解释：
 - __file__ ： 指的是 conftest.py 文件本身。
@@ -69,6 +76,14 @@ async def db_engine():
     1. 删除所有表（清理测试数据）
     2. 关闭数据库连接池
     """
+    database_name = async_engine.url.database or ""
+    if not database_name.endswith("_test"):
+        pytest.exit(
+            "Refusing to run database tests: DATABASE_URL must point to a "
+            f"database ending with '_test' (got '{database_name}').",
+            returncode=2,
+        )
+
     # 创建所有表
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

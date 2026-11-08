@@ -5,7 +5,7 @@
 import pytest
 
 from app.git_ops.components.github import GitHubComponent
-from app.git_ops.exceptions import NotGitRepositoryError
+from app.git_ops.exceptions import GitOpsReadOnlyError, NotGitRepositoryError
 
 
 @pytest.mark.unit
@@ -35,49 +35,11 @@ async def test_github_pull_not_a_repo(mock_git_client, tmp_path):
         await component.pull()
 
 
-@pytest.mark.unit
-@pytest.mark.asyncio
-async def test_github_commit_and_push_success(mock_git_client, tmp_path):
-    """测试 commit_and_push 成功"""
-    mock_git_client.get_file_status.return_value = [("M", "test.md")]
-
+@pytest.mark.parametrize("method,args", [("commit_and_push", ("save",)), ("auto_commit_metadata", (1, 2, 3))])
+async def test_github_outbound_rejected(method, args, mock_git_client, tmp_path):
     component = GitHubComponent(tmp_path, mock_git_client)
-    result = await component.commit_and_push("test message")
-
-    assert result is True
-    mock_git_client.add.assert_called_with(["."])
-    mock_git_client.commit.assert_called_with("test message")
-    mock_git_client.push.assert_called_once()
-
-
-@pytest.mark.unit
-@pytest.mark.asyncio
-async def test_github_commit_and_push_no_changes(mock_git_client, tmp_path):
-    """测试没有变更时不执行 commit"""
-    mock_git_client.get_file_status.return_value = []
-
-    component = GitHubComponent(tmp_path, mock_git_client)
-    result = await component.commit_and_push("test message")
-
-    assert result is False
+    with pytest.raises(GitOpsReadOnlyError):
+        await getattr(component, method)(*args)
+    mock_git_client.add.assert_not_called()
     mock_git_client.commit.assert_not_called()
-
-
-@pytest.mark.unit
-@pytest.mark.asyncio
-async def test_github_auto_commit_metadata(mock_git_client, tmp_path, mocker):
-    """测试 auto_commit_metadata 的消息构建"""
-    # 我们需要拦截 commit_and_push 来验证消息
-    component = GitHubComponent(tmp_path, mock_git_client)
-    mock_commit = mocker.patch.object(component, "commit_and_push", return_value=True)
-
-    await component.auto_commit_metadata(
-        added_count=1, updated_count=2, deleted_count=3
-    )
-
-    # 验证消息
-    message = mock_commit.call_args[0][0]
-    assert "chore: sync metadata from database" in message
-    assert "+1" in message
-    assert "~2" in message
-    assert "-3" in message
+    mock_git_client.push.assert_not_called()

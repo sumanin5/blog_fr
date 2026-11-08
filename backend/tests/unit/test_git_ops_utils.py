@@ -97,86 +97,36 @@ def test_verify_github_signature_timing_attack_protection():
 
 
 # ========================================
-# Frontmatter 更新工具测试
+# Frontmatter 更新工具测试（单向同步下已停用）
 # ========================================
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 @pytest.mark.git_ops
-async def test_update_frontmatter_metadata(tmp_path):
-    """测试更新 frontmatter 元数据"""
+async def test_update_frontmatter_metadata_is_read_only(tmp_path):
+    """旧版 Frontmatter 回写入口必须拒绝执行，且源文件保持不变。"""
     from app.git_ops.components.writer.file_operator import update_frontmatter_metadata
+    from app.git_ops.exceptions import GitOpsReadOnlyError
 
-    # 创建测试文件
     test_file = tmp_path / "test.mdx"
-    test_file.write_text(
-        """---
+    original = """---
 title: "Original Title"
 slug: "original-slug"
 ---
 
 Content here.
-""",
-        encoding="utf-8",
-    )
+"""
+    test_file.write_text(original, encoding="utf-8")
 
-    # 更新元数据（不再需要 stats 参数）
-    result = await update_frontmatter_metadata(
-        tmp_path,
-        "test.mdx",
-        {"slug": "new-slug", "author_id": "12345"},
-    )
+    with pytest.raises(GitOpsReadOnlyError):
+        await update_frontmatter_metadata(
+            tmp_path,
+            "test.mdx",
+            {"slug": "new-slug", "author_id": "12345"},
+        )
 
-    assert result is True
-
-    # 验证文件内容
-    content = test_file.read_text(encoding="utf-8")
-    assert "slug: new-slug" in content
-    assert "author_id: '12345'" in content
-    assert "title: Original Title" in content  # 原有字段保留
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_update_frontmatter_metadata_remove_field(tmp_path):
-    """测试删除 frontmatter 字段"""
-    from app.git_ops.components.writer.file_operator import update_frontmatter_metadata
-
-    test_file = tmp_path / "test.mdx"
-    test_file.write_text(
-        """---
-title: "Test"
-slug: "test-slug"
-cover: "old-cover.jpg"
----
-
-Content.
-""",
-        encoding="utf-8",
-    )
-
-    # 传入 None 应该删除字段（不再需要 stats 参数）
-    result = await update_frontmatter_metadata(tmp_path, "test.mdx", {"cover": None})
-
-    assert result is True
-    content = test_file.read_text(encoding="utf-8")
-    assert "cover:" not in content
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-@pytest.mark.git_ops
-async def test_update_frontmatter_metadata_nonexistent_file(tmp_path):
-    """测试更新不存在的文件"""
-    from app.git_ops.components.writer.file_operator import update_frontmatter_metadata
-
-    # 应该抛出 FileOpsError
-    from app.git_ops.exceptions import FileOpsError
-
-    with pytest.raises(FileOpsError):
-        await update_frontmatter_metadata(tmp_path, "nonexistent.mdx", {"slug": "test"})
+    assert test_file.read_text(encoding="utf-8") == original
 
 
 # ========================================
@@ -188,12 +138,25 @@ async def test_update_frontmatter_metadata_nonexistent_file(tmp_path):
 
 
 # ========================================
-# write_post_ids_to_frontmatter 测试
+# write_post_ids_to_frontmatter 测试（已停用）
 # ========================================
-# 注意：write_post_ids_to_frontmatter 函数已经通过集成测试充分覆盖
-# （tests/api/git_ops/test_sync.py, test_resync_metadata.py 等）
-# 单元测试需要 mock 复杂的 Post 对象及其关系（tags, category, author 等），
-# 维护成本高且容易出错，因此移除单元测试，依赖集成测试覆盖。
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.git_ops
+async def test_write_post_ids_to_frontmatter_is_read_only(tmp_path):
+    """旧版文章 ID 回写入口必须拒绝执行。"""
+    from app.git_ops.components.writer.file_operator import (
+        write_post_ids_to_frontmatter,
+    )
+    from app.git_ops.exceptions import GitOpsReadOnlyError
+
+    with pytest.raises(GitOpsReadOnlyError):
+        await write_post_ids_to_frontmatter(
+            tmp_path, "post.md", object(), object(), None
+        )
+
 
 
 # ========================================

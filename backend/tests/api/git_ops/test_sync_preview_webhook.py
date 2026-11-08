@@ -205,7 +205,7 @@ async def test_webhook_without_secret_configured(
     async_client: AsyncClient,
     monkeypatch,
 ):
-    """测试 Webhook：未配置 secret 时仍然接受请求"""
+    """测试 Webhook：未配置 secret 时拒绝请求"""
     monkeypatch.setattr(settings, "WEBHOOK_SECRET", "")
 
     payload = b'{"ref": "refs/heads/main"}'

@@ -38,11 +38,8 @@ def mock_content_dir(tmp_path, monkeypatch, mocker):
 
     mocker.patch(
         "app.git_ops.git_client.GitClient.pull",
+        new_callable=mocker.AsyncMock,
         return_value="Already up to date.",
-    )
-    mocker.patch(
-        "app.git_ops.git_client.GitClient.push",
-        return_value="",
     )
 
     return d
@@ -210,14 +207,8 @@ def mock_png():
 
 
 @pytest.fixture
-def mock_git_background_commit(mocker):
-    """Mock run_background_commit 防止真实的 Git 提交"""
-    return mocker.patch("app.posts.routers.posts.editor.run_background_commit")
-
-
-@pytest.fixture
 async def created_article_post(
-    async_client, superadmin_user_token_headers, mock_git_background_commit
+    async_client, superadmin_user_token_headers
 ):
     """创建一篇测试文章并返回响应数据
 

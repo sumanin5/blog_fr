@@ -4,7 +4,6 @@
 
 from pathlib import Path
 
-import frontmatter
 import pytest
 from app.core.config import settings
 from app.posts.model import Category, PostSortOrder
@@ -13,7 +12,7 @@ from sqlmodel import select
 
 
 @pytest.mark.asyncio
-async def test_sync_category_post_sort_and_writeback(
+async def test_sync_category_post_sort_without_writeback(
     async_client: AsyncClient,
     superadmin_user_token_headers: dict,
     mock_content_dir: Path,
@@ -23,7 +22,7 @@ async def test_sync_category_post_sort_and_writeback(
     """
     测试：
     1. index.md 中指定 post_sort 能被同步到数据库
-    2. 同步后 index.md 中应新增 category_id 且 post_sort 字段被保留 (回写验证)
+    2. 同步后 index.md 字节保持不变（分类元数据只进入数据库）
     """
     # 1. 准备目录结构
     # content/articles/test_sort/index.md
@@ -40,6 +39,7 @@ description: "Category for sort testing"
 ---
 """
     index_file.write_text(original_content, encoding="utf-8")
+    original_bytes = index_file.read_bytes()
 
     # 2. 执行同步 (强制全量)
     response = await async_client.post(
@@ -63,18 +63,8 @@ description: "Category for sort testing"
     assert category.post_sort_order == PostSortOrder.TITLE_ASC
     assert category.name == "Test Sort Category"
 
-    # 4. 验证回写 (index.md)
-    # 重新读取文件
-    new_content = index_file.read_text(encoding="utf-8")
-    fm = frontmatter.loads(new_content)
-
-    # 验证关键字段是否回写成功
-    assert "category_id" in fm.metadata
-    assert fm.metadata["category_id"] == str(category.id)
-
-    # 关键验证：post_sort 字段应该依然存在
-    assert "post_sort" in fm.metadata
-    assert fm.metadata["post_sort"] == "title_asc"
+    # 4. 验证源文件字节不变：分类元数据只进入数据库
+    assert index_file.read_bytes() == original_bytes
 
 
 @pytest.mark.asyncio
@@ -126,6 +116,7 @@ category_id: "{category.id}"
 ---
 """
     index_file.write_text(updated_content, encoding="utf-8")
+    updated_bytes = index_file.read_bytes()
 
     # 3. 第二次同步
     await async_client.post(
@@ -138,6 +129,5 @@ category_id: "{category.id}"
     category = (await session.exec(stmt)).one()
     assert category.post_sort_order == PostSortOrder.TITLE_DESC
 
-    # 5. 验证回写保持
-    new_fm = frontmatter.loads(index_file.read_text())
-    assert new_fm.metadata["post_sort"] == "title_desc"
+    # 5. 验证源文件保持原样
+    assert index_file.read_bytes() == updated_bytes

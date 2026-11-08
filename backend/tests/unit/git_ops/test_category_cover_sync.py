@@ -78,11 +78,6 @@ async def test_cover_media_id_priority_valid(
     mocker,
 ):
     """测试优先使用有效的 cover_media_id"""
-    # Patch _write_category_metadata_back to prevent file operations
-    mocker.patch(
-        "app.git_ops.components.handlers.category_sync._write_category_metadata_back",
-        new_callable=mocker.AsyncMock,
-    )
     scanned, media_id = scanned_with_cover_media_id
 
     # 自定义 mock_get_media_file 的返回值
@@ -112,11 +107,6 @@ async def test_cover_media_id_invalid_fallback_to_cover(
     mocker,
 ):
     """测试 cover_media_id 无效时降级到 cover 字段"""
-    # Patch _write_category_metadata_back
-    mocker.patch(
-        "app.git_ops.components.handlers.category_sync._write_category_metadata_back",
-        new_callable=mocker.AsyncMock,
-    )
     invalid_media_id = uuid4()
     valid_media_id = uuid4()
 
@@ -163,11 +153,6 @@ async def test_cover_only_no_media_id(
     mocker,
 ):
     """测试只有 cover 字段，没有 cover_media_id"""
-    # Patch _write_category_metadata_back
-    mocker.patch(
-        "app.git_ops.components.handlers.category_sync._write_category_metadata_back",
-        new_callable=mocker.AsyncMock,
-    )
     media_id = uuid4()
 
     # 使用工厂创建 CoverProcessor mock
@@ -195,11 +180,6 @@ async def test_no_cover_fields(
     mock_session, mock_user, mock_content_dir, scanned_no_cover, mocker
 ):
     """测试没有任何封面字段"""
-    # Patch _write_category_metadata_back
-    mocker.patch(
-        "app.git_ops.components.handlers.category_sync._write_category_metadata_back",
-        new_callable=mocker.AsyncMock,
-    )
     # 执行测试
     category = await handle_category_sync(
         mock_session, scanned_no_cover, mock_user, mock_content_dir
@@ -216,11 +196,6 @@ async def test_cover_media_id_invalid_format(
     mock_session, mock_user, mock_content_dir, mock_cover_processor_factory, mocker
 ):
     """测试 cover_media_id 格式错误时的处理"""
-    # Patch _write_category_metadata_back
-    mocker.patch(
-        "app.git_ops.components.handlers.category_sync._write_category_metadata_back",
-        new_callable=mocker.AsyncMock,
-    )
     media_id = uuid4()
 
     scanned = ScannedPost(
@@ -259,11 +234,6 @@ async def test_image_field_as_fallback(
     mock_session, mock_user, mock_content_dir, mock_cover_processor_factory, mocker
 ):
     """测试使用 image 字段作为 cover 的替代"""
-    # Patch _write_category_metadata_back
-    mocker.patch(
-        "app.git_ops.components.handlers.category_sync._write_category_metadata_back",
-        new_callable=mocker.AsyncMock,
-    )
     media_id = uuid4()
 
     scanned = ScannedPost(

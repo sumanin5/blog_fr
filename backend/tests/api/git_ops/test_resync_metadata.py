@@ -20,6 +20,7 @@ async def test_resync_metadata_success(
     """测试成功重新同步元数据"""
     post, test_file, new_author = resync_test_post
     post_id = post.id  # 提前获取 ID，避免后续访问触发懒加载
+    original_bytes = test_file.read_bytes()
 
     # 调用 resync API
     from app.core.config import settings
@@ -33,9 +34,13 @@ async def test_resync_metadata_success(
     data = response.json()
     assert data["status"] == "success"
 
-    # 验证文件已回写新 ID
-    content = test_file.read_text(encoding="utf-8")
-    assert str(new_author.id) in content
+    # 数据库更新作者，源文件保持不变
+    from app.posts.model import Post
+
+    session.expire_all()
+    refreshed = await session.get(Post, post_id)
+    assert refreshed.author_id == new_author.id
+    assert test_file.read_bytes() == original_bytes
 
 
 @pytest.mark.asyncio
@@ -231,6 +236,7 @@ cover: "./new-cover.jpg"
 """,
         encoding="utf-8",
     )
+    original_bytes = test_file.read_bytes()
 
     # 执行 resync
     response = await async_client.post(
@@ -249,9 +255,8 @@ cover: "./new-cover.jpg"
     assert media.content_hash == cover_hash
     assert media.original_filename == "new-cover.jpg"
 
-    # 验证文件中回写了 cover_media_id
-    content = test_file.read_text(encoding="utf-8")
-    assert str(post.cover_media_id) in content
+    # 封面 ID 只进入数据库，源文件保持原样
+    assert test_file.read_bytes() == original_bytes
 
 
 @pytest.mark.asyncio
@@ -373,6 +378,7 @@ category: "life"
 """,
         encoding="utf-8",
     )
+    original_bytes = test_file.read_bytes()
 
     # 执行 resync
     response = await async_client.post(
@@ -387,11 +393,9 @@ category: "life"
     post = await session.get(Post, post_id)
     assert post.category_id == tech_cat_id  # 路径优先，仍然是 Tech
 
-    # 验证文件中的错误分类被纠正为 tech
-    content = test_file.read_text(encoding="utf-8")
-    assert str(tech_cat_id) in content
-    assert "category: tech" in content  # 纠正为正确的 slug
-    assert "category: life" not in content  # 错误值已被替换
+    # 文件中的旧分类保持不变；路径优先只影响数据库
+    assert test_file.read_bytes() == original_bytes
+    assert "category: life" in test_file.read_text(encoding="utf-8")
 
 
 @pytest.mark.asyncio
@@ -440,6 +444,7 @@ status: "published"
 """,
         encoding="utf-8",
     )
+    original_bytes = test_file.read_bytes()
 
     # 执行 resync
     response = await async_client.post(
@@ -454,6 +459,5 @@ status: "published"
     post = await session.get(Post, post_id)
     assert post.status == PostStatus.PUBLISHED
 
-    # 验证文件中保留了状态
-    content = test_file.read_text(encoding="utf-8")
-    assert "status: published" in content
+    # 状态只进入数据库，源文件保持原样
+    assert test_file.read_bytes() == original_bytes

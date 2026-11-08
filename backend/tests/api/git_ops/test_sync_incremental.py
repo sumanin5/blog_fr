@@ -51,7 +51,7 @@ Content 1
     )
     assert response.status_code == 200
     data = response.json()
-    assert len(data["added"]) == 2  # 包含文章 + 自动创建的分类 index.md
+    assert len(data["added"]) == 1  # 只导入文章，不再自动创建分类 index.md
 
     # 2. 创建第二个文件并 commit
     file2 = mock_content_dir / "post-2.mdx"
@@ -254,12 +254,11 @@ Content
     assert response.status_code == 200
     data = response.json()
 
-    # 验证：没有任何变更
-    assert len(data["added"]) == 0
-    updated_files = [f for f in data["updated"] if "uncategorized/index.md" not in f]
-    assert len(updated_files) == 0
-    assert len(data["deleted"]) == 0
-    assert len(data["errors"]) == 0
+    # 验证：没有任何变更，也不会有分类 index.md 被自动更新
+    assert data["added"] == []
+    assert data["updated"] == []
+    assert data["deleted"] == []
+    assert data["errors"] == []
 
 
 @pytest.mark.asyncio
@@ -382,10 +381,12 @@ Content
     )
     git_commit_helper("Add first post")
 
-    # 2. 确保没有 .gitops_last_sync 文件
-    hash_file = mock_content_dir / ".gitops_last_sync"
-    if hash_file.exists():
-        hash_file.unlink()
+    # 2. 确保没有同步游标文件（新位置在 .git 内，兼容旧根目录文件）
+    hash_file = mock_content_dir / ".git" / ".gitops_last_sync"
+    legacy_hash_file = mock_content_dir / ".gitops_last_sync"
+    for path in (hash_file, legacy_hash_file):
+        if path.exists():
+            path.unlink()
 
     # 3. 执行增量同步（应该报错）
     response = await async_client.post(
@@ -448,10 +449,9 @@ Content
     assert response.status_code == 200
     data = response.json()
 
-    # 验证：非 Markdown 文件被忽略
-    # 注意：.gitops_last_sync 文件可能被检测为变更,但不会创建文章
+    # 验证：非 Markdown 文件被忽略，文章内容和文件都不变
     assert len(data["added"]) == 0
-    # test.mdx 可能因为 frontmatter 写入而被标记为 updated
+    assert len(data["updated"]) == 0
     assert len(data["deleted"]) == 0
 
 
@@ -486,9 +486,10 @@ Content
     )
     assert response.status_code == 200
 
-    # 2. 验证 hash 文件存在且内容有效
-    hash_file = mock_content_dir / ".gitops_last_sync"
+    # 2. 验证同步游标写在 .git 内，不污染内容仓库根目录
+    hash_file = mock_content_dir / ".git" / ".gitops_last_sync"
     assert hash_file.exists()
+    assert not (mock_content_dir / ".gitops_last_sync").exists()
 
     saved_hash = hash_file.read_text().strip()
     assert len(saved_hash) == 40  # Git SHA-1 hash 长度
