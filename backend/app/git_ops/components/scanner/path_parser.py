@@ -6,7 +6,7 @@ from slugify import slugify as python_slugify
 
 
 class PathParser:
-    """路径解析器 - 从文件路径提取元数据"""
+    """提取板块与旧版分类默认值；显式分类 slug 由扫描器读取 index.md 覆盖。"""
 
     def __init__(self):
         # 动态构建映射：支持单数和复数

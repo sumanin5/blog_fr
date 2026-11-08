@@ -1,0 +1,21 @@
+name: Validate content
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  content-contract:
+    name: Content contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -r tools/requirements.txt
+      - run: python tools/content_contract.py --root .

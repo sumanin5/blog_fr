@@ -5,11 +5,15 @@ on:
     branches: [main, develop]
     paths:
       - "backend/**"
+      - "scripts/content-hooks/**"
+      - "scripts/install_content_checks.py"
       - ".github/workflows/backend-ci.yml"
   pull_request:
     branches: [main, develop]
     paths:
       - "backend/**"
+      - "scripts/content-hooks/**"
+      - "scripts/install_content_checks.py"
 
 jobs:
   test:

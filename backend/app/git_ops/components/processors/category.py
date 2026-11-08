@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class CategoryProcessor(FieldProcessor):
-    """处理 category_id 字段（优先使用路径推导）"""
+    """优先使用分类索引的显式 slug，旧仓库兼容数据库 ID 和目录推导。"""
 
     async def process(
         self,
@@ -26,7 +26,7 @@ class CategoryProcessor(FieldProcessor):
         from app.posts import cruds as posts_crud
 
         # 如果 Frontmatter 里有 category_id，先验证它是否有效
-        if result.get("category_id"):
+        if result.get("category_id") and not getattr(scanned, "category_slug_explicit", False):
             existing_cat = await posts_crud.get_category_by_id(
                 session, result["category_id"]
             )

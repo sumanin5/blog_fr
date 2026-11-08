@@ -16,8 +16,9 @@ class ScannedPost(BaseModel):
         default=None, description="从路径推断的文章类型"
     )
     derived_category_slug: Optional[str] = Field(
-        default=None, description="从路径推断的分类Slug"
+        default=None, description="分类 index.md 的显式 slug；旧仓库兼容路径推导"
     )
+    category_slug_explicit: bool = False
     is_category_index: bool = Field(
         default=False, description="是否为分类元数据文件(index.md)"
     )

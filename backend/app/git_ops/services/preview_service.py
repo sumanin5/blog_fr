@@ -20,6 +20,7 @@ class PreviewService(BaseGitOpsService):
     async def preview_sync(self) -> PreviewResult:
         """执行同步预览 (Dry Run)"""
         result = PreviewResult()
+        await self.container.validate_content()
 
         # 1. 扫描文件系统
         scanned_posts = await self.scanner.scan_all()

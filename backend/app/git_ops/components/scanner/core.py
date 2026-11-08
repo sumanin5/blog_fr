@@ -6,6 +6,7 @@ from typing import List, Optional
 import frontmatter
 import orjson
 from app.git_ops.exceptions import GitOpsConfigurationError, ScanError
+from app.git_ops.content_contract import MANIFEST, SLUG, metadata
 
 from .models import ScannedPost
 from .path_parser import PathParser
@@ -51,6 +52,25 @@ class MDXScanner:
             # 使用 orjson 进行更快的、确定性的序列化 (自动处理日期等)
             meta_bytes = orjson.dumps(post.metadata, option=orjson.OPT_SORT_KEYS)
             path_info = self.path_parser.parse(rel_path)
+            explicit_category = False
+            if len(Path(rel_path).parts) == 3 and path_info.get("post_type"):
+                index_path = full_path.parent / "index.md"
+                if not index_path.resolve().is_relative_to(root):
+                    raise ValueError("Category index escapes content repository")
+                if full_path.name == "index.md":
+                    index_meta = post.metadata
+                elif index_path.is_file():
+                    index_meta = metadata(await asyncio.to_thread(index_path.read_text, encoding="utf-8"))
+                else:
+                    index_meta = {}
+                declared_slug = index_meta.get("slug")
+                if declared_slug is not None:
+                    if not isinstance(declared_slug, str) or not SLUG.fullmatch(declared_slug) or len(declared_slug) > 100:
+                        raise ValueError("Category index contains an invalid explicit slug")
+                    path_info["category_slug"] = declared_slug
+                    explicit_category = True
+                elif (self.content_root / MANIFEST).exists():
+                    raise ValueError("Category index.md must declare slug")
 
             # 检测是否为分类元数据文件
             is_index = Path(rel_path).name.lower() == "index.md"
@@ -65,6 +85,7 @@ class MDXScanner:
                 updated_at=full_path.stat().st_mtime,
                 derived_post_type=path_info.get("post_type"),
                 derived_category_slug=path_info.get("category_slug"),
+                category_slug_explicit=explicit_category,
                 is_category_index=is_category_index,
             )
         except Exception as e:

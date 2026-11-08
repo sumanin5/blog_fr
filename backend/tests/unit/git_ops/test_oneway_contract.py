@@ -215,7 +215,7 @@ async def test_webhook_signature_skip_ci_and_retries(valid, mocker):
         return {"type": "http.request", "body": payload}
     for _ in range(2):
         tasks = BackgroundTasks()
-        request = Request({"type": "http"}, receive)
+        request = Request({"type": "http", "headers": []}, receive)
         if not valid:
             with pytest.raises(WebhookSignatureError):
                 await github_webhook(request, tasks, "sha256=bad")

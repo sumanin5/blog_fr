@@ -85,6 +85,7 @@ def mock_container(mocker, mock_session, mock_git_client, mock_content_dir):
     container.session = mock_session
     container.git_client = mock_git_client
     container.content_dir = mock_content_dir
+    container.validate_content = mocker.AsyncMock()
 
     # Mock scanner
     container.scanner = mocker.MagicMock()

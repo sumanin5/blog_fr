@@ -1,7 +1,8 @@
 import logging
+import json
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
@@ -118,6 +119,21 @@ async def github_webhook(
 
     # 验证签名（会抛出 WebhookSignatureError 异常）
     verify_github_signature(payload, x_hub_signature_256, settings.WEBHOOK_SECRET)
+
+    event = request.headers.get("x-github-event")
+    if event and event != "push":
+        return {"status": "skipped", "reason": "not a push event"}
+    try:
+        event_data = json.loads(payload)
+        if not isinstance(event_data, dict):
+            raise ValueError("Webhook payload must be an object")
+    except (ValueError, UnicodeError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid webhook payload") from exc
+    branch = getattr(settings, "GIT_SYNC_BRANCH", "main")
+    if event_data.get("ref") and event_data["ref"] != f"refs/heads/{branch}":
+        return {"status": "skipped", "reason": "not the content branch"}
+    if event_data.get("deleted"):
+        return {"status": "skipped", "reason": "branch deletion"}
 
     # 单向导入不会产生回写提交。[skip ci] 也正常导入。
     # 由同步锁和成功游标处理重复通知，失败的通知可以再次投递重试。

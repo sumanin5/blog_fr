@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+python_bin="$(git config --local --get content.python || echo python)"
+repo_root="$(git rev-parse --show-toplevel)"
+exec "$python_bin" "$repo_root/tools/content_contract.py" --root "$repo_root" --staged

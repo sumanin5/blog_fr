@@ -2,6 +2,31 @@
 
 本文档是当前 GitOps 同步的权威说明。旧的双向同步文档仅作历史参考，已标记为过时。
 
+## 显式 slug 内容约定（v1）
+
+内容仓库 `.content-contract.json` 声明 `{"version": 1}` 后启用严格校验。
+分类目录可以使用中文，分类 URL 只由同目录 `index.md` 中显式的 `slug` 决定。
+文章必须显式声明自己的 slug，移动文件时保留它；不再依赖文件名或目录转拼音来决定地址。
+同一板块的分类 slug 唯一；文章 slug 按当前数据库约束在整个内容仓库唯一；完整 URL 不得与其他内容或保留路由冲突。
+新约定不改变数据库表结构。部署时先更新后端，再发布带显式 slug 的内容；没有版本声明的旧仓库暂时兼容原解析规则，便于分步上线。
+
+`backend/app/git_ops/content_contract.py` 是校验器唯一维护源。
+执行 `python scripts/install_content_checks.py <内容仓库路径>`，将同一文件分发到内容仓库 `tools/content_contract.py`，并提供钩子和 CI 模板。
+内容仓库使用 `python tools/install-hooks.py` 为当前 clone 安装原生 pre-commit，不需要 Node 或 Husky。
+提交钩子读取完整 Git 暂存区；CI 读取提交快照；网站在严格模式的全量、增量内容导入和单篇重导前校验，失败时不开始写数据库。
+本地钩子可以绕过，远端还需将 `Content contract` 设为 main 的必需合并检查；工作流文件未推送前不会在 GitHub 生效。
+
+README / AGENTS / CLAUDE 等说明文件的提交通常仍触发 GitHub push webhook。
+接收端验证签名，只处理指定分支的 push；随后以 Git diff 判断实际内容。
+只有说明文件变化时推进游标，不查询作者、不写文章、不刷新页面缓存。
+
+## 为什么保留服务器内容目录
+
+数据仍只走一条链路：GitHub → 服务器 Git 工作区 → 校验 → 导入数据库 → 页面。
+工作区同时保存 Markdown、图片和可复核的 Git 历史，不增加 GitHub API 逐文件读取、分页和失败重试的第二条导入实现。
+日常同步仍采用增量更新；首次部署、手动修复或失败后的对账采用全量导入。
+两种方式都执行同一份内容校验和同一组文章/分类处理器；不恢复任何反向回写。
+
 ## 目标
 
 - Git 仓库是文章、Frontmatter、分类 `index.md` 和媒体引用的唯一内容来源。

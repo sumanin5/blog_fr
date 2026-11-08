@@ -1,4 +1,6 @@
 from pathlib import Path
+import asyncio
+import json
 from typing import Optional
 
 from app.core.config import settings
@@ -9,6 +11,8 @@ from app.git_ops.components.repository_lock import lock_repository
 from app.git_ops.components.scanner import MDXScanner
 from app.git_ops.components.serializer import PostSerializer
 from app.git_ops.git_client import GitClient
+from app.git_ops.content_contract import MANIFEST, VERSION, validate, working_files
+from app.git_ops.exceptions import GitOpsSyncError
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
@@ -40,6 +44,21 @@ class GitOpsContainer:
         return lock_repository(
             self.hash_manager.last_sync_file.with_name(".gitops_sync.lock")
         )
+
+    async def validate_content(self):
+        """Strict v1 for migrated repositories; allow old checkouts during rollout."""
+        manifest = self.content_dir / MANIFEST
+        if not manifest.exists():
+            return
+        try:
+            declaration = json.loads(manifest.read_text(encoding="utf-8"))
+            if not isinstance(declaration, dict) or declaration.get("version") != VERSION:
+                raise ValueError("Unsupported content contract version")
+            errors = await asyncio.to_thread(lambda: validate(working_files(self.content_dir)))
+        except (ValueError, OSError) as exc:
+            raise GitOpsSyncError("Invalid content contract", detail=str(exc)) from exc
+        if errors:
+            raise GitOpsSyncError("Content validation failed before database import", detail="\n".join(errors))
 
     @property
     def export_service(self):

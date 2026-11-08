@@ -61,6 +61,7 @@ class SyncService(BaseGitOpsService):
 
         # 1. Git Pull
         _, _, _ = await self.github.pull()
+        await self.container.validate_content()
 
         # 2. 扫描文件系统
         scanned_posts = await self.scanner.scan_all()
@@ -297,15 +298,22 @@ class SyncService(BaseGitOpsService):
 
         logger.info("Starting incremental sync...")
 
-        # 5. 获取操作用户
-        operating_user = await self._get_operating_user(default_user)
-
         # 6. 处理变更文件 (Disk -> DB 阶段)
         target_paths = [
             path
             for _, path in changed_files
             if is_content_path(path)
         ]
+
+        if not target_paths:
+            # Documentation/notes do not need a user lookup, database writes,
+            # frontmatter processing or cache invalidation.
+            await self.hash_manager.save_current_hash()
+            stats.duration = time.time() - start_time
+            return stats
+
+        await self.container.validate_content()
+        operating_user = await self._get_operating_user(default_user)
 
         if target_paths:
             # 读取全量 source_path 后统一归一化，才能兼容历史绝对路径，

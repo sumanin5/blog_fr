@@ -409,7 +409,11 @@ class SyncProcessor:
 
         # 2. 处理扫描到的文件 (Disk -> DB)
         processed_post_ids = set()
-        for file_path, scanned in scanned_map.items():
+        # Article paths must be current before category descriptions resolve
+        # their relative links, especially after a directory rename.
+        for file_path, scanned in sorted(
+            scanned_map.items(), key=lambda item: (bool(item[1].is_category_index), item[0])
+        ):
             async with collect_errors(
                 stats, f"Processing {file_path}", session=session
             ):
@@ -500,7 +504,12 @@ class SyncProcessor:
             # 先处理删除，再处理新增/修改。显式 slug 的移动会在删除阶段跳过，
             # 随后按 slug 复用旧记录；无 slug 的移动仍然是删除 + 新建。
             ordered_changes = sorted(
-                changed_files, key=lambda item: 0 if item[0] == "D" else 1
+                changed_files,
+                key=lambda item: (
+                    0 if item[0] == "D" else 1,
+                    Path(item[1]).name.lower() == "index.md",
+                    item[1],
+                ),
             )
             for status, file_path in ordered_changes:
                 # 与 scan_all 保持一致：隐藏路径不参与增量导入。
