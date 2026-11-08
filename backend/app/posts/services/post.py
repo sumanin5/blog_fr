@@ -23,52 +23,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 logger = logging.getLogger(__name__)
 
 
-async def _sync_to_disk(
-    session: AsyncSession, post_id: UUID, old_source_path: str | None = None
-):
-    """
-    辅助函数：将文章同步写入到物理磁盘（反向同步）
-    """
-    """
-    辅助函数：将文章同步写入到物理磁盘（反向同步）
-    """
-    from app.git_ops.components.writer import FileWriter
-
-    # 重新查询以确保加载所有关系（Tags, Category）
-    # 使用 select IN 预加载（虽然 crud.get_post_by_id 应该已经做了，但再次确保）
-    post = await crud.get_post_by_id(session, post_id)
-
-    writer = FileWriter(session=session)
-
-    # 准备数据
-    tag_names = [t.name for t in post.tags]
-    category_slug = post.category.slug if post.category else "uncategorized"
-
-    # 构造一个临时的 old_post 对象用于传递 source_path
-    # 只需要 source_path 字段
-    old_post_stub = None
-    if old_source_path:
-        old_post_stub = type("PostStub", (), {"source_path": old_source_path})()
-
-    # 执行写入
-    relative_path = await writer.write_post(
-        post,
-        old_post=old_post_stub,  # type: ignore
-        category_slug=category_slug,
-        tags=tag_names,
-    )
-
-    # 如果计算出的路径与当前数据库记录不一致，更新数据库
-    if post.source_path != relative_path:
-        logger.info(
-            f"Updating source_path for post {post.id}: {post.source_path} -> {relative_path}"
-        )
-        post.source_path = relative_path
-        session.add(post)
-        await session.commit()
-        await session.refresh(post)
-
-
 async def generate_unique_slug(
     session: AsyncSession, title: str, post_id: Optional[UUID] = None
 ) -> str:
@@ -177,15 +131,6 @@ async def delete_post(session: AsyncSession, post_id: UUID, current_user: User) 
     # 细粒度权限检查：超级管理员可以删除任何文章，普通用户只能删除自己的
     if not current_user.is_superadmin and post.author_id != current_user.id:
         raise InsufficientPermissionsError("只能删除自己的文章")
-
-    # 尝试删除物理文件 (Git-First 反向同步)
-    try:
-        from app.git_ops.components.writer import FileWriter
-
-        writer = FileWriter(session=session)
-        await writer.delete_post(post)
-    except Exception as e:
-        logger.error(f"Failed to delete physical file for post {post.id}: {e}")
 
     await session.delete(post)
     await session.commit()
@@ -307,12 +252,6 @@ async def create_post(
     # 使用 CRUD 层重新查询（带关联预加载），避免懒加载问题
     db_post = await crud.get_post_by_id(session, db_post.id)
 
-    # 7. 反向同步：如果不是从 Git 同步（即 source_path 为 None），则写入磁盘
-    if source_path is None:
-        await _sync_to_disk(session, db_post.id)
-        # _sync_to_disk 可能提交了事务，导致对象过期，重新加载以确保关系可用
-        db_post = await crud.get_post_by_id(session, db_post.id)
-
     logger.info(f"文章创建成功: {db_post.title} (ID: {db_post.id})")
     return db_post
 
@@ -339,9 +278,6 @@ async def update_post(
     # 细粒度权限检查：超级管理员可以修改任何文章，普通用户只能修改自己的
     if not current_user.is_superadmin and db_post.author_id != current_user.id:
         raise InsufficientPermissionsError("只能修改自己的文章")
-
-    # 捕获旧的路径，用于重命名检测
-    old_source_path = db_post.source_path
 
     # 如果有正文更新，需要处理图片并同步派生字段
     if post_in.content_mdx is not None:
@@ -431,12 +367,6 @@ async def update_post(
     await session.refresh(db_post, attribute_names=["category", "tags"])
     # 使用 CRUD 层重新查询（带关联预加载），确保所有字段（包括 author 等）都已加载
     db_post = await crud.get_post_by_id(session, db_post.id)
-
-    # 6. 反向同步：如果不是从 Git 同步（即 source_path 为 None），则写入磁盘
-    if source_path is None:
-        await _sync_to_disk(session, db_post.id, old_source_path=old_source_path)
-        # _sync_to_disk 可能提交了事务，导致对象过期，重新加载以确保关系可用
-        db_post = await crud.get_post_by_id(session, db_post.id)
 
     logger.info(f"文章更新成功: {db_post.title}")
     return db_post

@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import List, Tuple
 
-from app.git_ops.exceptions import GitError, NotGitRepositoryError
+from app.git_ops.exceptions import GitError, GitOpsReadOnlyError, NotGitRepositoryError
 
 logger = logging.getLogger(__name__)
 
@@ -15,47 +15,18 @@ class GitClient:
         if not (repo_path / ".git").exists():
             logger.warning(f"GitClient initialized with non-git directory: {repo_path}")
 
-    async def _ensure_git_config(self):
-        """确保 Git 配置了用户信息（使用 --local 配置）"""
-        if self._config_initialized:
-            return
-
-        try:
-            # 1. 禁用路径转义，确保中文文件名能正确显示 (解决增量同步时中文文件名被截断/不匹配的问题)
-            await self.run("config", "--local", "core.quotepath", "false")
-
-            # 2. 检查是否已配置本地用户信息
-            code, email, _ = await self.run("config", "--local", "user.email")
-
-            if code != 0 or not email:
-                # 未配置，使用默认值
-                await self.run("config", "--local", "user.email", "admin@blog.local")
-                await self.run("config", "--local", "user.name", "Blog Admin")
-                logger.info("Git user config initialized with default values")
-
-            self._config_initialized = True
-        except Exception as e:
-            logger.warning(f"Failed to ensure git config: {e}")
-
     async def run(self, *args: str) -> Tuple[int, str, str]:
-        """运行 git 命令 (非阻塞)"""
-        # 针对容器环境自动处理 safe.directory 问题
+        """运行只读 git 命令 (非阻塞)"""
         import os
 
-        if os.getenv("GIT_SAFE_DIR") == "*":
-            safe_proc = await asyncio.create_subprocess_exec(
-                "git",
-                "config",
-                "--global",
-                "--add",
-                "safe.directory",
-                "*",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            await safe_proc.wait()
+        allowed_commands = {"pull", "rev-parse", "diff", "ls-files", "status"}
+        if not args or args[0] not in allowed_commands:
+            raise GitOpsReadOnlyError()
 
-        cmd = ["git"] + list(args)
+        cmd = ["git", "-c", "core.quotepath=false"]
+        if os.getenv("GIT_SAFE_DIR") == "*":
+            cmd += ["-c", f"safe.directory={self.repo_path.resolve()}"]
+        cmd += list(args)
         process = await asyncio.create_subprocess_exec(
             *cmd,  # 执行命令
             cwd=self.repo_path,  # 执行命令的位置
@@ -68,8 +39,7 @@ class GitClient:
 
     async def pull(self, remote: str = "origin", branch: str = "main") -> str:
         """执行 git pull，强制指定远程和分支"""
-        await self._ensure_git_config()
-        code, out, err = await self.run("pull", remote, branch)
+        code, out, err = await self.run("pull", "--ff-only", remote, branch)
         if code != 0:  # 如果失败
             if "not a git repository" in err.lower():
                 raise NotGitRepositoryError()
@@ -82,6 +52,20 @@ class GitClient:
         if code != 0:
             raise GitError(f"Failed to get current hash: {err}")
         return out
+
+    async def list_tracked_markdown_files(self) -> List[str]:
+        """列出 HEAD 跟踪的 Markdown/MDX 文件，用于校验全量扫描完整性。"""
+        code, out, err = await self.run(
+            "ls-files", "-z", "--", "*.md", "*.mdx"
+        )
+        if code != 0:
+            raise GitError(f"Failed to list tracked files: {err}")
+
+        return [
+            path.replace("\\", "/")
+            for path in out.split("\0")
+            if path
+        ]
 
     async def get_changed_files(self, since_hash: str) -> List[str]:
         """获取自指定 hash 以来的变更文件列表"""
@@ -114,14 +98,13 @@ class GitClient:
             R = Renamed
             C = Copied
         """
-        await self._ensure_git_config()
         # 检查是否是范围查询（包含 ".."）
         is_range_query = ".." in since_hash
 
         # 1. 对比 since_hash 和 工作区/目标 commit
         # 如果是范围查询，只对比两个 commit，不包含工作区
         # 如果是单个 hash，对比该 hash 和工作区
-        code, out, err = await self.run("diff", "--name-status", since_hash)
+        code, out, err = await self.run("diff", "--no-renames", "--name-status", since_hash)
         if code != 0:
             raise GitError(f"Failed to get diff: {err}")
 
@@ -176,38 +159,10 @@ class GitClient:
         return results
 
     async def add(self, paths: List[str]):
-        """执行 git add"""
-        await self._ensure_git_config()
-        if not paths:
-            return
-        code, out, err = await self.run("add", *paths)
-        if code != 0:
-            raise GitError(f"Git add failed: {err}")
+        raise GitOpsReadOnlyError()
 
     async def commit(self, message: str):
-        """执行 git commit"""
-        await self._ensure_git_config()
-        code, out, err = await self.run("commit", "-m", message)
-        if code != 0:
-            # 如果是 nothing to commit，忽略错误
-            if "nothing to commit" in out.lower() or "nothing to commit" in err.lower():
-                return
-            raise GitError(f"Git commit failed: {err}")
+        raise GitOpsReadOnlyError()
 
     async def push(self):
-        """执行 git push"""
-        await self._ensure_git_config()
-        code, out, err = await self.run("push")
-        if code != 0:
-            # 如果是因为没有 upstream，自动设置并重试
-            if "no upstream branch" in err.lower():
-                logger.info(
-                    "No upstream branch detected, setting upstream to origin/main"
-                )
-                code, out, err = await self.run(
-                    "push", "--set-upstream", "origin", "main"
-                )
-                if code != 0:
-                    raise GitError(f"Git push failed: {err}")
-            else:
-                raise GitError(f"Git push failed: {err}")
+        raise GitOpsReadOnlyError()

@@ -15,6 +15,17 @@ class GitOpsError(BaseAppException):
     pass
 
 
+class GitOpsReadOnlyError(GitOpsError):
+    """网站仅从 Git 导入内容，不允许反向导出或推送。"""
+
+    def __init__(self):
+        super().__init__(
+            message="Git 同步仅支持 Git → 数据库，请在内容仓库修改源文件；网站不会回写或推送 Git。",
+            status_code=409,
+            error_code="GITOPS_READ_ONLY",
+        )
+
+
 class GitOpsConfigurationError(GitOpsError):
     """配置或环境错误（致命）"""
 
@@ -131,15 +142,28 @@ class ErrorCollector(Protocol):
 
 @asynccontextmanager
 async def collect_errors(
-    stats: ErrorCollector, context: str, extra_info: Optional[Dict[str, Any]] = None
+    stats: ErrorCollector,
+    context: str,
+    extra_info: Optional[Dict[str, Any]] = None,
+    session=None,
 ):
     """
     上下文管理器：捕获并记录 GitOps 操作中的错误。
     力求让捕获的错误与全局异常处理器的信息量对齐。
     """
+
+    async def _rollback() -> None:
+        if session is None:
+            return
+        try:
+            await session.rollback()
+        except Exception:
+            logger.exception("Failed to rollback session after GitOps error")
+
     try:
         yield
     except GitOpsError as e:
+        await _rollback()
         # 业务预期内的错误
         error_record = SyncError(
             context=context,
@@ -158,6 +182,7 @@ async def collect_errors(
             logger.warning(log_msg, extra={"details": e.details, **(extra_info or {})})
 
     except Exception as e:
+        await _rollback()
         # 未预期的系统错误 (如之前遇到的 RuntimeWarning 或 缺少 await)
         import traceback
 

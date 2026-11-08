@@ -18,3 +18,7 @@ class GitOpsSettings:
     )
     GIT_SYNC_BRANCH: str = Field(default="main", description="同步的具体分支")
     WEBHOOK_SECRET: str = Field(default="", description="GitHub Webhook Secret")
+    ENABLE_GIT_AUTO_SYNC: bool = Field(
+        default=False,
+        description="是否启用每 5 分钟的 Git → 数据库定时导入（只拉取，不推送）",
+    )

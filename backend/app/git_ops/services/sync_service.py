@@ -5,13 +5,14 @@
 import asyncio
 import logging
 import time
+from pathlib import Path
 
 from app.core.config import settings
 from app.git_ops.components import (
     revalidate_nextjs_cache,
 )
 from app.git_ops.exceptions import GitOpsConfigurationError
-from app.git_ops.schema import SyncStats
+from app.git_ops.schema import SyncError, SyncStats
 from app.posts import cruds as post_crud
 from app.users.model import User
 
@@ -54,9 +55,93 @@ class SyncService(BaseGitOpsService):
             scanned_map = {p.file_path: p for p in scanned_posts}
             logger.info(f"Scanned {len(scanned_posts)} files.")
 
+            # 扫描失败的文件必须进入错误列表，否则本轮会被误判为成功并推进游标。
+            for failed_path, error in getattr(
+                self.scanner, "last_scan_errors", {}
+            ).items():
+                stats.errors.append(
+                    SyncError(
+                        context=f"Scanning {failed_path}",
+                        code="SCAN_ERROR",
+                        message=error,
+                    )
+                )
+
             # 3. 查询数据库
             existing_posts = await post_crud.get_posts_with_source_path(self.session)
-            existing_map = {p.source_path: p for p in existing_posts}
+            existing_map = {
+                p.source_path.replace("\\", "/"): p
+                for p in existing_posts
+                if p.source_path
+            }
+
+            # 全量扫描安全性校验：工作区扫描结果必须覆盖 Git 跟踪的 Markdown。
+            # 目录为空、挂载错误或权限问题不能把数据库文章误判为“已删除”。
+            if not (self.content_dir / ".git").exists():
+                logger.warning(
+                    "Content directory is not a Git repository; "
+                    "skipping tracked-file safety check."
+                )
+            else:
+                try:
+                    tracked_files = set(
+                        await self.git_client.list_tracked_markdown_files()
+                    )
+                except Exception as exc:
+                    self.scanner.last_scan_incomplete = True
+                    stats.errors.append(
+                        SyncError(
+                            context="Checking tracked files",
+                            code="SCAN_INCOMPLETE",
+                            message=f"无法读取 Git 跟踪文件列表: {exc}",
+                        )
+                    )
+                else:
+                    ignore_names = {
+                        "README.MD",
+                        "README.MDX",
+                        "AGENTS.MD",
+                        "CLAUDE.MD",
+                        "LICENSE.MD",
+                        "CONTRIBUTING.MD",
+                        "CHANGELOG.MD",
+                        ".GITIGNORE",
+                    }
+                    expected_paths = {
+                        path
+                        for path in tracked_files
+                        if not any(
+                            part.startswith(".") for part in Path(path).parts
+                        )
+                        and Path(path).name.upper() not in ignore_names
+                    }
+                    missing_paths = expected_paths - set(scanned_map)
+                    if missing_paths:
+                        self.scanner.last_scan_incomplete = True
+                        preview = ", ".join(sorted(missing_paths)[:5])
+                        stats.errors.append(
+                            SyncError(
+                                context="Checking scanned files",
+                                code="SCAN_INCOMPLETE",
+                                message=(
+                                    f"全量扫描缺少 {len(missing_paths)} 个 Git 跟踪文件: "
+                                    f"{preview}"
+                                ),
+                            )
+                        )
+
+            if existing_map and not scanned_map:
+                self.scanner.last_scan_incomplete = True
+                stats.errors.append(
+                    SyncError(
+                        context="Full sync safety check",
+                        code="SCAN_INCOMPLETE",
+                        message=(
+                            "扫描结果为空但数据库仍有 Git 来源文章，"
+                            "已跳过孤儿删除；请检查 CONTENT_DIR 和仓库挂载。"
+                        ),
+                    )
+                )
 
             # 4. 获取操作用户
             operating_user = await self._get_operating_user(default_user)
@@ -69,27 +154,19 @@ class SyncService(BaseGitOpsService):
 
             await self.session.commit()
 
-            # 5. (DB -> Disk) 确保分类索引文件与数据库保持同步
-            await self.sync_processor.sync_categories_to_disk(
-                self.session, self.container.writer, stats
-            )
-
-            # 7. 提交元数据变更到 GitHub
-            if stats.added or stats.updated or stats.deleted:
-                await self.github.auto_commit_metadata(
-                    added_count=len(stats.added),
-                    updated_count=len(stats.updated),
-                    deleted_count=len(stats.deleted),
-                )
-
-            # 8. 刷新缓存
+            # Git 是内容来源；导入只更新数据库，不修改或提交源文件。
+            # 刷新缓存
             if stats.added or stats.updated or stats.deleted:
                 await revalidate_nextjs_cache(
                     settings.FRONTEND_URL, settings.REVALIDATE_SECRET
                 )
 
-            # 9. 保存 hash
-            await self.hash_manager.save_current_hash()
+            # 有失败时保留游标并标记需要全量对账；成功后清除标记并推进游标。
+            if stats.errors:
+                self.hash_manager.mark_failed()
+            else:
+                self.hash_manager.clear_failed()
+                await self.hash_manager.save_current_hash()
 
             stats.duration = time.time() - start_time
             logger.info(
@@ -112,14 +189,22 @@ class SyncService(BaseGitOpsService):
             old_hash: 可选，指定旧的 commit hash（用于 webhook 场景）
             new_hash: 可选，指定新的 commit hash（用于 webhook 场景）
         """
+        if self.hash_manager.needs_full_sync():
+            logger.warning(
+                "Previous sync failed; running a full reconciliation before "
+                "continuing incremental imports."
+            )
+            return await self.sync_all(default_user)
+
         sync_lock = self._get_sync_lock()
 
         if sync_lock.locked():
             logger.warning("GitOps sync is already in progress, waiting for lock...")
 
         async with sync_lock:
+            start_time = time.time()
             # 1. 先 Git Pull (把远程变更拉下来)
-            pull_output, pull_old_hash, pull_new_hash = await self.github.pull()
+            await self.github.pull()
 
             # 2. 再获取变更文件
             # 如果提供了 hash 范围（webhook 场景），使用提供的范围
@@ -131,16 +216,8 @@ class SyncService(BaseGitOpsService):
                 changed_files = await self.hash_manager.get_changed_files_between(
                     old_hash, new_hash
                 )
-            elif pull_old_hash != pull_new_hash:
-                # Pull 产生了变更，使用 pull 前后的 hash
-                logger.info(
-                    f"Using pull hash range: {pull_old_hash[:7]}..{pull_new_hash[:7]}"
-                )
-                changed_files = await self.hash_manager.get_changed_files_between(
-                    pull_old_hash, pull_new_hash
-                )
             else:
-                # Pull 没有变更，使用传统的 last_sync 对比
+                # 始终从上次成功导入的游标开始，避免失败后再次 pull 跳过变更。
                 changed_files = (
                     await self.hash_manager.get_changed_files_since_last_sync()
                 )
@@ -156,6 +233,7 @@ class SyncService(BaseGitOpsService):
             stats = SyncStats()
             if not changed_files:
                 logger.info("No new commits or changed files detected.")
+                stats.duration = time.time() - start_time
                 return stats
 
             logger.info("Starting incremental sync...")
@@ -173,7 +251,11 @@ class SyncService(BaseGitOpsService):
                 existing_posts = await post_crud.get_posts_by_source_paths(
                     self.session, target_paths
                 )
-                existing_map = {p.source_path: p for p in existing_posts}
+                existing_map = {
+                    p.source_path.replace("\\", "/"): p
+                    for p in existing_posts
+                    if p.source_path
+                }
             else:
                 existing_map = {}
 
@@ -184,31 +266,18 @@ class SyncService(BaseGitOpsService):
 
             await self.session.commit()
 
-            # 6. (DB -> Disk) 确保所有分类都有 index.md 并保持同步
-            #    这一步是复用的，无论全量还是增量，都值得检查一遍分类元数据的一致性
-            await self.sync_processor.sync_categories_to_disk(
-                self.session, self.container.writer, stats
-            )
+            if stats.added or stats.updated or stats.deleted:
+                await revalidate_nextjs_cache(
+                    settings.FRONTEND_URL, settings.REVALIDATE_SECRET
+                )
 
-            # 8. 检查是否真的有产出
-            if not stats.added and not stats.updated and not stats.deleted:
-                logger.info("No changes detected in incremental sync.")
-                return stats
-
-            # 9. 提交元数据变更到 GitHub
-            await self.github.auto_commit_metadata(
-                added_count=len(stats.added),
-                updated_count=len(stats.updated),
-                deleted_count=len(stats.deleted),
-            )
-
-            # 10. 刷新缓存
-            await revalidate_nextjs_cache(
-                settings.FRONTEND_URL, settings.REVALIDATE_SECRET
-            )
-
-            # 11. 保存 hash
-            await self.hash_manager.save_current_hash()
+            # 即便只有图片或其他非文章文件变化，也推进成功导入的游标。
+            if stats.errors:
+                self.hash_manager.mark_failed()
+            else:
+                self.hash_manager.clear_failed()
+                await self.hash_manager.save_current_hash()
+            stats.duration = time.time() - start_time
 
             logger.info(
                 f"Incremental sync completed: "

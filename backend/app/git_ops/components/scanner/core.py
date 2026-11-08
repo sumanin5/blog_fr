@@ -18,6 +18,10 @@ class MDXScanner:
     def __init__(self, content_root: Path, path_parser: Optional[PathParser] = None):
         self.content_root = Path(content_root)
         self.path_parser = path_parser or PathParser()
+        # 记录 scan_all 中解析失败的文件，供全量同步决定是否允许删除孤儿记录。
+        self.last_scan_errors: dict[str, str] = {}
+        # 工作区扫描结果是否不完整（例如与 Git 跟踪文件数量不一致）。
+        self.last_scan_incomplete: bool = False
 
         if not self.content_root.exists():
             raise GitOpsConfigurationError(
@@ -27,6 +31,9 @@ class MDXScanner:
     async def scan_file(self, rel_path: str) -> Optional[ScannedPost]:
         """解析单个文件。异常将被统一包装为 ScanError 以便全局处理。"""
 
+        # source_path 在数据库和 Git diff 中统一使用 POSIX 分隔符，避免 Windows
+        # 全量扫描（反斜杠）与 Git 输出（正斜杠）无法匹配。
+        rel_path = Path(rel_path).as_posix()
         full_path = self.content_root / rel_path
         if not full_path.is_file():
             return None
@@ -46,7 +53,7 @@ class MDXScanner:
             is_category_index = is_index and bool(path_info.get("category_slug"))
 
             return ScannedPost(
-                file_path=str(rel_path),
+                file_path=rel_path,
                 content_hash=calc_hash(raw_content),
                 meta_hash=calc_hash(meta_bytes),
                 frontmatter=post.metadata,
@@ -80,8 +87,20 @@ class MDXScanner:
             }
 
         # 1. 发现并收集路径 (单次递归遍历物理磁盘，效率更高)
+        self.last_scan_errors = {}
+        self.last_scan_incomplete = False
         target_path_set = set()
-        ignore_names = {"README.MD", "README.MDX", "LICENSE.MD", ".GITIGNORE"}
+        # 内容仓库约定：说明类文档不是文章，不参与导入。
+        ignore_names = {
+            "README.MD",
+            "README.MDX",
+            "AGENTS.MD",
+            "CLAUDE.MD",
+            "LICENSE.MD",
+            "CONTRIBUTING.MD",
+            "CHANGELOG.MD",
+            ".GITIGNORE",
+        }
 
         # 仅执行一次 rglob，在循环内进行后缀匹配
         for path in self.content_root.rglob("*"):
@@ -110,7 +129,7 @@ class MDXScanner:
 
         async def throttled_scan(rel_p: Path):
             async with sem:
-                return await self.scan_file(str(rel_p))
+                return await self.scan_file(rel_p.as_posix())
 
         tasks = [throttled_scan(p) for p in rel_paths]
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -119,7 +138,9 @@ class MDXScanner:
         scanned_posts = []
         for i, res in enumerate(results):
             if isinstance(res, Exception):
-                logger.error(f"Failed to scan file {rel_paths[i]}: {res}")
+                failed_path = rel_paths[i].as_posix()
+                self.last_scan_errors[failed_path] = str(res)
+                logger.error(f"Failed to scan file {failed_path}: {res}")
             elif res:
                 scanned_posts.append(res)
 

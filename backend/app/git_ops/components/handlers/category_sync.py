@@ -56,26 +56,24 @@ async def handle_category_sync(
         await session.flush()  # 获取 ID
 
     # 2. 更新元数据
-    # Description (Body) - 转换内部链接
+    # Description (Body) - 转换内部链接；空正文也要清空旧描述。
     content = scanned.content
-    if content:
-        # 转换分类索引中的内部链接
-        from app.git_ops.components.processors.content import ContentProcessor
-        content_processor = ContentProcessor()
-        content = await content_processor._transform_internal_links(
-            content, scanned.file_path, session
-        )
-        category.description = content
+    from app.git_ops.components.processors.content import ContentProcessor
+    content_processor = ContentProcessor()
+    category.description = await content_processor._transform_internal_links(
+        content or "", scanned.file_path, session
+    )
 
     # Frontmatter overrides
     if scanned.frontmatter.get("title"):
         category.name = scanned.frontmatter["title"]
 
     # Excerpt
-    if scanned.frontmatter.get("excerpt"):
-        category.excerpt = scanned.frontmatter["excerpt"]
+    category.excerpt = scanned.frontmatter.get("excerpt") or ""
 
-    # 处理 Icon
+    # 处理 Icon：源文件没有 icon 时清空旧值。
+    category.icon_preset = None
+    category.icon_id = None
     if "icon" in scanned.frontmatter:
         icon_val = scanned.frontmatter["icon"]
         if icon_val:
@@ -100,21 +98,21 @@ async def handle_category_sync(
                         f"⚠️ Could not resolve icon: {icon_val}, will be ignored"
                     )
 
-    if "sort" in scanned.frontmatter or "order" in scanned.frontmatter:
-        category.sort_order = int(
-            scanned.frontmatter.get("sort") or scanned.frontmatter.get("order") or 0
-        )
-
-    if "hidden" in scanned.frontmatter:
-        category.is_active = not scanned.frontmatter.get("hidden", False)
+    category.sort_order = int(
+        scanned.frontmatter.get("sort")
+        or scanned.frontmatter.get("order")
+        or 0
+    )
+    category.is_active = not bool(scanned.frontmatter.get("hidden", False))
 
     # 🆕 Post Sort Order
+    from app.posts.model import PostSortOrder
+
     post_sort_val = scanned.frontmatter.get("post_sort") or scanned.frontmatter.get(
         "post_sort_order"
     )
+    category.post_sort_order = PostSortOrder.PUBLISHED_AT_DESC
     if post_sort_val:
-        from app.posts.model import PostSortOrder
-
         try:
             # 尝试直接匹配 Enum 值
             category.post_sort_order = PostSortOrder(post_sort_val)
@@ -125,6 +123,8 @@ async def handle_category_sync(
             )
 
     # 3. 处理 Cover
+    # 先清空旧值，确保 Git 中没有的封面不会残留。
+    category.cover_media_id = None
     # 优先使用 cover_media_id（如果有效）
     if scanned.frontmatter.get("cover_media_id"):
         from uuid import UUID
@@ -164,39 +164,12 @@ async def handle_category_sync(
                 logger.info(
                     f"✅ Resolved cover from filename: {cover_val} -> {cover_id}"
                 )
+        else:
+            # Git 中没有封面时清空旧封面。
+            category.cover_media_id = None
 
     session.add(category)
     # 不提交，由调用方提交
 
-    # 4. 回写 category_id 到 index.md
-    await _write_category_metadata_back(
-        session, content_dir, scanned.file_path, category
-    )
-
     logger.info(f"Updated category metadata for {category.slug}")
     return category
-
-
-async def _write_category_metadata_back(
-    session: AsyncSession,
-    content_dir: Path,
-    file_path: str,
-    category: Category,
-):
-    """回写分类 ID 到 index.md 的 frontmatter"""
-    from app.git_ops.components.writer.file_operator import update_frontmatter_metadata
-
-    metadata = {
-        "category_id": str(category.id),
-    }
-
-    # 如果有 cover_media_id，也回写
-    if category.cover_media_id:
-        metadata["cover_media_id"] = str(category.cover_media_id)
-
-    # 如果有 icon_id，也回写
-    if category.icon_id:
-        metadata["icon_id"] = str(category.icon_id)
-
-    await update_frontmatter_metadata(content_dir, file_path, metadata)
-    logger.info(f"Wrote category metadata back to {file_path}")

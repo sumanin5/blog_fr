@@ -2,7 +2,6 @@ from typing import Annotated
 from uuid import UUID
 
 from app.core.db import get_async_session
-from app.git_ops.background_tasks import run_background_commit
 from app.posts import services, utils
 from app.posts.model import PostType
 from app.posts.schemas import (
@@ -14,7 +13,7 @@ from app.posts.schemas import (
 )
 from app.users.dependencies import get_current_active_user
 from app.users.model import User
-from fastapi import APIRouter, BackgroundTasks, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .doc import (
@@ -54,17 +53,9 @@ async def create_post_by_type(
     post_in: PostCreate,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    background_tasks: BackgroundTasks,
 ):
     post_in.post_type = post_type
     post = await services.create_post(session, post_in, current_user.id)
-
-    # 触发自动导出并提交到 Git
-    background_tasks.add_task(
-        run_background_commit,
-        message=f"feat: create post '{post.title}'",
-        post_id=str(post.id),
-    )
 
     return post
 
@@ -81,16 +72,8 @@ async def update_post_by_type(
     post_in: PostUpdate,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    background_tasks: BackgroundTasks,
 ):
     post = await services.update_post(session, post_id, post_in, current_user)
-
-    # 触发自动导出并提交到 Git
-    background_tasks.add_task(
-        run_background_commit,
-        message=f"chore: update post '{post.title}'",
-        post_id=str(post.id),
-    )
 
     return post
 
@@ -106,20 +89,7 @@ async def delete_post_by_type(
     post_id: UUID,
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    background_tasks: BackgroundTasks,
 ):
-    post = await services.get_post_detail(session, post_id, post_type, current_user)
-    post_title = post.title if post else str(post_id)
-
     await services.delete_post(session, post_id, current_user)
-
-    # 删除文章时，需要删除对应的文件
-    # 注意：这里需要在删除数据库记录之前获取 source_path
-    # 然后手动删除文件并提交
-    background_tasks.add_task(
-        run_background_commit,
-        message=f"chore: delete post '{post_title}'",
-        post_id=None,  # 删除操作不需要导出，只需要提交删除的文件
-    )
 
     return None

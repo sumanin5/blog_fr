@@ -31,6 +31,9 @@ class TagsProcessor(FieldProcessor):
                 session, tags, auto_create=not dry_run
             )
             result["tags"] = tags
+        else:
+            # 源文件没有 tags 时清空旧关联，保持 Git 为唯一来源。
+            result["tags"] = []
 
     async def _resolve_tag_ids(
         self, session: AsyncSession, tag_names: List[str], auto_create: bool = True

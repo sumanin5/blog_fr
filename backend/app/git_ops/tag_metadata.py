@@ -6,76 +6,40 @@ GITOPS_TAG_METADATA = {
     "description": """
 ## GitOps 自动化同步模块 🚀
 
-**⚠️ 权限要求：所有接口都需要超级管理员权限**
+**⚠️ 权限要求：管理接口需要超级管理员权限；`/webhook` 使用 HMAC 签名验证**
 
-实现 Git 仓库与数据库的双向自动化同步，让内容管理更加高效。
+实现 Git 仓库到数据库的单向内容导入。
 
 ### 核心理念
 
-**Git-First 策略**：Git 仓库是内容的唯一真实来源（Single Source of Truth）
+Git 仓库是文章、分类和 Frontmatter 的唯一内容来源；数据库是可重建的读模型。
 
 ```
-Git 仓库 (Markdown 文件) ⟷ 数据库 (结构化数据) ⟷ 前端展示
+Git 仓库 (Markdown 文件) → 数据库 (结构化数据) → 前端展示
 ```
 
-### 🔄 双向同步机制
-
-#### 📥 Git → 数据库（同步）
-
-将 Git 仓库中的 Markdown 文件同步到数据库：
+### Git → 数据库
 
 ```
 1. 扫描 content/ 目录下的所有 .md/.mdx 文件
 2. 解析 Frontmatter 元数据（标题、分类、标签等）
-3. 匹配数据库中的文章（通过 source_path 或 slug）
+3. 匹配数据库中的文章（通过 source_path）
 4. 创建新文章 / 更新已有文章 / 删除不存在的文章
 5. 刷新前端缓存
 ```
 
 **支持的同步模式**：
 
-##### 1️⃣ 全量同步（Full Sync）
-- **触发**：`POST /sync?force_full=true`
-- **行为**：扫描所有文件，完整对比
-- **耗时**：较长（取决于文件数量）
-- **适用**：首次同步、数据修复
+- 全量同步：`POST /sync?force_full=true`，扫描所有文件，适合首次同步和数据修复。
+- 增量同步：`POST /sync`（默认），只处理上次成功游标之后的变化，适合 webhook 和日常同步。
+- 单篇重导：`POST /posts/{id}/resync-metadata`，重新读取一个 Git 文件。
 
-##### 2️⃣ 增量同步（Incremental Sync）⚡
-- **触发**：`POST /sync`（默认）
-- **行为**：只处理变更的文件（基于 Git diff）
-- **耗时**：很快（只处理变更）
-- **适用**：日常同步、Webhook 触发
+### 单向边界
 
-**增量同步原理**：
-```bash
-# 1. 记录上次同步的 commit hash
-echo "abc123" > content/.gitops_last_sync
-
-# 2. 获取变更文件
-git diff --name-only abc123..HEAD
-
-# 3. 只处理变更的文件
-- 新增文件 → 创建文章
-- 修改文件 → 更新文章
-- 删除文件 → 删除文章
-```
-
-#### 📤 数据库 → Git（回写）
-
-将数据库变更自动提交到 Git：
-
-```
-1. 用户在后台创建/编辑文章
-2. 后台任务自动将文章写入 Markdown 文件
-3. 自动执行 git add, commit, push
-4. 保持 Git 仓库与数据库同步
-```
-
-**回写时机**：
-- ✅ 创建文章：写入新文件 + 回签 UUID
-- ✅ 更新文章：更新文件内容和 Frontmatter
-- ✅ 删除文章：删除对应文件
-- ✅ 移动文章：重命名文件路径
+- 网站不会回写 Markdown/MDX、Frontmatter、图片链接或分类 index.md。
+- 网站不会执行 `git add`、`commit` 或 `push`。
+- 旧版 `POST /push` 固定返回 `409 GITOPS_READ_ONLY`。
+- 后台文章/分类 CRUD 只修改数据库；Git 来源内容可能被后续同步覆盖。
 
 ### 🔍 预览模式（Dry Run）
 
@@ -124,8 +88,8 @@ status: "published"
 author: "username"
 category: "技术"
 tags: ["Python", "FastAPI"]
-cover: "cover.jpg"
-featured: true
+cover: "assets/cover.jpg"
+is_featured: true
 ---
 
 # 文章内容
@@ -134,15 +98,15 @@ featured: true
 ```
 
 **字段说明**：
-- `title`: 文章标题（必填）
-- `slug`: URL 标识（必填，唯一）
-- `date`: 发布日期（可选，默认当前时间）
-- `status`: 状态（draft/published/archived）
-- `author`: 作者用户名（可选，默认 superadmin）
-- `category`: 分类名称（可选，自动创建）
-- `tags`: 标签列表（可选，自动创建）
-- `cover`: 封面图片文件名（可选）
-- `featured`: 是否推荐（可选，默认 false）
+- `title`: 文章标题（可选，缺省用文件名）
+- `slug`: URL 标识（可选；显式值原样保留，缺省生成稳定路径哈希 slug）
+- `date`: 发布日期（可选）
+- `status`: 状态（draft/published；缺省 draft）
+- `author`: 作者用户名（必填，必须是已存在用户）
+- `category`: 分类名称（可选，按目录推导）
+- `tags`: 标签列表（可选，不存在的标签会创建）
+- `cover`: 封面相对路径或文件名（可选）
+- `is_featured`: 是否推荐（可选，默认 false）
 
 ### 🗂️ 文件组织结构
 
@@ -191,10 +155,10 @@ POST /posts/{post_id}/resync-metadata
 
 ### 🛡️ 错误处理
 
-- **单文件错误不影响整体**：某个文件解析失败，其他文件继续处理
+- **单文件错误不影响整体**：某个文件解析失败，其他文件继续处理，但游标不会推进
 - **详细错误日志**：记录每个错误的上下文和堆栈
 - **错误收集**：所有错误汇总在响应中返回
-- **自动回退**：增量同步失败自动回退到全量同步
+- **重试**：上次失败后，下一次增量同步会先执行全量对账；扫描不完整时跳过孤儿删除
 
 ### 🚀 性能优化
 
@@ -206,12 +170,11 @@ POST /posts/{post_id}/resync-metadata
 
 ### 📚 相关文档
 
-- [GitOps 架构设计](./ARCHITECTURE.md)
-- [增量同步原理](./docs/incremental-sync.md)
-- [Frontmatter 规范](./docs/frontmatter-spec.md)
+- [Git → 数据库单向同步](../../docs/ONE_WAY_SYNC.md)
+- [Frontmatter 字段规范](../../../GIT_SYNC_GUIDE.md)
     """,
     "externalDocs": {
-        "description": "查看 GitOps 完整架构文档",
-        "url": "https://github.com/your-repo/blob/main/backend/app/git_ops/ARCHITECTURE.md",
+        "description": "查看 Git → 数据库单向同步说明",
+        "url": "https://github.com/sumanin5/blog_fr/blob/main/backend/docs/ONE_WAY_SYNC.md",
     },
 }

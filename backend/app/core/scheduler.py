@@ -2,7 +2,7 @@
 定时任务调度器
 
 使用 APScheduler 实现定时任务，支持：
-- Git 自动同步（拉取和推送）
+- Git 单向同步（拉取到数据库）
 - 缓存清理
 - 数据统计
 
@@ -12,7 +12,6 @@
 """
 
 import logging
-from datetime import datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -51,14 +50,23 @@ async def sync_from_git_task():
     执行频率：每 5 分钟
     """
     from app.core.db import AsyncSessionLocal
+    from app.git_ops.exceptions import GitOpsConfigurationError
     from app.git_ops.service import GitOpsService
 
     logger.info("🔄 [Scheduled Task] Starting Git sync (pull)...")
 
+    service = None
     try:
         async with AsyncSessionLocal() as session:
             service = GitOpsService(session)
-            stats = await service.sync_incremental()
+            try:
+                stats = await service.sync_incremental()
+            except GitOpsConfigurationError:
+                # 首次部署没有游标时自动退化为全量导入。
+                logger.info(
+                    "No sync cursor found; falling back to full import."
+                )
+                stats = await service.sync_all()
 
             logger.info(
                 f"✅ [Scheduled Task] Git sync completed: "
@@ -73,39 +81,11 @@ async def sync_from_git_task():
 
     except Exception as e:
         logger.error(f"❌ [Scheduled Task] Git sync failed: {e}", exc_info=True)
-
-
-async def push_to_git_task():
-    """
-    定时任务：将数据库修改推送到 Git
-
-    执行频率：每小时
-    """
-    from app.core.db import AsyncSessionLocal
-    from app.git_ops.service import GitOpsService
-
-    logger.info("📤 [Scheduled Task] Starting Git push...")
-
-    try:
-        async with AsyncSessionLocal() as session:
-            service = GitOpsService(session)
-
-            # 1. 导出所有需要同步的文章
-            stats = await service.export_to_git()
-
-            if stats.updated:
-                # 2. 提交并推送
-                message = f"Auto-commit: {len(stats.updated)} file(s) updated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                await service.auto_commit(message)
-
-                logger.info(
-                    f"✅ [Scheduled Task] Git push completed: {len(stats.updated)} file(s)"
-                )
-            else:
-                logger.info("ℹ️  [Scheduled Task] No changes to push")
-
-    except Exception as e:
-        logger.error(f"❌ [Scheduled Task] Git push failed: {e}", exc_info=True)
+        if service is not None:
+            try:
+                service.container.hash_manager.mark_failed()
+            except Exception:
+                logger.exception("Failed to mark scheduled sync for full retry")
 
 
 async def cleanup_old_logs_task():
@@ -154,17 +134,6 @@ def setup_scheduled_tasks():
         )
         logger.info("✅ Scheduled task registered: sync_from_git (every 5 minutes)")
 
-    # 任务 2：每小时推送到 Git
-    if settings.ENABLE_GIT_AUTO_PUSH:
-        scheduler.add_job(
-            push_to_git_task,
-            trigger=IntervalTrigger(hours=1),
-            id="push_to_git",
-            name="推送修改到 Git",
-            replace_existing=True,
-        )
-        logger.info("✅ Scheduled task registered: push_to_git (every hour)")
-
     # 任务 3：每天凌晨 2 点清理日志
     scheduler.add_job(
         cleanup_old_logs_task,
@@ -176,8 +145,9 @@ def setup_scheduled_tasks():
     logger.info("✅ Scheduled task registered: cleanup_logs (daily at 2:00 AM)")
 
     # 启动调度器
-    scheduler.start()
-    logger.info("🚀 Scheduler started successfully")
+    if not scheduler.running:
+        scheduler.start()
+        logger.info("🚀 Scheduler started successfully")
 
 
 def shutdown_scheduler():

@@ -46,7 +46,9 @@ class Frontmatter(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
         from_attributes=True,
-        extra="allow",
+        # 只接受模型声明的字段，避免 frontmatter 额外字段覆盖
+        # source_path、git_hash 等同步器维护的数据库字段。
+        extra="ignore",
     )
 
     @field_validator("tags", mode="before")

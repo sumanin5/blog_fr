@@ -107,6 +107,13 @@ class CategoryProcessor(FieldProcessor):
                 await session.rollback()
                 # 继续尝试 fallback
 
+        if not auto_create:
+            # 预览/严格模式不写数据库，也不隐式创建默认分类。
+            logger.info(
+                f"ℹ️ Category '{category_value}' not found; auto_create is disabled."
+            )
+            return None
+
         if category_value != default_slug:
             logger.info(f"⚠️ Falling back to default category: {default_slug}")
             return await self._resolve_category_id(

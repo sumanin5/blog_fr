@@ -8,6 +8,7 @@ GitOps 主服务 - 门面模式
 import logging
 
 from app.git_ops.container import GitOpsContainer
+from app.git_ops.exceptions import GitOpsReadOnlyError
 from app.git_ops.schema import PreviewResult, SyncStats
 from app.users.model import User
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -63,15 +64,11 @@ class GitOpsService:
     # ========================================
 
     async def auto_commit(self, message: str):
-        """执行自动提交和推送
-
-        Args:
-            message: 提交信息
-        """
-        return await self.container.commit_service.auto_commit(message)
+        """旧版自动提交入口：单向同步模式下拒绝执行。"""
+        raise GitOpsReadOnlyError()
 
     async def export_to_git(
         self, post_id: str = None, default_user: User = None
     ) -> SyncStats:
-        """执行数据库到 Git 的同步导"""
-        return await self.container.export_service.export_to_git(post_id, default_user)
+        """旧版数据库导出入口：单向同步模式下拒绝执行。"""
+        raise GitOpsReadOnlyError()

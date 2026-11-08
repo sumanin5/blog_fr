@@ -24,35 +24,24 @@ class ContentProcessor(FieldProcessor):
 
         # 转换内部文章链接 (e.g., [text](./other.md) -> [text](/posts/slug))
         transformed_content = await self._transform_internal_links(
-            content, scanned.file_path, session
+            content, scanned.file_path, session, dry_run=dry_run
         )
 
-        # 🆕 如果内容发生了变化，且不是 dry_run，则写回源文件
-        if transformed_content != content:
-            if not dry_run:
-                await self._write_transformed_content(
-                    scanned.file_path, transformed_content
-                )
-                import logging
-
-                logger = logging.getLogger(__name__)
-                logger.info(
-                    f"✓ Transformed and wrote back content: {scanned.file_path}"
-                )
-
-            # 无论是否 dry_run，都更新内存中的 content 以便后续处理/对比
-            content = transformed_content
-
-        result["content_mdx"] = content
+        # 网站链接和媒体 URL 只存入数据库，Git 中保留原始相对链接。
+        result["content_mdx"] = transformed_content
 
         # Title fallback：如果没有 title，使用文件名
         if not result.get("title"):
             result["title"] = Path(scanned.file_path).stem
 
     async def _transform_image_paths(
-        self, content: str, mdx_file_path: str, session: AsyncSession
+        self,
+        content: str,
+        mdx_file_path: str,
+        session: AsyncSession,
+        dry_run: bool = False,
     ) -> str:
-        """转换 Markdown 图片路径为媒体库 URL"""
+        """转换 Markdown 图片路径为媒体库 URL；dry_run 时不写媒体库。"""
         from app.core.config import settings
 
         # 匹配 Markdown 图片语法：![alt](path)
@@ -65,6 +54,10 @@ class ContentProcessor(FieldProcessor):
             # 判断是否需要处理
             if not self._should_process_image(image_path):
                 return match.group(0)  # 保持原样
+
+            # 预览模式只读，不上传图片
+            if dry_run:
+                return match.group(0)
 
             # 上传图片并获取 media_id
             media_id = await self._upload_and_get_media_id(
@@ -101,11 +94,16 @@ class ContentProcessor(FieldProcessor):
         return content
 
     async def _transform_internal_links(
-        self, content: str, mdx_file_path: str, session: AsyncSession
+        self,
+        content: str,
+        mdx_file_path: str,
+        session: AsyncSession,
+        dry_run: bool = False,
     ) -> str:
         """
         批量转换 Markdown 内部链接
         例如: [另篇文章](./security/firewall.md) -> [另篇文章](/posts/firewall-slug-xyz)
+        dry_run 时只做只读解析，不写媒体库。
         """
         import logging
         from pathlib import Path
@@ -116,7 +114,9 @@ class ContentProcessor(FieldProcessor):
         logger = logging.getLogger(__name__)
 
         # 1. 先处理图片路径转换（保持原有逻辑独立性）
-        content = await self._transform_image_paths(content, mdx_file_path, session)
+        content = await self._transform_image_paths(
+            content, mdx_file_path, session, dry_run=dry_run
+        )
 
         # 2. 匹配 Markdown 链接语法：[text](path.md)
         # 排除图片链接 (![), 排除网页链接 (http), 必须以 .md 或 .mdx 结尾
@@ -172,8 +172,10 @@ class ContentProcessor(FieldProcessor):
             target_info = slug_map.get(target_rel_path)
             if target_info:
                 slug, post_type = target_info
+                # 数据库查询通常返回字符串，测试或 ORM 对象可能返回枚举。
+                post_type_value = getattr(post_type, "value", post_type)
                 # 必须包含 post_type 路径段，以匹配详情页路由 /posts/[postType]/[slug]
-                new_url = f"/posts/{post_type}/{slug}"
+                new_url = f"/posts/{post_type_value}/{slug}"
                 replacement = f"[{text}]({new_url})"
                 content = (
                     content[: match.start()] + replacement + content[match.end() :]
@@ -216,41 +218,6 @@ class ContentProcessor(FieldProcessor):
             return True
 
         return False
-
-    async def _write_transformed_content(self, file_path: str, content: str):
-        """🆕 将转换后的内容写回源文件（只更新正文，保留 frontmatter）"""
-        import asyncio
-        from pathlib import Path
-
-        import frontmatter
-        from app.core.config import settings
-
-        full_path = Path(settings.CONTENT_DIR) / file_path
-
-        try:
-            # 读取原文件（保留 frontmatter）
-            def _read():
-                with open(full_path, "r", encoding="utf-8") as f:
-                    return frontmatter.load(f)
-
-            post = await asyncio.to_thread(_read)
-
-            # 只更新正文
-            post.content = content
-
-            # 写回文件
-            def _write():
-                with open(full_path, "w", encoding="utf-8") as f:
-                    f.write(frontmatter.dumps(post))
-
-            await asyncio.to_thread(_write)
-
-        except Exception as e:
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to write transformed content to {file_path}: {e}")
-            # 不抛出异常，继续使用转换后的内容（即使写回失败）
 
     async def _upload_and_get_media_id(
         self, relative_path: str, mdx_file_path: str, session: AsyncSession

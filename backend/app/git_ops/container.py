@@ -7,7 +7,6 @@ from app.git_ops.components.handlers.file_processor import SyncProcessor
 from app.git_ops.components.hash_manager import HashManager
 from app.git_ops.components.scanner import MDXScanner
 from app.git_ops.components.serializer import PostSerializer
-from app.git_ops.components.writer import FileWriter
 from app.git_ops.git_client import GitClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -22,9 +21,6 @@ class GitOpsContainer:
         # 核心组件初始化
         self.scanner = MDXScanner(self.content_dir)
         self.serializer = PostSerializer(session)
-        self.writer = FileWriter(
-            session=session, content_dir=self.content_dir, serializer=self.serializer
-        )
         self.git_client = GitClient(self.content_dir)
         self.github = GitHubComponent(self.content_dir, self.git_client)
         self.hash_manager = HashManager(self.content_dir, self.git_client)

@@ -17,26 +17,26 @@ TRIGGER_SYNC = """
   返回：
   ```json
   {
-      "total_scanned": 10,
-      "created": 2,
-      "updated": 3,
-      "deleted": 1,
+      "added": ["articles/tech/new-post.md"],
+      "updated": ["articles/tech/existing-post.md"],
+      "deleted": ["articles/tech/removed-post.md"],
       "skipped": 4,
-      "errors": []
+      "errors": [],
+      "duration": 1.23
   }
   ```
 
   字段说明：
-  - total_scanned: 扫描的文件总数
-  - created: 新创建的文章数
-  - updated: 更新的文章数
-  - deleted: 删除的文章数
-  - skipped: 跳过的文件数（未变更）
-  - errors: 错误列表
+  - added: 新导入的文件路径列表
+  - updated: 更新过的文件路径列表
+  - deleted: 删除的文件路径列表
+  - skipped: 跳过的文件数
+  - errors: 错误列表；有错误时游标不会推进
+  - duration: 耗时（秒）
 
   示例：
-  - POST /git-ops/sync - 增量同步
-  - POST /git-ops/sync?force_full=true - 全量同步
+  - POST /api/v1/ops/git/sync - 增量同步
+  - POST /api/v1/ops/git/sync?force_full=true - 全量同步
 
   错误码：
   - 401: 未登录
@@ -44,9 +44,11 @@ TRIGGER_SYNC = """
   - 500: Git 操作失败
 
   注意：
-  - 增量同步基于 Git commit 历史，速度快
+  - 增量同步基于上次成功同步的 Git 游标，速度快
   - 全量同步会扫描所有文件，适合修复数据不一致
-  - 同步过程中会自动处理图片上传和标签创建
+  - 同步过程中会自动处理图片上传和标签创建，但结果只写入数据库
+  - 不会回写 Markdown/MDX、Frontmatter、图片链接或分类 index.md
+  - 失败时不会推进游标，修复后可重试
   - 建议在低峰期执行全量同步
   """
 PREVIEW_SYNC = """
@@ -93,7 +95,7 @@ PREVIEW_SYNC = """
 ```
 
 示例：
-- GET /git-ops/preview
+- GET /api/v1/ops/git/preview
 
 错误码：
 - 401: 未登录
@@ -134,7 +136,7 @@ RESYNC_POST_METADATA = """
 ```
 
 示例：
-- POST /git-ops/posts/550e8400-e29b-41d4-a716-446655440000/resync-metadata
+- POST /api/v1/ops/git/posts/550e8400-e29b-41d4-a716-446655440000/resync-metadata
 
 错误码：
 - 400: 文章没有关联的 Git 文件（source_path 为空）
@@ -145,7 +147,7 @@ RESYNC_POST_METADATA = """
 
 注意：
 - 只适用于通过 Git 同步创建的文章（有 source_path）
-- 不会修改文章内容，只更新元数据（标题、分类、标签等）
+- 会重新读取正文和元数据（标题、分类、标签等），但不会写回源文件
 - 会自动处理标签的创建和关联
 """
 GITHUB_WEBHOOK = """
@@ -161,7 +163,7 @@ GITHUB_WEBHOOK = """
 
 配置要求：
 1. 在 GitHub 仓库设置中配置 Webhook
-    - Payload URL: https://your-domain.com/api/v1/git-ops/webhook
+    - Payload URL: https://your-domain.com/api/v1/ops/git/webhook
     - Content type: application/json
     - Secret: 与环境变量 WEBHOOK_SECRET 一致
     - Events: 选择 "Just the push event"
@@ -189,21 +191,22 @@ GITHUB_WEBHOOK = """
 5. 立即返回响应（不等待同步完成）
 
 示例：
-- POST /git-ops/webhook
+- POST /api/v1/ops/git/webhook
   ```
   X-Hub-Signature-256: sha256=xxx
   ```
 
 错误码：
-- 400: 签名验证失败
-- 400: 缺少签名头
+- 401: 签名验证失败
+- 401: 缺少签名头
 - 500: 后台任务启动失败
 
 注意：
 - 签名验证失败会抛出异常，拒绝请求
 - 同步任务在后台异步执行，不会阻塞响应
-- 建议配置 Webhook 重试机制
-- 可以在日志中查看同步结果
+- `[skip ci]` 不会阻止内容导入
+- 重复通知由同步锁和成功游标处理，失败的通知可以重试
+- 不会产生网站侧的回写提交
 """
 
 

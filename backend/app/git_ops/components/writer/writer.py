@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from app.git_ops.components.serializer import PostSerializer
-from app.git_ops.exceptions import FileOpsError, GitOpsConfigurationError
+from app.git_ops.exceptions import GitOpsConfigurationError, GitOpsReadOnlyError
 from app.posts.model import Post
 
 from .file_operator import FileOperator
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class FileWriter:
-    """物理文件写入器 - 协调器职责"""
+    """旧版文件写入器；单向同步模式下所有写方法都会拒绝执行。"""
 
     def __init__(
         self,
@@ -46,107 +46,13 @@ class FileWriter:
         category_slug: Optional[str] = None,
         tags: Optional[List[str]] = None,
     ) -> str:
-        """执行文章写入并处理文件位移逻辑"""
-        try:
-            # 1. 序列化内容
-            content = self.serializer.dump_to_string(post, tags, category_slug)
-
-            # 2. 计算新路径
-            (
-                target_abs_path,
-                target_relative_path,
-            ) = await self.path_calculator.calculate_target_path(post, category_slug)
-
-            # 3. 处理重命名/移动
-            if old_post and old_post.source_path:
-                old_abs_path = self.content_dir / old_post.source_path
-                if old_post.source_path != target_relative_path:
-                    if old_abs_path.exists():
-                        logger.info(
-                            f"Moving file: {old_post.source_path} -> {target_relative_path}"
-                        )
-                        self.file_operator.move_file(old_abs_path, target_abs_path)
-                    else:
-                        logger.warning(
-                            f"Old file not found for moving: {old_post.source_path}"
-                        )
-
-            # 4. 执行写入
-            await self.file_operator.write_file(target_abs_path, content)
-
-            return target_relative_path
-        except FileOpsError:
-            raise
-        except Exception as e:
-            raise FileOpsError(
-                "Unexpected error during post write", detail=str(e)
-            ) from e
+        """旧版文章导出入口，单向同步模式下拒绝执行。"""
+        raise GitOpsReadOnlyError()
 
     async def delete_post(self, post: Post):
-        """物理删除文章"""
-        if not post.source_path:
-            return
-
-        abs_path = self.content_dir / post.source_path
-        try:
-            await self.file_operator.delete_file(abs_path)
-        except FileOpsError:
-            raise
-        except Exception as e:
-            raise FileOpsError(
-                "Unexpected error during post delete", path=str(abs_path), detail=str(e)
-            ) from e
+        """旧版物理删除文章入口，单向同步模式下拒绝执行。"""
+        raise GitOpsReadOnlyError()
 
     async def write_category(self, category: Any) -> Path:
-        """将分类元数据写入 index.md"""
-        try:
-            target_path = self.path_calculator.calculate_category_path(category)
-
-            # 构建 metadata
-            meta = {
-                "title": category.name,
-                "hidden": not category.is_active,
-                "category_id": str(category.id),
-            }
-            if category.icon_preset:
-                meta["icon"] = category.icon_preset
-            if category.sort_order != 0:
-                meta["order"] = category.sort_order
-
-            # 添加摘要字段
-            if category.excerpt:
-                meta["excerpt"] = category.excerpt
-
-            # 封面处理（参考 posts 的做法）
-            if category.cover_media_id:
-                # 添加 UUID 格式的 ID
-                meta["cover_media_id"] = str(category.cover_media_id)
-
-                # 如果预加载了 cover_media，添加人类可读的文件名
-                if hasattr(category, "cover_media") and category.cover_media:
-                    cover = category.cover_media
-                    if hasattr(cover, "original_filename"):
-                        meta["cover"] = cover.original_filename
-
-            # 添加 post_sort 字段 (API 更新回写)
-            if category.post_sort_order:
-                # 写入 post_sort 字段，保持与 GIT_SYNC_GUIDE 一致
-                meta["post_sort"] = category.post_sort_order.value
-
-            # 使用 frontmatter 库生成
-            import frontmatter
-
-            post_obj = frontmatter.Post(category.description or "", **meta)
-            content = frontmatter.dumps(post_obj)
-
-            # 确保目录存在
-            if not target_path.parent.exists():
-                target_path.parent.mkdir(parents=True, exist_ok=True)
-
-            await self.file_operator.write_file(target_path, content)
-            logger.info(f"Wrote category index: {target_path}")
-            return target_path
-
-        except Exception as e:
-            logger.error(f"Failed to write category index: {e}")
-            raise FileOpsError("Failed to write category index", detail=str(e)) from e
+        """旧版分类 index.md 回写入口，单向同步模式下拒绝执行。"""
+        raise GitOpsReadOnlyError()

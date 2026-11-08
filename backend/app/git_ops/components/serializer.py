@@ -37,8 +37,12 @@ class PostSerializer:
         self, scanned: ScannedPost, existing_posts: list
     ) -> Tuple[Optional[Post], bool]:
         """匹配文件到对应的 Post (Mapper 功能)"""
-        # 构建索引
-        existing_map = {p.source_path: p for p in existing_posts if p.source_path}
+        # 构建索引；source_path 统一 POSIX，兼容历史 Windows 反斜杠。
+        existing_map = {
+            p.source_path.replace("\\", "/"): p
+            for p in existing_posts
+            if p.source_path
+        }
         existing_by_slug = {p.slug: p for p in existing_posts}
 
         # 1. 先按 source_path 匹配

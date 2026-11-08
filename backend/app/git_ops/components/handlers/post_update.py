@@ -1,7 +1,6 @@
 import logging
 from pathlib import Path
 
-from app.git_ops.components.writer.file_operator import write_post_ids_to_frontmatter
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +23,13 @@ async def handle_post_update(
     from app.posts.schemas import PostUpdate
 
     update_dict = await serializer.from_frontmatter(scanned)
+    # 源文件不能决定数据库身份字段；这些字段只允许同步器维护。
     update_dict.pop("slug", None)
     update_dict.pop("tag_ids", None)
-
-    if is_move:
-        update_dict["source_path"] = file_path
+    update_dict.pop("source_path", None)
+    update_dict.pop("git_hash", None)
+    # 每次都写回规范化后的源路径，顺带修复历史 Windows 反斜杠数据。
+    update_dict["source_path"] = file_path.as_posix()
 
     post_in = PostUpdate(**update_dict)
     updated_post = await post_service.update_post(
@@ -38,15 +39,8 @@ async def handle_post_update(
         current_user=operating_user,
         source_path=file_path.as_posix(),
     )
-    # 预加载所有关系，避免在 write_post_ids_to_frontmatter 中懒加载
-    await session.refresh(updated_post, ["tags", "category", "author", "cover_media"])
-
-    old_post_arg = None if force_write else matched_post
-    await write_post_ids_to_frontmatter(
-        content_dir, file_path, updated_post, old_post_arg, stats
-    )
 
     processed_post_ids.add(matched_post.id)
-    stats.updated.append(str(file_path))
+    stats.updated.append(file_path.as_posix())
 
     return updated_post

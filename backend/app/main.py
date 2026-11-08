@@ -115,6 +115,25 @@ async def startup_event():
         logger.error(f"ip2region 数据库初始化失败: {e}")
         # 不影响应用启动，只是 IP 解析功能不可用
 
+    # 启动可选的 Git → 数据库定时导入和清理任务
+    try:
+        from app.core.scheduler import setup_scheduled_tasks
+
+        setup_scheduled_tasks()
+    except Exception as e:
+        logger.error(f"定时任务启动失败: {e}", exc_info=True)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """关闭定时任务调度器。"""
+    try:
+        from app.core.scheduler import shutdown_scheduler
+
+        shutdown_scheduler()
+    except Exception as e:
+        logger.error(f"定时任务关闭失败: {e}", exc_info=True)
+
 
 @app.get("/")
 async def read_root():

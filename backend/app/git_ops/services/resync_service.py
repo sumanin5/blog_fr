@@ -42,14 +42,15 @@ class ResyncService(BaseGitOpsService):
                 status_code=400, detail="Post is not linked to a git file"
             )
 
-        # 3. 验证文件存在并读取
+        # 3. 验证文件存在并读取（兼容历史 Windows 反斜杠 source_path）
+        source_path = post.source_path.replace("\\", "/")
         try:
-            scanned = await self.scanner.scan_file(post.source_path)
+            scanned = await self.scanner.scan_file(source_path)
             if not scanned:
                 raise FileNotFoundError()
         except (ScanError, FileNotFoundError):
             raise HTTPException(
-                status_code=400, detail=f"File not found on disk: {post.source_path}"
+                status_code=400, detail=f"File not found on disk: {source_path}"
             )
 
         # 4. 获取用户
@@ -60,7 +61,7 @@ class ResyncService(BaseGitOpsService):
         processed_post_ids = {post.id}
 
         # 构造绝对路径
-        file_path = self.content_dir / post.source_path
+        file_path = self.content_dir / source_path
 
         await handle_post_update(
             self.session,

@@ -11,7 +11,8 @@ from app.git_ops.components.handlers.post_create import handle_post_create
 from app.git_ops.components.handlers.post_update import handle_post_update
 from app.git_ops.components.scanner import MDXScanner
 from app.git_ops.components.serializer import PostSerializer
-from app.git_ops.schema import SyncStats
+from app.git_ops.schema import SyncError, SyncStats
+from app.posts import cruds as post_crud
 from app.posts import services as post_service
 from app.posts.model import Post
 from app.users.model import User
@@ -66,7 +67,7 @@ class SyncProcessor:
             try:
                 # 2. 尝试解析链接
                 # 注意：_transform_internal_links 是为了处理磁盘文件上的链接转换
-                # 这里我们直接对 DB 中的 content_mdx 进行转换，如果有变动，则更新 DB 和 磁盘
+                # 只更新数据库中的展示内容，保留 Git 源文件。
                 original_content = post.content_mdx
                 new_content = await processor._transform_internal_links(
                     original_content, post.source_path, session
@@ -78,10 +79,6 @@ class SyncProcessor:
                     post.content_mdx = new_content
                     session.add(post)
 
-                    # 更新磁盘 (物理文件)
-                    await processor._write_transformed_content(
-                        post.source_path, new_content
-                    )
                     count += 1
             except Exception as e:
                 logger.warning(f"⚠️ Failed to resolve links for {post.source_path}: {e}")
@@ -153,6 +150,32 @@ class SyncProcessor:
 
             # 处理文章：判断是新增还是更新
             if file_path not in existing_map:
+                # 移动/改名：如果 frontmatter 有显式 slug，尝试复用旧记录，
+                # 保留数据库 ID、浏览量和互动数据。
+                fm_slug = scanned.frontmatter.get("slug")
+                if fm_slug:
+                    moved_post = await post_crud.get_post_by_slug(
+                        session, str(fm_slug)
+                    )
+                    if moved_post:
+                        logger.info(
+                            f"🔀 Reusing post {moved_post.id} by slug '{fm_slug}' "
+                            f"for new path: {file_path}"
+                        )
+                        await handle_post_update(
+                            session,
+                            moved_post,
+                            scanned,
+                            Path(file_path),
+                            True,
+                            self.serializer,
+                            operating_user,
+                            self.content_dir,
+                            stats,
+                            processed_post_ids,
+                        )
+                        return
+
                 # 新增文章
                 logger.info(f"➕ Creating new post: {file_path}")
                 await handle_post_create(
@@ -183,8 +206,16 @@ class SyncProcessor:
                 )
             return
 
-        # 未知状态
-        logger.warning(f"⚠️  Unknown file status '{status}' for: {file_path}")
+        # 未知状态不能静默跳过，否则游标推进后该文件永远不会被导入。
+        message = f"Unknown Git file status '{status}' for: {file_path}"
+        logger.warning(f"⚠️  {message}")
+        stats.errors.append(
+            SyncError(
+                context=f"Processing {status} {file_path}",
+                code="UNKNOWN_GIT_STATUS",
+                message=message,
+            )
+        )
 
     async def process_scanned_file(
         self,
@@ -227,6 +258,30 @@ class SyncProcessor:
 
         # 处理文章：显式判断是新增还是更新
         if file_path not in existing_map:
+            fm_slug = scanned.frontmatter.get("slug")
+            if fm_slug:
+                reused_post = await post_crud.get_post_by_slug(
+                    session, str(fm_slug)
+                )
+                if reused_post:
+                    logger.info(
+                        f"🔀 Reusing post {reused_post.id} by slug '{fm_slug}' "
+                        f"for new path: {file_path}"
+                    )
+                    await handle_post_update(
+                        session,
+                        reused_post,
+                        scanned,
+                        Path(file_path),
+                        True,
+                        self.serializer,
+                        operating_user,
+                        self.content_dir,
+                        stats,
+                        processed_post_ids,
+                    )
+                    return
+
             # 新增文章
             logger.info(f"➕ Creating new post: {file_path}")
             await handle_post_create(
@@ -279,19 +334,57 @@ class SyncProcessor:
         from app.git_ops.exceptions import collect_errors
 
         # 1. 删除数据库中多余的记录（文件系统中不存在的）
-        for db_path, post in existing_map.items():
-            if db_path not in scanned_map:
-                async with collect_errors(stats, f"Deleting orphaned {db_path}"):
-                    logger.info(f"Deleting orphaned post: {db_path} (slug={post.slug})")
-                    await post_service.delete_post(
-                        session, post.id, current_user=operating_user
-                    )
-                    stats.deleted.append(str(db_path))
+        # 如果本轮扫描有文件解析失败，不能把它当成“文件已删除”，否则会误删
+        # 数据库记录且游标不会推进，造成内容丢失。
+        # 先按显式 slug 识别移动/改名，避免把旧记录当孤儿删除后丢失 ID 和互动数据。
+        reused_post_ids = set()
+        for file_path, scanned in scanned_map.items():
+            if file_path in existing_map or scanned.is_category_index:
+                continue
+            fm_slug = scanned.frontmatter.get("slug")
+            if not fm_slug:
+                continue
+            try:
+                reused_post = await post_crud.get_post_by_slug(
+                    session, str(fm_slug)
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Failed to match moved post by slug %s: %s", fm_slug, exc
+                )
+                continue
+            if reused_post:
+                reused_post_ids.add(reused_post.id)
+
+        scan_errors = getattr(self.scanner, "last_scan_errors", {})
+        scan_incomplete = getattr(self.scanner, "last_scan_incomplete", False)
+        if scan_errors or scan_incomplete:
+            logger.warning(
+                "Skipping orphan cleanup because the scan was incomplete "
+                "(errors=%d, incomplete=%s); the import cursor will not advance.",
+                len(scan_errors),
+                scan_incomplete,
+            )
+        else:
+            for db_path, post in existing_map.items():
+                if db_path not in scanned_map and post.id not in reused_post_ids:
+                    async with collect_errors(
+                        stats, f"Deleting orphaned {db_path}", session=session
+                    ):
+                        logger.info(
+                            f"Deleting orphaned post: {db_path} (slug={post.slug})"
+                        )
+                        await post_service.delete_post(
+                            session, post.id, current_user=operating_user
+                        )
+                        stats.deleted.append(str(db_path).replace("\\", "/"))
 
         # 2. 处理扫描到的文件 (Disk -> DB)
         processed_post_ids = set()
         for file_path, scanned in scanned_map.items():
-            async with collect_errors(stats, f"Processing {file_path}"):
+            async with collect_errors(
+                stats, f"Processing {file_path}", session=session
+            ):
                 await self.process_scanned_file(
                     session,
                     file_path,
@@ -309,104 +402,6 @@ class SyncProcessor:
             # 获取这批文章的路径映射（只有发生过变更的才需要重试）
             # 注意：这里我们重新查询 DB 确保状态最新
             await self.resolve_internal_links_for_posts(session, processed_post_ids)
-
-    async def sync_categories_to_disk(
-        self, session: AsyncSession, writer, stats: SyncStats
-    ):
-        """
-        (Disk -> DB 优先) 只为已存在的分类目录创建/更新 index.md
-        并删除 Git 中已删除的分类
-
-        Git 仓库是真理源（Source of Truth）：
-        - 只有当分类目录在文件系统中存在时，才会创建/更新 index.md
-        - 如果目录不存在，说明已在 Git 中删除，从数据库中删除该分类
-        - 这确保了 Git 仓库的变更优先级高于数据库
-
-        Args:
-            session: 数据库会话
-            writer:FileWriter 实例
-            stats: 统计对象
-        """
-        import frontmatter
-        from app.posts.cruds import category as category_crud
-
-        categories = await category_crud.get_all_categories(session)
-        categories_to_delete = []
-
-        for category in categories:
-            try:
-                target_path = writer.path_calculator.calculate_category_path(category)
-
-                # 构建期望的内容
-                meta = {"title": category.name, "hidden": not category.is_active}
-                if category.icon_preset:
-                    meta["icon"] = category.icon_preset
-                if category.sort_order != 0:
-                    meta["order"] = category.sort_order
-                if category.excerpt:
-                    meta["excerpt"] = category.excerpt
-                # 新增 post_sort 支持
-                if category.post_sort_order:
-                    meta["post_sort"] = category.post_sort_order.value
-                if category.cover_media_id:
-                    meta["cover_media_id"] = str(category.cover_media_id)
-                    if hasattr(category, "cover_media") and category.cover_media:
-                        meta["cover"] = category.cover_media.original_filename
-
-                expected_content = frontmatter.dumps(
-                    frontmatter.Post(category.description or "", **meta)
-                )
-
-                should_write = False
-                if not target_path.exists():
-                    # 目录存在但 index.md 不存在，创建它
-                    should_write = True
-                    logger.info(
-                        f"Creating missing index.md for existing category directory: {category.slug}"
-                    )
-                else:
-                    existing_content = await writer.file_operator.read_text(target_path)
-                    if existing_content.strip() != expected_content.strip():
-                        should_write = True
-                        logger.debug(
-                            f"Updating index.md for category '{category.slug}' due to metadata changes"
-                        )
-
-                if should_write:
-                    is_new = not target_path.exists()
-                    await writer.write_category(category)
-                    rel_path = target_path.relative_to(self.content_dir)
-                    if is_new:
-                        if str(rel_path) not in stats.added:
-                            stats.added.append(str(rel_path))
-                    else:
-                        if str(rel_path) not in stats.updated:
-                            stats.updated.append(str(rel_path))
-            except Exception as e:
-                logger.error(f"Failed to sync category index for {category.slug}: {e}")
-
-        # 删除 Git 中已不存在的分类
-        if categories_to_delete:
-            for category in categories_to_delete:
-                try:
-                    logger.info(
-                        f"Deleting category '{category.name}' (slug: {category.slug}) "
-                        f"as its directory was removed from Git"
-                    )
-                    await session.delete(category)
-
-                    # 更新统计信息以触发缓存刷新
-                    category_path = writer.path_calculator.calculate_category_path(
-                        category
-                    )
-                    rel_path = str(category_path.relative_to(self.content_dir))
-                    if rel_path not in stats.deleted:
-                        stats.deleted.append(rel_path)
-                        logger.debug(f"Added deleted category to stats: {rel_path}")
-                except Exception as e:
-                    logger.error(
-                        f"Failed to delete category '{category.slug}' from database: {e}"
-                    )
 
     async def reconcile_incremental_sync(
         self,
@@ -435,7 +430,49 @@ class SyncProcessor:
             logger.info(
                 f"Incremental sync: processing {len(changed_files)} changed files."
             )
+
+            # 预扫描显式 slug 的移动/改名。重命名在 --no-renames 下会表现为
+            # 删除 + 新增；先识别要复用的旧记录，删除阶段跳过它，保留 ID 和互动数据。
+            moved_post_ids = set()
             for status, file_path in changed_files:
+                if status not in ("A", "M") or not file_path.endswith(
+                    (".md", ".mdx")
+                ):
+                    continue
+                if file_path in existing_map:
+                    continue
+                try:
+                    scanned = await self.scanner.scan_file(file_path)
+                except Exception:
+                    continue
+                if not scanned or scanned.is_category_index:
+                    continue
+                fm_slug = scanned.frontmatter.get("slug")
+                if not fm_slug:
+                    continue
+                try:
+                    old_post = await post_crud.get_post_by_slug(
+                        session, str(fm_slug)
+                    )
+                except Exception:
+                    continue
+                if old_post:
+                    moved_post_ids.add(old_post.id)
+
+            # 先处理删除，再处理新增/修改。显式 slug 的移动会在删除阶段跳过，
+            # 随后按 slug 复用旧记录；无 slug 的移动仍然是删除 + 新建。
+            ordered_changes = sorted(
+                changed_files, key=lambda item: 0 if item[0] == "D" else 1
+            )
+            for status, file_path in ordered_changes:
+                if status == "D":
+                    old_post = existing_map.get(file_path)
+                    if old_post and old_post.id in moved_post_ids:
+                        logger.info(
+                            f"🔀 Keeping post {old_post.id} for moved file: "
+                            f"{file_path} -> new path"
+                        )
+                        continue
                 if not file_path.endswith((".md", ".mdx")):
                     continue
 
@@ -448,7 +485,9 @@ class SyncProcessor:
                     )
                     continue
 
-                async with collect_errors(stats, f"Processing {status} {file_path}"):
+                async with collect_errors(
+                    stats, f"Processing {status} {file_path}", session=session
+                ):
                     await self.process_file_change(
                         session,
                         file_path,

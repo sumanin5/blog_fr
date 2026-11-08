@@ -42,13 +42,16 @@ class CoverProcessor(FieldProcessor):
                 result["cover_media_id"] = None  # 清空无效的 ID
 
         cover_path = meta.get("cover") or meta.get("image")
-        if cover_path:
+        if cover_path and not dry_run:
             result["cover_media_id"] = await self._resolve_cover_media_id(
                 session,
                 cover_path,
                 mdx_file_path=scanned.file_path,
                 content_dir=Path(settings.CONTENT_DIR),
             )
+        elif not cover_path and not meta.get("cover_media_id"):
+            # Git 中没有封面时，清空旧封面，保持源文件为唯一来源。
+            result["cover_media_id"] = None
 
     async def _resolve_cover_media_id(
         self,

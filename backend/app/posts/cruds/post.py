@@ -170,9 +170,15 @@ async def get_posts_by_source_paths(
     if not paths:
         return []
 
+    # 兼容历史数据中 Windows 反斜杠形式的 source_path；新数据统一为 POSIX。
+    query_paths = set(paths)
+    query_paths.update(
+        path.replace("/", "\\") for path in paths if "/" in path
+    )
+
     stmt = (
         select(Post)
-        .where(Post.source_path.in_(paths))  # type: ignore
+        .where(Post.source_path.in_(list(query_paths)))  # type: ignore
         .options(
             selectinload(Post.category),
             selectinload(Post.tags),
@@ -191,15 +197,24 @@ async def get_slug_map_by_source_paths(
     if not paths:
         return {}
 
+    # 兼容历史数据中 Windows 反斜杠形式的 source_path；返回统一 POSIX 键。
+    query_paths = set(paths)
+    query_paths.update(
+        path.replace("/", "\\") for path in paths if "/" in path
+    )
+
     # 选择 source_path, slug 和 post_type
     stmt = select(Post.source_path, Post.slug, Post.post_type).where(
-        Post.source_path.in_(paths)
+        Post.source_path.in_(list(query_paths))
     )  # type: ignore
     result = await session.exec(stmt)
 
     # 转换为 {source_path: (slug, post_type)} 字典
     return {
-        row[0]: (row[1], row[2].value if hasattr(row[2], "value") else str(row[2]))
+        row[0].replace("\\", "/"): (
+            row[1],
+            row[2].value if hasattr(row[2], "value") else str(row[2]),
+        )
         for row in result.all()
         if row[0] and row[1]
     }
