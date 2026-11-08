@@ -1,4 +1,6 @@
-# GitOps 模块 - 完整文档
+> **已过时**：本文档描述旧的双向同步实现。当前系统只支持 Git → 数据库单向同步，见 [ONE_WAY_SYNC.md](../../docs/ONE_WAY_SYNC.md)。
+
+# GitOps 模块 - 完整文档（历史）
 
 ## 📖 概述
 

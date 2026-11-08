@@ -1,4 +1,6 @@
-# GitOps Services 架构
+> **已过时**：本文档描述旧的双向同步服务。当前单向同步说明见 [ONE_WAY_SYNC.md](../../../docs/ONE_WAY_SYNC.md)。
+
+# GitOps Services 架构（历史）
 
 ## 概述
 

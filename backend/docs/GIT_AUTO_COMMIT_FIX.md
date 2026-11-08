@@ -1,4 +1,6 @@
-# Git Auto-Commit 功能修复总结
+> **已过时**：自动提交/推送已移除。当前单向同步说明见 [ONE_WAY_SYNC.md](./ONE_WAY_SYNC.md)。
+
+# Git Auto-Commit 功能修复总结（历史）
 
 ## 问题描述
 

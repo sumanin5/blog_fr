@@ -128,149 +128,95 @@ WEBHOOK_SECRET=your_webhook_secret_key
 
 ---
 
-## � Git 双向同步配置
+## 🔄 Git → 数据库单向同步配置
 
-本项目支持 **双向 Git 同步**：
+当前系统只支持 **Git → 数据库** 单向导入：
 
-- **GitHub → 服务器**：通过 Webhook 自动同步文章内容
-- **服务器 → GitHub**：管理后台编辑文章后自动推送到 GitHub
+- **GitHub → 服务器**：通过 Webhook 自动同步文章内容。
+- **服务器 → GitHub**：已停用。后台编辑只修改数据库，`POST /ops/git/push` 固定返回 `409 GITOPS_READ_ONLY`。
 
-### 1. 配置 SSH 密钥（服务器 → GitHub）
+权威说明见 [backend/docs/ONE_WAY_SYNC.md](./backend/docs/ONE_WAY_SYNC.md)。
 
-在服务器上配置 SSH 密钥，用于自动推送到 GitHub：
+### 1. 配置只读拉取凭据
+
+服务器只需要读取 `blog-content` 的权限，不需要 push 权限：
 
 ```bash
-# 1. SSH 登录到服务器
-ssh tomy@your-server-ip
-
-# 2. 生成 SSH 密钥（如果还没有）
-ssh-keygen -t ed25519 -C "your_email@example.com"
-# 按 Enter 使用默认路径，可以设置密码或留空
-
-# 3. 查看公钥
+# 建议使用 GitHub Deploy Key，只勾选读权限
+ssh-keygen -t ed25519 -C "blog-content-readonly"
 cat ~/.ssh/id_ed25519.pub
+# 在 blog-content 仓库 Settings → Deploy keys 添加，不要勾选 Allow write access
 
-# 4. 复制公钥内容，添加到 GitHub
-# 访问：https://github.com/settings/keys
-# 点击 "New SSH key"，粘贴公钥内容
-
-# 5. 测试 SSH 连接
 ssh -T git@github.com
-# 应该看到：Hi username! You've successfully authenticated...
 ```
 
-### 2. 初始化 content 子模块
+如果使用 HTTPS，请使用只读的 fine-grained token，并只授予 Contents: Read。
+
+### 2. 初始化 content 目录
 
 ```bash
-# 在服务器的项目目录中
 cd /home/tomy/blog_fr
-
-# 初始化并更新子模块
 git submodule update --init --recursive
 
-# 进入 content 目录
 cd content
-
-# 配置 Git 用户信息（如果需要）
-git config user.email "admin@blog.local"
-git config user.name "Blog Admin"
-
-# 验证远程仓库配置
 git remote -v
-# 应该显示 SSH URL：git@github.com:username/blog-content.git
+# 应为 blog-content 的只读地址
 ```
 
-### 3. 配置 GitHub Webhook（GitHub → 服务器）
+本地 `content` 目录和 `.git` 必须可写，因为 `git pull` 需要更新工作区，同步游标写在 `.git/.gitops_last_sync`。
+
+### 3. 配置 GitHub Webhook
 
 在 blog-content 仓库中配置 Webhook：
 
-1. **访问仓库设置**：
+```
+Payload URL: https://api.yourdomain.com/api/v1/ops/git/webhook
+Content type: application/json
+Secret: your_webhook_secret_key  # 与 .env 中的 WEBHOOK_SECRET 一致
+Events: Just the push event
+Active: ✓
+```
 
-   - 打开：`https://github.com/username/blog-content/settings/hooks`
-   - 点击 "Add webhook"
+`[skip ci]` 不会阻止内容导入；重复通知由同步锁和成功游标处理。
 
-2. **配置 Webhook**：
+### 4. 工作流程
 
-   ```
-   Payload URL: https://api.yourdomain.com/api/v1/ops/git/webhook
-   Content type: application/json
-   Secret: your_webhook_secret_key  # 与 .env 中的 WEBHOOK_SECRET 一致
-   Events: Just the push event
-   Active: ✓
-   ```
-
-3. **验证配置**：
-   - 保存后，GitHub 会发送测试请求
-   - 在 "Recent Deliveries" 中查看响应状态
-   - 应该看到 200 响应
-
-### 4. 工作流程说明
-
-#### 场景 1：在 GitHub 上编辑文章
+#### 在 GitHub 上编辑文章
 
 ```mermaid
 graph LR
     A[在 GitHub 编辑 MDX] --> B[Push 到 blog-content]
     B --> C[触发 Webhook]
-    C --> D[服务器接收通知]
-    D --> E[执行 git pull]
-    E --> F[解析 MDX 文件]
-    F --> G[更新数据库]
+    C --> D[服务器 git pull --ff-only]
+    D --> E[解析 MDX 文件]
+    E --> F[更新数据库和缓存]
 ```
 
-#### 场景 2：在管理后台编辑文章
+#### 在管理后台编辑文章
 
 ```mermaid
 graph LR
-    A[在后台编辑文章] --> B[保存到数据库]
-    B --> C[导出为 MDX 文件]
-    C --> D[git add & commit]
-    D --> E[git pull 远程更新]
-    E --> F[git push 到 GitHub]
+    A[在后台编辑文章] --> B[只保存到数据库]
+    B --> C[不导出 MDX]
+    C --> D[不执行 git add/commit/push]
 ```
 
-### 5. 自动提交配置
+Git 来源文章的后台修改可能被下一次同步覆盖；后台删除不会删除 Git 文件，全量同步可能重新导入。
 
-后端会在以下操作时自动提交到 GitHub：
+### 5. 上线前清理
 
-- **创建文章**：`feat: create post 'title'`
-- **更新文章**：`chore: update post 'title'`
-- **删除文章**：`chore: delete post 'title'`
+- 备份数据库和内容仓库工作区。
+- 检查内容仓库是否有历史回写产生的未提交文件；先备份并确认来源，再决定提交或清理，不要直接 `git reset --hard`。
+- 关闭旧的小时级推送任务，确认 `ENABLE_GIT_AUTO_PUSH` 不再使用。
+- 撤销部署环境对 GitHub 远程仓库的写权限，只保留拉取权限。
+- 部署后手动执行一次全量同步，并检查 `git status` 和 `git log`，确认没有网站生成的提交。
 
-Git 用户信息会自动配置为：
+### 6. 详细文档
 
-- Email: `admin@blog.local`
-- Name: `Blog Admin`
+- [Git → 数据库单向同步](./backend/docs/ONE_WAY_SYNC.md) - 当前权威说明
+- [Frontmatter 字段规范](./GIT_SYNC_GUIDE.md) - 内容字段说明
 
-如需自定义，可在容器中手动配置：
-
-```bash
-docker exec -it blog_fr-backend-1 bash
-cd /app/content
-git config --local user.email "your@email.com"
-git config --local user.name "Your Name"
-```
-
-### 6. 元数据同步机制
-
-系统在同步过程中会自动处理元数据回写：
-
-- **GitHub → 服务器**：同步后将数据库 ID 和关系写回 MDX frontmatter，然后自动推送回 GitHub
-- **管理后台 → GitHub**：编辑后导出完整的 frontmatter 元数据到 MDX 文件
-
-这确保了 GitHub 和服务器之间的数据完全一致。
-
-### 7. 详细文档
-
-完整的双向同步机制、防止无限循环、故障排查等详细信息，请参考：
-
-- [Git 双向同步完整实现](./backend/docs/GIT_BIDIRECTIONAL_SYNC.md) - 完整的技术文档
-- [Git 自动提交修复说明](./backend/docs/GIT_AUTO_COMMIT_FIX.md) - Git 配置技术细节
-  git config --local user.name "Your Name"
-
-````
-
-### 6. 故障排查
+### 7. 故障排查
 
 #### 问题 1: Webhook 返回 404
 
@@ -280,22 +226,22 @@ git config --local user.name "Your Name"
 - 后端服务是否正常运行
 - Caddy 反向代理配置是否正确
 
-#### 问题 2: 自动推送失败
+#### 问题 2: 增量同步失败
 
 **检查**：
 
 ```bash
-# 1. 验证 SSH 密钥
+# 1. 检查只读拉取凭据
 docker exec -it blog_fr-backend-1 ssh -T git@github.com
 
-# 2. 查看 Git 配置
+# 2. 查看内容仓库和游标
 docker exec -it blog_fr-backend-1 bash
 cd /app/content
-git config --list
+git status --porcelain
+ls -l .git/.gitops_last_sync .git/.gitops_needs_full_sync
+```
 
-# 3. 手动测试推送
-git push origin main
-````
+同步失败时游标不会推进；下一次同步会先做全量对账。历史未提交文件先备份确认，不要直接丢弃。
 
 #### 问题 3: Webhook Secret 验证失败
 
@@ -475,37 +421,30 @@ docker compose restart backend
 - [ ] Caddy 是否正确配置了反向代理
 - [ ] 防火墙是否开放了 80 和 443 端口
 
-### 问题 5: Git 自动提交失败
+### 问题 5: Git 拉取或同步失败
 
-**错误信息**: `Git push failed` 或 `fatal: could not read Username`
+**错误信息**: `Git pull failed`、`Not a git repository` 或同步游标错误。
 
 **解决步骤**:
 
 ```bash
-# 1. 检查 SSH 密钥配置
+# 1. 检查只读拉取凭据
 docker exec -it blog_fr-backend-1 ssh -T git@github.com
 
-# 2. 如果提示 "Permission denied"，重新配置 SSH 密钥
-# 在宿主机上：
-cat ~/.ssh/id_ed25519.pub
-# 将公钥添加到 GitHub: https://github.com/settings/keys
-
-# 3. 检查 content 目录的 Git 配置
+# 2. 检查 content 目录是否为 Git 仓库
 docker exec -it blog_fr-backend-1 bash
 cd /app/content
-git config --local user.email
-git config --local user.name
+git remote -v
+git status --porcelain
 
-# 4. 如果未配置，会自动使用默认值：
-# Email: admin@blog.local
-# Name: Blog Admin
+# 3. 检查本地 .git 是否可写（游标写入 .git/.gitops_last_sync）
+ls -ld /app/content/.git
 
-# 5. 手动测试推送
-git push origin main
-
-# 6. 查看后端日志
+# 4. 查看后端日志
 docker compose logs backend | grep -i git
 ```
+
+如果工作区有历史回写产生的未提交文件，先备份并确认来源，再决定提交或清理；不要直接 `git reset --hard`。网站不会再产生新的 Git 提交。
 
 ### 问题 6: Webhook 同步失败
 
@@ -534,7 +473,8 @@ docker exec -it blog_fr-backend-1 ls -la /app/content
 - [.env.production.template](./.env.production.template) - 生产环境配置模板
 - [docker-compose.yml](./docker-compose.yml) - Docker Compose 配置
 - [GitHub Actions 部署配置](./.github/workflows/deploy.yml)
-- [Git 自动提交修复说明](./backend/docs/GIT_AUTO_COMMIT_FIX.md) - Git 双向同步技术细节
+- [Git → 数据库单向同步](./backend/docs/ONE_WAY_SYNC.md) - 当前同步流程和上线检查
+- [Frontmatter 字段规范](./GIT_SYNC_GUIDE.md) - 内容字段说明
 
 ---
 
@@ -547,8 +487,8 @@ docker exec -it blog_fr-backend-1 ls -la /app/content
 3. 域名 DNS 是否正确解析到服务器 IP
 4. 服务器防火墙是否开放必要端口（80, 443）
 5. Docker 容器日志中的错误信息
-6. SSH 密钥是否正确配置（用于 Git 推送）
-7. GitHub Webhook 是否正确配置（用于 Git 拉取）
+6. SSH/HTTPS 只读拉取凭据是否正确配置
+7. GitHub Webhook 是否正确配置（用于 Git → 数据库导入）
 
 ---
 

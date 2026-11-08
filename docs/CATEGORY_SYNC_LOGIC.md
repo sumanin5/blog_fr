@@ -1,4 +1,6 @@
-# 分类同步逻辑文档
+> **已过时**：本文档描述的自动创建/回写 `index.md`、自动 Git 提交/推送已移除。当前分类只从 Git 导入到数据库，后台分类 CRUD 不操作文件。请以 [backend/docs/ONE_WAY_SYNC.md](../backend/docs/ONE_WAY_SYNC.md) 为准。
+
+# 分类同步逻辑文档（历史）
 
 ## 设计原则：Git 作为真理源（Source of Truth）
 

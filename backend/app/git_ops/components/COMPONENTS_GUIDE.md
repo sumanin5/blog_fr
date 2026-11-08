@@ -1,4 +1,6 @@
-# GitOps Components 组件清单
+> **已过时**：本文档包含旧的文件回写组件说明。当前单向同步说明见 [ONE_WAY_SYNC.md](../../../docs/ONE_WAY_SYNC.md)。
+
+# GitOps Components 组件清单（历史）
 
 ## 📋 概览
 

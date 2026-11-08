@@ -1,8 +1,10 @@
 # Git 同步机制与 Frontmatter 元数据规范
 
+> 当前实现是 **Git → 数据库单向同步**。权威说明见 [backend/docs/ONE_WAY_SYNC.md](backend/docs/ONE_WAY_SYNC.md)。本文档只保留 Frontmatter 字段规范和导入行为，不再描述数据库回写。
+
 ## 📖 概述
 
-本文档详细说明了博客系统的 Git 同步机制，以及 MDX 文件的 Frontmatter 元数据字段规范。
+本文档详细说明了博客系统的 Git 导入机制，以及 MDX 文件的 Frontmatter 元数据字段规范。
 
 ---
 
@@ -10,7 +12,7 @@
 
 ### 工作原理
 
-Git 同步功能允许你将 MDX 文件存储在 Git 仓库中，通过 API 触发同步，自动将文件内容导入到数据库。
+Git 同步功能允许你将 MDX 文件存储在 Git 仓库中，通过 API 或 webhook 触发同步，自动将文件内容导入到数据库。导入过程不会修改或提交源文件。
 
 ```mermaid
 graph LR
@@ -27,6 +29,7 @@ graph LR
 3. **解析引用** - 解析作者、封面图等关联数据
 4. **对比差异** - 与数据库现有数据对比
 5. **执行同步** - 创建新文章、更新已有文章、删除已删除的文章
+6. **只读边界** - 不写回 Frontmatter、正文链接、图片路径或分类 `index.md`，不执行 Git 提交/推送
 
 ### 触发同步
 
@@ -55,9 +58,10 @@ python scripts/sync_git_content.py
 
 ### 文件追踪
 
-- 每个通过 Git 同步的文章都有 `source_path` 字段，记录其源文件路径
-- 手动创建的文章 `source_path` 为 `NULL`，不会被 Git 同步影响
-- Slug 会自动添加随机后缀（如 `my-post-a3f2k8`），确保唯一性
+- 每个通过 Git 同步的文章都有 `source_path` 字段，记录其源文件路径（统一 POSIX 格式）
+- 手动创建的文章 `source_path` 为 `NULL`，不会被 Git 同步影响，也不会自动导出到 Git
+- Git 文件显式写了 `slug` 时原样保留；没写时按文件名生成稳定 slug（文件名-slug + 路径哈希），重建数据库不会改变已有地址
+- Git 同步更新不会覆盖数据库已有 `slug`；后台 UI 仍可显式修改，但 Git 来源文章建议不要改，避免下次同步后行为不一致
 
 ---
 
@@ -315,7 +319,7 @@ hidden: true
 
 ### ⚠️ 注意事项
 
-1. **自动创建** - 如果分类目录下没有 index.md，系统会自动创建一个默认分类
+1. **不自动创建文件** - 如果分类目录下没有 `index.md`，系统不会创建；分类只从 Git 中实际存在的 `index.md` 或文章目录导入。后台创建分类也只写数据库。
 2. **Slug 唯一性** - 同一 post_type 下的 slug 必须唯一
 3. **正文内容** - 正文会被完整存储为 `description`，支持 Markdown 格式
 4. **图标支持** - 支持 emoji 和文件路径两种方式：
@@ -338,7 +342,7 @@ author: "username"  # 用户名或 UUID
 # ========== 基础字段 ==========
 slug: "custom-slug"  # 可选，不填则自动生成
 type: "ARTICLE"  # 文章类型：ARTICLE（默认）或 IDEA
-status: "PUBLISHED"  # 状态：PUBLISHED（默认）或 DRAFT
+status: "draft"  # 状态：draft（默认）或 published
 date: "2024-01-15"  # 发布日期，支持 YYYY-MM-DD 或 ISO 8601
 
 # ========== 内容字段 ==========
@@ -416,12 +420,12 @@ keywords: "同 meta_keywords"
 
 - **类型**: 字符串
 - **必填**: 否
-- **默认值**: 自动从文件名生成
-- **说明**: 文章的 URL 标识符，系统会自动添加随机后缀确保唯一性
+- **默认值**: 自动从文件名生成稳定值
+- **说明**: 文章的 URL 标识符。显式写 `slug` 时原样保留；不写时生成 `文件名-slug-路径哈希`，同一文件重复导入/重建数据库不会改变地址。
 - **示例**:
   ```yaml
-  slug: "python-async"
-  # 实际生成: python-async-a3f2k8
+  slug: "python-async"  # 显式值，导入后保持不变
+  # 不写时示例: python-async-1a2b3c4d
   ```
 
 #### `type` - 文章类型
@@ -438,17 +442,14 @@ keywords: "同 meta_keywords"
 
 - **类型**: 枚举字符串
 - **必填**: 否
-- **默认值**: `PUBLISHED`
+- **默认值**: `draft`
 - **可选值**:
-  - `PUBLISHED` - 已发布
-  - `DRAFT` - 草稿
-- **兼容字段**: `published` (布尔值)
+  - `published` - 已发布
+  - `draft` - 草稿
 - **示例**:
   ```yaml
-  status: "PUBLISHED"
-  # 或向后兼容
-  published: true  # 等同于 PUBLISHED
-  published: false  # 等同于 DRAFT
+  status: "published"
+  # 或不写，默认是 draft
   ```
 
 #### `date` - 发布日期
@@ -660,7 +661,7 @@ tags:
   - Python
   - Web 开发
   - 最佳实践
-featured: true
+is_featured: true
 meta_title: "2024 年 Python Web 开发最佳实践完全指南"
 meta_description: "深入探讨 FastAPI、Django、Flask 等框架的最佳实践，包含性能优化、安全性、测试等方面"
 meta_keywords: "Python, Web 开发, FastAPI, Django, 最佳实践, 2024"
@@ -682,9 +683,10 @@ meta_keywords: "Python, Web 开发, FastAPI, Django, 最佳实践, 2024"
 
 ### 2. Slug 唯一性
 
-- 系统会自动为所有 slug 添加随机后缀（6 位字符）
-- 即使指定了 slug，也会添加后缀，如 `my-post` → `my-post-a3f2k8`
-- 这确保了即使有重名文件也不会冲突
+- Frontmatter 显式写 `slug` 时原样保留，不会添加随机后缀
+- 未写 `slug` 时，系统生成 `文件名词干-路径哈希前 8 位`，同一文件重复导入或重建数据库时保持稳定
+- 重命名/移动文件会改变缺省 slug；需要长期稳定 URL 的文章请显式写 `slug`
+- Git 同步更新不会覆盖数据库已有 slug
 
 ### 3. 封面图
 
@@ -795,7 +797,7 @@ meta_keywords: "Python, Web 开发, FastAPI, Django, 最佳实践, 2024"
 - ✅ 添加完整的元数据字段支持
 - ✅ 支持标签（数组和逗号分隔）
 - ✅ 支持 SEO 字段
-- ✅ 支持布尔字段（featured, allow_comments）
+- ✅ 支持布尔字段（is_featured, allow_comments）
 - ✅ 优化封面图匹配逻辑
 - ✅ 完善日期解析逻辑
 
