@@ -1,0 +1,981 @@
+diff --git a/.agent/skills/blog-post-frontmatter/SKILL.md b/.agent/skills/blog-post-frontmatter/SKILL.md
+index 8ed22dbe2500e2de4e15827a569a29fb3b1326a8..e3748e9c4f4dd5501034f0ded435d93c8682224d 100644
+--- a/.agent/skills/blog-post-frontmatter/SKILL.md
++++ b/.agent/skills/blog-post-frontmatter/SKILL.md
+@@ -17,10 +17,10 @@ description: 生成、校验和更新博客文章的 YAML Frontmatter 元数据
+ 
+ 解析逻辑见主仓库 `backend/app/git_ops/components/metadata.py` 与 `processors/`。与仓库根目录 `AGENTS.md` 保持一致。
+ 
+-1. **唯一必需字段是 `author`**：值为已存在的用户名（默认 `tomyi`）或用户 UUID。缺失或用户不存在时同步报错，文章不会导入。
++1. **author 和 slug 必需**：作者为已有用户名；slug 显式稳定、全仓库文章唯一，移动目录时保留。
+ 2. **`status` 不写默认是草稿**：只接受 `draft` / `published`（不区分大小写），其他值同步报错。要上线必须写 `status: published`。
+ 3. **其余字段都可选**，不写时的行为见下表。
+-4. **后端回填字段不要手写**：`slug`、`author_id`、`category`、`category_id`、`cover_media_id` 由同步回填，推送后 `git pull` 获取。
++4. **单向导入**：后端不回填、不写文件、不推送。新文章不要添加数据库 ID；分类身份取自同目录 index.md 的显式 slug。
+ 5. **内容类型和专栏由目录决定**：`articles/<专栏>/` 或 `ideas/<专栏>/`，frontmatter 里的 `type` 不起作用，不用写。
+ 
+ ## 最小模板（想法流常用）
+@@ -28,6 +28,7 @@ description: 生成、校验和更新博客文章的 YAML Frontmatter 元数据
+ ```yaml
+ ---
+ author: tomyi
++slug: my-stable-article
+ status: published
+ ---
+ ```
+@@ -40,6 +41,7 @@ status: published
+ ---
+ title: "09-文章主标题"
+ author: tomyi
++slug: my-stable-article
+ status: published
+ summary: "80–120 字的中文摘要，用于列表卡片与搜索结果。"
+ tags:
+@@ -63,14 +65,14 @@ is_featured: false
+ | `date` | 否 | 按同步时间发布；未来时间即定时发布。支持 `2026-12-01`、`2026-12-01 09:00:00`、`2026-12-01T09:00:00+08:00`，**不支持** `2026/12/01` |
+ | `summary` / `excerpt` | 否 | 二者等价，写一个即可；不写则从正文自动截取。也可用 `description` |
+ | `tags` | 否 | YAML 列表或逗号分隔字符串。尽量复用已有标签 |
+-| `cover` | 否 | 相对于当前文件的图片路径（如 `assets/x.png`），会自动上传；也可写媒体库 UUID。**不要写不存在的裸文件名**，否则会按文件名模糊匹配到其他图片 |
++| `cover` | 否 | 相对于当前文件的图片路径（如 `assets/x.png`），会自动上传；也可写媒体库 UUID。**不要写不存在的裸文件名**，不存在的源图片不会通过同名模糊匹配代替 |
+ | `meta_title` / `meta_description` / `meta_keywords` | 否 | 可选的 SEO 字段 |
+ | `is_featured` | 否 | 默认 `false`，是否首页推荐 |
+ | `allow_comments` | 否 | 默认 `true` |
+ | `use_server_rendering` | 否 | 默认 `true` |
+ | `enable_jsx` | 否 | 默认 `false`；只有使用 JSX 组件时才设为 `true`，数学公式与 Mermaid 不需要 |
+-| `slug` | 否（回填） | 由文件名生成（中文转拼音）并加随机后缀。修改会改变文章地址 |
+-| `author_id` / `category` / `category_id` / `cover_media_id` | 回填 | 不要手写。移动文章到其他专栏时删除 `category` 与 `category_id` |
++| `slug` | **是** | 显式稳定 URL 标识，全仓库文章唯一，不回填 |
++| `author_id` / `category` / `category_id` / `cover_media_id` | 历史兼容 | 新文章使用作者名、分类索引 slug 与相对媒体路径；后端不回填 |
+ 
+ `hidden`、`post_sort`、`sort`、`icon` 是专栏 `index.md` 的字段，写在文章里不起作用，见 `category-metadata` 技能。
+ 
+@@ -81,8 +83,8 @@ is_featured: false
+ 每个分类目录下的 `index.md` 文件是分类索引，用来展示该分类的说明、覆盖图和内容组织。
+ 
+ **示例路径**：
+-- `articles/fastapi-engineering-practice/index.md`
+-- `articles/django-styleguide/index.md`
++- `articles/FastAPI工程化实践/index.md`
++- `articles/Django风格指南/index.md`
+ 
+ ### 分类索引中的链接处理
+ 
+@@ -125,7 +127,7 @@ is_featured: false
+ 
+ **优点**：
+ - 链接在文件系统中有效，开发时易于验证
+-- 系统会自动转换，无需手动维护 slug
++- 系统转换相对文章链接；作者必须显式维护稳定 slug
+ - 即使重新组织目录结构，相对路径仍有效
+ 
+ #### ❌ 不推荐方式：硬编码绝对 URL
+diff --git a/.agent/skills/category-metadata/SKILL.md b/.agent/skills/category-metadata/SKILL.md
+index d6c7970f40bf7a61838eaf899c13d895eb667099..6aaa35146bfc29712043999d94a3d9559ca821df 100644
+--- a/.agent/skills/category-metadata/SKILL.md
++++ b/.agent/skills/category-metadata/SKILL.md
+@@ -22,14 +22,15 @@ description: 专门用于创建、校验和维护博客分类目录下的 index.
+ - **Post Type 自动推导**:
+   - 路径包含 `articles/` → `post_type: ARTICLES`
+   - 路径包含 `ideas/` → `post_type: IDEAS`
+-- **Slug 自动推导**: 由目录名生成。例如 `articles/tech-share/` 推导出 `slug: tech-share`。
+-- **目录名必须用小写英文加连字符**：中文目录名会被转成拼音 slug，后端写回 `index.md` 时会另建一个拼音目录，造成重复目录（`ideas/人间世/` 与 `ideas/ren-jian-shi/` 即由此产生）。中文名写在 `title` 里。
++- **Slug 显式声明**：`index.md` 必须填写稳定的 `slug`，目录名不再决定分类 URL。
++- **目录可以使用中文**：中文目录供作者阅读，地址使用 index.md 的 slug；不得维护两套同一 slug 的目录。
+ 
+ ### 2. Frontmatter 编写规范
+ 
+ ```yaml
+ ---
+-# 所有字段均可选；建议至少写 title
++# slug 必需；建议填写中文 title
++slug: stable-category-slug
+ title: "显示名称" # 不写则由目录 slug 生成（如 tech-share → Tech-Share）
+ excerpt: "一句话简介" # 显示在专栏列表与专栏页标题下方
+ hidden: false # 是否隐藏（默认 false）。映射至 is_active (hidden: true => is_active: false)
+@@ -100,6 +101,6 @@ icon: "assets/icons/design.svg"
+ ## Best Practices (最佳实践)
+ 
+ 1. **正文即描述**: 不要只写 Frontmatter，正文描述对于分类详情页的 SEO 和用户体验非常重要。
+-2. **Slug 唯一性**: 虽然 Slug 是推导的，但请确保在同一 Post Type 下目录名不要冲突。
++2. **Slug 唯一性**：同一 post_type 的分类 slug 不得重复，提交前会统一检查。
+ 3. **Emoji 简化**: 推荐优先使用 Emoji 作为 `icon`，因为它渲染速度快且无需加载额外资源。
+ 4. **隐藏分类**: 对于正在筹备或不想公开的分类，使用 `hidden: true` 而非删除目录。
+diff --git a/.content-contract.json b/.content-contract.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..cb608f6e9c4c20c8a05636c127dc423ab86452bb
+--- /dev/null
++++ b/.content-contract.json
+@@ -0,0 +1 @@
++{"version": 1}
+diff --git a/.gitattributes b/.gitattributes
+new file mode 100644
+index 0000000000000000000000000000000000000000..69cc80ca146dbf8bc5e9dc19b1939c3fbd55c2b1
+--- /dev/null
++++ b/.gitattributes
+@@ -0,0 +1 @@
++.githooks/* text eol=lf
+diff --git a/.githooks/pre-commit b/.githooks/pre-commit
+new file mode 100755
+index 0000000000000000000000000000000000000000..42389d9c0ac5724aed0e1cc45dfcf951fb545080
+--- /dev/null
++++ b/.githooks/pre-commit
+@@ -0,0 +1,5 @@
++#!/bin/sh
++set -eu
++python_bin="$(git config --local --get content.python || echo python)"
++repo_root="$(git rev-parse --show-toplevel)"
++exec "$python_bin" "$repo_root/tools/content_contract.py" --root "$repo_root" --staged
+diff --git a/.github/workflows/validate-content.yml b/.github/workflows/validate-content.yml
+new file mode 100644
+index 0000000000000000000000000000000000000000..b7dcb6138f118dfe15697c5f944fd25ad1812823
+--- /dev/null
++++ b/.github/workflows/validate-content.yml
+@@ -0,0 +1,21 @@
++name: Validate content
++
++on:
++  push:
++  pull_request:
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++jobs:
++  content-contract:
++    name: Content contract
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v7
++      - uses: actions/setup-python@v7
++        with:
++          python-version: '3.13'
++      - run: python -m pip install -r tools/requirements.txt
++      - run: python tools/content_contract.py --root .
+diff --git a/.gitignore b/.gitignore
+index 3e36ec0c656a8bbc9e07bb0b1dc1c3bd6e4a39f9..46d9a20d6d612dfcd3bbbb8995396bc1b87ccb67 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,5 +1,3 @@
+-ideas/人间世
+-ideas/三十题记
+ 
+ # 本地 Claude Code 配置（含本机路径与数据库凭据，不提交）
+ .claude/
+diff --git a/AGENTS.md b/AGENTS.md
+index 549a1b26e39d57538274da6e57931230984e3e0c..f863c9cf7748372d01f0093b5361d5712847992f 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -1,15 +1,15 @@
+ # AGENTS.md
+ 
+-本仓库只存放 Blog FR 的文章内容。推送到 `main` 会通过 Webhook 立即同步到线上博客，**每次推送都等同于发布**。
++本仓库只存放 Blog FR 的文章内容。推送到配置的内容分支会通过 Webhook 请求导入；只有导入成功且状态为 `published` 的文章才会公开。完整操作示例见 README.md。
+ 
+ 字段的完整说明见 `.agent/skills/blog-post-frontmatter/SKILL.md` 与 `.agent/skills/category-metadata/SKILL.md`；本文件是上传时必须遵守的规则，冲突时以本文件为准。
+ 
+ ## 1. 目录规则
+ 
+ - 文章路径只能是 `articles/<专栏>/<文章>.md` 或 `ideas/<专栏>/<文章>.md`（`.mdx` 同理）。
+-- **不要**在仓库根目录、`articles/`、`ideas/` 第一层或专栏的子目录里放 `.md` 笔记：除说明文件外，这些位置的 `.md` 也会被同步成文章（归入 `uncategorized`）。
++- **不要**在仓库根目录、`articles/`、`ideas/` 第一层或专栏的子目录里放 `.md` 笔记：除说明文件外，这些位置的 `.md` 会被严格校验拒绝。
+ - 说明类文档只能使用这些文件名：`README`、`AGENTS`、`CLAUDE`、`LICENSE`、`CONTRIBUTING`、`CHANGELOG`。
+-- **专栏目录名必须是小写英文加连字符**，例如 `fastapi-engineering-practice`。中文目录名会被转成拼音 slug；不要同时维护中文和拼音两套目录。历史重复目录已经整理，当前后端不会回写或新建源目录。专栏的中文名写在 `index.md` 的 `title` 里。
++- **专栏目录可用中文**，例如 `RL奥德赛`。分类地址只由 `index.md` 中显式的 `slug` 决定；目录改名不改变 URL。不要维护中文、拼音两套相同分类。
+ 
+ ## 2. 新建专栏
+ 
+@@ -18,6 +18,7 @@
+ ```yaml
+ ---
+ title: FastAPI 工程化实践
++slug: fastapi-engineering-practice
+ excerpt: 一句话介绍，显示在专栏列表和专栏页标题下方。
+ icon: "⚡"
+ cover: assets/fastapi-engineering-cover.png
+@@ -51,7 +52,7 @@ hidden: false
+ | `status` | 强烈建议 | **默认是草稿**，只在后台可见；只接受 `draft` / `published`，写其他值（如 `archived`）会报错 |
+ | `date` | 可选 | 不写则按同步时间发布；写未来时间即定时发布 |
+ | `title` | 可选 | 使用文件名（不含扩展名） |
+-| `slug` | 可选 | 缺省由文件名和相对路径哈希稳定生成，不回填；需移动的文章应显式保留原 slug |
++| `slug` | **必需** | 稳定 URL 标识；全仓库文章不可重复，移动时保留；后端不回填 |
+ | `summary` | 可选 | 从正文自动截取摘要；也可写 `description` |
+ | `tags` | 可选 | 列表或逗号分隔字符串（`tags: FastAPI, Python`）均可 |
+ 
+@@ -64,6 +65,7 @@ hidden: false
+ ```yaml
+ ---
+ author: tomyi
++slug: my-stable-article
+ status: published
+ ---
+ 
+@@ -78,6 +80,7 @@ status: published
+ ---
+ title: 09-FastAPI 后台任务该交给谁
+ author: tomyi
++slug: my-stable-article
+ status: published
+ summary: 80–120 字的中文摘要，显示在列表卡片和搜索结果中。
+ tags:
+@@ -107,7 +110,7 @@ cover: assets/background-tasks-cover.png
+ 
+ 内容只从 Git 导入数据库。后端不回填 Frontmatter、不修改文件、不提交或推送 Git。
+ 
+-- 新文章建议显式填写稳定 `slug`；不填时根据文件名和源路径生成，同一路径的结果稳定。
++- 每篇文章必须显式填写稳定 `slug`；分类也必须在 `index.md` 中填写 `slug`。不再依赖目录转拼音来决定地址。
+ - 已有文章保留原 `slug`，移动同一分类的文章时也保留它，以便复用原文章记录。
+ - 不要新增数据库专属的 `author_id`、`category_id`、`cover_media_id`、`icon_id`；使用作者名、分类目录和相对图片路径，便于重建数据库。
+ - 历史 ID 不要批量删除；涉及冲突时先记录原值，再确定权威源文件。
+@@ -116,6 +119,8 @@ cover: assets/background-tasks-cover.png
+ 
+ ## 5. 图片
+ 
++- 文章 `cover` 与分类 `index.md` 的 `cover` 独立。文章封面用于列表、详情和分享预览；正文图片不会自动成为封面，也不自动继承分类封面。
++- 历史有效 `cover_media_id` 优先于 `cover`；替换本篇封面时移除旧封面 ID，再使用新相对路径。仅改图片字节不会自动重导所有引用文章，建议改图片名并同时更新 Markdown。
+ - 图片放在专栏的 `assets/` 子目录，用**相对于当前 `.md` 文件的路径**引用：`cover: assets/xxx.png`、`![说明](assets/xxx.png)`。
+ - **不要只写裸文件名**（`cover: cover.png`）而文件实际在子目录里：本地路径必须存在；后端按内容哈希或明确媒体引用解析，不会模糊选择同名图片。
+ - 文件名带上专栏或文章前缀，避免 `cover.png`、`icon.svg` 这种全库重名的名字。
+@@ -134,3 +139,11 @@ cover: assets/background-tasks-cover.png
+ - 面向工程实践：先给结论，再讲问题和实现，最后讲取舍与边界。
+ - 使用真实的代码、目录和流程；避免“最佳”“完美”“终极”等夸张表述。
+ - 代码块标注语言；中文与英文、数字之间留空格。
++
++## 8. 提交前内容校验
++
++首次使用：`python -m pip install -r tools/requirements.txt`，再运行 `python tools/install-hooks.py`。
++手动校验：`python tools/content_contract.py`；检查待提交内容：追加 `--staged`。
++钩子检查完整暂存区；CI 和网站导入前使用相同校验器。缺少 slug、重复 slug/URL、保留路由冲突或分类索引缺失时拒绝提交/导入。
++README、AGENTS、CLAUDE 等说明文件不作为文章。修改它们仍会产生 push webhook，网站收到通知后忽略对应文件。
++本地钩子可被绕过，远端需将 CI 的 `Content contract` 设为 main 的必需合并检查；不要直接推送绕过检查。
+diff --git a/README.md b/README.md
+index 869baf3874e04dfabd7402d6ef8e0fa639a09271..6de7532867986481118ce88a4496852cc3d4c010 100644
+--- a/README.md
++++ b/README.md
+@@ -1,8 +1,8 @@
+ # Blog Content
+ 
+-[Blog FR](https://github.com/sumanin5/blog_fr) 的文章内容仓库。推送到 `main` 后，GitHub Webhook 通知博客后端拉取本仓库，并把变更的 Markdown 同步为线上文章；后台修改的元数据会以 `chore: sync metadata from database` 提交写回这里。
++[Blog FR](https://github.com/sumanin5/blog_fr) 的文章内容仓库。推送到 `main` 后，GitHub Webhook 通知博客后端拉取本仓库，并把变更的 Markdown 同步为线上文章。网站只单向导入，不回写或推送。
+ 
+-**推送即发布**：每次 push 都会直接改变线上内容。
++合并或推送到配置的内容分支后才会触发导入；导入成功且 `status: published` 的文章才会公开。新文章建议先用 `draft`。本文对应显式 slug / 中文目录版本，须先部署支持该协议的后端，再发布本分支的内容变更。
+ 
+ ## 目录结构
+ 
+@@ -21,7 +21,7 @@ blog-content/
+ ```
+ 
+ - 一级目录决定内容类型，只能是 `articles` 或 `ideas`。
+-- 二级目录是专栏，目录名就是专栏 slug。
++- 二级目录是专栏，可以使用中文名；分类地址取自该目录 `index.md` 的显式 slug，与目录名解耦。
+ - 文章只放在专栏目录的第一层；子目录（`assets/`、`media/`）只放图片。
+ 
+ 各类型下的专栏清单见 [articles/README.md](articles/README.md) 和 [ideas/README.md](ideas/README.md)。
+@@ -36,18 +36,101 @@ blog-content/
+ | `README`、`AGENTS`、`CLAUDE`、`LICENSE`、`CONTRIBUTING`、`CHANGELOG`（任意层级，不区分大小写） | **跳过** |
+ | 以 `.` 开头的文件或目录（`.agent/`、`.claude/`、`.gitops_last_sync`） | **跳过** |
+ 
+-> 除上表的说明文件名外，任何 `.md` 都会被当成文章，包括放在仓库根目录或子目录里的笔记。说明类文档请使用上面的文件名。
++> 本版本会拒绝根目录或过深目录中的文章 Markdown；说明类文档请使用上面的文件名。README、AGENTS 的提交仍会触发 GitHub push webhook，但后端会跳过这些文件；它们不会被导入成文章。
+ 
+ ## 写作与上传流程
+ 
+-1. `git pull`，获取内容仓库最新提交。
+-2. 在 `articles/<专栏>/` 或 `ideas/<专栏>/` 下新建或修改文章，格式见 [AGENTS.md](AGENTS.md)。
+-3. 提交并推送到 `main`。
+-4. 检查后台同步结果与日志；只有 published 状态的文章公开显示。
+-5. 后端仅单向导入，不会回填文件或推送；需要稳定地址时在文章中显式保留 slug。
++### 首次准备
++
++在当前内容仓库根目录执行（需要 Python 和 Git）：
++
++```powershell
++python -m pip install -r tools/requirements.txt
++python tools/install-hooks.py
++python tools/content_contract.py
++```
++
++每次新克隆都要安装本地钩子。重复文章 slug、同板块重复分类 slug、缺少 slug 或索引、路由冲突都会阻止提交。钩子可以绕过，因此远端还应将 CI 的 `Content contract` 配置为必需合并检查。仅有工作流文件不等于已经配置分支保护。
++
++### 新建文章
++
++例如新建 `ideas/比特漫笔/我的第一篇文章.md`，图片放在同一分类的 `assets/` 中：
++
++```text
++ideas/比特漫笔/
++├── index.md
++├── 我的第一篇文章.md
++└── assets/我的第一篇文章-封面.png
++```
++
++文章内容示例：
++
++```markdown
++---
++title: 我的第一篇文章
++slug: my-first-article
++author: tomyi
++status: draft
++summary: 一句话介绍文章。
++cover: assets/我的第一篇文章-封面.png
++tags:
++  - 随笔
++---
++
++# 我的第一篇文章
++
++这里写正文。
++```
++
++`author` 必须是网站上已有的用户名。`slug` 使用小写英文字母、数字和连字符，文章在整个仓库内唯一；文件名和目录名可以用中文。现有文章改名或移动时保留原 slug，避免改变链接。
++
++检查并提交（示例只添加本篇文章和封面）：
++
++```powershell
++python tools/content_contract.py
++git add -- "ideas/比特漫笔/我的第一篇文章.md" "ideas/比特漫笔/assets/我的第一篇文章-封面.png"
++python tools/content_contract.py --staged
++git commit -m "feat(content): 新增我的第一篇文章"
++```
++
++本地提交不会上传，也不会改变网站。确认要发布时，将 `status` 改为 `published`，提交后再推送分支、通过 PR 合并到配置的内容分支。检查后台同步结果；同步失败不代表已经发布成功。本文仅描述操作步骤，不自动执行 push。
++
++### 单篇文章封面与分类封面
++
++| 写在哪里 | 作用 |
++| --- | --- |
++| 分类 `index.md` 的 `cover` | 分类卡片 / 分类页封面 |
++| 文章 `.md` 的 `cover` | 文章列表卡片、文章详情页、分享预览图 |
++| 正文 `![说明](assets/图片.png)` | 正文内图片，不会自动成为封面 |
++
++文章没有填写 `cover` 时不显示文章封面，也不会自动继承分类封面。路径相对于当前 Markdown 文件，必须指向实际存在的文件；新文章无需手填 `cover_media_id`。
++
++导入时，后端读取图片并按内容哈希复用或上传至媒体库，将关联的 `cover_media_id` 保存到文章行；列表读取 medium 缩略图，详情和分享读取 xlarge，SVG 使用原图。封面不需要再插入正文，避免显示两次。分享卡片还取决于分享平台抓取与缓存，前端部署须设置 `NEXT_PUBLIC_SITE_URL=https://ty1547.com`，用于生成完整图片地址。
++
++若历史文章同时有有效 `cover_media_id`，它优先于 `cover`；要替换该文章封面，应移除这个旧 ID，再填写新图片路径。不要批量清理其他历史身份字段。
++
++替换图片建议使用新文件名，并修改文章的 `cover` 路径一起提交。仅修改图片字节、没有修改任何 Markdown 时，普通增量导入不会自动重导引用它的全部文章，需要手动重导或全量对账。
++
++### 修改、下线与新增分类
++
++- 修改文章：编辑原文件并保留 slug，检查后提交。
++- 下线文章：改为 `status: draft`；删除源文件可能删除数据库中的文章，请谨慎使用。
++- 新建分类：在中文分类目录中创建 `index.md`，至少填写 `title` 和显式 `slug`，完整模板见 [AGENTS.md](AGENTS.md)。分类 slug 在同一板块内唯一。
++- 图片与 Markdown 一起提交；后台编辑只修改数据库，后续源文件导入可能覆盖它。
++- 日常使用增量导入；初始化、手动修复或失败后的对账会使用全量同步。两者都只从仓库进入数据库，不回写源文件。
+ 
+ ## 相关文档
+ 
+ - [AGENTS.md](AGENTS.md)：文章、专栏、图片的上传格式规则
+ - [.agent/skills/blog-post-frontmatter](.agent/skills/blog-post-frontmatter/SKILL.md)：文章 frontmatter 字段详解
+ - [.agent/skills/category-metadata](.agent/skills/category-metadata/SKILL.md)：专栏 `index.md` 字段详解
++
++## 快速检查
++
++`python -m pip install -r tools/requirements.txt`
++
++`python tools/install-hooks.py`
++
++`python tools/content_contract.py`
++
++提交钩子检查暂存区，CI 检查提交快照，网站导入前再次检查；不连接数据库或上传图片。
+diff --git "a/articles/django-styleguide/00_\347\233\256\345\275\225\345\222\214\347\256\200\344\273\213.md" "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/00_\347\233\256\345\275\225\345\222\214\347\256\200\344\273\213.md"
+similarity index 100%
+rename from "articles/django-styleguide/00_\347\233\256\345\275\225\345\222\214\347\256\200\344\273\213.md"
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/00_\347\233\256\345\275\225\345\222\214\347\256\200\344\273\213.md"
+diff --git "a/articles/django-styleguide/01_\346\250\241\345\236\213\345\261\202.md" "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/01_\346\250\241\345\236\213\345\261\202.md"
+similarity index 100%
+rename from "articles/django-styleguide/01_\346\250\241\345\236\213\345\261\202.md"
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/01_\346\250\241\345\236\213\345\261\202.md"
+diff --git "a/articles/django-styleguide/02_\346\234\215\345\212\241\345\261\202\345\222\214\351\200\211\346\213\251\345\231\250.md" "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/02_\346\234\215\345\212\241\345\261\202\345\222\214\351\200\211\346\213\251\345\231\250.md"
+similarity index 100%
+rename from "articles/django-styleguide/02_\346\234\215\345\212\241\345\261\202\345\222\214\351\200\211\346\213\251\345\231\250.md"
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/02_\346\234\215\345\212\241\345\261\202\345\222\214\351\200\211\346\213\251\345\231\250.md"
+diff --git "a/articles/django-styleguide/03_API\345\222\214\345\272\217\345\210\227\345\214\226\345\231\250.md" "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/03_API\345\222\214\345\272\217\345\210\227\345\214\226\345\231\250.md"
+similarity index 100%
+rename from "articles/django-styleguide/03_API\345\222\214\345\272\217\345\210\227\345\214\226\345\231\250.md"
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/03_API\345\222\214\345\272\217\345\210\227\345\214\226\345\231\250.md"
+diff --git "a/articles/django-styleguide/04_URL\345\222\214\351\205\215\347\275\256.md" "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/04_URL\345\222\214\351\205\215\347\275\256.md"
+similarity index 100%
+rename from "articles/django-styleguide/04_URL\345\222\214\351\205\215\347\275\256.md"
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/04_URL\345\222\214\351\205\215\347\275\256.md"
+diff --git "a/articles/django-styleguide/05_\351\224\231\350\257\257\345\222\214\345\274\202\345\270\270\345\244\204\347\220\206.md" "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/05_\351\224\231\350\257\257\345\222\214\345\274\202\345\270\270\345\244\204\347\220\206.md"
+similarity index 100%
+rename from "articles/django-styleguide/05_\351\224\231\350\257\257\345\222\214\345\274\202\345\270\270\345\244\204\347\220\206.md"
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/05_\351\224\231\350\257\257\345\222\214\345\274\202\345\270\270\345\244\204\347\220\206.md"
+diff --git "a/articles/django-styleguide/06_\346\265\213\350\257\225\345\222\214Celery.md" "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/06_\346\265\213\350\257\225\345\222\214Celery.md"
+similarity index 100%
+rename from "articles/django-styleguide/06_\346\265\213\350\257\225\345\222\214Celery.md"
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/06_\346\265\213\350\257\225\345\222\214Celery.md"
+diff --git "a/articles/django-styleguide/07_\345\256\236\347\224\250\346\212\200\345\267\247\345\222\214\350\265\204\346\272\220.md" "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/07_\345\256\236\347\224\250\346\212\200\345\267\247\345\222\214\350\265\204\346\272\220.md"
+similarity index 100%
+rename from "articles/django-styleguide/07_\345\256\236\347\224\250\346\212\200\345\267\247\345\222\214\350\265\204\346\272\220.md"
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/07_\345\256\236\347\224\250\346\212\200\345\267\247\345\222\214\350\265\204\346\272\220.md"
+diff --git a/articles/django-styleguide/assets/cover.jpg "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/assets/cover.jpg"
+similarity index 100%
+rename from articles/django-styleguide/assets/cover.jpg
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/assets/cover.jpg"
+diff --git a/articles/django-styleguide/assets/icon.svg "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/assets/icon.svg"
+similarity index 100%
+rename from articles/django-styleguide/assets/icon.svg
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/assets/icon.svg"
+diff --git a/articles/django-styleguide/index.md "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/index.md"
+similarity index 98%
+rename from articles/django-styleguide/index.md
+rename to "articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/index.md"
+index d68b7b2dd69a43d483e7ba4b36fc2797a299543a..36551ae9e64ec870fdb56aa9b49ab3467c1d315d 100644
+--- a/articles/django-styleguide/index.md
++++ "b/articles/Django\351\243\216\346\240\274\346\214\207\345\215\227/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: django-styleguide
+ category_id: 019c2769-763b-734d-873b-c0b734d830ab
+ cover: cover.jpg
+ cover_media_id: 019c2769-768c-7e37-927f-2a32d4ad30bb
+diff --git a/articles/fastapi-engineering-practice/01-how-to-structure-fastapi-projects.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/01-how-to-structure-fastapi-projects.md"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/01-how-to-structure-fastapi-projects.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/01-how-to-structure-fastapi-projects.md"
+diff --git a/articles/fastapi-engineering-practice/02-async-boundaries-in-fastapi.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/02-async-boundaries-in-fastapi.md"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/02-async-boundaries-in-fastapi.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/02-async-boundaries-in-fastapi.md"
+diff --git a/articles/fastapi-engineering-practice/03-pydantic-models-and-settings.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/03-pydantic-models-and-settings.md"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/03-pydantic-models-and-settings.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/03-pydantic-models-and-settings.md"
+diff --git a/articles/fastapi-engineering-practice/04-dependencies-and-rest-routes.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/04-dependencies-and-rest-routes.md"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/04-dependencies-and-rest-routes.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/04-dependencies-and-rest-routes.md"
+diff --git a/articles/fastapi-engineering-practice/05-docs-and-response-models.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/05-docs-and-response-models.md"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/05-docs-and-response-models.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/05-docs-and-response-models.md"
+diff --git a/articles/fastapi-engineering-practice/06-error-handling-architecture.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/06-error-handling-architecture.md"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/06-error-handling-architecture.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/06-error-handling-architecture.md"
+diff --git a/articles/fastapi-engineering-practice/07-migrations-naming-and-sql-first.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/07-migrations-naming-and-sql-first.md"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/07-migrations-naming-and-sql-first.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/07-migrations-naming-and-sql-first.md"
+diff --git a/articles/fastapi-engineering-practice/08-testing-and-code-quality.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/08-testing-and-code-quality.md"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/08-testing-and-code-quality.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/08-testing-and-code-quality.md"
+diff --git a/articles/fastapi-engineering-practice/assets/fastapi.png "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/assets/fastapi.png"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/assets/fastapi.png
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/assets/fastapi.png"
+diff --git a/articles/fastapi-engineering-practice/assets/fastapi2.png "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/assets/fastapi2.png"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/assets/fastapi2.png
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/assets/fastapi2.png"
+diff --git a/articles/fastapi-engineering-practice/assets/icon.svg "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/assets/icon.svg"
+similarity index 100%
+rename from articles/fastapi-engineering-practice/assets/icon.svg
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/assets/icon.svg"
+diff --git a/articles/fastapi-engineering-practice/index.md "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/index.md"
+similarity index 98%
+rename from articles/fastapi-engineering-practice/index.md
+rename to "articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/index.md"
+index 5486e13656d33bbba51a0db4e98d235ab83bb525..3e90f2bfcdfa679fdf37f4319751df305ecc4973 100644
+--- a/articles/fastapi-engineering-practice/index.md
++++ "b/articles/FastAPI\345\267\245\347\250\213\345\214\226\345\256\236\350\267\265/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: fastapi-engineering-practice
+ category_id: 019d359a-ec80-7ce3-a755-4a2b1ca21df4
+ cover: fastapi2.png
+ cover_media_id: 019d35a3-53fa-7d9b-ad68-964c0f81ddb2
+diff --git a/articles/next-cache/01-background.md "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/01-background.md"
+similarity index 100%
+rename from articles/next-cache/01-background.md
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/01-background.md"
+diff --git a/articles/next-cache/02-layer1-request-memoization.md "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/02-layer1-request-memoization.md"
+similarity index 100%
+rename from articles/next-cache/02-layer1-request-memoization.md
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/02-layer1-request-memoization.md"
+diff --git a/articles/next-cache/03-layer2-data-cache.md "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/03-layer2-data-cache.md"
+similarity index 100%
+rename from articles/next-cache/03-layer2-data-cache.md
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/03-layer2-data-cache.md"
+diff --git a/articles/next-cache/04-layer3-full-route-cache.md "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/04-layer3-full-route-cache.md"
+similarity index 100%
+rename from articles/next-cache/04-layer3-full-route-cache.md
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/04-layer3-full-route-cache.md"
+diff --git a/articles/next-cache/05-layer4-router-cache.md "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/05-layer4-router-cache.md"
+similarity index 100%
+rename from articles/next-cache/05-layer4-router-cache.md
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/05-layer4-router-cache.md"
+diff --git a/articles/next-cache/06-summary.md "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/06-summary.md"
+similarity index 100%
+rename from articles/next-cache/06-summary.md
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/06-summary.md"
+diff --git a/articles/next-cache/index.md "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/index.md"
+similarity index 99%
+rename from articles/next-cache/index.md
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/index.md"
+index 11150e07b16e0a0117ee6bcbe420d5b1752b858e..c8e4e4ec8856c3a13fa60890efc7466daf2b4493 100644
+--- a/articles/next-cache/index.md
++++ "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: next-cache
+ category_id: 019c7b3d-46c4-7a8e-8a01-d2cef7bb5b9c
+ cover: cover.png
+ cover_media_id: 019c7b3d-48e3-7470-9252-8ee00d82b156
+diff --git a/articles/next-cache/media/cover.png "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/media/cover.png"
+similarity index 100%
+rename from articles/next-cache/media/cover.png
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/media/cover.png"
+diff --git a/articles/next-cache/media/icon.svg "b/articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/media/icon.svg"
+similarity index 100%
+rename from articles/next-cache/media/icon.svg
+rename to "articles/Next.js\347\274\223\345\255\230\346\234\272\345\210\266/media/icon.svg"
+diff --git a/articles/README.md b/articles/README.md
+index fd7511fa184b4e695d3206a86f76d609515c97e6..cf4c89bd484ed80c12311b5f09877caaa15ef03c 100644
+--- a/articles/README.md
++++ b/articles/README.md
+@@ -6,10 +6,10 @@
+ 
+ | 目录 | 名称 | 文章数 | 状态 |
+ | --- | --- | --- | --- |
+-| [fastapi-engineering-practice](fastapi-engineering-practice/index.md) | FastAPI 工程化实践 | 8 | 公开 |
+-| [django-styleguide](django-styleguide/index.md) | Django 风格指南 (HackSoft) | 8 | 公开 |
+-| [next-cache](next-cache/index.md) | Next.js 缓存机制全解析 | 6 | 公开 |
+-| [tech](tech/index.md) | Tech | 1 | 隐藏（`hidden: true`） |
++| [fastapi-engineering-practice](FastAPI工程化实践/index.md) | FastAPI 工程化实践 | 8 | 公开 |
++| [django-styleguide](Django风格指南/index.md) | Django 风格指南 (HackSoft) | 8 | 公开 |
++| [next-cache](Next.js缓存机制/index.md) | Next.js 缓存机制全解析 | 6 | 公开 |
++| [tech](技术杂记/index.md) | Tech | 1 | 隐藏（`hidden: true`） |
+ 
+ ## 本类型约定
+ 
+diff --git a/articles/tech/index.md "b/articles/\346\212\200\346\234\257\346\235\202\350\256\260/index.md"
+similarity index 93%
+rename from articles/tech/index.md
+rename to "articles/\346\212\200\346\234\257\346\235\202\350\256\260/index.md"
+index 6b807eac30ca35903c106dd7034dd6a39483cf8b..2652790acad44e28210b116008fc902165450dc5 100644
+--- a/articles/tech/index.md
++++ "b/articles/\346\212\200\346\234\257\346\235\202\350\256\260/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: tech
+ category_id: 019c21dc-5017-754f-b26a-6c6cb22dcef2
+ hidden: true
+ post_sort: published_at_desc
+diff --git "a/articles/tech/\346\265\213\350\257\225\346\226\207\347\253\240.md" "b/articles/\346\212\200\346\234\257\346\235\202\350\256\260/\346\265\213\350\257\225\346\226\207\347\253\240.md"
+similarity index 100%
+rename from "articles/tech/\346\265\213\350\257\225\346\226\207\347\253\240.md"
+rename to "articles/\346\212\200\346\234\257\346\235\202\350\256\260/\346\265\213\350\257\225\346\226\207\347\253\240.md"
+diff --git a/ideas/geb-zi-zhi-de-guai-quan/index.md "b/ideas/GEB-\350\207\252\346\214\207\347\232\204\346\200\252\345\234\210/index.md"
+similarity index 98%
+rename from ideas/geb-zi-zhi-de-guai-quan/index.md
+rename to "ideas/GEB-\350\207\252\346\214\207\347\232\204\346\200\252\345\234\210/index.md"
+index 648cced53830eb1ce2ee147ff768126ef8c870ea..51380ee7d5263ea9d7a74c745f27bd867428ad8f 100644
+--- a/ideas/geb-zi-zhi-de-guai-quan/index.md
++++ "b/ideas/GEB-\350\207\252\346\214\207\347\232\204\346\200\252\345\234\210/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: geb-zi-zhi-de-guai-quan
+ category_id: 019c7b3d-4c18-7aa6-a293-17f1526ee7c5
+ cover: media/cover.png
+ hidden: false
+diff --git a/ideas/geb-zi-zhi-de-guai-quan/media/cover.png "b/ideas/GEB-\350\207\252\346\214\207\347\232\204\346\200\252\345\234\210/media/cover.png"
+similarity index 100%
+rename from ideas/geb-zi-zhi-de-guai-quan/media/cover.png
+rename to "ideas/GEB-\350\207\252\346\214\207\347\232\204\346\200\252\345\234\210/media/cover.png"
+diff --git a/ideas/geb-zi-zhi-de-guai-quan/media/icon.svg "b/ideas/GEB-\350\207\252\346\214\207\347\232\204\346\200\252\345\234\210/media/icon.svg"
+similarity index 100%
+rename from ideas/geb-zi-zhi-de-guai-quan/media/icon.svg
+rename to "ideas/GEB-\350\207\252\346\214\207\347\232\204\346\200\252\345\234\210/media/icon.svg"
+diff --git "a/ideas/rlao-de-sai/AI \350\277\233\345\214\226\350\256\272\357\274\232\344\270\200\351\203\250\342\200\230\350\213\246\346\266\251\346\225\231\350\256\255\342\200\231\347\232\204\345\256\217\345\244\247\345\217\231\344\272\213.md" "b/ideas/RL\345\245\245\345\276\267\350\265\233/AI \350\277\233\345\214\226\350\256\272\357\274\232\344\270\200\351\203\250\342\200\230\350\213\246\346\266\251\346\225\231\350\256\255\342\200\231\347\232\204\345\256\217\345\244\247\345\217\231\344\272\213.md"
+similarity index 100%
+rename from "ideas/rlao-de-sai/AI \350\277\233\345\214\226\350\256\272\357\274\232\344\270\200\351\203\250\342\200\230\350\213\246\346\266\251\346\225\231\350\256\255\342\200\231\347\232\204\345\256\217\345\244\247\345\217\231\344\272\213.md"
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/AI \350\277\233\345\214\226\350\256\272\357\274\232\344\270\200\351\203\250\342\200\230\350\213\246\346\266\251\346\225\231\350\256\255\342\200\231\347\232\204\345\256\217\345\244\247\345\217\231\344\272\213.md"
+diff --git a/ideas/rlao-de-sai/index.md "b/ideas/RL\345\245\245\345\276\267\350\265\233/index.md"
+similarity index 99%
+rename from ideas/rlao-de-sai/index.md
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/index.md"
+index 4d97fe2e217ed7db303f4b1389d4fa5ff6c93fd4..b27d1fa361b13e8e8528d226bed8325f98ed9273 100644
+--- a/ideas/rlao-de-sai/index.md
++++ "b/ideas/RL\345\245\245\345\276\267\350\265\233/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: rlao-de-sai
+ category_id: 019c21dc-4f75-7cba-9cd6-18404be2b65d
+ cover: media/rl_odyssey_cover.png
+ cover_media_id: 019c21dc-5055-7539-8e57-9b3c5912bfa8
+diff --git a/ideas/rlao-de-sai/media/bert_cloze.svg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/bert_cloze.svg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/bert_cloze.svg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/bert_cloze.svg"
+diff --git a/ideas/rlao-de-sai/media/bitter_lesson_diagram.svg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/bitter_lesson_diagram.svg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/bitter_lesson_diagram.svg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/bitter_lesson_diagram.svg"
+diff --git a/ideas/rlao-de-sai/media/cnn_vs_transformer_vision.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/cnn_vs_transformer_vision.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/cnn_vs_transformer_vision.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/cnn_vs_transformer_vision.png"
+diff --git a/ideas/rlao-de-sai/media/ddpm_magic.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/ddpm_magic.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/ddpm_magic.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/ddpm_magic.png"
+diff --git a/ideas/rlao-de-sai/media/dl_vs_ml_early.jpg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/dl_vs_ml_early.jpg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/dl_vs_ml_early.jpg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/dl_vs_ml_early.jpg"
+diff --git a/ideas/rlao-de-sai/media/dl_vs_ml_late.jpg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/dl_vs_ml_late.jpg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/dl_vs_ml_late.jpg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/dl_vs_ml_late.jpg"
+diff --git a/ideas/rlao-de-sai/media/gan_police_thief.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/gan_police_thief.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/gan_police_thief.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/gan_police_thief.png"
+diff --git a/ideas/rlao-de-sai/media/gpt_writing.svg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/gpt_writing.svg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/gpt_writing.svg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/gpt_writing.svg"
+diff --git a/ideas/rlao-de-sai/media/icon.svg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/icon.svg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/icon.svg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/icon.svg"
+diff --git a/ideas/rlao-de-sai/media/logic_vs_perception_clash.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/logic_vs_perception_clash.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/logic_vs_perception_clash.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/logic_vs_perception_clash.png"
+diff --git a/ideas/rlao-de-sai/media/page1_v2.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/page1_v2.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/page1_v2.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/page1_v2.png"
+diff --git a/ideas/rlao-de-sai/media/qiu_shui_wang_yang.jpg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/qiu_shui_wang_yang.jpg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/qiu_shui_wang_yang.jpg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/qiu_shui_wang_yang.jpg"
+diff --git a/ideas/rlao-de-sai/media/rl_odyssey_cover.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/rl_odyssey_cover.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/rl_odyssey_cover.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/rl_odyssey_cover.png"
+diff --git a/ideas/rlao-de-sai/media/starry_sky_humility.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/starry_sky_humility.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/starry_sky_humility.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/starry_sky_humility.png"
+diff --git a/ideas/rlao-de-sai/media/symbolic_rules.svg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/symbolic_rules.svg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/symbolic_rules.svg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/symbolic_rules.svg"
+diff --git a/ideas/rlao-de-sai/media/transformer_architecture.svg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/transformer_architecture.svg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/transformer_architecture.svg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/transformer_architecture.svg"
+diff --git a/ideas/rlao-de-sai/media/transformer_architecture_reference.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/transformer_architecture_reference.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/transformer_architecture_reference.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/transformer_architecture_reference.png"
+diff --git a/ideas/rlao-de-sai/media/transformer_roc_soaring.jpg "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/transformer_roc_soaring.jpg"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/transformer_roc_soaring.jpg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/transformer_roc_soaring.jpg"
+diff --git a/ideas/rlao-de-sai/media/transformer_roc_soaring.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/transformer_roc_soaring.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/transformer_roc_soaring.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/transformer_roc_soaring.png"
+diff --git a/ideas/rlao-de-sai/media/turing_child_machine_v2.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/turing_child_machine_v2.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/turing_child_machine_v2.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/turing_child_machine_v2.png"
+diff --git a/ideas/rlao-de-sai/media/turing_child_machine_vs_logic.png "b/ideas/RL\345\245\245\345\276\267\350\265\233/media/turing_child_machine_vs_logic.png"
+similarity index 100%
+rename from ideas/rlao-de-sai/media/turing_child_machine_vs_logic.png
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/media/turing_child_machine_vs_logic.png"
+diff --git a/ideas/rlao-de-sai/zhuangzi-dream.jpg "b/ideas/RL\345\245\245\345\276\267\350\265\233/zhuangzi-dream.jpg"
+similarity index 100%
+rename from ideas/rlao-de-sai/zhuangzi-dream.jpg
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/zhuangzi-dream.jpg"
+diff --git "a/ideas/rlao-de-sai/\350\213\246\346\266\251\347\232\204\346\225\231\350\256\255\347\232\204\350\247\243\350\257\273.md" "b/ideas/RL\345\245\245\345\276\267\350\265\233/\350\213\246\346\266\251\347\232\204\346\225\231\350\256\255\347\232\204\350\247\243\350\257\273.md"
+similarity index 100%
+rename from "ideas/rlao-de-sai/\350\213\246\346\266\251\347\232\204\346\225\231\350\256\255\347\232\204\350\247\243\350\257\273.md"
+rename to "ideas/RL\345\245\245\345\276\267\350\265\233/\350\213\246\346\266\251\347\232\204\346\225\231\350\256\255\347\232\204\350\247\243\350\257\273.md"
+diff --git a/ideas/san-shi-ti-ji/index.md "b/ideas/\344\270\211\345\215\201\351\242\230\350\256\260/index.md"
+similarity index 99%
+rename from ideas/san-shi-ti-ji/index.md
+rename to "ideas/\344\270\211\345\215\201\351\242\230\350\256\260/index.md"
+index 5957c8c0c5d67ea3f1e155d8b3919a3360876c88..15ed7c48eb5edf9777783d1016670ceec767cbda 100644
+--- a/ideas/san-shi-ti-ji/index.md
++++ "b/ideas/\344\270\211\345\215\201\351\242\230\350\256\260/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: san-shi-ti-ji
+ category_id: 019c7bc5-9b6d-70c7-865c-bdef86dae951
+ cover: media/cover.png
+ cover_media_id: 019c7bc5-9b88-711e-a3d0-ff3a3b2788e4
+diff --git a/ideas/san-shi-ti-ji/media/cover.png "b/ideas/\344\270\211\345\215\201\351\242\230\350\256\260/media/cover.png"
+similarity index 100%
+rename from ideas/san-shi-ti-ji/media/cover.png
+rename to "ideas/\344\270\211\345\215\201\351\242\230\350\256\260/media/cover.png"
+diff --git a/ideas/san-shi-ti-ji/media/icon.svg "b/ideas/\344\270\211\345\215\201\351\242\230\350\256\260/media/icon.svg"
+similarity index 100%
+rename from ideas/san-shi-ti-ji/media/icon.svg
+rename to "ideas/\344\270\211\345\215\201\351\242\230\350\256\260/media/icon.svg"
+diff --git "a/ideas/san-shi-ti-ji/\346\210\221\350\247\211\345\276\227\346\210\221\347\232\204\344\272\272\347\224\237\351\234\200\350\246\201\344\270\200\347\202\271\346\212\230\350\205\276.md" "b/ideas/\344\270\211\345\215\201\351\242\230\350\256\260/\346\210\221\350\247\211\345\276\227\346\210\221\347\232\204\344\272\272\347\224\237\351\234\200\350\246\201\344\270\200\347\202\271\346\212\230\350\205\276.md"
+similarity index 100%
+rename from "ideas/san-shi-ti-ji/\346\210\221\350\247\211\345\276\227\346\210\221\347\232\204\344\272\272\347\224\237\351\234\200\350\246\201\344\270\200\347\202\271\346\212\230\350\205\276.md"
+rename to "ideas/\344\270\211\345\215\201\351\242\230\350\256\260/\346\210\221\350\247\211\345\276\227\346\210\221\347\232\204\344\272\272\347\224\237\351\234\200\350\246\201\344\270\200\347\202\271\346\212\230\350\205\276.md"
+diff --git "a/ideas/san-shi-ti-ji/\347\210\261\346\203\205\347\232\204\344\273\267\346\240\274.md" "b/ideas/\344\270\211\345\215\201\351\242\230\350\256\260/\347\210\261\346\203\205\347\232\204\344\273\267\346\240\274.md"
+similarity index 100%
+rename from "ideas/san-shi-ti-ji/\347\210\261\346\203\205\347\232\204\344\273\267\346\240\274.md"
+rename to "ideas/\344\270\211\345\215\201\351\242\230\350\256\260/\347\210\261\346\203\205\347\232\204\344\273\267\346\240\274.md"
+diff --git a/ideas/ren-jian-shi/index.md "b/ideas/\344\272\272\351\227\264\344\270\226/index.md"
+similarity index 99%
+rename from ideas/ren-jian-shi/index.md
+rename to "ideas/\344\272\272\351\227\264\344\270\226/index.md"
+index ccef948bf188700b30a691e1fb05d86a796c5c03..c958e896c09fdf508730586603dbc8514f0ccfa1 100644
+--- a/ideas/ren-jian-shi/index.md
++++ "b/ideas/\344\272\272\351\227\264\344\270\226/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: ren-jian-shi
+ category_id: 019c7bc5-9e00-7c3f-a4e5-082debcf100e
+ cover: media/cover.png
+ cover_media_id: 019c7bc5-9e21-72ab-9267-7fb199c86049
+diff --git a/ideas/ren-jian-shi/media/cover.png "b/ideas/\344\272\272\351\227\264\344\270\226/media/cover.png"
+similarity index 100%
+rename from ideas/ren-jian-shi/media/cover.png
+rename to "ideas/\344\272\272\351\227\264\344\270\226/media/cover.png"
+diff --git a/ideas/ren-jian-shi/media/icon.svg "b/ideas/\344\272\272\351\227\264\344\270\226/media/icon.svg"
+similarity index 100%
+rename from ideas/ren-jian-shi/media/icon.svg
+rename to "ideas/\344\272\272\351\227\264\344\270\226/media/icon.svg"
+diff --git a/ideas/bi-te-man-bi/index.md "b/ideas/\346\257\224\347\211\271\346\274\253\347\254\224/index.md"
+similarity index 98%
+rename from ideas/bi-te-man-bi/index.md
+rename to "ideas/\346\257\224\347\211\271\346\274\253\347\254\224/index.md"
+index 53cc8c17912af78ba1bc26d47b7129311af140ab..415abf30bf381f14b2674ddf9c59058d05d2a7d1 100644
+--- a/ideas/bi-te-man-bi/index.md
++++ "b/ideas/\346\257\224\347\211\271\346\274\253\347\254\224/index.md"
+@@ -1,4 +1,5 @@
+ ---
++slug: bi-te-man-bi
+ category_id: 019cc173-5ef7-711f-9878-ca220c90be7e
+ cover: media/cover.png
+ cover_media_id: 019cc173-5f0c-7990-b076-fb1ff0d48a5c
+diff --git a/ideas/bi-te-man-bi/media/cover.png "b/ideas/\346\257\224\347\211\271\346\274\253\347\254\224/media/cover.png"
+similarity index 100%
+rename from ideas/bi-te-man-bi/media/cover.png
+rename to "ideas/\346\257\224\347\211\271\346\274\253\347\254\224/media/cover.png"
+diff --git a/tools/content_contract.py b/tools/content_contract.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..46a3783cfd0112f5559b1775cb7ef1b8ccf2eaa5
+--- /dev/null
++++ b/tools/content_contract.py
+@@ -0,0 +1,175 @@
++"""Standalone content contract, also distributed unchanged to content/tools.
++
++Only Python + PyYAML are needed. No app startup, database, uploads or network.
++The pre-commit mode reads the complete Git index, never unstaged working files.
++"""
++
++import argparse
++import io
++import re
++import subprocess
++import sys
++import time
++from pathlib import Path, PurePosixPath
++
++import yaml
++
++VERSION = 1
++MANIFEST = ".content-contract.json"
++DOCUMENTS = {"README", "AGENTS", "CLAUDE", "LICENSE", "CONTRIBUTING", "CHANGELOG"}
++SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
++
++
++def is_content_path(value):
++    path = PurePosixPath(str(value).replace("\\", "/"))
++    return (path.suffix.lower() in {".md", ".mdx"}
++            and path.stem.upper() not in DOCUMENTS
++            and not any(part.startswith(".") for part in path.parts))
++
++
++class UniqueLoader(yaml.SafeLoader):
++    """Duplicate YAML keys are errors, rather than silently taking the last."""
++
++
++def _mapping(loader, node, deep=False):
++    result = {}
++    for key_node, value_node in node.value:
++        key = loader.construct_object(key_node, deep=deep)
++        if key in result:
++            raise ValueError(f"Duplicate YAML key: {key}")
++        result[key] = loader.construct_object(value_node, deep=deep)
++    return result
++
++
++UniqueLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _mapping)
++
++
++def metadata(text):
++    lines = text.lstrip("\ufeff").splitlines()
++    if not lines or lines[0].strip() != "---":
++        return {}
++    end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
++    if end is None:
++        raise ValueError("Unclosed frontmatter")
++    value = yaml.load("\n".join(lines[1:end]), Loader=UniqueLoader)
++    if value is None:
++        return {}
++    if not isinstance(value, dict):
++        raise ValueError("Frontmatter must be a mapping")
++    return value
++
++
++def validate(files):
++    """Return all violations of the strict v1 schema, with conflicting paths."""
++    errors, parsed, categories, articles = [], {}, {}, {}
++    urls = {f"/posts/{kind}/categories": "reserved category listing"
++            for kind in ("articles", "ideas")}
++    for name, text in sorted(files.items()):
++        if not is_content_path(name):
++            continue
++        path = PurePosixPath(name)
++        if len(path.parts) != 3 or path.parts[0] not in {"articles", "ideas"}:
++            errors.append(f"{name}: expected articles/<category>/<file> or ideas/<category>/<file>")
++            continue
++        try:
++            meta = metadata(text)
++        except (ValueError, TypeError, yaml.YAMLError) as exc:
++            errors.append(f"{name}: invalid frontmatter: {exc}")
++            continue
++        slug = meta.get("slug")
++        limit = 100 if path.name == "index.md" else 200
++        if not isinstance(slug, str) or not SLUG.fullmatch(slug) or len(slug) > limit:
++            errors.append(f"{name}: explicit slug required (lowercase letters, digits, hyphens; max {limit})")
++            continue
++        is_index = path.name == "index.md"
++        if path.name.lower() == "index.md" and not is_index:
++            errors.append(f"{name}: category index must be named index.md")
++            continue
++        parsed[name] = meta
++        bucket, key = (categories, (path.parts[0], slug)) if is_index else (articles, slug)
++        if key in bucket:
++            errors.append(f"{name}: duplicate slug '{slug}', also used by {bucket[key]}")
++        else:
++            bucket[key] = name
++        url = (f"/posts/{path.parts[0]}/categories/{slug}" if is_index
++               else f"/posts/{path.parts[0]}/{slug}")
++        if url in urls:
++            errors.append(f"{name}: duplicate/reserved URL {url}, conflicts with {urls[url]}")
++        else:
++            urls[url] = name
++    for name in parsed:
++        path = PurePosixPath(name)
++        if path.name != "index.md":
++            index = (path.parent / "index.md").as_posix()
++            if index not in parsed:
++                errors.append(f"{name}: missing or invalid category index {index}")
++    return errors
++
++
++def working_files(root):
++    root = Path(root).resolve()
++    result = {}
++    for path in sorted(root.rglob("*")):
++        relative = path.relative_to(root).as_posix()
++        if path.is_file() and is_content_path(relative):
++            if not path.resolve().is_relative_to(root):
++                raise ValueError(f"{relative}: source escapes repository")
++            result[relative] = path.read_text(encoding="utf-8")
++    return result
++
++
++def staged_files(root):
++    entries = subprocess.run(["git", "ls-files", "--stage", "-z"], cwd=root,
++                             check=True, capture_output=True).stdout
++    paths, hashes = [], []
++    for entry in entries.split(b"\0"):
++        if not entry:
++            continue
++        info, raw_path = entry.split(b"\t", 1)
++        mode, oid, stage = info.split()
++        name = raw_path.decode("utf-8")
++        if not is_content_path(name):
++            continue
++        if stage != b"0":
++            raise ValueError(f"{name}: unresolved merge conflict")
++        if mode not in {b"100644", b"100755"}:
++            raise ValueError(f"{name}: content must be a regular file")
++        paths.append(name)
++        hashes.append(oid)
++    if not paths:
++        return {}
++    output = subprocess.run(["git", "cat-file", "--batch"], cwd=root, check=True,
++                            input=b"\n".join(hashes) + b"\n", capture_output=True).stdout
++    stream, result = io.BytesIO(output), {}
++    for name in paths:
++        header = stream.readline().split()
++        if len(header) != 3 or header[1] != b"blob":
++            raise ValueError(f"{name}: cannot read staged blob")
++        result[name] = stream.read(int(header[2])).decode("utf-8")
++        stream.read(1)
++    return result
++
++
++def main():
++    parser = argparse.ArgumentParser(description="Validate explicit content slugs and final URLs")
++    parser.add_argument("--root", type=Path, default=Path.cwd())
++    parser.add_argument("--staged", action="store_true", help="Validate complete Git index")
++    args = parser.parse_args()
++    start = time.perf_counter()
++    try:
++        files = staged_files(args.root) if args.staged else working_files(args.root)
++        errors = validate(files)
++    except (OSError, ValueError, UnicodeError, subprocess.CalledProcessError) as exc:
++        print(f"Content validation failed: {exc}", file=sys.stderr)
++        return 1
++    for error in errors:
++        print(error, file=sys.stderr)
++    if errors:
++        print(f"Commit/import blocked: {len(errors)} content errors", file=sys.stderr)
++        return 1
++    print(f"Content validation passed: {len(files)} files in {(time.perf_counter()-start)*1000:.1f} ms")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/tools/install-hooks.py b/tools/install-hooks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd12bbb22a8920543b22279d9e0c0e159bab8cd1
+--- /dev/null
++++ b/tools/install-hooks.py
+@@ -0,0 +1,17 @@
++"""Run using a Python interpreter with PyYAML installed; no Node/Husky needed."""
++
++import importlib.util
++import subprocess
++import sys
++from pathlib import Path
++
++root = Path(__file__).resolve().parents[1]
++if importlib.util.find_spec("yaml") is None:
++    raise SystemExit("Install requirements first: python -m pip install -r tools/requirements.txt")
++result = subprocess.run(["git", "config", "--local", "--get", "core.hooksPath"], cwd=root, capture_output=True, text=True)
++if result.returncode == 0 and result.stdout.strip() != ".githooks":
++    raise SystemExit("Existing custom hooks detected; integrate pre-commit manually instead of replacing them")
++subprocess.run(["git", "config", "--local", "core.hooksPath", ".githooks"], cwd=root, check=True)
++subprocess.run(["git", "config", "--local", "content.python", sys.executable], cwd=root, check=True)
++(root / ".githooks/pre-commit").chmod(0o755)
++print("Installed content validation hook for this clone using", sys.executable)
+diff --git a/tools/requirements.txt b/tools/requirements.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f62ce0c56db2b5d134cff98f7fb1625023cd2874
+--- /dev/null
++++ b/tools/requirements.txt
+@@ -0,0 +1 @@
++PyYAML==6.0.3

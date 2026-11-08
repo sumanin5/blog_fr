@@ -1,0 +1,254 @@
+[
+  {
+    "path": "articles/Django风格指南/00_目录和简介.md",
+    "kind": "article",
+    "title": "00-目录与简介",
+    "slug": "django-styleguide-00-introduction-98mp26",
+    "url": "/posts/articles/django-styleguide-00-introduction-98mp26"
+  },
+  {
+    "path": "articles/Django风格指南/01_模型层.md",
+    "kind": "article",
+    "title": "01-模型层(models)",
+    "slug": "django-styleguide-01-models-0ss73s",
+    "url": "/posts/articles/django-styleguide-01-models-0ss73s"
+  },
+  {
+    "path": "articles/Django风格指南/02_服务层和选择器.md",
+    "kind": "article",
+    "title": "02-服务层和选择器(Services & Selectors)",
+    "slug": "django-styleguide-02-services-selectors-itd7s1",
+    "url": "/posts/articles/django-styleguide-02-services-selectors-itd7s1"
+  },
+  {
+    "path": "articles/Django风格指南/03_API和序列化器.md",
+    "kind": "article",
+    "title": "03-API和序列化器(Serializers)",
+    "slug": "django-styleguide-03-api-serializers-i1r9j9",
+    "url": "/posts/articles/django-styleguide-03-api-serializers-i1r9j9"
+  },
+  {
+    "path": "articles/Django风格指南/04_URL和配置.md",
+    "kind": "article",
+    "title": "04-URL和配置(Settings)",
+    "slug": "django-styleguide-04-urls-settings-p95s0f",
+    "url": "/posts/articles/django-styleguide-04-urls-settings-p95s0f"
+  },
+  {
+    "path": "articles/Django风格指南/05_错误和异常处理.md",
+    "kind": "article",
+    "title": "05-错误和异常处理(Error & Exception Handling)",
+    "slug": "django-styleguide-05-exception-handling-c4meub",
+    "url": "/posts/articles/django-styleguide-05-exception-handling-c4meub"
+  },
+  {
+    "path": "articles/Django风格指南/06_测试和Celery.md",
+    "kind": "article",
+    "title": "06-测试和Celery(Testing & Celery)",
+    "slug": "django-styleguide-06-testing-celery-1yla41",
+    "url": "/posts/articles/django-styleguide-06-testing-celery-1yla41"
+  },
+  {
+    "path": "articles/Django风格指南/07_实用技巧和资源.md",
+    "kind": "article",
+    "title": "07-实用技巧和资源(Cookbook & DX & Resources)",
+    "slug": "django-styleguide-07-cookbook-dx-4q6h0b",
+    "url": "/posts/articles/django-styleguide-07-cookbook-dx-4q6h0b"
+  },
+  {
+    "path": "articles/Django风格指南/index.md",
+    "kind": "category",
+    "title": "Django 风格指南 (HackSoft)",
+    "slug": "django-styleguide",
+    "url": "/posts/articles/categories/django-styleguide"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/01-how-to-structure-fastapi-projects.md",
+    "kind": "article",
+    "title": "01-FastAPI 项目结构怎么设计，才能在功能变多后不失控",
+    "slug": "how-to-structure-fastapi-projects-ee32vp",
+    "url": "/posts/articles/how-to-structure-fastapi-projects-ee32vp"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/02-async-boundaries-in-fastapi.md",
+    "kind": "article",
+    "title": "02-FastAPI 里什么时候该用 async，什么时候该用线程池",
+    "slug": "async-boundaries-in-fastapi-xcu4e8",
+    "url": "/posts/articles/async-boundaries-in-fastapi-xcu4e8"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/03-pydantic-models-and-settings.md",
+    "kind": "article",
+    "title": "03-FastAPI 里的数据边界：Pydantic 模型和配置别再混着写",
+    "slug": "pydantic-models-and-settings-1p1ect",
+    "url": "/posts/articles/pydantic-models-and-settings-1p1ect"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/04-dependencies-and-rest-routes.md",
+    "kind": "article",
+    "title": "04-把依赖注入和 REST 约定结合起来，路由会干净很多",
+    "slug": "dependencies-and-rest-routes-7xzmro",
+    "url": "/posts/articles/dependencies-and-rest-routes-7xzmro"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/05-docs-and-response-models.md",
+    "kind": "article",
+    "title": "05-让 FastAPI 接口更专业：文档契约、response_model 和模型组织",
+    "slug": "docs-and-response-models-6ciafl",
+    "url": "/posts/articles/docs-and-response-models-6ciafl"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/06-error-handling-architecture.md",
+    "kind": "article",
+    "title": "06-把错误处理做系统：分层、统一格式和全局收口",
+    "slug": "error-handling-architecture-htv8a0",
+    "url": "/posts/articles/error-handling-architecture-htv8a0"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/07-migrations-naming-and-sql-first.md",
+    "kind": "article",
+    "title": "07-数据库别拖后腿：迁移命名、约束约定和 SQL 优先",
+    "slug": "migrations-naming-and-sql-first-cu50vq",
+    "url": "/posts/articles/migrations-naming-and-sql-first-cu50vq"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/08-testing-and-code-quality.md",
+    "kind": "article",
+    "title": "08-FastAPI 项目为什么要尽早上异步测试和 Ruff",
+    "slug": "testing-and-code-quality-pa5un6",
+    "url": "/posts/articles/testing-and-code-quality-pa5un6"
+  },
+  {
+    "path": "articles/FastAPI工程化实践/index.md",
+    "kind": "category",
+    "title": "FastAPI 工程化实践",
+    "slug": "fastapi-engineering-practice",
+    "url": "/posts/articles/categories/fastapi-engineering-practice"
+  },
+  {
+    "path": "articles/Next.js缓存机制/01-background.md",
+    "kind": "article",
+    "title": "01-背景介绍：为什么 Next.js 的缓存这么复杂？",
+    "slug": "nextjs-cache-01-background-q43pip",
+    "url": "/posts/articles/nextjs-cache-01-background-q43pip"
+  },
+  {
+    "path": "articles/Next.js缓存机制/02-layer1-request-memoization.md",
+    "kind": "article",
+    "title": "02-第 1 层：请求记忆 (Request Memoization)",
+    "slug": "nextjs-cache-02-request-memoization-tx26n0",
+    "url": "/posts/articles/nextjs-cache-02-request-memoization-tx26n0"
+  },
+  {
+    "path": "articles/Next.js缓存机制/03-layer2-data-cache.md",
+    "kind": "article",
+    "title": "03-第 2 层：数据缓存 (Data Cache)",
+    "slug": "nextjs-cache-03-data-cache-cp4idu",
+    "url": "/posts/articles/nextjs-cache-03-data-cache-cp4idu"
+  },
+  {
+    "path": "articles/Next.js缓存机制/04-layer3-full-route-cache.md",
+    "kind": "article",
+    "title": "04-第 3 层：全路由缓存 (Full Route Cache)",
+    "slug": "nextjs-cache-04-full-route-cache-4ghjdx",
+    "url": "/posts/articles/nextjs-cache-04-full-route-cache-4ghjdx"
+  },
+  {
+    "path": "articles/Next.js缓存机制/05-layer4-router-cache.md",
+    "kind": "article",
+    "title": "05-第 4 层：路由器缓存 (Router Cache)",
+    "slug": "nextjs-cache-05-router-cache-4dthcc",
+    "url": "/posts/articles/nextjs-cache-05-router-cache-4dthcc"
+  },
+  {
+    "path": "articles/Next.js缓存机制/06-summary.md",
+    "kind": "article",
+    "title": "06-总结与实战",
+    "slug": "nextjs-cache-06-summary-ly4mkl",
+    "url": "/posts/articles/nextjs-cache-06-summary-ly4mkl"
+  },
+  {
+    "path": "articles/Next.js缓存机制/index.md",
+    "kind": "category",
+    "title": "Next.js 缓存机制全解析",
+    "slug": "next-cache",
+    "url": "/posts/articles/categories/next-cache"
+  },
+  {
+    "path": "articles/技术杂记/index.md",
+    "kind": "category",
+    "title": "Tech",
+    "slug": "tech",
+    "url": "/posts/articles/categories/tech"
+  },
+  {
+    "path": "articles/技术杂记/测试文章.md",
+    "kind": "article",
+    "title": "测试文章",
+    "slug": "test-post-sknhne-ruy667-o4ic6j-yuo6gt",
+    "url": "/posts/articles/test-post-sknhne-ruy667-o4ic6j-yuo6gt"
+  },
+  {
+    "path": "ideas/GEB-自指的怪圈/index.md",
+    "kind": "category",
+    "title": "GEB：自指的怪圈与意识的镜像",
+    "slug": "geb-zi-zhi-de-guai-quan",
+    "url": "/posts/ideas/categories/geb-zi-zhi-de-guai-quan"
+  },
+  {
+    "path": "ideas/RL奥德赛/AI 进化论：一部‘苦涩教训’的宏大叙事.md",
+    "kind": "article",
+    "title": "AI 进化论：一部‘苦涩教训’的宏大叙事",
+    "slug": "grand-narrative-of-ai-bitter-lesson-p29jer",
+    "url": "/posts/ideas/grand-narrative-of-ai-bitter-lesson-p29jer"
+  },
+  {
+    "path": "ideas/RL奥德赛/index.md",
+    "kind": "category",
+    "title": "RL奥德赛",
+    "slug": "rlao-de-sai",
+    "url": "/posts/ideas/categories/rlao-de-sai"
+  },
+  {
+    "path": "ideas/RL奥德赛/苦涩的教训的解读.md",
+    "kind": "article",
+    "title": "The Bitter Lesson",
+    "slug": "the-bitter-lesson-deep-interpretation-656jsd",
+    "url": "/posts/ideas/the-bitter-lesson-deep-interpretation-656jsd"
+  },
+  {
+    "path": "ideas/三十题记/index.md",
+    "kind": "category",
+    "title": "三十题记",
+    "slug": "san-shi-ti-ji",
+    "url": "/posts/ideas/categories/san-shi-ti-ji"
+  },
+  {
+    "path": "ideas/三十题记/我觉得我的人生需要一点折腾.md",
+    "kind": "article",
+    "title": "我觉得我的人生需要一点折腾",
+    "slug": "wo-jue-de-wo-de-ren-sheng-xu-yao-yi-dian-zhe-teng-84dee6d2",
+    "url": "/posts/ideas/wo-jue-de-wo-de-ren-sheng-xu-yao-yi-dian-zhe-teng-84dee6d2"
+  },
+  {
+    "path": "ideas/三十题记/爱情的价格.md",
+    "kind": "article",
+    "title": "爱情的价格",
+    "slug": "the-price-of-love-5zq2fs",
+    "url": "/posts/ideas/the-price-of-love-5zq2fs"
+  },
+  {
+    "path": "ideas/人间世/index.md",
+    "kind": "category",
+    "title": "人间世",
+    "slug": "ren-jian-shi",
+    "url": "/posts/ideas/categories/ren-jian-shi"
+  },
+  {
+    "path": "ideas/比特漫笔/index.md",
+    "kind": "category",
+    "title": "比特漫笔",
+    "slug": "bi-te-man-bi",
+    "url": "/posts/ideas/categories/bi-te-man-bi"
+  }
+]

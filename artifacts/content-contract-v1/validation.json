@@ -1,0 +1,13 @@
+{
+  "articles": 27,
+  "categories": 9,
+  "old_to_chinese_article_ids_stable": true,
+  "old_to_chinese_category_ids_stable": true,
+  "urls_stable": true,
+  "source_unchanged": true,
+  "incremental_empty": true,
+  "categories_match_explicit_index_slugs": true,
+  "category_links_resolved_on_first_import": true,
+  "database": "blog_slug_contract_test",
+  "git_pull": "mocked; real content snapshots imported"
+}

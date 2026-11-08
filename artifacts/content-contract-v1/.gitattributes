@@ -1,0 +1,2 @@
+# Preserve generated patches byte-for-byte, including context blank lines.
+*.patch -text -whitespace
