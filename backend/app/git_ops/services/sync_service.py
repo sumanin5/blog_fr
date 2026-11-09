@@ -59,8 +59,9 @@ class SyncService(BaseGitOpsService):
 
         logger.info("Starting full sync...")
 
-        # 1. Git Pull
-        _, _, _ = await self.github.pull()
+        # Production pulls Git; local editing can import a plain directory offline.
+        if settings.GIT_PULL_BEFORE_SYNC:
+            await self.github.pull()
         await self.container.validate_content()
 
         # 2. 扫描文件系统
@@ -214,7 +215,8 @@ class SyncService(BaseGitOpsService):
             self.hash_manager.mark_failed()
         else:
             self.hash_manager.clear_failed()
-            await self.hash_manager.save_current_hash()
+            if settings.GIT_PULL_BEFORE_SYNC:
+                await self.hash_manager.save_current_hash()
 
         stats.duration = time.time() - start_time
         logger.info(
@@ -259,6 +261,10 @@ class SyncService(BaseGitOpsService):
         old_hash: str | None = None,
         new_hash: str | None = None,
     ) -> SyncStats:
+        # Local worktree edits are not represented by commit ranges. Always scan
+        # the current files, and do not consume the remote-import cursor.
+        if not settings.GIT_PULL_BEFORE_SYNC:
+            return await self._sync_all_locked(default_user)
         # Recheck after waiting: another worker may have failed meanwhile.
         if self.hash_manager.needs_full_sync():
             return await self._sync_all_locked(default_user)

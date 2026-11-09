@@ -17,6 +17,10 @@ class GitOpsSettings:
         default="uncategorized", description="默认分类别名"
     )
     GIT_SYNC_BRANCH: str = Field(default="main", description="同步的具体分支")
+    GIT_PULL_BEFORE_SYNC: bool = Field(
+        default=True,
+        description="导入前是否拉取远程；本地开发设为 false，直接扫描本地目录",
+    )
     WEBHOOK_SECRET: str = Field(default="", description="GitHub Webhook Secret")
     ENABLE_GIT_AUTO_SYNC: bool = Field(
         default=False,

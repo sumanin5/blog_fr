@@ -11,6 +11,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 os.environ["ENVIRONMENT"] = (
     "test"  # 设置环境变量为测试环境，以便导入的是.env.test 文件，实现环境隔离
 )
+# Keep existing remote-sync contract tests independent of developer .env.local.
+# Offline-mode tests explicitly override the settings object per test.
+os.environ["GIT_PULL_BEFORE_SYNC"] = "true"
 
 # 安全默认值：即使忘记设置 DATABASE_URL，也不能落到开发库并执行 drop_all。
 # 需要真实测试库时，显式覆盖这个环境变量，并确保库名以 _test 结尾。

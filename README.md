@@ -9,6 +9,8 @@
 
 **Blog FR** 是一个基于 **FastAPI** 和 **Next.js 16** 构建的现代全栈博客系统。它集成了高性能后端、React Server Components 以及丰富的 MDX 渲染能力，旨在提供极致的写作与阅读体验。
 
+本地内容开发不要求绑定原网站的 GitHub 仓库：运行 `python scripts/setup_local_content.py` 使用项目内 `content/`，或用 `--content-dir "D:/my-blog-content"` 绑定外部目录。不存在的项目内容目录会从随项目提供的最小模板初始化。配置及离线导入步骤见 [本地内容开发](docs/LOCAL_CONTENT.md)。
+
 ## 🌓 主题展示
 
 支持深色和浅色两种主题模式，为用户提供舒适的阅读体验：

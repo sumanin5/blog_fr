@@ -74,6 +74,8 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       ENVIRONMENT: ${ENVIRONMENT}
       CONTENT_DIR: /git_root/content
+      GIT_PULL_BEFORE_SYNC: "false"
+      ENABLE_GIT_AUTO_SYNC: "false"
       # 解决 Docker 挂载导致的 Git 仓库识别问题
       GIT_DISCOVERY_ACROSS_FILESYSTEM: "1"
       GIT_CONFIG_PARAMETERS: "'safe.directory=*'"
