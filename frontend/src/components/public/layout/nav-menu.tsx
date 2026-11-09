@@ -266,6 +266,7 @@ export function MobileNav() {
           </div>
         </ScrollArea>
 
+        {(isLoading || user || process.env.NEXT_PUBLIC_SHOW_AUTH_ENTRY === "true") && (
         <div className="border-t p-4">
           {isLoading ? (
             <div className="flex items-center gap-3 px-2">
@@ -338,6 +339,7 @@ export function MobileNav() {
             </div>
           )}
         </div>
+        )}
       </SheetContent>
     </Sheet>
   );
