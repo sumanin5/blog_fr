@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Code2, Github, Mail, ArrowRight } from "lucide-react";
+import { Code2, Github, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { siteConfig } from "@/config/site";
 import { ContactEmailDropdown } from "./contact-email-dropdown";
 
 export function ContactSection() {

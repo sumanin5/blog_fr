@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { Mail, Phone, Link as LinkIcon, Github, MapPin } from "lucide-react";
+import { Mail, Phone, Link as LinkIcon, Github } from "lucide-react";
 
 export function ResumeHeader() {
   return (

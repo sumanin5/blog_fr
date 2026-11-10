@@ -1,10 +1,11 @@
 "use client";
 
+import { normalizeApiResponse } from "@/shared/api/transformers";
+
 import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
@@ -85,7 +86,7 @@ export function MediaLibraryDialog({
 
       // Auto-select the uploaded file
       // API normally returns the file object directly or nested
-      const uploadedFile = (res as any).file || res;
+      const uploadedFile = normalizeApiResponse(res.file);
 
       toast.success("Uploaded successfully");
 

@@ -5,6 +5,10 @@
 import asyncio
 import logging
 import time
+from contextlib import asynccontextmanager
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from app.core.config import settings
 from app.git_ops.components import (
@@ -24,6 +28,9 @@ from .base import BaseGitOpsService
 
 logger = logging.getLogger(__name__)
 
+# 固定 bigint：所有 worker 和同一工作目录的写入入口共用。
+SYNC_ADVISORY_LOCK_KEY: int = 0x4749544F5053
+
 
 class SyncService(BaseGitOpsService):
     """同步服务 - 负责全量和增量同步"""
@@ -38,6 +45,45 @@ class SyncService(BaseGitOpsService):
             cls._sync_lock = asyncio.Lock()
         return cls._sync_lock
 
+    @classmethod
+    @asynccontextmanager
+    async def database_lock(cls, session):
+        """PostgreSQL advisory lock；没有真实数据库连接（单元测试）时跳过。"""
+        bind = getattr(session, "bind", None)
+        if not isinstance(bind, (AsyncEngine, AsyncConnection)):
+            yield
+            return
+        engine = bind.engine if isinstance(bind, AsyncConnection) else bind
+        async with engine.connect() as connection:
+            try:
+                await connection.execute(
+                    text("SELECT pg_advisory_lock(:key)"),
+                    {"key": SYNC_ADVISORY_LOCK_KEY},
+                )
+                # session 级锁跨事务保留，避免长时间闲置事务。
+                await connection.commit()
+                yield
+            finally:
+                # 即使业务异常或等待被取消，也不把持锁连接归还连接池。
+                try:
+                    await connection.rollback()
+                    await connection.execute(
+                        text("SELECT pg_advisory_unlock(:key)"),
+                        {"key": SYNC_ADVISORY_LOCK_KEY},
+                    )
+                    await connection.commit()
+                except BaseException:
+                    await connection.invalidate()
+                    raise
+
+    @classmethod
+    @asynccontextmanager
+    async def repository_lock(cls, session):
+        """等待进程内锁和跨进程数据库锁。"""
+        async with cls._get_sync_lock():
+            async with cls.database_lock(session):
+                yield
+
     async def sync_all(self, default_user: User = None) -> SyncStats:
         """执行全量同步（扫描本地文件 -> 更新数据库）"""
         sync_lock = self._get_sync_lock()
@@ -45,7 +91,7 @@ class SyncService(BaseGitOpsService):
         if sync_lock.locked():
             logger.warning("GitOps sync is already in progress, waiting for lock...")
 
-        async with sync_lock, self.container.repository_lock():
+        async with sync_lock, self.container.repository_lock(), self.database_lock(self.session):
             try:
                 return await self._sync_all_locked(default_user)
             except Exception:
@@ -236,15 +282,15 @@ class SyncService(BaseGitOpsService):
 
         Args:
             default_user: 默认操作用户
-            old_hash: 可选，指定旧的 commit hash（用于 webhook 场景）
-            new_hash: 可选，指定新的 commit hash（用于 webhook 场景）
+            old_hash: 兼容旧调用方；同步范围始终由上次成功记录决定
+            new_hash: 兼容旧调用方；同步目标始终为当前工作区（包含 HEAD）
         """
         sync_lock = self._get_sync_lock()
 
         if sync_lock.locked():
             logger.warning("GitOps sync is already in progress, waiting for lock...")
 
-        async with sync_lock, self.container.repository_lock():
+        async with sync_lock, self.container.repository_lock(), self.database_lock(self.session):
             try:
                 return await self._sync_incremental_locked(
                     default_user, old_hash, new_hash

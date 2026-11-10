@@ -27,7 +27,10 @@ async def create_media_file(session: AsyncSession, media_file: MediaFile) -> Med
         创建的MediaFile对象
     """
     session.add(media_file)
-    await session.commit()
+    if session.in_nested_transaction():
+        await session.flush()
+    else:
+        await session.commit()
     await session.refresh(media_file)
     logger.info(f"创建媒体文件记录: {media_file.id}")
     return media_file

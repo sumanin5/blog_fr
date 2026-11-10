@@ -1,49 +1,27 @@
-import Link from "next/link";
-import { Github } from "lucide-react";
-import { siteConfig } from "@/config/site";
-import { FooterEmail } from "./footer-email";
+import React from "react";
 
 /**
- * 🦶 页脚组件 - 极致简约设计
+ * 🦶 全局极简页脚落款
+ *
+ * 核心设计：
+ * 1. 彻底取缔繁复多栏链接堆砌，不喧宾夺主；
+ * 2. 零实底背景、零分割线，完全融入背景点阵；
+ * 3. 仅保留最轻柔纯净的单行极客版权落款。
  */
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="relative mt-auto border-t border-border/40 bg-background/50 backdrop-blur-md">
-      <div className="container mx-auto max-w-7xl px-4 py-12 md:py-16">
-        <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
-          {/* Logo & Copyright */}
-          <div className="flex flex-col items-center gap-2 md:items-start">
-            <Link
-              href="/"
-              className="text-lg font-bold tracking-tighter hover:opacity-80 transition-opacity"
-            >
-              BLOG_FR
-            </Link>
-            <p className="text-muted-foreground text-xs font-medium">
-              © {currentYear} Created by tomy. All rights reserved.
-            </p>
-          </div>
-
-          {/* Social Icons */}
-          <div className="flex items-center gap-5">
-            <a
-              href={siteConfig.links.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group text-muted-foreground hover:text-primary transition-all duration-300"
-              title="GitHub"
-            >
-              <Github className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-            </a>
-            <FooterEmail />
-          </div>
+    <footer className="relative py-8 mt-4 text-xs font-mono text-muted-foreground/50">
+      <div className="container mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-2.5 px-4 sm:flex-row sm:px-6 lg:px-8">
+        <div>
+          © {currentYear} BLOG_FR · Crafted with care & digital garden philosophy.
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70" />
+          <span>All systems normal · 2026</span>
         </div>
       </div>
-
-      {/* Bottom accent line */}
-      <div className="h-1 w-full bg-linear-to-r from-transparent via-primary/10 to-transparent" />
     </footer>
   );
 }

@@ -3,7 +3,7 @@
 import React from "react";
 import { PostType } from "@/shared/api/generated";
 import { Category, CategoryCreate, CategoryUpdate } from "@/shared/api/types";
-import { Info, RefreshCw, Plus, Loader2 } from "lucide-react";
+import { RefreshCw, Plus, Loader2, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,7 +50,7 @@ export default function CategoriesPage() {
   }, [user, authLoading, isAuthorized, router]);
 
   // 处理保存 (新建或更新)
-  const handleSave = (data: Record<string, unknown>) => {
+  const handleSave = (data: Omit<CategoryCreate, "postType">) => {
     const onSuccess = () => setEditOpen(false);
 
     if (editingItem) {

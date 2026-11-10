@@ -36,7 +36,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         method = request.method
         url = str(request.url)
         client_ip = self._get_client_ip(request)
-        user_agent = request.headers.get("user-agent", "unknown")
 
         # 记录请求开始
         logger.info(

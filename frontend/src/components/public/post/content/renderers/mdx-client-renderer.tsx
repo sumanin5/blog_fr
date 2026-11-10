@@ -7,6 +7,8 @@ import { createMdxComponents } from "@/components/public/mdx/registry/mdx-compon
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import { stripLeadingMarkdownHeading } from "@/lib/markdown/leading-heading";
+import { cn } from "@/lib/utils";
 import "katex/dist/katex.min.css";
 
 /**
@@ -41,8 +43,8 @@ export function MdxClientRenderer({
   React.useEffect(() => {
     console.log("MDX 内容预览:", mdx.substring(0, 500));
 
-    // 预处理：将 HTML style 属性转换为 JSX 格式
-    const processedMdx = mdx.replace(/style="([^"]*)"/g, (match, styleStr) => {
+    // 预处理：去掉重复的正文 H1，并将 HTML style 属性转换为 JSX 格式
+    const processedMdx = stripLeadingMarkdownHeading(mdx).replace(/style="([^"]*)"/g, (match, styleStr) => {
       // 将 CSS 字符串转换为 JSX 对象格式
       const styles = styleStr
         .split(";")
@@ -79,7 +81,7 @@ export function MdxClientRenderer({
 
   if (error) {
     return (
-      <article className={articleClassName}>
+      <article className={cn(articleClassName, "markdown-body")}>
         <div className="p-4 bg-destructive/10 border border-destructive rounded">
           <p className="text-destructive font-mono text-sm">
             MDX 渲染错误: {error}
@@ -91,14 +93,14 @@ export function MdxClientRenderer({
 
   if (!mdxSource) {
     return (
-      <article className={articleClassName}>
+      <article className={cn(articleClassName, "markdown-body")}>
         <div className="animate-pulse bg-muted h-20 rounded" />
       </article>
     );
   }
 
   return (
-    <article className={articleClassName}>
+    <article className={cn(articleClassName, "markdown-body")}>
       <MDXRemote {...mdxSource} components={createMdxComponents(toc)} />
     </article>
   );

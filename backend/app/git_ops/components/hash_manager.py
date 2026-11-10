@@ -3,9 +3,9 @@ Hash 管理组件 - 负责同步 hash 的读取、保存和对比
 """
 
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
-from app.git_ops.git_client import GitClient
+from app.git_ops.git_client import FileChange, GitClient
 
 LAST_SYNC_FILE = ".gitops_last_sync"
 NEEDS_FULL_SYNC_FILE = ".gitops_needs_full_sync"
@@ -71,7 +71,7 @@ class HashManager:
 
     async def get_changed_files_since_last_sync(
         self,
-    ) -> Optional[list[Tuple[str, str]]]:
+    ) -> Optional[list[FileChange]]:
         """获取自上次同步以来变更的文件
 
         Returns:
@@ -85,7 +85,7 @@ class HashManager:
 
     async def get_changed_files_between(
         self, old_hash: str, new_hash: str
-    ) -> list[Tuple[str, str]]:
+    ) -> list[FileChange]:
         """获取两个 hash 之间变更的文件
 
         Args:

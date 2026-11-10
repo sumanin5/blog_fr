@@ -7,13 +7,22 @@
     "dev:fast": "NEXT_TELEMETRY_DISABLED=1 next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings 0",
     "test": "vitest run",
     "type-check": "tsc --noEmit",
     "api:generate": "openapi-ts -i openapi.json -o src/shared/api/generated -c @hey-api/client-fetch"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.13.1",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api-logs": "0.211.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.211.0",
+    "@opentelemetry/instrumentation": "0.211.0",
+    "@opentelemetry/resources": "2.5.0",
+    "@opentelemetry/sdk-logs": "0.211.0",
+    "@opentelemetry/sdk-metrics": "2.5.0",
+    "@opentelemetry/sdk-trace-base": "2.5.0",
+    "@radix-ui/react-accordion": "^1.2.20",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -31,14 +40,18 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@sentry/nextjs": "^10.36.0",
+    "@tanstack/charts": "^1.1.0",
+    "@tanstack/highlight": "^1.1.0",
+    "@tanstack/markdown": "^1.0.0",
     "@tanstack/react-query": "^5.90.16",
     "@tanstack/react-table": "^8.21.3",
     "@uiw/react-md-editor": "^4.0.11",
+    "@vercel/otel": "2.1.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.24.11",
-    "highlight.js": "^11.11.1",
     "html-react-parser": "^5.1.19",
     "humps": "^2.0.1",
     "js-cookie": "^3.0.5",
@@ -58,6 +71,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.186.1",
     "zod": "^4.3.5",
     "zustand": "^5.0.10"
   },
@@ -73,6 +87,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^5.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
@@ -82,5 +97,13 @@
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.0.18"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@sentry/cli",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }

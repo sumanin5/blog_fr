@@ -5,7 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { CategoryResponse } from "@/shared/api/generated";
 import { ApiData } from "@/shared/api/transformers";
 import { Badge } from "@/components/ui/badge";
-import { FolderTree, ChevronRight, Edit2, Trash2 } from "lucide-react";
+import { FolderTree, Edit2, Trash2 } from "lucide-react";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 
 interface CategoryColumnsProps {

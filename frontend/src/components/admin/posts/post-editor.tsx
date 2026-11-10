@@ -8,9 +8,10 @@ import { useTheme } from "next-themes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { MdxClientRenderer } from "@/components/public/post/content/renderers/mdx-client-renderer";
 import { PostType, PostStatus } from "@/shared/api/generated";
-import { MediaFile, Category } from "@/shared/api/types";
+import { MediaFile, Category, PostCreate } from "@/shared/api/types";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { PostMetadataSidebar, PostMetadata } from "./post-metadata-sidebar";
 
@@ -43,7 +44,7 @@ interface PostEditorProps {
   initialData: PostEditorInitialData;
   postType?: PostType;
   categories: Category[];
-  onSave: (data: Record<string, unknown>) => void;
+  onSave: (data: PostCreate) => void;
   isSaving?: boolean;
 }
 
@@ -112,7 +113,7 @@ export function PostEditor({
               返回
             </AdminActionButton>
           </Link>
-          <div className="h-4 w-px bg-border" />
+          <Separator orientation="vertical" className="h-4" />
           <h2 className="text-lg font-semibold truncate max-w-[300px]">
             {title || "未命名文章"}
           </h2>

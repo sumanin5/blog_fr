@@ -98,12 +98,17 @@ class CategoryProcessor(FieldProcessor):
                 logger.info(
                     f"💾 Attempting to commit new category: {new_category.slug}"
                 )
-                await session.commit()
+                if session.in_nested_transaction():
+                    await session.flush()
+                else:
+                    await session.commit()
                 await session.refresh(new_category)
                 logger.info(f"✅ Successfully created category: {new_category.id}")
                 return new_category.id
             except Exception as e:
                 logger.error(f"❌ Failed to create category {category_value}: {e}")
+                if session.in_nested_transaction():
+                    raise
                 await session.rollback()
                 # 继续尝试 fallback
 
@@ -130,11 +135,16 @@ class CategoryProcessor(FieldProcessor):
             )
             session.add(default_cat)
             logger.info(f"💾 Creating default category: {default_slug}")
-            await session.commit()
+            if session.in_nested_transaction():
+                await session.flush()
+            else:
+                await session.commit()
             await session.refresh(default_cat)
             logger.info(f"✅ Created default category: {default_cat.id}")
             return default_cat.id
         except Exception as e:
             logger.error(f"❌ CRITICAL: Failed to create default category: {e}")
+            if session.in_nested_transaction():
+                raise
             await session.rollback()
             return None

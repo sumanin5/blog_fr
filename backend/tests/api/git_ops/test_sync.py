@@ -20,7 +20,8 @@ async def test_sync_add_post(
 
     # 执行同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
 
     assert response.status_code == 200, f"Sync failed: {response.text}"
@@ -61,7 +62,8 @@ async def test_sync_update_post(
     git_commit_helper("Add post")
 
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
     assert response.status_code == 200
 
@@ -83,7 +85,8 @@ author: "{superadmin_user.username}"
 
     # 3. 再次同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
     assert response.status_code == 200
     data = response.json()
@@ -113,7 +116,8 @@ async def test_sync_delete_post(
     git_commit_helper("Add post")
 
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
     assert response.status_code == 200
 
@@ -123,7 +127,8 @@ async def test_sync_delete_post(
 
     # 3. 再次同步
     response = await async_client.post(
-        f"{settings.API_PREFIX}/ops/git/sync?force_full=true", headers=superadmin_user_token_headers
+        f"{settings.API_PREFIX}/ops/git/sync?force_full=true",
+        headers=superadmin_user_token_headers,
     )
     assert response.status_code == 200
     data = response.json()

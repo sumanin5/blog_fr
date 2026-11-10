@@ -27,14 +27,10 @@ export const useCategoriesAdmin = (postType: PostType) => {
       pages: data?.pages ?? 1,
       page: data?.page ?? 1,
     },
-    isLoading: isLoading || authLoading(user),
+    isLoading,
     isFetching,
     refetch,
     isAuthorized,
     ...mutations,
   };
 };
-
-function authLoading(user: any) {
-  return !user;
-}

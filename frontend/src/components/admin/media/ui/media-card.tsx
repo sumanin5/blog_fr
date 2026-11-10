@@ -8,6 +8,7 @@ import { Check, Eye, Edit2, RefreshCw, Trash2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -153,7 +154,7 @@ export function MediaCard({
                     }}
                   />
                 )}
-                <div className="w-px h-4 bg-border mx-0.5" />
+                <Separator orientation="vertical" className="h-4 mx-0.5" />
                 <QuickAction
                   icon={<Trash2 className="size-4 text-destructive" />}
                   label="永久删除"
@@ -164,12 +165,15 @@ export function MediaCard({
                   }}
                 />
               </div>
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={handleCopyLink}
-                className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-[0.2em] bg-accent/20 px-3 py-1 rounded-full backdrop-blur-sm"
+                className="h-6 text-[10px] font-bold text-muted-foreground hover:text-foreground uppercase tracking-[0.2em] bg-accent/20 px-3 rounded-full backdrop-blur-xs border-none shadow-none"
               >
                 Copy Meta
-              </button>
+              </Button>
             </div>
           )}
 

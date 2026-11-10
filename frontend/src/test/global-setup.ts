@@ -1,11 +1,10 @@
 import { spawn, spawnSync, type ChildProcess } from "child_process";
 import path from "path";
 import fs from "fs";
+import os from "os";
 
-let serverProcess: ChildProcess | null = null;
-
-function stopServer() {
-  if (!serverProcess) return;
+function stopServer(serverProcess: ChildProcess) {
+  if (!serverProcess || serverProcess.exitCode !== null) return;
   if (process.platform === "win32") {
     // uv 是父进程，真正的 Python 服务是子进程；需要结束整棵进程树。
     spawnSync("taskkill", ["/pid", String(serverProcess.pid), "/T", "/F"], {
@@ -14,79 +13,66 @@ function stopServer() {
   } else {
     serverProcess.kill();
   }
-  serverProcess = null;
 }
 
 export default async function setup() {
-  console.log(
-    "\n🚀 Starting Python Test Server (backend/scripts/run_test_server.py)...",
-  );
-
-  // Adjust path relative to frontend directory
-  // frontend/src/test/global-setup.ts -> ../../../backend/scripts/run_test_server.py
-  // Assuming CWD when running vitest is 'frontend' root.
-  const backendScript = path.resolve(
-    __dirname,
-    "../../../backend/scripts/run_test_server.py",
-  );
-
+  const backendDir = path.resolve(__dirname, "../../../backend");
+  const backendScript = path.join(backendDir, "scripts/run_test_server.py");
   if (!fs.existsSync(backendScript)) {
-    console.error(`❌ Backend script not found at: ${backendScript}`);
-    // Fallback or error, but let's try to find it from project root if CWD is wrong
     throw new Error(`Test server script missing: ${backendScript}`);
   }
 
-  // Spawn the python process
-  // Ensure 'python' is in your PATH and corresponds to the correct venv
-  // If you are using uv/pory/virtualenv, you might need 'python3' or absolute path.
-  // We assume 'python' works as it did in the CLI.
-  // Spawn the python process using 'uv' to ensure dependencies are loaded
-  // and to avoid 'python not found' errors on systems where only python3 exists.
-  // IMPORTANT: CWD must be 'backend' so uv finds pyproject.toml
-  serverProcess = spawn("uv", ["run", "python", backendScript], {
-    cwd: path.resolve(__dirname, "../../../backend"),
+  // Vitest owns the server lifecycle; CI must not start a second copy.
+  const databaseDir = fs.mkdtempSync(path.join(os.tmpdir(), "blog-fr-test-"));
+  const serverProcess = spawn("uv", ["run", "--frozen", "python", backendScript], {
+    cwd: backendDir,
     stdio: "inherit",
     env: {
       ...process.env,
       // Windows 控制台默认 GBK，脚本里的 emoji 会触发 UnicodeEncodeError。
       PYTHONIOENCODING: "utf-8",
       PYTHONUTF8: "1",
+      FIRST_SUPERUSER: process.env.FIRST_SUPERUSER || "admin@example.com",
+      FIRST_SUPERUSER_EMAIL:
+        process.env.FIRST_SUPERUSER_EMAIL || "admin@example.com",
+      FIRST_SUPERUSER_PASSWORD:
+        process.env.FIRST_SUPERUSER_PASSWORD || "changethis",
+      TEST_DATABASE_URL: `sqlite+aiosqlite:///${path.join(databaseDir, "test.db")}`,
     },
   });
+  let startupError: Error | undefined;
+  const removeDatabase = () => fs.rmSync(databaseDir, { recursive: true, force: true });
+  serverProcess.once("exit", removeDatabase);
+  serverProcess.on("error", (error) => {
+    startupError = error;
+    removeDatabase();
+  });
+  const deadline = Date.now() + 30_000;
 
-  // Wait for the server to be ready
-  // A simple way is to retry fetching the health/root endpoint until it works or times out.
-  const TEST_SERVER_URL = "http://localhost:8001";
-  let retries = 30; // 30 * 500ms = 15 seconds max wait
-  let connected = false;
-
-  while (retries > 0) {
-    try {
-      // Trying to connect to the test server root or health check
-      // Assuming GET / gives 200 or 404 but connection is accepted
-      const res = await fetch(`${TEST_SERVER_URL}/docs`);
-      if (res.ok || res.status < 500) {
-        connected = true;
-        console.log("✅ Python Test Server is ready!");
-        break;
+  try {
+    while (Date.now() < deadline) {
+      if (startupError) throw startupError;
+      if (serverProcess.exitCode !== null || serverProcess.signalCode !== null) {
+        throw new Error("Python test server exited before becoming ready");
       }
-    } catch {
-      // ignore
+      try {
+        const response = await fetch("http://127.0.0.1:8001/health/ready", {
+          signal: AbortSignal.timeout(1000),
+        });
+        if (response.ok) {
+          return async () => {
+            console.log("\n🛑 Stopping Python Test Server...");
+            stopServer(serverProcess);
+          };
+        }
+      } catch {
+        // Retry until the deadline; an HTTP error never counts as ready.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    await new Promise((r) => setTimeout(r, 500));
-    retries--;
+    throw new Error("Python test server did not become ready within 30 seconds");
+  } catch (error) {
+    stopServer(serverProcess);
+    throw error;
   }
-
-  if (!connected) {
-    stopServer();
-    throw new Error(
-      "❌ Failed to connect to Python Test Server after 15 seconds.",
-    );
-  }
-
-  // Return teardown function
-  return async () => {
-    console.log("\n🛑 Stopping Python Test Server...");
-    stopServer();
-  };
 }

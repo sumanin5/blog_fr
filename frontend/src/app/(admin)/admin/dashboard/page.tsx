@@ -11,12 +11,14 @@ import {
   RefreshCw,
   ShieldAlert,
   Bot,
+  Gauge,
 } from "lucide-react";
 
 import {
   useAnalyticsDashboard,
   useAnalyticsSessions,
   useAnalyticsTopPosts,
+  useAnalyticsWebVitals,
 } from "@/hooks/admin/use-analytics-stats";
 import { AnalyticsDashboard } from "@/shared/api/types";
 
@@ -26,6 +28,7 @@ import { ContentPerformanceTable } from "@/components/admin/dashboard/traffic-pu
 import { UserBehaviorAnalytics } from "@/components/admin/dashboard/traffic-pulse/UserBehaviorAnalytics";
 import { RealTimeSessionTable } from "@/components/admin/dashboard/traffic-pulse/RealTimeSessionTable";
 import { BotTrafficMonitor } from "@/components/admin/dashboard/traffic-pulse/BotTrafficMonitor";
+import { WebVitalsPanel } from "@/components/admin/dashboard/traffic-pulse/WebVitalsPanel";
 
 export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,13 +52,25 @@ export default function DashboardPage() {
     refetch: refetchPosts,
   } = useAnalyticsTopPosts();
 
+  const {
+    data: webVitals,
+    isLoading: loadingVitals,
+    refetch: refetchVitals,
+  } = useAnalyticsWebVitals();
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await Promise.all([refetchDash(), refetchSessions(), refetchPosts()]);
+    await Promise.all([
+      refetchDash(),
+      refetchSessions(),
+      refetchPosts(),
+      refetchVitals(),
+    ]);
     setIsRefreshing(false);
   };
 
-  const isLoading = loadingDash || loadingSessions || loadingPosts;
+  const isLoading =
+    loadingDash || loadingSessions || loadingPosts || loadingVitals;
 
   // Safe Accessors
   const stats =
@@ -113,6 +128,10 @@ export default function DashboardPage() {
           <TabsTrigger value="bots" className="gap-2">
             <Bot className="h-4 w-4" />
             爬虫监控
+          </TabsTrigger>
+          <TabsTrigger value="vitals" className="gap-2">
+            <Gauge className="h-4 w-4" />
+            性能体验
           </TabsTrigger>
         </TabsList>
 
@@ -179,8 +198,8 @@ export default function DashboardPage() {
           </div>
 
           <TrafficOverviewCharts
-            deviceStats={stats.deviceStats as any}
-            hourlyTraffic={stats.hourlyTraffic as any}
+            deviceStats={stats.deviceStats}
+            hourlyTraffic={stats.hourlyTraffic}
           />
           <ContentPerformanceTable articles={articles} />
         </TabsContent>
@@ -194,6 +213,10 @@ export default function DashboardPage() {
 
         <TabsContent value="bots" className="space-y-6">
           <BotTrafficMonitor sessions={sessions} />
+        </TabsContent>
+
+        <TabsContent value="vitals" className="space-y-6">
+          <WebVitalsPanel data={webVitals} />
         </TabsContent>
       </Tabs>
     </div>

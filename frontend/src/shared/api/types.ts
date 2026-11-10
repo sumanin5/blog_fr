@@ -178,6 +178,7 @@ export type AnalyticsSessionDetail = ApiData<Raw.AnalyticsSessionDetail>;
 export type SessionEvent = ApiData<Raw.SessionEvent>;
 
 export type DeviceStats = ApiData<Raw.DeviceStats>;
+export type AnalyticsWebVitals = ApiData<Raw.WebVitalsSummary>;
 
 // 请求载荷 (Payloads)
 export type AnalyticsEventPayload = ApiData<Raw.AnalyticsEventCreate>;
@@ -194,6 +195,7 @@ export type {
   GetAnalyticsDashboardData,
   GetAnalyticsSessionsData,
   GetAnalyticsSessionDetailData,
+  GetAnalyticsWebVitalsData,
 } from "./generated/types.gen";
 
 // ============================================

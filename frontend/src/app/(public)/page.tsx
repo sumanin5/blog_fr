@@ -1,35 +1,79 @@
-import React from "react";
+import type { Metadata } from "next";
+import { siteConfig } from "@/config/site";
 import { getFeaturedCategories } from "@/lib/categories-api";
-import { getFeaturedPosts } from "@/lib/post-api";
+import { getFeaturedPosts, getPosts } from "@/lib/post-api";
 import { HeroSection } from "@/components/public/home/hero-section";
 import { FeaturedCategoriesSection } from "@/components/public/home/featured-categories-section";
+import { LatestArticlesSection } from "@/components/public/home/latest-articles-section";
 import { ThoughtsSection } from "@/components/public/home/thoughts-section";
+import { ConnectSection } from "@/components/public/home/connect-section";
+import type { Category } from "@/shared/api/types";
+import type { PostShortResponse } from "@/shared/api/generated/types.gen";
+import type { ApiData } from "@/shared/api/transformers";
 
-export const dynamic = "force-dynamic";
-// export const revalidate = 3600; // 或者使用 ISR
+// 启用 ISR（增量静态再生成），保留静态秒开优势，每 60 秒或内容变更时按需更新
+export const revalidate = 60;
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+    types: { "application/rss+xml": [{ url: "/rss.xml", title: siteConfig.name }] },
+  },
+};
 
 export default async function Home() {
-  // 并行获取数据
-  const [featuredCategoriesData, featuredThoughtsData] = await Promise.all([
-    getFeaturedCategories("articles", 3),
-    getFeaturedPosts("ideas", 4),
-  ]);
+  // 1. 数据获取：100% 走后端真实 API 动态获取
+  let categoryItems: Category[] = [];
+  let articleItems: ApiData<PostShortResponse>[] = [];
+  let thoughtItems: ApiData<PostShortResponse>[] = [];
 
-  // Normalize: snake_case -> camelCase
-  // 注意：API Layer (lib/*) 已经处理了 `normalizeApiResponse`，此处直接使用即可
-  const thoughtsItems = featuredThoughtsData.items || [];
-  const categoryItems = featuredCategoriesData.items || [];
+  try {
+    const [categoriesData, articlesData, thoughtsData] = await Promise.all([
+      getFeaturedCategories("articles", 3).catch(() => null),
+      getPosts("articles", 1, 4).catch(() => null),
+      getFeaturedPosts("ideas", 4).catch(() => null),
+    ]);
+
+    if (categoriesData?.items?.length) {
+      categoryItems = categoriesData.items as Category[];
+    }
+    if (articlesData?.items?.length) {
+      articleItems = articlesData.items as ApiData<PostShortResponse>[];
+    }
+    if (thoughtsData?.items?.length) {
+      thoughtItems = thoughtsData.items as ApiData<PostShortResponse>[];
+    }
+  } catch (error) {
+    console.warn("Failed to fetch home page data from backend:", error);
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
+      {/* 1. Hero 区域：数字花园非对称左右分栏 + 原生 3D 天体公转展台 */}
       <HeroSection />
 
-      <div className="container mx-auto px-4 md:px-6 py-24 space-y-32">
-        {/* 精选分类 */}
+      {/* 2. 核心内容区域 */}
+      <div className="container mx-auto max-w-[1440px] space-y-16 px-4 py-10 md:space-y-20 md:px-6 md:py-16">
+        {/* 板块 A：3 列专栏合集卡片（带 3D 物理倾斜与聚光） */}
         <FeaturedCategoriesSection categories={categoryItems} />
 
-        {/* 灵感瞬间 */}
-        <ThoughtsSection posts={thoughtsItems} />
+        {/* 板块 B：设计图核心双栏架构（左侧最新文章列表 + 右侧单篇即时想法） */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 pt-2">
+          {/* 左侧：最新长文列表 (占 7 列) */}
+          <div className="lg:col-span-7">
+            <LatestArticlesSection articles={articleItems} />
+          </div>
+
+          {/* 右侧：最新想法随笔 (占 5 列，独立单篇即读流) */}
+          <div className="lg:col-span-5">
+            <ThoughtsSection posts={thoughtItems} />
+          </div>
+        </div>
+
+        {/* 板块 C：首页专属收官模块（取缔繁琐页脚，打造自然连接与愿景） */}
+        <div className="pt-4">
+          <ConnectSection />
+        </div>
       </div>
     </div>
   );

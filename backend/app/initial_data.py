@@ -41,7 +41,7 @@ async def create_first_superuser(session) -> None:
 
     user = await get_user_by_username(session, username)
     if not user:
-        logger.info(f"超级管理员不存在，正在创建...")
+        logger.info("超级管理员不存在，正在创建...")
         user_in = UserCreate(
             username=username,
             email=email,
@@ -50,9 +50,9 @@ async def create_first_superuser(session) -> None:
             full_name="Initial Super Admin",
         )
         user = await create_superadmin_user(session, user_in)
-        logger.info(f"超级管理员已创建 - 用户名: {user.username}, 密码: {password}")
+        logger.info("超级管理员已创建 - 用户名: %s", user.username)
     else:
-        logger.info(f"超级管理员已存在，跳过创建。")
+        logger.info("超级管理员已存在，跳过创建。")
 
 
 def main() -> None:

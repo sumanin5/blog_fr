@@ -17,14 +17,14 @@ export const useFeaturedCategories = () => {
           query: {
             is_featured: true,
             include_inactive: false,
-          } as any,
+          },
         }),
         listCategoriesByType({
           path: { post_type: "ideas" },
           query: {
             is_featured: true,
             include_inactive: false,
-          } as any,
+          },
         }),
       ]);
 

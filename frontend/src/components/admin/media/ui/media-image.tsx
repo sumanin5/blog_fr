@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useMediaBlob } from "@/hooks/admin/use-media";
 import { cn } from "@/lib/utils";
 import { ImageOff, Loader2 } from "lucide-react";
@@ -39,19 +41,21 @@ export function MediaImage({
     file ? s.registry[`${file.id}:${size}`]?.url : null
   );
 
+  const fileId = file?.id;
+
   // 4. 注册/注销逻辑：只有当 Blob 真正就位时才执行
   useEffect(() => {
-    if (!file || !blob) return;
+    if (!fileId || !blob) return;
 
     // 申请资源：如果别人已经申请过，会直接复用那个 URL
     // 注意：这里不需要 setState 了，因为 Zustand 内部状态更新会触发上面的 selector 重新计算
-    acquireUrl(file.id, size, blob);
+    acquireUrl(fileId, size, blob);
 
     // 清理资源：组件卸载时，或者 blob 变更时，归还资源
     return () => {
-      releaseUrl(file.id, size);
+      releaseUrl(fileId, size);
     };
-  }, [file?.id, size, blob, acquireUrl, releaseUrl]);
+  }, [fileId, size, blob, acquireUrl, releaseUrl]);
 
   if (!file || file.mediaType !== "image") {
     return (
@@ -95,7 +99,7 @@ export function MediaImage({
   }
 
   // 如果 blob 好了但 URL 还没生成（Layout Effect Gap），暂时显示 Loading
-  if (blob && !objectUrl) {
+  if (!objectUrl) {
     return (
       <div
         className={cn(
@@ -109,8 +113,11 @@ export function MediaImage({
   }
 
   return (
-    <img
-      src={objectUrl || ""}
+    <Image
+      unoptimized
+      width={file.width || 800}
+      height={file.height || 600}
+      src={objectUrl}
       alt={file.altText || file.originalFilename}
       className={cn("bg-muted", className)}
       loading="lazy"

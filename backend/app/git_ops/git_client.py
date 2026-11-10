@@ -7,6 +7,9 @@ from app.git_ops.exceptions import GitError, GitOpsReadOnlyError, NotGitReposito
 
 logger = logging.getLogger(__name__)
 
+# 重命名保留旧、新路径，其余状态只有目标路径。
+FileChange = Tuple[str, str] | Tuple[str, str, str]
+
 
 class GitClient:
     def __init__(self, repo_path: Path):
@@ -77,9 +80,7 @@ class GitClient:
         # 过滤掉空行
         return [f.strip() for f in out.splitlines() if f.strip()]
 
-    async def get_changed_files_with_status(
-        self, since_hash: str
-    ) -> List[Tuple[str, str]]:
+    async def get_changed_files_with_status(self, since_hash: str) -> List[FileChange]:
         """获取变更文件及其状态
 
         Args:
@@ -88,7 +89,7 @@ class GitClient:
                        - hash 范围: 对比两个 commit 之间的变更（不包含工作区）
 
         Returns:
-            List of (status, filepath)
+            List of (status, filepath)，重命名为 ("R", old_path, new_path)
             e.g. [("M", "ideas/post.md"), ("A", "ideas/new.md"), ("D", "ideas/old.md")]
 
         Status codes:
@@ -114,13 +115,18 @@ class GitClient:
         for line in out.splitlines():
             if not line.strip():
                 continue
-            parts = line.split("\t", 1)
-            if len(parts) == 2:
-                status, filepath = parts
-                s_code = status.strip()[0]  # 只取第一个字符，处理如 'R100'
-                f_path = filepath.strip()
-                results.append((s_code, f_path))
-                seen_files.add(f_path)
+            parts = line.split("\t")
+            s_code = parts[0][0]  # 处理 R100/C100 等相似度标记
+            if s_code in ("R", "C") and len(parts) == 3:
+                old_path, new_path = parts[1:]
+                if s_code == "R":
+                    results.append(("R", old_path, new_path))
+                else:
+                    results.append(("A", new_path))
+                seen_files.add(new_path)
+            elif len(parts) == 2:
+                results.append((s_code, parts[1]))
+                seen_files.add(parts[1])
 
         # 2. 获取 Untracked 文件 (作为 Added 处理)
         # 注意：只在单个 hash 查询时检查 untracked 文件

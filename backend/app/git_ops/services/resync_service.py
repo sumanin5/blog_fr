@@ -16,6 +16,7 @@ from app.users.model import User
 from fastapi import HTTPException
 
 from .base import BaseGitOpsService
+from .sync_service import SyncService
 
 logger = logging.getLogger(__name__)
 

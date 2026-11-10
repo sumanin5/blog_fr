@@ -79,6 +79,20 @@
 | `OTEL_EXPORTER_ENDPOINT`    | ❌   | `http://localhost:4317` | OTLP Exporter 端点        | ✅     |
 | `SLOW_REQUEST_THRESHOLD`    | ❌   | `1.0`                   | 慢请求阈值（秒）          | ✅     |
 
+> 后端 OpenTelemetry 依赖位于 `monitoring` extra，生产镜像已通过 `uv sync --extra monitoring` 安装。
+
+### 8. 前端可观测性与 SEO（`frontend/`）
+
+| 环境变量                      | 必需 | 默认值               | 说明                                                                                   | 模板中 |
+| ----------------------------- | ---- | -------------------- | -------------------------------------------------------------------------------------- | ------ |
+| `NEXT_PUBLIC_SITE_URL`        | ❌   | `https://ty1547.com` | 规范站点地址（canonical / sitemap / RSS），构建期内联                                  | ❌     |
+| `NEXT_PUBLIC_SENTRY_DSN`      | ❌   | -                    | 前端 Sentry DSN，构建期内联；配置后由 Sentry 接管链路追踪                              | ❌     |
+| `SENTRY_TRACES_SAMPLE_RATE`   | ❌   | `0.1`                | 前端服务端采样率，同时决定导出到 OTLP 的比例（仅 Sentry 模式）                         | ✅     |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | ❌   | -                    | OTLP/HTTP 端点（如 `http://jaeger:4318`）；设置后前端服务端导出 trace 并向后端传播 `traceparent` | ❌     |
+
+可选的链路追踪部署：`docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d`，
+会启动 Jaeger 并为前后端开启追踪，UI 仅绑定在服务器本机 `127.0.0.1:16686`（通过 SSH 隧道访问）。
+
 ---
 
 ## 🎯 生产环境必须配置的变量

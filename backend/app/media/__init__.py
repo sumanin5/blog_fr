@@ -30,7 +30,7 @@ class _CRUDNamespace:
 crud = _CRUDNamespace()
 
 # 导出 services（向后兼容）
-from .services import access, management, thumbnail, upload
+from .services import access, management, thumbnail, upload  # noqa: E402 - CRUD compatibility namespace must exist first
 
 
 # 创建 service 命名空间（向后兼容旧的导入方式）
@@ -52,7 +52,7 @@ class _ServiceNamespace:
 service = _ServiceNamespace()
 
 # 导出 router（向后兼容）
-from .routers import router
+from .routers import router  # noqa: E402 - routers import the service compatibility namespace
 
 __all__ = [
     "crud",

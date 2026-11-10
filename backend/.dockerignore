@@ -25,3 +25,6 @@ pip-delete-this-directory.txt
 .DS_Store
 Thumbs.db
 .env.local
+
+# ip2region 数据库：构建时下载、运行时挂载 ./backend/data，不进入构建上下文
+data/*.xdb

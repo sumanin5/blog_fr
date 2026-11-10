@@ -28,7 +28,7 @@ def build_public_media_query(
     if usage:
         stmt = stmt.where(MediaFile.usage == usage)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc())  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc())  # type: ignore
 
     return stmt
 
@@ -71,7 +71,7 @@ def build_user_media_query(
     if mime_type:
         stmt = stmt.where(MediaFile.mime_type.ilike(f"%{mime_type}%"))  # type: ignore
 
-    stmt = stmt.order_by(MediaFile.created_at.desc())  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc())  # type: ignore
 
     return stmt
 
@@ -103,7 +103,7 @@ def build_search_media_query(
     if media_type:
         stmt = stmt.where(MediaFile.media_type == media_type)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc())  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc())  # type: ignore
 
     return stmt
 
@@ -139,6 +139,6 @@ def build_all_media_query(
     if usage:
         stmt = stmt.where(MediaFile.usage == usage)
 
-    stmt = stmt.order_by(MediaFile.created_at.desc())  # type: ignore
+    stmt = stmt.order_by(MediaFile.created_at.desc(), MediaFile.id.desc())  # type: ignore
 
     return stmt

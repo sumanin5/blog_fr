@@ -2,6 +2,7 @@
 
 from app.git_ops.exceptions import GitOpsReadOnlyError
 from .base import BaseGitOpsService
+from .sync_service import SyncService
 
 
 class ExportService(BaseGitOpsService):

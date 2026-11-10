@@ -1,4 +1,4 @@
-import { PostType, PostUpdate as DomainPostUpdate } from "@/shared/api/types";
+import { PostType, PostUpdate as DomainPostUpdate, AdminPostFilters } from "@/shared/api/types";
 import {
   usePostsAdminQuery,
   useGlobalPostsAdminQuery,
@@ -18,7 +18,7 @@ export const usePostsAdmin = (
     filters = {},
   }: {
     mode?: "type" | "me" | "all";
-    filters?: Record<string, any>;
+    filters?: AdminPostFilters;
   } = {},
 ) => {
   // 1. 动态选择 Query Hook

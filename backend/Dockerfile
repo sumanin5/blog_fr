@@ -11,8 +11,11 @@ ENV PYTHONUNBUFFERED=1
 # 设置工作目录
 WORKDIR /app/
 
-# 安装系统依赖 (包括 git)
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# 安装系统依赖（git 用于 GitOps，openssh-client 用于 SSH 内容仓库）
+# --no-install-recommends 可避免拉取 less/xauth 等非必需包，减少网络失败面。
+RUN apt-get -o Acquire::Retries=5 update \
+    && apt-get install -y --no-install-recommends -o Acquire::Retries=5 git openssh-client \
+    && rm -rf /var/lib/apt/lists/*
 
 # ==========================================
 # 安装 uv
@@ -46,6 +49,14 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --all-extras
 
+# 运行时用户（与宿主机一致，由 compose 以 build args 传入）：
+# 1. /app/.venv 在运行时是匿名卷，会继承镜像内文件的属主，保持一致可写
+# 2. 把 UID 写入 /etc/passwd，替代过去挂载 backend/passwd.docker（写死 1000，在别的机器上失效）的做法
+ARG UID=1000
+ARG GID=1000
+RUN chown -R ${UID}:${GID} /app \
+    && echo "appuser:x:${UID}:${GID}:App User:/tmp:/bin/sh" >> /etc/passwd
+
 # ==========================================
 # 可选：运行测试（如果 tests 目录存在）
 # ==========================================
@@ -66,8 +77,11 @@ ENV PYTHONUNBUFFERED=1
 # 设置工作目录
 WORKDIR /app/
 
-# 安装系统依赖 (包括 git)
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# 安装系统依赖（git 用于 GitOps，openssh-client 用于 SSH 内容仓库）
+# --no-install-recommends 可避免拉取 less/xauth 等非必需包，减少网络失败面。
+RUN apt-get -o Acquire::Retries=5 update \
+    && apt-get install -y --no-install-recommends -o Acquire::Retries=5 git openssh-client \
+    && rm -rf /var/lib/apt/lists/*
 
 # ==========================================
 # 安装 uv
@@ -87,10 +101,20 @@ ENV PYTHONPATH=/app
 # ==========================================
 # 这一步排除了 pytest、jupyter 等开发工具
 # 最终的生产镜像会很轻量
+# monitoring extra（OpenTelemetry）必须安装：否则 ENABLE_OPENTELEMETRY=true 时只会告警而不产生任何 trace
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project
+    uv sync --frozen --no-install-project --extra monitoring
+
+# ==========================================
+# 下载 ip2region 数据库（自动模式）
+# ==========================================
+# 放在复制源码之前：脚本只依赖标准库，这一层不随代码变化而失效，
+# 构建缓存命中时无需重新下载、也无需再次推送这约 10MB 的层。
+# 生产环境挂载 ./backend/data 覆盖 /app/data，启动时会再检查一次。
+COPY scripts/download_ip2region.py /app/scripts/download_ip2region.py
+RUN python scripts/download_ip2region.py --auto || echo "⚠ ip2region 数据库下载失败，将在启动时重试"
 
 # ==========================================
 # 复制代码
@@ -101,12 +125,8 @@ COPY . /app
 # 再次同步（安装项目本身）
 # ==========================================
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
+    uv sync --frozen --extra monitoring
 
-# ==========================================
-# 下载 ip2region 数据库（自动模式）
-# ==========================================
-RUN python scripts/download_ip2region.py --auto || echo "⚠ ip2region 数据库下载失败，将在启动时重试"
 
 # ==========================================
 # 启动命令

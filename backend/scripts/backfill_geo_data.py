@@ -86,7 +86,7 @@ async def backfill_geo_data():
     async with async_session() as session:
         # 查询所有需要更新的记录（region 或 isp 为空的记录）
         stmt = select(AnalyticsEvent).where(
-            (AnalyticsEvent.region == None) | (AnalyticsEvent.isp == None)
+            AnalyticsEvent.region.is_(None) | AnalyticsEvent.isp.is_(None)
         )
         result = await session.execute(stmt)
         events = result.scalars().all()

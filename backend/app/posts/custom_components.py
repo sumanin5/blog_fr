@@ -24,7 +24,6 @@ class CustomComponentRegistry:
         :::
         """
         text = props.get("text", "Click me")
-        message = props.get("message", "Hello!")
         variant = props.get("variant", "primary")
 
         # 样式映射

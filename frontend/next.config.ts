@@ -44,7 +44,18 @@ const nextConfig: NextConfig = {
   output: "standalone",
 
   // 优化服务器组件编译 - Next.js 16 已移到顶层
-  serverExternalPackages: ["highlight.js", "katex", "mermaid"],
+  serverExternalPackages: ["mermaid"],
+
+  // 文章板块统一收拢到专栏页；308 让搜索引擎把权重转移到目标页
+  async redirects() {
+    return [
+      {
+        source: "/posts/articles",
+        destination: "/posts/articles/categories",
+        permanent: true,
+      },
+    ];
+  },
 
   // API 代理配置
   async rewrites() {
@@ -57,12 +68,27 @@ const nextConfig: NextConfig = {
     // 如果处于 Docker 环境，我们应该优先使用内部通信地址
     const destination = `${internalUrl || publicUrl}/api/:path*`;
 
-    return [
-      {
-        source: "/api/:path*",
-        destination,
-      },
-    ];
+    return {
+      // 文章的 Markdown 版本（面向爬虫与 LLM）：须先于 [slug] 动态路由匹配
+      beforeFiles: [
+        {
+          source: "/posts/:postType/:slug.md",
+          destination: "/posts/:postType/:slug/raw",
+        },
+        {
+          source: "/posts/:postType/:slug",
+          has: [{ type: "header", key: "accept", value: ".*text/markdown.*" }],
+          destination: "/posts/:postType/:slug/raw",
+        },
+      ],
+      afterFiles: [
+        {
+          source: "/api/:path*",
+          destination,
+        },
+      ],
+      fallback: [],
+    };
   },
 };
 

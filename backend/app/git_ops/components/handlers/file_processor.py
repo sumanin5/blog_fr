@@ -3,6 +3,7 @@
 """
 
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict
 
@@ -112,6 +113,22 @@ class SyncProcessor:
             # 由于这是后处理，最好先 commit 一次确保安全
             await session.commit()
 
+    @asynccontextmanager
+    async def _file_savepoint(self, session, stats, processed_post_ids, context):
+        """只合并成功释放 savepoint 的文件统计，异常交给外层收集。"""
+        from app.git_ops.exceptions import collect_errors
+
+        async with collect_errors(stats, context):
+            file_stats = SyncStats()
+            file_post_ids = set()
+            async with session.begin_nested():
+                yield file_stats, file_post_ids
+            stats.added.extend(file_stats.added)
+            stats.updated.extend(file_stats.updated)
+            stats.deleted.extend(file_stats.deleted)
+            stats.errors.extend(file_stats.errors)
+            processed_post_ids.update(file_post_ids)
+
     async def process_file_change(
         self,
         session: AsyncSession,
@@ -121,6 +138,8 @@ class SyncProcessor:
         operating_user: User,
         stats: SyncStats,
         processed_post_ids: set,
+        old_path: str | None = None,
+        pending_moves: set | None = None,
     ):
         """
         统一处理文件变更（新增、修改、删除）
@@ -384,6 +403,7 @@ class SyncProcessor:
             if reused_post:
                 reused_post_ids.add(reused_post.id)
 
+        processed_post_ids = set()
         scan_errors = getattr(self.scanner, "last_scan_errors", {})
         scan_incomplete = getattr(self.scanner, "last_scan_incomplete", False)
         if scan_errors or scan_incomplete:
@@ -396,35 +416,37 @@ class SyncProcessor:
         else:
             for db_path, post in existing_map.items():
                 if db_path not in scanned_map and post.id not in reused_post_ids:
-                    async with collect_errors(
-                        stats, f"Deleting orphaned {db_path}", session=session
-                    ):
+                    async with self._file_savepoint(
+                        session,
+                        stats,
+                        processed_post_ids,
+                        f"Deleting orphaned {db_path}",
+                    ) as (file_stats, _):
                         logger.info(
                             f"Deleting orphaned post: {db_path} (slug={post.slug})"
                         )
                         await post_service.delete_post(
                             session, post.id, current_user=operating_user
                         )
-                        stats.deleted.append(str(db_path).replace("\\", "/"))
+                        file_stats.deleted.append(str(db_path).replace("\\", "/"))
 
         # 2. 处理扫描到的文件 (Disk -> DB)
-        processed_post_ids = set()
         # Article paths must be current before category descriptions resolve
         # their relative links, especially after a directory rename.
         for file_path, scanned in sorted(
             scanned_map.items(), key=lambda item: (bool(item[1].is_category_index), item[0])
         ):
-            async with collect_errors(
-                stats, f"Processing {file_path}", session=session
-            ):
+            async with self._file_savepoint(
+                session, stats, processed_post_ids, f"Processing {file_path}"
+            ) as (file_stats, file_post_ids):
                 await self.process_scanned_file(
                     session,
                     file_path,
                     scanned,
                     existing_map,
                     operating_user,
-                    stats,
-                    processed_post_ids,
+                    file_stats,
+                    file_post_ids,
                 )
 
         # 3. 🆕 后处理：批量修复内部链接
@@ -540,15 +562,17 @@ class SyncProcessor:
                 if not is_content_path(file_path):
                     continue
 
-                async with collect_errors(
-                    stats, f"Processing {status} {file_path}", session=session
-                ):
+                async with self._file_savepoint(
+                    session, stats, processed_post_ids, f"Processing {status} {file_path}"
+                ) as (file_stats, file_post_ids):
                     await self.process_file_change(
                         session,
                         file_path,
                         status,
                         existing_map,
                         operating_user,
-                        stats,
-                        processed_post_ids,
+                        file_stats,
+                        file_post_ids,
+                        old_path=None,
+                        pending_moves=set(),
                     )

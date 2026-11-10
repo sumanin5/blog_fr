@@ -1,5 +1,7 @@
 "use client";
 
+import type { Route } from "next";
+
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -86,7 +88,7 @@ export function DesktopNav() {
                     <ListItem
                       key={`${menu.title}-main`}
                       title={`${menu.title} 概览`}
-                      href={menu.link as any}
+                      href={menu.link as Route}
                       icon={menu.icon}
                     >
                       查看 {menu.title} 的所有内容与完整介绍
@@ -96,7 +98,7 @@ export function DesktopNav() {
                       <ListItem
                         key={item.title}
                         title={item.title}
-                        href={item.link as any}
+                        href={item.link as Route}
                         icon={item.icon}
                       >
                         {item.description}
@@ -108,7 +110,7 @@ export function DesktopNav() {
             ) : (
               <NavigationMenuLink asChild>
                 <Link
-                  href={menu.link as any}
+                  href={menu.link as Route}
                   onPointerDown={(e) => {
                     if (!isTouchDevice) e.preventDefault();
                   }}
@@ -186,9 +188,11 @@ export function MobileNav() {
               <div key={menu.title} className="flex flex-col gap-2">
                 {menu.items && menu.items.length > 0 ? (
                   <div className="border-border/40 border-b pb-4 last:border-0">
-                    <button
+                    <Button
+                      variant="ghost"
+                      type="button"
                       onClick={() => toggleGroup(menu.title)}
-                      className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between py-2 text-sm font-semibold tracking-widest uppercase transition-colors"
+                      className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between p-0 h-auto py-2 text-sm font-semibold tracking-widest uppercase transition-colors hover:bg-transparent rounded-none cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
                         {menu.icon && <menu.icon className="h-4 w-4" />}
@@ -200,7 +204,7 @@ export function MobileNav() {
                           openGroups[menu.title] && "rotate-180",
                         )}
                       />
-                    </button>
+                    </Button>
 
                     <div
                       className={cn(
@@ -213,7 +217,7 @@ export function MobileNav() {
                       <div className="border-border/40 ml-1.5 flex min-h-0 flex-col gap-1 border-l-2 pl-4">
                         <SheetClose asChild>
                           <Link
-                            href={menu.link as any}
+                            href={menu.link as Route}
                             className={cn(
                               "hover:bg-accent hover:text-accent-foreground block rounded-md px-3 py-2 text-sm font-medium transition-colors",
                               isActive(menu.link)
@@ -227,7 +231,7 @@ export function MobileNav() {
                         {menu.items.map((item) => (
                           <SheetClose asChild key={item.title}>
                             <Link
-                              href={item.link as any}
+                              href={item.link as Route}
                               className={cn(
                                 "hover:bg-accent hover:text-accent-foreground flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                                 isActive(item.link)
@@ -248,7 +252,7 @@ export function MobileNav() {
                 ) : (
                   <SheetClose asChild>
                     <Link
-                      href={menu.link as any}
+                      href={menu.link as Route}
                       className={cn(
                         "hover:text-primary flex items-center gap-2 rounded-md py-2 text-base font-semibold transition-colors",
                         isActive(menu.link)
@@ -293,7 +297,7 @@ export function MobileNav() {
                     className="justify-start gap-2"
                     asChild
                   >
-                    <Link href={"/admin/users" as any}>
+                    <Link href={"/admin/users"}>
                       <UserCircle className="h-4 w-4" />
                       用户管理
                     </Link>
@@ -305,7 +309,7 @@ export function MobileNav() {
                     className="justify-start gap-2"
                     asChild
                   >
-                    <Link href={"/admin/dashboard" as any}>
+                    <Link href={"/admin/dashboard"}>
                       <Settings className="h-4 w-4" />
                       设置
                     </Link>
@@ -361,7 +365,7 @@ function ListItem({
     <li>
       <NavigationMenuLink asChild>
         <Link
-          href={href as any}
+          href={href as Route}
           className={cn(
             "block space-y-1 rounded-md p-3 leading-none no-underline transition-all duration-200 outline-none select-none",
             "hover:bg-accent/50 hover:text-accent-foreground focus:bg-accent/50 focus:text-accent-foreground",

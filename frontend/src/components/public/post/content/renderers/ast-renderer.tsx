@@ -1,7 +1,9 @@
+import Image from "next/image";
 import React from "react";
 import { CodeBlock } from "@/components/public/mdx/components/code-block";
 import { MermaidDiagram } from "@/components/public/mdx/components/mermaid-diagram";
 import { KatexMath } from "@/components/public/mdx/components/katex-math";
+import { cn } from "@/lib/utils";
 
 interface AstRendererProps {
   ast: Record<string, unknown>;
@@ -9,7 +11,11 @@ interface AstRendererProps {
 }
 
 export function AstRenderer({ ast, articleClassName }: AstRendererProps) {
-  return <article className={articleClassName}>{renderNode(ast)}</article>;
+  return (
+    <article className={cn(articleClassName, "markdown-body")}>
+      {renderNode(ast)}
+    </article>
+  );
 }
 
 function renderNode(node: Record<string, unknown>, i = 0): React.ReactNode {
@@ -72,8 +78,12 @@ function renderNode(node: Record<string, unknown>, i = 0): React.ReactNode {
       );
     case "image":
       return (
-        <img
+        <Image
           key={i}
+          unoptimized
+          width={Number(props.width) || 1200}
+          height={Number(props.height) || 800}
+          style={{ width: "auto", height: "auto" }}
           src={props.src as string}
           alt={(props.alt as string) || ""}
           title={props.title as string | undefined}

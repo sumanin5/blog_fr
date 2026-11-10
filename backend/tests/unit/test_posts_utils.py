@@ -1,9 +1,10 @@
-import pytest
 """
 文章工具函数单元测试
 
 测试 app.posts.utils 模块中的查询构建函数和 slug 生成
 """
+
+import pytest
 
 import re
 from uuid import uuid4
@@ -124,7 +125,6 @@ async def test_build_posts_query_includes_relationships():
     """测试查询包含关联数据加载"""
     query = build_posts_query()
 
-    query_str = str(query)
     # 验证使用了 selectinload（通过检查查询字符串）
     # 注意：这个测试可能需要根据实际 SQLAlchemy 版本调整
     assert query is not None

@@ -6,8 +6,9 @@ FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# 安装 pnpm
-RUN npm install -g pnpm
+# 安装 pnpm（锁定 v10，与 lockfileVersion 9 配套；v10 默认拦截构建脚本，
+# 需配合 package.json 中 pnpm.onlyBuiltDependencies 放行）
+RUN npm install -g pnpm@10
 
 # 复制依赖文件
 COPY package.json pnpm-lock.yaml ./
@@ -24,14 +25,16 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 安装 pnpm (构建时可能需要执行脚本)
-RUN npm install -g pnpm
+# 安装 pnpm（锁定 v10，原因同上）
+RUN npm install -g pnpm@10
 
 # 设置构建时环境变量
 # 默认使用空字符串，因为 API_PREFIX 已经包含了 /api/v1
 # Next.js rewrites 会自动将 /api/* 代理到后端
 ARG NEXT_PUBLIC_API_URL=""
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG NEXT_PUBLIC_SITE_URL=""
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 
 # 执行构建
 RUN pnpm run build

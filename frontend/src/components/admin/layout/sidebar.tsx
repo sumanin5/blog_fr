@@ -1,5 +1,7 @@
 "use client";
 
+import type { Route } from "next";
+
 import React from "react";
 import {
   Sidebar,
@@ -16,7 +18,6 @@ import {
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import type { Route } from "next";
 import { useAuth } from "@/hooks/use-auth";
 
 // Components from the new sub-directory

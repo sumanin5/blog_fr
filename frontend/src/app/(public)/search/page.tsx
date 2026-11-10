@@ -62,7 +62,7 @@ function SearchResults() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {allPosts.map((post) => (
-          <PostCard key={post.id} post={post as any} postType={post.postType} />
+          <PostCard key={post.id} post={post} postType={post.postType} />
         ))}
       </div>
     </div>
@@ -71,7 +71,7 @@ function SearchResults() {
 
 export default function SearchPage() {
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12 max-w-7xl min-h-screen">
+    <div className="container mx-auto min-h-screen max-w-[1440px] px-4 py-8 md:py-12">
       <Suspense fallback={<div className="h-32" />}>
         <SearchResults />
       </Suspense>

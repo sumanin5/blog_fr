@@ -71,45 +71,54 @@ async def get_post_detail(
         InvalidCredentialsError: 未登录访问草稿
         InsufficientPermissionsError: 无权访问草稿
     """
+    post = await crud.get_post_by_id(session, post_id)
+    _ensure_post_readable(post, post_type, current_user)
+
+    # 浏览量不在这里统计：公开详情页走 ISR，请求只在页面重新生成时到达后端，
+    # 计数改由前端 article_view 埋点驱动（见 app.analytics.service.log_event）
+
+    logger.debug(
+        f"Post detail accessed: post_id={post_id}, status={post.status}, user={'guest' if not current_user else current_user.username}"
+    )
+    return post
+
+
+async def get_post_detail_by_slug(
+    session: AsyncSession,
+    slug: str,
+    post_type: PostType,
+    current_user: Optional[User] = None,
+) -> Post:
+    """按 slug 获取文章详情（权限规则同 get_post_detail）
+
+    直接按 slug 预加载一次；此前先按 slug 查出 id 再按 id 全量重查，关联查询执行两遍。
+    """
+    post = await crud.get_post_by_slug(session, slug)
+    return _ensure_post_readable(post, post_type, current_user)
+
+
+def _ensure_post_readable(
+    post: Optional[Post], post_type: PostType, current_user: Optional[User]
+) -> Post:
+    """校验板块类型与草稿访问权限"""
     from app.users.exceptions import InvalidCredentialsError
 
-    # 1. 查询文章
-    post = await crud.get_post_by_id(session, post_id)
     if not post or post.post_type != post_type:
         raise PostNotFoundError()
 
-    # 2. 权限检查（只针对草稿）
     if post.status == PostStatus.DRAFT:
         # 草稿必须登录
         if not current_user:
-            logger.warning(f"Unauthorized access to draft post: post_id={post_id}")
+            logger.warning(f"Unauthorized access to draft post: post_id={post.id}")
             raise InvalidCredentialsError("请先登录")
 
         # 只有作者或超级管理员可以访问
         if post.author_id != current_user.id and not current_user.is_superadmin:
             logger.warning(
-                f"Forbidden access to draft post: post_id={post_id}, user_id={current_user.id}"
+                f"Forbidden access to draft post: post_id={post.id}, user_id={current_user.id}"
             )
             raise InsufficientPermissionsError("无权访问此草稿")
 
-    # 3. 浏览量统计逻辑
-    # 只有当用户不是管理员时，才增加浏览量
-    # - 匿名用户 (None): +1
-    # - 普通用户 (USER): +1
-    # - 管理员 (ADMIN/SUPERADMIN): 不计数
-    should_increment_view = True
-    if current_user and current_user.is_admin:
-        should_increment_view = False
-        logger.debug(
-            f"Admin user {current_user.username} accessing post, view count skipped"
-        )
-
-    if should_increment_view:
-        await crud.increment_view_count(session, post.id)
-
-    logger.debug(
-        f"Post detail accessed: post_id={post_id}, status={post.status}, user={'guest' if not current_user else current_user.username}"
-    )
     return post
 
 
@@ -133,7 +142,11 @@ async def delete_post(session: AsyncSession, post_id: UUID, current_user: User) 
         raise InsufficientPermissionsError("只能删除自己的文章")
 
     await session.delete(post)
-    await session.commit()
+    # GitOps 用 savepoint 管理单文件事务，提交由同步服务统一负责。
+    if session.in_nested_transaction():
+        await session.flush()
+    else:
+        await session.commit()
     logger.info(f"文章已删除: {post.id} by user {current_user.id}")
 
 
@@ -248,7 +261,11 @@ async def create_post(
         await sync_post_tags(session, db_post, tags_to_sync)
         await session.flush()  # 确保标签关联已保存
 
-    await session.commit()
+    # GitOps 用 savepoint 管理单文件事务，提交由同步服务统一负责。
+    if session.in_nested_transaction():
+        await session.flush()
+    else:
+        await session.commit()
     # 使用 CRUD 层重新查询（带关联预加载），避免懒加载问题
     db_post = await crud.get_post_by_id(session, db_post.id)
 
@@ -362,7 +379,11 @@ async def update_post(
             setattr(db_post, field, value)
 
     session.add(db_post)
-    await session.commit()
+    # GitOps 用 savepoint 管理单文件事务，提交由同步服务统一负责。
+    if session.in_nested_transaction():
+        await session.flush()
+    else:
+        await session.commit()
     # 强制刷新关联对象，确保返回最新的数据
     await session.refresh(db_post, attribute_names=["category", "tags"])
     # 使用 CRUD 层重新查询（带关联预加载），确保所有字段（包括 author 等）都已加载

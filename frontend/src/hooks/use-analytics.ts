@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { logAnalyticsEvent } from "@/shared/api";
 import { toSnakeCase } from "@/shared/api/helpers";
@@ -17,6 +17,81 @@ const generateId = () => {
 const VISITOR_KEY = "blog_visitor_id";
 const SESSION_KEY = "blog_session_id";
 
+type AnalyticsEventParams = {
+  eventType: string;
+  pagePath?: string;
+  postId?: string;
+  payload?: Record<string, unknown>;
+};
+
+function getVisitorId() {
+  if (typeof window === "undefined") return "";
+  let id = localStorage.getItem(VISITOR_KEY);
+  if (!id) {
+    id = generateId();
+    localStorage.setItem(VISITOR_KEY, id);
+  }
+  return id;
+}
+
+function getSessionId() {
+  if (typeof window === "undefined") return "";
+  let id = sessionStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = generateId();
+    sessionStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
+}
+
+// 注意：整个请求体会被深度 decamelize，payload 内的键应使用小写/snake_case
+function createEventBody(params: AnalyticsEventParams) {
+  return toSnakeCase({
+    eventType: params.eventType,
+    pagePath: params.pagePath || window.location.pathname,
+    visitorId: getVisitorId(),
+    sessionId: getSessionId(),
+    postId: params.postId || undefined,
+    payload: params.payload,
+    referrer: document.referrer || undefined,
+  });
+}
+
+/**
+ * 单次事件上报 (使用 fetch)
+ * 不挂载页面浏览/心跳逻辑，供 ArticleTracker 等只需上报单个事件的组件使用
+ */
+export async function trackAnalyticsEvent(params: AnalyticsEventParams) {
+  try {
+    const body = createEventBody(params);
+    await logAnalyticsEvent({
+      body: body as unknown as LogAnalyticsEventData["body"],
+    });
+  } catch (error) {
+    console.error("Failed to track event:", error);
+  }
+}
+
+/**
+ * 信标上报 (使用 sendBeacon，用于页面卸载/隐藏)
+ * 模块级导出，供 Web Vitals 等不需要页面浏览追踪的场景复用
+ */
+export function sendAnalyticsBeacon(params: AnalyticsEventParams) {
+  try {
+    if (!navigator.sendBeacon) return; // 降级或忽略
+    const body = createEventBody(params);
+    const blob = new Blob([JSON.stringify(body)], {
+      type: "application/json",
+    });
+    // 假设 API 路径。如果 client 配置有 baseURL，理想情况是获取它。
+    // 这里为了稳健，使用相对路径，通常 Next.js 会代理或同域
+    const url = `${client.getConfig().baseUrl || ""}/api/v1/analytics/events`;
+    navigator.sendBeacon(url, blob);
+  } catch (e) {
+    console.error("Beacon failed", e);
+  }
+}
+
 /**
  * 流量上报 Hook (增强版)
  *
@@ -29,99 +104,18 @@ export function useAnalytics() {
   const pathname = usePathname();
   const lastTrackedPath = useRef<string | null>(null);
 
-  const getVisitorId = useCallback(() => {
-    if (typeof window === "undefined") return "";
-    let id = localStorage.getItem(VISITOR_KEY);
-    if (!id) {
-      id = generateId();
-      localStorage.setItem(VISITOR_KEY, id);
-    }
-    return id;
-  }, []);
-
-  const getSessionId = useCallback(() => {
-    if (typeof window === "undefined") return "";
-    let id = sessionStorage.getItem(SESSION_KEY);
-    if (!id) {
-      id = generateId();
-      sessionStorage.setItem(SESSION_KEY, id);
-    }
-    return id;
-  }, []);
-
-  const createEventBody = useCallback(
-    (params: {
-      eventType: string;
-      pagePath?: string;
-      postId?: string;
-      payload?: Record<string, unknown>;
-    }) => {
-      return toSnakeCase({
-        eventType: params.eventType,
-        pagePath: params.pagePath || window.location.pathname,
-        visitorId: getVisitorId(),
-        sessionId: getSessionId(),
-        postId: params.postId || undefined,
-        payload: params.payload,
-        referrer: document.referrer || undefined,
-      });
-    },
-    [getVisitorId, getSessionId],
-  );
-
   /**
    * 普通上报 (使用 fetch)
    */
-  const trackEvent = useCallback(
-    async (params: {
-      eventType: string;
-      pagePath?: string;
-      postId?: string;
-      payload?: Record<string, unknown>;
-    }) => {
-      try {
-        const body = createEventBody(params);
-        await logAnalyticsEvent({
-          body: body as unknown as LogAnalyticsEventData["body"],
-        });
-      } catch (error) {
-        console.error("Failed to track event:", error);
-      }
-    },
-    [createEventBody],
-  );
-
-  /**
-   * 信标上报 (使用 sendBeacon，用于页面卸载/隐藏)
-   */
-  const trackEventBeacon = useCallback(
-    (params: { eventType: string; payload?: Record<string, unknown> }) => {
-      try {
-        if (!navigator.sendBeacon) return; // 降级或忽略
-        const body = createEventBody(params);
-        const blob = new Blob([JSON.stringify(body)], {
-          type: "application/json",
-        });
-        // 假设 API 路径。如果 client 配置有 baseURL，理想情况是获取它。
-        // 这里为了稳健，使用相对路径，通常 Next.js 会代理或同域
-        const url = `${client.getConfig().baseUrl || ""}/api/v1/analytics/events`;
-        navigator.sendBeacon(url, blob);
-      } catch (e) {
-        console.error("Beacon failed", e);
-      }
-    },
-    [createEventBody],
-  );
-
   /**
    * 页面浏览追踪 (Page View)
    */
   useEffect(() => {
     if (pathname && lastTrackedPath.current !== pathname) {
-      trackEvent({ eventType: "page_view", pagePath: pathname });
+      trackAnalyticsEvent({ eventType: "page_view", pagePath: pathname });
       lastTrackedPath.current = pathname;
     }
-  }, [pathname, trackEvent]);
+  }, [pathname]);
 
   /**
    * 心跳与时长追踪 (Heartbeat)
@@ -144,9 +138,9 @@ export function useAnalytics() {
             payload: { duration: delta },
           };
           if (isBeacon) {
-            trackEventBeacon(params);
+            sendAnalyticsBeacon(params);
           } else {
-            trackEvent(params);
+            trackAnalyticsEvent(params);
           }
         }
       }
@@ -182,7 +176,7 @@ export function useAnalytics() {
       // 组件卸载 (路由切换) 时上报
       reportHeartbeat(false);
     };
-  }, [pathname, trackEvent, trackEventBeacon]);
+  }, [pathname]);
 
-  return { trackEvent };
+  return { trackEvent: trackAnalyticsEvent };
 }

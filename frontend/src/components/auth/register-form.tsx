@@ -1,5 +1,7 @@
 "use client";
 
+import type { Route } from "next";
+
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -94,7 +96,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         onSuccess();
       }
       const timer = setTimeout(() => {
-        router.push(state.redirectTo as any);
+        router.push(state.redirectTo as Route);
       }, 1000);
       return () => clearTimeout(timer);
     }

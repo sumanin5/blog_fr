@@ -84,6 +84,10 @@ async def test_process_file_change_delete(
     mock_post = mocker.MagicMock()
     mock_post.id = 123
     existing_map = {"posts/deleted.md": mock_post}
+    mocker.patch(
+        "app.git_ops.components.handlers.file_processor.post_crud.get_posts_by_source_paths",
+        return_value=[mock_post],
+    )
 
     # Mock post_service.delete_post
     mock_delete = mocker.patch(
@@ -136,16 +140,48 @@ async def test_reconcile_incremental_sync_batch_processing(
     # 验证调用参数
     expected_calls = [
         mocker.call(
-            mock_session, "posts/new.md", "A", existing_map, mock_user, stats, set()
+            mock_session,
+            "posts/new.md",
+            "A",
+            existing_map,
+            mock_user,
+            mocker.ANY,
+            mocker.ANY,
+            old_path=None,
+            pending_moves=set(),
         ),
         mocker.call(
-            mock_session, "posts/update.md", "M", existing_map, mock_user, stats, set()
+            mock_session,
+            "posts/update.md",
+            "M",
+            existing_map,
+            mock_user,
+            mocker.ANY,
+            mocker.ANY,
+            old_path=None,
+            pending_moves=set(),
         ),
         mocker.call(
-            mock_session, "posts/old.md", "D", existing_map, mock_user, stats, set()
+            mock_session,
+            "posts/old.md",
+            "D",
+            existing_map,
+            mock_user,
+            mocker.ANY,
+            mocker.ANY,
+            old_path=None,
+            pending_moves=set(),
         ),
         mocker.call(
-            mock_session, "index.md", "M", existing_map, mock_user, stats, set()
+            mock_session,
+            "index.md",
+            "M",
+            existing_map,
+            mock_user,
+            mocker.ANY,
+            mocker.ANY,
+            old_path=None,
+            pending_moves=set(),
         ),
     ]
     mock_process.assert_has_calls(expected_calls, any_order=True)

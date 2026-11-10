@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { AdminActionButton } from "@/components/admin/common/admin-action-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { MdxClientRenderer } from "@/components/public/post/content/renderers/mdx-client-renderer";
 import {
   Select,
@@ -31,13 +33,13 @@ import {
 } from "@/components/ui/select";
 import { MediaSelectField } from "@/components/admin/media/fields/media-select-field";
 import type { MediaFile } from "@/shared/api/types";
-import { Category } from "@/shared/api/types";
+import { Category, CategoryCreate } from "@/shared/api/types";
 
 interface CategoryEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category: Category | null;
-  onSave: (data: any) => void | Promise<void>;
+  onSave: (data: CategoryCreate) => void | Promise<void>;
   isPending: boolean;
 }
 
@@ -60,7 +62,7 @@ export function CategoryEditDialog({
     coverMedia: MediaFile | null;
     icon: MediaFile | null;
     excerpt: string;
-    postSortOrder: string;
+    postSortOrder: NonNullable<CategoryCreate["postSortOrder"]>;
   }>({
     name: "",
     slug: "",
@@ -88,9 +90,9 @@ export function CategoryEditDialog({
         isFeatured: category.isFeatured ?? false,
         iconPreset: category.iconPreset ?? "",
         coverMedia: category.coverMedia ?? null,
-        icon: (category as any).icon ?? null,
+        icon: category.icon ?? null,
         excerpt: category.excerpt ?? "",
-        postSortOrder: (category as any).postSortOrder ?? "published_at_desc",
+        postSortOrder: category.postSortOrder ?? "published_at_desc",
       });
     } else {
       setFormData({
@@ -110,16 +112,15 @@ export function CategoryEditDialog({
     setActiveTab("edit");
   }, [category, open]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     // 构造提交数据，将 coverMedia 转换为 ID
-    const submitData = {
-      ...formData,
-      cover_media_id: formData.coverMedia?.id || null,
-      icon_id: formData.icon?.id || null,
-      icon_preset: formData.iconPreset || null,
-      is_featured: formData.isFeatured,
-      excerpt: formData.excerpt,
+    const { coverMedia, icon, ...fields } = formData;
+    const submitData: CategoryCreate = {
+      ...fields,
+      coverMediaId: coverMedia?.id ?? null,
+      iconId: icon?.id ?? null,
+      iconPreset: fields.iconPreset || null,
     };
     await onSave(submitData);
     onOpenChange(false);
@@ -184,9 +185,9 @@ export function CategoryEditDialog({
                 {/* 摘要编辑区域 */}
                 <div className="space-y-2">
                   <Label htmlFor="edit-excerpt">摘要 (Excerpt)</Label>
-                  <textarea
+                  <Textarea
                     id="edit-excerpt"
-                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="min-h-[80px]"
                     placeholder="简短的分类介绍，用于卡片展示..."
                     value={formData.excerpt}
                     onChange={(e) =>
@@ -224,8 +225,8 @@ export function CategoryEditDialog({
 
                     <div className="bg-background min-h-[300px]">
                       <TabsContent value="edit" className="m-0 h-full">
-                        <textarea
-                          className="w-full h-[300px] p-4 text-sm font-mono resize-none focus:outline-none bg-transparent leading-relaxed"
+                        <Textarea
+                          className="w-full h-[300px] p-4 text-sm font-mono resize-none border-0 focus-visible:ring-0 shadow-none leading-relaxed"
                           placeholder="# 这是一个一级标题&#10;&#10;在这里以此支持 Markdown 格式编写分类的详细介绍..."
                           value={formData.description}
                           onChange={(e) =>
@@ -336,7 +337,7 @@ export function CategoryEditDialog({
                   </div>
                 </div>
 
-                <div className="h-px bg-border my-4" />
+                <Separator className="my-4" />
 
                 {/* 排序与状态 */}
                 <div className="space-y-4">
@@ -362,9 +363,11 @@ export function CategoryEditDialog({
                     </div>
                     <Select
                       value={formData.postSortOrder}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, postSortOrder: value })
-                      }
+                      onValueChange={(value) => {
+                        if (value === "published_at_desc" || value === "published_at_asc" || value === "title_asc" || value === "title_desc") {
+                          setFormData({ ...formData, postSortOrder: value });
+                        }
+                      }}
                     >
                       <SelectTrigger id="edit-post-sort" className="w-full">
                         <SelectValue placeholder="选择排序方式" />
@@ -433,7 +436,7 @@ export function CategoryEditDialog({
             </AdminActionButton>
             <AdminActionButton
               type="button" // Changed from submit to button
-              onClick={(e) => handleSubmit(e as any)} // Trigger handler manually
+              onClick={(e) => handleSubmit(e)} // Trigger handler manually
               isLoading={isPending}
               loadingText="保存中"
               icon={LayoutTemplate}

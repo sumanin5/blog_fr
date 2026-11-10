@@ -76,7 +76,7 @@ export function useUsers() {
         // Warning: This endpoint was previously Superuser only, now Admin.
         // Ensure backend is updated.
         const response = await getUserById({
-          path: { user_id: userId } as unknown as any,
+          path: { user_id: userId },
           throwOnError: true,
         });
         return response.data as unknown as User;

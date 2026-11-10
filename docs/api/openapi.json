@@ -7056,6 +7056,109 @@
         }
       }
     },
+    "/api/v1/analytics/stats/web-vitals": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Core Web Vitals 汇总",
+        "description": "获取真实用户的 Core Web Vitals（RUM）汇总。\n\n## 权限\n- 仅限 **超级管理员** 访问。\n\n## 查询参数\n- `days`: 统计天数（默认 7）。\n\n## 口径\n- 数据来自前端 `web_vitals` 事件，每次页面加载最多一条，已排除爬虫。\n- 按 Google 口径取 **p75**：LCP / INP / FCP / TTFB 单位为毫秒，CLS 无单位。\n- `slowest_pages` 按 LCP p75 降序，最多 10 个页面。\n- `web_vitals` 事件不计入 PV / UV / 会话等任何流量统计。",
+        "operationId": "getAnalyticsWebVitals",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "description": "统计天数",
+              "default": 7,
+              "title": "Days"
+            },
+            "description": "统计天数"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebVitalsSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/analytics/stats/sessions": {
       "get": {
         "tags": [
@@ -8594,8 +8697,7 @@
           },
           "hourlyTraffic": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/HourlyTraffic"
             },
             "type": "array",
             "title": "Hourlytraffic"
@@ -8704,6 +8806,29 @@
           "attachment"
         ],
         "title": "FileUsage"
+      },
+      "HourlyTraffic": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "title": "Time"
+          },
+          "visitors": {
+            "type": "integer",
+            "title": "Visitors"
+          },
+          "pageViews": {
+            "type": "integer",
+            "title": "Pageviews"
+          }
+        },
+        "type": "object",
+        "required": [
+          "time",
+          "visitors",
+          "pageViews"
+        ],
+        "title": "HourlyTraffic"
       },
       "MediaFileResponse": {
         "properties": {
@@ -11295,6 +11420,115 @@
         "type": "object",
         "title": "UserUpdate",
         "description": "更新用户的请求模型（所有字段可选）"
+      },
+      "WebVitalMetricStat": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "p75": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P75"
+          },
+          "samples": {
+            "type": "integer",
+            "title": "Samples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "samples"
+        ],
+        "title": "WebVitalMetricStat"
+      },
+      "WebVitalPageStat": {
+        "properties": {
+          "page_path": {
+            "type": "string",
+            "title": "Page Path"
+          },
+          "lcp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lcp"
+          },
+          "inp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inp"
+          },
+          "cls": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cls"
+          },
+          "samples": {
+            "type": "integer",
+            "title": "Samples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_path",
+          "samples"
+        ],
+        "title": "WebVitalPageStat"
+      },
+      "WebVitalsSummary": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/WebVitalMetricStat"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "slowest_pages": {
+            "items": {
+              "$ref": "#/components/schemas/WebVitalPageStat"
+            },
+            "type": "array",
+            "title": "Slowest Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days",
+          "metrics",
+          "slowest_pages"
+        ],
+        "title": "WebVitalsSummary"
       },
       "WebhookResponse": {
         "properties": {

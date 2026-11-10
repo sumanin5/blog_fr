@@ -8,7 +8,10 @@
  */
 
 import React from "react";
-import hljs from "highlight.js";
+import {
+  highlightMarkdownCode,
+  normalizeCodeLanguage,
+} from "@/lib/markdown/highlight";
 import { MermaidDiagram } from "./mermaid-diagram";
 import { CopyButton } from "../utils/copy-button";
 
@@ -56,25 +59,25 @@ export function CodeBlock(props: React.ComponentPropsWithoutRef<"pre">) {
     return <MermaidDiagram code={code} />;
   }
 
-  // 普通代码高亮
+  const normalizedLanguage = normalizeCodeLanguage(language);
+  const languageLabel =
+    normalizedLanguage === "plaintext" ? "text" : normalizedLanguage;
+
+  // 普通代码高亮：与 TanStack Markdown 正文共用同一套 tokenizer
   let highlightedCode = code;
   try {
-    if (language && hljs.getLanguage(language)) {
-      highlightedCode = hljs.highlight(code, { language }).value;
-    } else {
-      highlightedCode = hljs.highlightAuto(code).value;
-    }
+    highlightedCode = highlightMarkdownCode(code, normalizedLanguage);
   } catch (err) {
-    console.error("Highlight.js error:", err);
+    console.error("TanStack Highlight error:", err);
   }
 
   return (
-    <div className="relative my-4 group rounded-lg border bg-muted/50">
+    <div className="group relative my-4 overflow-hidden rounded-lg border bg-muted/25">
       {/* Header / Actions Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 rounded-t-lg">
+      <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2">
         {/* Language Badge */}
-        <span className="text-xs font-medium text-muted-foreground uppercase">
-          {language || "TEXT"}
+        <span className="text-xs font-medium uppercase text-muted-foreground">
+          {languageLabel}
         </span>
 
         {/* Copy Button - 客户端组件 */}
@@ -82,14 +85,12 @@ export function CodeBlock(props: React.ComponentPropsWithoutRef<"pre">) {
       </div>
 
       {/* Code Area */}
-      <div className="overflow-x-auto p-4 pt-2">
-        <pre className="m-0! p-0! bg-transparent">
-          <code
-            className={`hljs ${className || ""} bg-transparent p-0! border-0`}
-            dangerouslySetInnerHTML={{ __html: highlightedCode }}
-          />
-        </pre>
-      </div>
+      <pre className="tm-code m-0 overflow-x-auto p-4 text-[13px] leading-7" data-lang={normalizedLanguage}>
+        <code
+          className={`${className || `language-${normalizedLanguage}`} bg-transparent p-0! border-0`}
+          dangerouslySetInnerHTML={{ __html: highlightedCode }}
+        />
+      </pre>
     </div>
   );
 }

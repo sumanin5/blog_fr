@@ -57,8 +57,9 @@ export function AdminTable<TData, TValue>({
   onPageChange,
   selectedRows,
   onSelectionChange,
-  getRowId = (row: TData) => (row as any).id,
+  getRowId,
 }: AdminTableProps<TData, TValue>) {
+  "use no memo"; // TanStack Table exposes mutable functions; opt out of automatic memoization.
   // 转换 Set<string> -> RowSelectionState
   const rowSelection = React.useMemo(() => {
     if (!selectedRows) return {};
@@ -69,13 +70,18 @@ export function AdminTable<TData, TValue>({
     return selection;
   }, [selectedRows]);
 
+  // This component opts out of compiler memoization because TanStack returns mutable APIs.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
     pageCount, // 服务器端总页数
     manualPagination: true,
     getCoreRowModel: getCoreRowModel(),
-    getRowId,
+    getRowId: getRowId ?? ((row) => {
+      if (typeof row === "object" && row !== null && "id" in row && typeof row.id === "string") return row.id;
+      throw new Error("AdminTable requires getRowId for rows without a string id");
+    }),
     state: {
       rowSelection,
       pagination: {

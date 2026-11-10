@@ -1,3 +1,4 @@
+import Image from "next/image";
 export default function IconPreview() {
   const icons = [
     {
@@ -34,28 +35,36 @@ export default function IconPreview() {
               <div className="flex flex-col items-center">
                 {/* 大图标预览 */}
                 <div className="w-32 h-32 mb-4 flex items-center justify-center bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <img
+                  <Image
                     src={`/${icon.file}`}
                     alt={icon.name}
+                    width={96}
+                    height={96}
                     className="w-24 h-24"
                   />
                 </div>
 
                 {/* 小图标预览（实际大小） */}
                 <div className="flex gap-2 mb-4">
-                  <img
+                  <Image
                     src={`/${icon.file}`}
                     alt={icon.name}
+                    width={32}
+                    height={32}
                     className="w-8 h-8"
                   />
-                  <img
+                  <Image
                     src={`/${icon.file}`}
                     alt={icon.name}
+                    width={24}
+                    height={24}
                     className="w-6 h-6"
                   />
-                  <img
+                  <Image
                     src={`/${icon.file}`}
                     alt={icon.name}
+                    width={16}
+                    height={16}
                     className="w-4 h-4"
                   />
                 </div>

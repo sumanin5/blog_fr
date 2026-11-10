@@ -1,21 +1,64 @@
-import { serverClient } from "@/lib/server-api-client";
-import type { PostType } from "@/shared/api/generated/types.gen";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowUpRight, BookOpen } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { CategoryTerrainMap } from "@/components/public/categories/category-terrain-map";
+import { routes } from "@/lib/routes";
+import { toPlainExcerpt } from "@/lib/seo";
+import { createServerFetch, serverClient } from "@/lib/server-api-client";
 import { listCategoriesByType } from "@/shared/api/generated/sdk.gen";
-import { CategoryCard } from "@/components/public/category/category-card";
-import { CategoryList } from "@/shared/api/types";
-import { PageHeader } from "@/components/public/common/page-header";
-import { PageBackground } from "@/components/public/common/page-background";
+import type { PostType } from "@/shared/api/generated/types.gen";
+import { normalizeApiResponse } from "@/shared/api/transformers";
+import type { Category } from "@/shared/api/types";
 
-// 映射 PostType 到更友好的标题
-const TYPE_LABELS: Record<string, string> = {
-  articles: "The Knowledge",
-  ideas: "Soul &",
+const HEADER_CONFIG: Record<
+  string,
+  {
+    eyebrow: string;
+    title: string;
+    description: (count: number) => string;
+    seoDescription: string;
+  }
+> = {
+  articles: {
+    eyebrow: "Digital Garden · Collections",
+    title: "专栏合集",
+    description: (count) =>
+      `${count} 个体系化专栏。每篇文章都放在可持续阅读的上下文中，而不是一次性卡片流。`,
+    seoDescription:
+      "体系化技术专栏合集：FastAPI、Next.js 与全栈工程实践，每篇文章都放在可持续阅读的上下文中。",
+  },
+  ideas: {
+    eyebrow: "Ideas · Domains",
+    title: "想法领域",
+    description: (count) =>
+      `按领域浏览 ${count} 组碎片随想。想法保持单篇即读，不强行包装成系列。`,
+    seoDescription: "按领域浏览碎片随想。想法保持单篇即读，不强行包装成系列。",
+  },
 };
 
-const SUBTITLE_LABELS: Record<string, string> = {
-  articles: "Index",
-  ideas: "Fragments",
-};
+export const revalidate = 300;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ postType: string }>;
+}): Promise<Metadata> {
+  const { postType } = await params;
+  const header = HEADER_CONFIG[postType];
+  if (!header) return {};
+  return {
+    title: header.title,
+    description: header.seoDescription,
+    alternates: { canonical: routes.postCategories(postType) },
+  };
+}
+
+// 板块类型是固定枚举，构建期即可预渲染；动态参数之外的值仍按需生成并走 ISR
+export function generateStaticParams() {
+  return [{ postType: "articles" }, { postType: "ideas" }];
+}
 
 export default async function CategoryListPage({
   params,
@@ -24,62 +67,121 @@ export default async function CategoryListPage({
 }) {
   const { postType } = await params;
 
-  // 1. 获取所有分类
-  const categoriesRes = await listCategoriesByType({
-    client: serverClient,
-    path: { post_type: postType as unknown as PostType },
-    query: { include_inactive: false },
-  });
+  let activeCategories: Category[] = [];
+  try {
+    const categoriesRes = await listCategoriesByType({
+      client: serverClient,
+      path: { post_type: postType as PostType },
+      query: { include_inactive: false },
+      fetch: createServerFetch({ tags: ["categories"] }),
+    });
 
-  // 后端返回的分页数据已由拦截器处理成驼峰，断言为 CategoryList 以确保业务代码 100% 驼峰
-  const data = categoriesRes.data as unknown as CategoryList;
-  const categories = data?.items || [];
-  const activeCategories = categories.filter((c) => c.isActive !== false);
-
-  if (activeCategories.length === 0) {
-    return (
-      <div className="relative min-h-screen">
-        <PageBackground />
-        <div className="container py-40 flex flex-col items-center justify-center text-center max-w-5xl mx-auto relative z-10">
-          <div className="bg-muted/10 p-8 rounded-full mb-6 backdrop-blur-md border border-white/10 shadow-xl">
-            <span className="text-5xl">📂</span>
-          </div>
-          <h1 className="text-3xl font-bold mb-4">暂无分类</h1>
-          <p className="text-muted-foreground text-lg">
-            该板块下暂时还没有创建任何分类。
-          </p>
-        </div>
-      </div>
+    const data = normalizeApiResponse(categoriesRes.data);
+    activeCategories = (data?.items || []).filter(
+      (category) => category.isActive !== false,
     );
+  } catch (error) {
+    console.warn("Failed to fetch categories:", error);
   }
 
+  const config = HEADER_CONFIG[postType] || {
+    eyebrow: "Knowledge Collections",
+    title: "专栏分类",
+    description: (count: number) => `浏览 ${count} 个主题合集。`,
+  };
+
   return (
-    <div className="relative min-h-screen">
-      <PageBackground />
+    <div className="min-h-screen">
+      <div className="container mx-auto max-w-[1200px] px-4 py-10 md:px-6 lg:py-14">
+        <Link
+          href={routes.postList(postType)}
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          返回内容首页
+        </Link>
 
-      <main className="relative z-10">
-        <section className="relative pt-24 pb-12 lg:pt-32 lg:pb-20 text-center container mx-auto px-4 md:px-6">
-          <PageHeader
-            tagline="topic.scanner — v1.0.4"
-            title={TYPE_LABELS[postType] || "Content"}
-            subtitle={SUBTITLE_LABELS[postType] || "Categories"}
-            description={`探索精心整理的 ${activeCategories.length} 个主题分类。从深度的技术探究到生活中的灵感瞬间，所有知识都在这里井然有序。`}
-          />
-        </section>
+        <header className="mt-8 max-w-2xl">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+            {config.eyebrow}
+          </p>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            {config.title}
+          </h1>
+          <p className="mt-4 text-sm font-light leading-relaxed text-muted-foreground sm:text-base">
+            {config.description(activeCategories.length)}
+          </p>
+        </header>
 
-        {/* Categories Grid */}
-        <div className="container px-4 md:px-6 mx-auto pb-32">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {activeCategories.map((category) => (
-              <CategoryCard
-                key={category.id}
-                category={category}
-                postType={postType}
-              />
-            ))}
+        {activeCategories.length === 0 ? (
+          <div className="mt-12 flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/20 py-16 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 bg-muted/40 text-lg">
+              📂
+            </div>
+            <h2 className="mt-4 text-sm font-semibold text-foreground">
+              专栏筹备中
+            </h2>
+            <p className="mt-2 max-w-sm text-xs leading-relaxed text-muted-foreground">
+              当前没有公开专栏。创建并发布分类后，它会自动出现在这里。
+            </p>
           </div>
-        </div>
-      </main>
+        ) : (
+          <>
+            {activeCategories.length >= 2 && (
+              // 地图是导航增强：窄屏只保留下方列表，列表也保证搜索引擎与读屏可读
+              <div className="mt-10 hidden md:block">
+                <CategoryTerrainMap
+                  categories={activeCategories.map((category) => ({
+                    id: category.id,
+                    name: category.name,
+                    href: routes.postCategory(postType, category.slug),
+                    postCount: category.postCount ?? 0,
+                    summary: toPlainExcerpt(
+                      category.excerpt || category.description || "",
+                      80,
+                    ),
+                  }))}
+                />
+              </div>
+            )}
+            <div className="mt-12 divide-y divide-border/60 border-y border-border/60">
+              {activeCategories.map((category, index) => (
+                <Link
+                  key={category.id}
+                  href={routes.postCategory(postType, category.slug)}
+                  className="group grid grid-cols-[42px_minmax(0,1fr)_auto] items-start gap-4 py-6 transition-colors hover:bg-muted/20 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:gap-6"
+                >
+                  <span className="pt-1 font-mono text-xs tabular-nums text-muted-foreground/60">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400 sm:text-lg">
+                        {category.name}
+                      </h2>
+                      <Badge
+                        variant="secondary"
+                        className="border-none bg-muted px-2 py-0 text-[10px] font-normal text-muted-foreground"
+                      >
+                        {category.postCount ?? 0} 篇
+                      </Badge>
+                    </div>
+
+                    <p className="mt-2 line-clamp-2 text-sm font-light leading-relaxed text-muted-foreground">
+                      {category.excerpt ||
+                        category.description ||
+                        "查看该专栏下的文章目录与阅读顺序。"}
+                    </p>
+                  </div>
+
+                  <ArrowUpRight className="mt-1 h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

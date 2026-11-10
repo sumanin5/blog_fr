@@ -10,6 +10,7 @@
 # 依赖目录
 # ==========================================
 node_modules/
+.pnpm-store/
 __pycache__/
 *.pyc
 .venv/
@@ -68,6 +69,7 @@ RESUME*.md
 # ==========================================
 *demo/
 *.ipynb
+docs/design/
 
 # ==========================================
 # 备份目录
@@ -76,3 +78,9 @@ RESUME*.md
 /content/
 /backend/htmlcov/
 /backend/test-report.html
+
+# Production release state (managed on the deployment host)
+/.deploy/
+/.release.env
+/.previous-release.env
+/.previous-compose.yml

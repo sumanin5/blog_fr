@@ -33,11 +33,10 @@ services:
     # 后端 API
     # ==========================================
     backend:
-        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-backend:latest
+        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-backend:${IMAGE_TAG:?Set IMAGE_TAG to a release commit SHA}
 
-        # 挂载卷：生产环境引入代码挂载，确保最新逻辑立即生效
+        # 应用代码由固定版本镜像提供，仅挂载持久化数据。
         volumes:
-            - ./backend/app:/app/app # 强制覆盖镜像内代码，使修复逻辑生效
             - ./content:/git_root/content # 直接挂载内容仓库（独立 Git 仓库）
             - ./backend/data:/app/data # 挂载数据目录
             - ./backend/media:/app/media # 持久化媒体文件
@@ -68,6 +67,13 @@ services:
         command: >
             sh -c "git config --global --add safe.directory /git_root/content &&
                    fastapi run --workers 1 app/main.py"
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5)"]
+            interval: 10s
+            timeout: 6s
+            start_period: 60s
+            retries: 6
         deploy:
             resources:
                 limits:
@@ -78,7 +84,7 @@ services:
 
     frontend:
         # 使用阿里云 ACR 镜像
-        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-frontend:latest
+        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-frontend:${IMAGE_TAG:?Set IMAGE_TAG to a release commit SHA}
         env_file:
             - .env
         environment:
@@ -87,7 +93,15 @@ services:
         ports:
             - "3000:3000"
         depends_on:
-            - backend
+            backend:
+                condition: service_healthy
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health', {signal: AbortSignal.timeout(5000)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+            interval: 10s
+            timeout: 6s
+            start_period: 60s
+            retries: 6
         deploy:
             resources:
                 limits:
@@ -99,7 +113,7 @@ services:
     # Caddy 反向代理 (自动 HTTPS)
     # ==========================================
     caddy:
-        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-caddy:latest
+        image: crpi-qvig00qix6yo4bi5.cn-hangzhou.personal.cr.aliyuncs.com/blog-project/blog-caddy:${IMAGE_TAG:?Set IMAGE_TAG to a release commit SHA}
         restart: unless-stopped
         ports:
             - "80:80"
