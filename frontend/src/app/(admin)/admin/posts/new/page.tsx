@@ -6,7 +6,6 @@ import { useCategoriesQuery } from "@/hooks/admin/categories/queries";
 import { usePostsAdmin } from "@/hooks/admin/posts";
 import { PostEditor } from "@/components/admin/posts/post-editor";
 import { PostType } from "@/shared/api/generated";
-import type { PostCreate } from "@/shared/api/types";
 import { Info, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 

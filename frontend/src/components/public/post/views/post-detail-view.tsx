@@ -161,74 +161,84 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
 
           <div className="min-w-0">
             <article className="mx-auto max-w-4xl">
-              <header className="space-y-5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="rounded-full px-3 py-0.5 text-[11px] font-normal"
-                  >
-                    {postType === "ideas" ? "Thought" : "Article"}
-                  </Badge>
-                  {category?.name && (
-                    <Badge
-                      variant="outline"
-                      className="rounded-full px-3 py-0.5 text-[11px] font-normal text-muted-foreground"
-                    >
-                      {category.name}
-                    </Badge>
-                  )}
-                </div>
-
-                <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                  {post.title}
-                </h1>
-
-                {post.excerpt && (
-                  <p className="max-w-4xl text-base font-light leading-relaxed text-muted-foreground sm:text-lg">
-                    {post.excerpt}
-                  </p>
-                )}
-
-                {post.author && (
-                  <PostMeta
-                    author={{
-                      username: post.author.username,
-                      full_name: post.author.fullName || undefined,
-                      avatar: post.author.avatar || undefined,
-                    }}
-                    publishedAt={post.publishedAt || ""}
-                    readingTime={post.readingTime || 0}
-                    viewCount={post.viewCount || 0}
-                  />
-                )}
-
-                {post.tags && post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {post.tags.map((tag) => (
-                      <Badge
-                        key={tag.id}
-                        variant="secondary"
-                        className="rounded-full border-none bg-primary/8 px-3 py-0.5 text-[11px] font-normal text-primary"
-                      >
-                        {tag.name}
-                      </Badge>
-                    ))}
+              <header
+                className={
+                  coverUrl
+                    ? "relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:p-8"
+                    : "space-y-5"
+                }
+              >
+                {coverUrl && (
+                  <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <Image
+                      src={coverUrl}
+                      alt={post.coverMedia?.altText || post.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 896px"
+                      className="object-cover object-center opacity-30"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/85 to-background/35" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-background/40" />
                   </div>
                 )}
-              </header>
 
-              {coverUrl && (
-                <div className="relative mt-8 aspect-video overflow-hidden rounded-2xl border border-border/60 bg-muted">
-                  <Image
-                    src={coverUrl}
-                    alt={post.coverMedia?.altText || post.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 896px"
-                    className="object-cover"
-                    unoptimized
-                  />
+                <div className="relative z-10 space-y-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full px-3 py-0.5 text-[11px] font-normal"
+                    >
+                      {postType === "ideas" ? "Thought" : "Article"}
+                    </Badge>
+                    {category?.name && (
+                      <Badge
+                        variant="outline"
+                        className="rounded-full bg-background/60 px-3 py-0.5 text-[11px] font-normal text-muted-foreground backdrop-blur-sm"
+                      >
+                        {category.name}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                    {post.title}
+                  </h1>
+
+                  {post.excerpt && (
+                    <p className="max-w-3xl text-base font-light leading-relaxed text-muted-foreground sm:text-lg">
+                      {post.excerpt}
+                    </p>
+                  )}
+
+                  {post.author && (
+                    <PostMeta
+                      author={{
+                        username: post.author.username,
+                        full_name: post.author.fullName || undefined,
+                        avatar: post.author.avatar || undefined,
+                      }}
+                      publishedAt={post.publishedAt || ""}
+                      readingTime={post.readingTime || 0}
+                      viewCount={post.viewCount || 0}
+                    />
+                  )}
+
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {post.tags.map((tag) => (
+                        <Badge
+                          key={tag.id}
+                          variant="secondary"
+                          className="rounded-full border-none bg-primary/10 px-3 py-0.5 text-[11px] font-normal text-primary backdrop-blur-sm"
+                        >
+                          {tag.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              </header>
 
               <Separator className="my-8" />
 

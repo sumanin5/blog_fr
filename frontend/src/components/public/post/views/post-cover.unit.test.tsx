@@ -7,7 +7,10 @@ import { getPostDetail } from "@/lib/post-api";
 import type { PostDetailResponse } from "@/shared/api/generated/types.gen";
 import type { ApiData } from "@/shared/api/transformers";
 
-vi.mock("@/lib/post-api", () => ({ getPostDetail: vi.fn() }));
+vi.mock("@/lib/post-api", () => ({
+  getPostDetail: vi.fn(),
+  getPosts: vi.fn().mockResolvedValue({ items: [] }),
+}));
 vi.mock("@/components/public/post/content/post-content", () => ({
   PostContent: () => null,
 }));

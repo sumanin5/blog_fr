@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PostDetailView } from "@/components/public/post/views/post-detail-view";
 import { siteConfig } from "@/config/site";
-import { getThumbnailUrl } from "@/lib/media-utils";
+import { getSafeImageUrl, getThumbnailUrl } from "@/lib/media-utils";
 import { getPostDetail } from "@/lib/post-api";
 import { routes } from "@/lib/routes";
 import { absoluteUrl, toPlainExcerpt } from "@/lib/seo";
@@ -42,7 +42,9 @@ export async function generateMetadata({
     (post.contentMdx ? toPlainExcerpt(post.contentMdx) : "") ||
     post.title;
   const url = routes.postDetailSlug(postType, slug);
-  const image = getThumbnailUrl(post.coverMediaId, "large") ?? siteConfig.ogImage;
+  const coverUrl =
+    getSafeImageUrl(post.coverMedia, "xlarge") ||
+    getThumbnailUrl(post.coverMediaId, "xlarge");
   const authorName = post.author?.fullName || post.author?.username;
 
   return {
@@ -71,13 +73,13 @@ export async function generateMetadata({
       authors: authorName ? [authorName] : undefined,
       section: post.category?.name,
       tags: post.tags?.map((t) => t.name),
-      images: [image],
+      images: coverUrl ? [coverUrl] : [],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: summary,
-      images: [image],
+      images: coverUrl ? [coverUrl] : [],
     },
   };
 }
@@ -93,6 +95,9 @@ export default async function Page({ params }: PageProps) {
 
   const url = absoluteUrl(routes.postDetailSlug(postType, slug));
   const authorName = post.author?.fullName || post.author?.username;
+  const coverUrl =
+    getSafeImageUrl(post.coverMedia, "xlarge") ||
+    getThumbnailUrl(post.coverMediaId, "xlarge");
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": postType === "articles" ? "BlogPosting" : "SocialMediaPosting",
@@ -102,7 +107,7 @@ export default async function Page({ params }: PageProps) {
     mainEntityOfPage: url,
     datePublished: post.publishedAt || undefined,
     dateModified: post.updatedAt || undefined,
-    image: absoluteUrl(getThumbnailUrl(post.coverMediaId, "large") ?? siteConfig.ogImage),
+    image: absoluteUrl(coverUrl ?? siteConfig.ogImage),
     author: authorName ? { "@type": "Person", name: authorName } : undefined,
     publisher: { "@type": "Organization", name: siteConfig.name, url: siteConfig.url },
     keywords: post.tags?.map((t) => t.name).join(", ") || undefined,
