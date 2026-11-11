@@ -116,6 +116,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
       - BACKEND_INTERNAL_URL=http://backend:8000
+      - REVALIDATE_SECRET=${REVALIDATE_SECRET}
       - HOME=/tmp  # pnpm/Next 的运行时缓存写 /tmp，避免往 root 家目录写无权限
 
     depends_on:
