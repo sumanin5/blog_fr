@@ -378,7 +378,6 @@ class SyncProcessor:
             operating_user: 操作用户
             stats: 统计对象
         """
-        from app.git_ops.exceptions import collect_errors
 
         # 1. 删除数据库中多余的记录（文件系统中不存在的）
         # 如果本轮扫描有文件解析失败，不能把它当成“文件已删除”，否则会误删
@@ -476,7 +475,6 @@ class SyncProcessor:
             operating_user: 操作用户
             stats: 统计对象
         """
-        from app.git_ops.exceptions import collect_errors
 
         processed_post_ids = set()
 
