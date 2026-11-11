@@ -76,9 +76,23 @@ const nextConfig: NextConfig = {
           destination: "/posts/:postType/:slug/raw",
         },
         {
+          source: "/posts/:postType/:slug.txt",
+          destination: "/posts/:postType/:slug/txt",
+        },
+        {
+          // /read/2 映射到 /read?part=2，避免嵌套动态 route handler 的注册问题
+          source: "/posts/:postType/:slug/read/:part",
+          destination: "/posts/:postType/:slug/read?part=:part",
+        },
+        {
           source: "/posts/:postType/:slug",
           has: [{ type: "header", key: "accept", value: ".*text/markdown.*" }],
           destination: "/posts/:postType/:slug/raw",
+        },
+        {
+          source: "/posts/:postType/:slug",
+          has: [{ type: "header", key: "accept", value: ".*text/plain.*" }],
+          destination: "/posts/:postType/:slug/txt",
         },
       ],
       afterFiles: [

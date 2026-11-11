@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 
 import { ArticleTracker } from "@/components/admin/analytics/ArticleTracker";
 import { ArticleNavigation } from "@/components/public/docs/article-navigation";
@@ -19,6 +19,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import {
   getSeriesNeighbors,
   sortSeriesPosts,
@@ -83,6 +84,9 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
   const markdownHref = post.slug
     ? routes.postMarkdown(postType, post.slug)
     : undefined;
+  const readerHref = post.slug
+    ? routes.postRead(postType, post.slug)
+    : undefined;
 
   return (
     <div className="relative min-h-screen">
@@ -128,7 +132,19 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
             />
             <TableOfContents toc={toc} mode="sheet" />
             {source && (
-              <CopyPageMenu markdown={source} markdownHref={markdownHref} />
+              <CopyPageMenu
+                markdown={source}
+                markdownHref={markdownHref}
+                readerHref={readerHref}
+              />
+            )}
+            {readerHref && (
+              <Button asChild variant="outline" size="sm" className="gap-2">
+                <a href={readerHref} target="_blank" rel="noreferrer">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">分段阅读</span>
+                </a>
+              </Button>
             )}
           </div>
         </div>

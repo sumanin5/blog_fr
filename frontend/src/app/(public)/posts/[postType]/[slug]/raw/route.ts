@@ -26,16 +26,22 @@ export async function GET(_request: Request, { params }: RouteContext) {
     return new Response("Markdown source unavailable", { status: 404 });
   }
 
-  const filename = slug.replace(/["\r\n]/g, "");
+  const body = renderPostMarkdown(post, postType as PostType, slug);
   const canonical = absoluteUrl(routes.postDetailSlug(postType as PostType, slug));
+  const reader = absoluteUrl(routes.postRead(postType, slug));
+  const plainText = absoluteUrl(routes.postText(postType, slug));
 
-  return new Response(renderPostMarkdown(post, postType as PostType, slug), {
+  return new Response(body, {
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",
-      "Content-Disposition": `inline; filename="${filename}.md"`,
+      // 显式长度，避免部分抓取器对 chunked 响应报错
+      "Content-Length": String(new TextEncoder().encode(body).byteLength),
       "Cache-Control": "public, max-age=60, s-maxage=300",
+      "Access-Control-Allow-Origin": "*",
+      // 同一文章 URL 可能因 Accept: text/markdown 返回 Markdown，缓存必须区分
+      Vary: "Accept",
       // 允许任何爬虫抓取与收录；canonical 指回 HTML 页，避免被搜索引擎视为重复内容
-      Link: `<${canonical}>; rel="canonical"`,
+      Link: `<${canonical}>; rel="canonical", <${plainText}>; rel="alternate"; type="text/plain", <${reader}>; rel="alternate"; type="text/html"`,
     },
   });
 }

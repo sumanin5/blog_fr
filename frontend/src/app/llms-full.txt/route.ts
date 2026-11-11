@@ -1,5 +1,6 @@
 import { siteConfig } from "@/config/site";
 import { getPublishedPost, renderPostMarkdown } from "@/lib/markdown/export";
+import { READER_MAX_PART_CHARS } from "@/lib/markdown/reader";
 import { POST_TYPES, absoluteUrl, getAllPublishedPosts, type PublishedPost } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -26,8 +27,14 @@ export async function GET() {
   const posts = (await Promise.all(POST_TYPES.map(getAllPublishedPosts))).flat();
   const documents = await renderAll(posts);
 
-  const header = `# ${siteConfig.name}\n\n> ${siteConfig.description}\n\n来源：${absoluteUrl("/")}，共 ${documents.length} 篇。\n`;
-  return new Response(`${header}\n${documents.join("\n\n")}`, {
-    headers: { "Content-Type": "text/markdown; charset=utf-8" },
+  const header = `# ${siteConfig.name}\n\n> ${siteConfig.description}\n\n> 若单次抓取有长度上限，请改用每篇文章的 \`/posts/:type/:slug/read\` 分段入口，每段约 ${READER_MAX_PART_CHARS} 字。\n\n来源：${absoluteUrl("/")}，共 ${documents.length} 篇。\n`;
+  const body = `${header}\n${documents.join("\n\n")}`;
+
+  return new Response(body, {
+    headers: {
+      "Content-Type": "text/markdown; charset=utf-8",
+      "Content-Length": String(new TextEncoder().encode(body).byteLength),
+      "Access-Control-Allow-Origin": "*",
+    },
   });
 }

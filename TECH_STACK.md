@@ -81,7 +81,7 @@
 - **Mermaid** - 图表渲染
 - **KaTeX** - 数学公式渲染
 - **rehype-katex, remark-math** - MDX 数学公式插件
-- **纯 Markdown 出口** - `/posts/[postType]/[slug]/raw` 返回 `text/markdown`
+- **纯 Markdown 出口** - `/posts/[postType]/[slug]/raw` 返回 `text/markdown`；`.md` / `.txt` / `/read` 提供全文与分段 AI 阅读入口
 
 ### API 集成
 - **hey-api SDK** - 自动生成类型安全 API 客户端

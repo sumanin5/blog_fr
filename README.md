@@ -363,7 +363,7 @@ Jaeger UI 仅绑定在服务器本机 `127.0.0.1:16686`，需通过 SSH 隧道�
 - **访问分析**: `/api/v1/analytics/*`
 - **API 文档**: `/scalar` (交互式 API 文档)
 
-前端额外提供的公开路由：`/rss.xml`、`/sitemap.xml`、`/llms.txt`、`/llms-full.txt`、`/posts/{postType}/{slug}/raw`（文章 Markdown 原文）、`/api/health`。
+前端额外提供的公开路由：`/rss.xml`、`/sitemap.xml`、`/llms.txt`、`/llms-full.txt`、`/posts/{postType}/{slug}/raw`（文章 Markdown 原文）、`/posts/{postType}/{slug}.md`、`/posts/{postType}/{slug}.txt`、`/posts/{postType}/{slug}/read`（AI 分段阅读）、`/api/health`。
 
 ---
 

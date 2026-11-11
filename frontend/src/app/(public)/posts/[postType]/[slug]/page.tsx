@@ -53,8 +53,11 @@ export async function generateMetadata({
     alternates: {
       canonical: url,
       types: {
-        // 供 AI 工具发现干净的 Markdown 版本
+        // 放在第一位：只接受 HTML 的抓取工具会优先发现分段阅读入口
+        "text/html": routes.postRead(postType, slug),
+        // 供 AI 工具发现干净的 Markdown / 纯文本版本
         "text/markdown": routes.postMarkdown(postType, slug),
+        "text/plain": routes.postText(postType, slug),
         "application/rss+xml": [{ url: "/rss.xml", title: siteConfig.name }],
       },
     },

@@ -14,4 +14,8 @@ export const routes = {
     `/posts/${postType}/${slug}` as Route,
   postMarkdown: (postType: string, slug: string) =>
     `/posts/${postType}/${slug}.md` as Route,
+  postText: (postType: string, slug: string) =>
+    `/posts/${postType}/${slug}.txt` as Route,
+  postRead: (postType: string, slug: string) =>
+    `/posts/${postType}/${slug}/read` as Route,
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Copy, FileText } from "lucide-react";
+import { BookOpen, ChevronDown, Copy, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,14 @@ import {
 interface CopyPageMenuProps {
   markdown: string;
   markdownHref?: string;
+  readerHref?: string;
 }
 
-export function CopyPageMenu({ markdown, markdownHref }: CopyPageMenuProps) {
+export function CopyPageMenu({
+  markdown,
+  markdownHref,
+  readerHref,
+}: CopyPageMenuProps) {
   async function copyMarkdown() {
     try {
       await navigator.clipboard.writeText(markdown);
@@ -36,7 +41,7 @@ export function CopyPageMenu({ markdown, markdownHref }: CopyPageMenuProps) {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem onClick={copyMarkdown} className="gap-2">
           <Copy className="h-4 w-4" />
           复制 Markdown
@@ -46,6 +51,14 @@ export function CopyPageMenu({ markdown, markdownHref }: CopyPageMenuProps) {
             <a href={markdownHref} target="_blank" rel="noreferrer">
               <FileText className="h-4 w-4" />
               查看纯 Markdown
+            </a>
+          </DropdownMenuItem>
+        )}
+        {readerHref && (
+          <DropdownMenuItem asChild className="gap-2">
+            <a href={readerHref} target="_blank" rel="noreferrer">
+              <BookOpen className="h-4 w-4" />
+              分段阅读（AI 友好）
             </a>
           </DropdownMenuItem>
         )}
