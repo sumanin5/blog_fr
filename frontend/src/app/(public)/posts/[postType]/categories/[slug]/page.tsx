@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { cache } from "react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Layers } from "lucide-react";
 
 import { ArticleNavigation } from "@/components/public/docs/article-navigation";
@@ -89,6 +89,12 @@ export default async function CategoryPage({
   params: Promise<{ postType: string; slug: string }>;
 }) {
   const { postType, slug } = await params;
+
+  // 想法领域不再单独做详情页：回到想法流，并直接展开该领域
+  if (postType === "ideas") {
+    permanentRedirect(`/posts/ideas?domain=${encodeURIComponent(slug)}`);
+  }
+
   const category = await getCategoryBySlug(postType, slug);
 
   if (!category) {

@@ -8,6 +8,8 @@ import type { ApiData } from "@/shared/api/transformers";
 import { permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { routes } from "@/lib/routes";
+import { getSafeImageUrl } from "@/lib/media-utils";
+import { toDomainExcerpt } from "@/lib/seo";
 import { IdeaStreamView, type IdeaDomain } from "@/components/public/ideas/idea-stream-view";
 
 interface PostsPageProps {
@@ -17,6 +19,7 @@ interface PostsPageProps {
   searchParams: Promise<{
     page?: string;
     tag?: string;
+    domain?: string;
   }>;
 }
 
@@ -53,6 +56,7 @@ export default async function PostsPage({
 
   // 🚀 2. 想法板块：独立打造单篇即读流（Memos Stream）并支持领域分类切换
   if (postType === "ideas") {
+    const { domain } = await searchParams;
     let ideas: ApiData<PostShortResponse>[] = [];
     let domains: IdeaDomain[] = [];
 
@@ -88,9 +92,21 @@ export default async function PostsPage({
             name: cat.name,
             slug: cat.slug,
             icon: cat.iconPreset || (idx % 2 === 0 ? "💡" : "⚡"),
+            iconUrl: getSafeImageUrl(cat.icon, "small"),
             count:
               cat.postCount ??
               ideas.filter((i) => i.category?.id === cat.id).length,
+            excerpt:
+              toDomainExcerpt(
+                {
+                  name: cat.name,
+                  excerpt: cat.excerpt,
+                  description: cat.description,
+                },
+                96,
+              ) || undefined,
+            coverMedia: cat.coverMedia ?? null,
+            coverMediaId: cat.coverMediaId ?? null,
           })),
         ];
       } else {
@@ -106,6 +122,11 @@ export default async function PostsPage({
         initialIdeas={ideas}
         domains={domains}
         totalCount={ideas.length}
+        initialDomain={
+          domain && domains.some((item) => item.slug === domain)
+            ? domain
+            : "all"
+        }
       />
     );
   }
