@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { getFeaturedCategories } from "@/lib/categories-api";
-import { getFeaturedPosts, getPosts } from "@/lib/post-api";
+import { getPosts } from "@/lib/post-api";
 import { HeroSection } from "@/components/public/home/hero-section";
 import { FeaturedCategoriesSection } from "@/components/public/home/featured-categories-section";
 import { LatestArticlesSection } from "@/components/public/home/latest-articles-section";
@@ -31,7 +31,7 @@ export default async function Home() {
     const [categoriesData, articlesData, thoughtsData] = await Promise.all([
       getFeaturedCategories("articles", 3).catch(() => null),
       getPosts("articles", 1, 4).catch(() => null),
-      getFeaturedPosts("ideas", 4).catch(() => null),
+      getPosts("ideas", 1, 4).catch(() => null),
     ]);
 
     if (categoriesData?.items?.length) {

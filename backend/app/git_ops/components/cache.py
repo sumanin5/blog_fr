@@ -22,8 +22,17 @@ async def revalidate_nextjs_cache(frontend_url: str, revalidate_secret: str) -> 
                     "Content-Type": "application/json",
                 },
                 json={
-                    "tags": ["posts", "posts-list", "categories"],
-                    "paths": ["/posts"],
+                    "tags": ["posts", "posts-list", "categories", "tags"],
+                    "paths": [
+                        "/",
+                        "/posts/ideas",
+                        "/posts/articles/categories",
+                        "/posts/ideas/categories",
+                        "/posts/[postType]",
+                        "/posts/[postType]/categories",
+                        "/posts/[postType]/categories/[slug]",
+                        "/posts/[postType]/[slug]",
+                    ],
                 },
                 timeout=10.0,
             )

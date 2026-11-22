@@ -2,6 +2,13 @@
 
 import { revalidateTag, revalidatePath, updateTag } from "next/cache";
 
+async function revalidatePublicListPaths() {
+  await revalidatePath("/", "page");
+  await revalidatePath("/posts/ideas", "page");
+  await revalidatePath("/posts/[postType]", "page");
+  await revalidatePath("/posts/[postType]/categories", "page");
+}
+
 /**
  * 更新文章相关的所有缓存
  * 用于：创建、更新、删除文章后
@@ -10,8 +17,8 @@ import { revalidateTag, revalidatePath, updateTag } from "next/cache";
 export async function revalidatePosts() {
   await updateTag("posts");
   await updateTag("posts-list");
-  await revalidatePath("/", "page"); // Refresh Home Page
-  console.log("✅ 已通过 updateTag 更新文章缓存 + 首页刷新");
+  await revalidatePublicListPaths();
+  console.log("✅ 已通过 updateTag 更新文章缓存 + 公开列表页刷新");
 }
 
 /**
@@ -21,8 +28,8 @@ export async function revalidatePosts() {
 export async function revalidatePost(slug: string) {
   await updateTag(`post-${slug}`);
   await updateTag("posts");
-  await revalidatePath("/", "page"); // Refresh Home Page potentially showing this post
-  console.log(`✅ 已通过 updateTag 更新文章缓存: ${slug} + 首页刷新`);
+  await revalidatePublicListPaths();
+  console.log(`✅ 已通过 updateTag 更新文章缓存: ${slug} + 公开列表页刷新`);
 }
 
 /**
@@ -31,8 +38,8 @@ export async function revalidatePost(slug: string) {
  */
 export async function revalidateCategories() {
   await updateTag("categories");
-  await revalidatePath("/", "page"); // Refresh Home Page
-  console.log("✅ 已通过 updateTag 更新分类缓存 + 首页刷新");
+  await revalidatePublicListPaths();
+  console.log("✅ 已通过 updateTag 更新分类缓存 + 公开列表页刷新");
 }
 
 /**
@@ -57,14 +64,14 @@ export async function revalidateAll() {
     await revalidateTag("posts", profile);
     await revalidateTag("posts-list", profile);
     await revalidateTag("categories", profile);
-    await revalidatePath("/", "page");
-    console.log("✅ 已使用 revalidateTag 清除所有缓存 + 首页刷新");
+    await revalidatePublicListPaths();
+    console.log("✅ 已使用 revalidateTag 清除所有缓存 + 公开列表页刷新");
   } catch {
     // 如果运行时不支持第二个参数，退回到 updateTag
     await updateTag("posts");
     await updateTag("posts-list");
     await updateTag("categories");
-    await revalidatePath("/", "page");
+    await revalidatePublicListPaths();
     console.log("✅ revalidateTag 失败，已降级使用 updateTag");
   }
 }
@@ -73,6 +80,8 @@ export async function revalidateAll() {
  * 失效特定路径的缓存
  */
 export async function revalidatePostsPath() {
-  await revalidatePath("/posts", "page");
-  console.log("✅ 已失效 /posts 路径缓存");
+  await revalidatePath("/posts/ideas", "page");
+  await revalidatePath("/posts/[postType]", "page");
+  await revalidatePath("/posts/[postType]/categories", "page");
+  console.log("✅ 已失效 /posts/* 公开列表路径缓存");
 }

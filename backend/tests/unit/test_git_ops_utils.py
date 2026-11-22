@@ -177,13 +177,20 @@ async def test_revalidate_nextjs_cache_success():
     mock_response.json.return_value = {"revalidated": True, "tags": ["posts"]}
 
     with patch("httpx.AsyncClient") as mock_client:
-        mock_client.return_value.__aenter__.return_value.post = AsyncMock(
-            return_value=mock_response
-        )
+        mock_post = AsyncMock(return_value=mock_response)
+        mock_client.return_value.__aenter__.return_value.post = mock_post
 
         result = await revalidate_nextjs_cache("http://localhost:3000", "test-secret")
 
         assert result is True
+        mock_post.assert_awaited_once()
+        payload = mock_post.call_args.kwargs["json"]
+        assert {"posts", "posts-list", "categories", "tags"}.issubset(
+            set(payload["tags"])
+        )
+        assert {"/", "/posts/ideas", "/posts/articles/categories"}.issubset(
+            set(payload["paths"])
+        )
 
 
 @pytest.mark.asyncio
@@ -238,3 +245,29 @@ async def test_revalidate_nextjs_cache_network_error():
         result = await revalidate_nextjs_cache("http://localhost:3000", "test-secret")
 
         assert result is False
+
+
+# ========================================
+# Frontmatter 元数据兼容解析测试
+# ========================================
+
+
+@pytest.mark.unit
+@pytest.mark.git_ops
+def test_frontmatter_featured_alias_fallback():
+    """兼容文档中的 featured 字段，同时保留 is_featured 为权威字段。"""
+    from app.git_ops.components.metadata import Frontmatter
+
+    raw_featured_only = {"title": "Alias Post", "featured": True}
+    fm_alias = Frontmatter(**raw_featured_only)
+    assert fm_alias.is_featured is True
+    assert "featured" not in Frontmatter.to_dict(fm_alias)
+    assert Frontmatter.to_dict(fm_alias)["is_featured"] is True
+
+    fm_explicit = Frontmatter.model_validate(
+        {"title": "Explicit", "is_featured": False, "featured": True}
+    )
+    assert fm_explicit.is_featured is False
+
+    fm_default = Frontmatter(title="Default")
+    assert fm_default.is_featured is False

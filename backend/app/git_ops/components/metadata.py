@@ -99,8 +99,9 @@ class Frontmatter(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def map_description_fields(cls, data: Any) -> Any:
-        """处理 description 字段的映射逻辑"""
+        """处理 description 与兼容别名字段的映射逻辑"""
         if isinstance(data, dict):
+            data = dict(data)
             # 1. description -> excerpt (summary) fallback
             # 如果 summary (excerpt 的 alias) 不存在，尝试使用 description
             if not data.get("summary") and data.get("description"):
@@ -110,6 +111,10 @@ class Frontmatter(BaseModel):
             # 如果 meta_description 不存在，尝试使用 description
             if not data.get("meta_description") and data.get("description"):
                 data["meta_description"] = data["description"]
+
+            # 3. featured -> is_featured fallback（兼容旧文档中的 featured 写法）
+            if "is_featured" not in data and "featured" in data:
+                data["is_featured"] = data["featured"]
         return data
 
     # --- 序列化器 (用于写入 MDX) ---
