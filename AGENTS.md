@@ -88,6 +88,21 @@ When editing code:
 - If API shapes change, check whether generated OpenAPI artifacts or frontend SDK usage should also change.
 - Prefer small, reviewable changes.
 
+## MDX Components & Registry Policy
+
+- Registered MDX components live under `frontend/src/components/public/mdx/`:
+  - Implementations: `frontend/src/components/public/mdx/components/`
+  - Registry (allowlist): `frontend/src/components/public/mdx/registry/mdx-components.tsx` (`createMdxComponents()`)
+- **Library-first, no hand-rolled UI primitives**:
+  - Reuse installed `shadcn/ui` primitives from `frontend/src/components/ui/` directly in `createMdxComponents()`, or install needed primitives via `shadcn/ui` / `beUI` / `Coss UI` CLI instead of hand-writing generic `Button`, `Card`, `Tabs`, `Accordion`, `Alert`, `Dialog`, `Table`, etc.
+  - On Windows where global `pnpm` is v11 while `frontend/node_modules` uses the v10 store, run `shadcn` with `pnpm@10` on PATH (or check dependencies first) so store versions stay aligned with `frontend/Dockerfile`.
+- **Atomic composition & RSC boundaries**:
+  - Default MDX rendering uses `next-mdx-remote/rsc` (`MdxServerRenderer`). Do not instruct article authors to pass inline callback functions (e.g. `onClick={() => ...}`) or write ESM `import` statements inside `.mdx` files.
+  - Interactive MDX components must use `"use client"` and manage state internally (or communicate across split atomic controls via a client Context Provider).
+- **Tailwind CSS in MDX**:
+  - External `content/` articles are synced at runtime and not scanned during `next build`. Common layout, spacing, border, radius, typography, and semantic color classes safe for `.mdx` use are pre-generated via `@source inline(...)` in `frontend/src/app/globals.css`.
+  - Keep `.prose` safety rules in `frontend/src/app/globals.css` intact so embedded `Button` / `Badge` / `Table` / `Card` primitives keep proper contrast and spacing.
+
 When explaining architecture:
 
 - Reference concrete files and flows.

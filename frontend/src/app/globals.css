@@ -36,6 +36,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -74,6 +75,7 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -116,6 +118,7 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
@@ -152,8 +155,69 @@
 }
 
 /* ============================================
+   MDX 文章 Tailwind CSS 白名单与正文组件隔离
+   外部 content/ 仓库的文章在运行时动态渲染，构建前端镜像时
+   Tailwind 扫描不到它们。这里用 @source inline 预生成常用的
+   布局、间距、语义色与响应式工具类，供 MDX 内自由组合。
+   ============================================ */
+@source inline("{sm:,md:,lg:,dark:,hover:,}grid-cols-{1,2,3,4}");
+@source inline("{sm:,md:,lg:,}col-span-{1,2,3,4}");
+@source inline("{sm:,md:,lg:,}flex-row {sm:,md:,lg:,}flex-col flex inline-flex grid inline-grid flex-wrap flex-1 shrink-0 min-w-0");
+@source inline("items-{start,center,end,stretch} justify-{start,center,end,between}");
+@source inline("gap-{1,1.5,2,3,4,5,6,8} gap-x-{2,3,4,6,8} gap-y-{2,3,4,6,8} space-y-{1,2,3,4,6,8} space-x-{2,3,4,6}");
+@source inline("p-{0,1,2,3,4,5,6,8} px-{2,3,4,5,6,8} py-{1,2,3,4,6,8} pt-{0,2,4,6} pb-{0,2,4,6} m-{0,2,4,6} mx-auto my-{2,4,6,8} mt-{1,2,4,6,8} mb-{1,2,4,6,8}");
+@source inline("w-{auto,fit,full} max-w-{xs,sm,md,lg,xl,2xl,3xl,4xl,full} h-{auto,full}");
+@source inline("rounded-{sm,md,lg,xl,2xl,full} border border-{0,t,b,l,r} border-{border,input,primary,destructive,dashed} border-border/{40,50,60,70} border-primary/{20,30,40}");
+@source inline("bg-{background,card,popover,muted,primary,secondary,accent,destructive} bg-card/{30,40,50,60} bg-muted/{20,30,40,50,60} bg-primary/{10,20} bg-destructive/10");
+@source inline("text-{foreground,muted-foreground,primary,primary-foreground,secondary-foreground,accent-foreground,destructive}");
+@source inline("text-{xs,sm,base,lg,xl,2xl} text-{left,center,right} font-{normal,medium,semibold,bold,mono} leading-relaxed tabular-nums");
+@source inline("shadow-{xs,sm,md} overflow-{hidden,x-auto} relative not-prose");
+
+/* ============================================
    MDX 文章内容样式
    ============================================ */
+
+/* 保护正文 .prose 内嵌 shadcn/ui 原子控件不被排版插件链接/表格间距覆盖 */
+.prose :where([data-slot="button"], [data-slot="badge"], [data-slot="tabs-trigger"], [data-slot="accordion-trigger"]) {
+  text-decoration: none;
+}
+
+.prose a[data-slot="button"]:not([data-variant="link"]),
+.prose a[data-slot="badge"] {
+  text-decoration: none;
+}
+
+.prose a[data-slot="button"][data-variant="default"] {
+  color: var(--primary-foreground);
+}
+
+.prose a[data-slot="button"][data-variant="secondary"] {
+  color: var(--secondary-foreground);
+}
+
+.prose a[data-slot="button"][data-variant="outline"],
+.prose a[data-slot="button"][data-variant="ghost"] {
+  color: var(--foreground);
+}
+
+.prose a[data-slot="button"][data-variant="destructive"] {
+  color: var(--destructive-foreground);
+}
+
+.prose [data-slot="table-container"] {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prose [data-slot="table"] {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.prose :where([data-slot="card"], [data-slot="alert"], [data-slot="tabs"], [data-slot="accordion"]) {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
 
 /* 代码块容器 (pre 标签) */
 .prose pre {

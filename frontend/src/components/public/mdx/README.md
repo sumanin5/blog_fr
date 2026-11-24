@@ -74,7 +74,9 @@ export function CodeBlock(props) {
 
 ### registry/mdx-components.tsx
 
-MDX 组件注册中心，为 `next-mdx-remote` 提供组件映射。
+MDX 组件注册中心兼内容 Agent 引用说明书，为 `next-mdx-remote` 提供白名单组件映射（含 `shadcn/ui` 通用原子：`Button`、`Badge`、`Card*`、`Alert*`、`Tabs*`、`Accordion*`、`Table*`、`Progress`、`Separator`、`Tooltip*`、`Avatar*`、`Dialog*`、`Sheet*`、`Switch`、`Skeleton`、`TiltCard`、`DotPattern`，通用数据驱动引擎：`LayerStepper`、`BoundaryCard`、`BitInspector`、`TimeScaleDemo`、`DeepDive`、`BeforeAfterSlider`、`FilterLens`、`ComplexityShift`，以及 `InteractiveButton`、`TanStackChart`）。
+
+> 详细的 `.mdx` Props 签名与直接复制示例见 `registry/mdx-components.tsx` 顶部的 `[AGENT USAGE GUIDE]`。
 
 **导出**：
 
@@ -83,7 +85,7 @@ MDX 组件注册中心，为 `next-mdx-remote` 提供组件映射。
 **使用**：
 
 ```typescript
-import { createMdxComponents } from "@/components/mdx/registry/mdx-components";
+import { createMdxComponents } from "@/components/public/mdx/registry/mdx-components";
 
 <MDXRemote source={mdx} components={createMdxComponents()} />;
 ```
@@ -136,6 +138,79 @@ TanStack Charts 示例组件（客户端组件）。
 ```
 
 图表支持 tooltip、点击选中和数据集切换，用于验证 MDX 自定义组件的 hydration 与交互。
+
+### components/layer-stepper.tsx
+
+多层级抽象剥离 / 对照步进器（纯 Props 数据驱动客户端组件）。
+
+**Props**：
+
+- `title?: string`、`subtitle?: string`、`defaultIndex?: number`
+- `layers: Array<{ id, name, badge?, surfaceLabel?, surface, beneathLabel?, beneath, sample?, codeLang? }>`
+
+### components/boundary-card.tsx
+
+“承诺生效 ⇄ 边界击穿（抽象泄漏）”双态切换卡片（客户端组件）。
+
+**Props**：
+
+- `title?: string`、`subtitle?: string`、`defaultBreached?: boolean`
+- `cases: Array<{ id, label, promiseTitle, promiseDesc, leakTitle, leakDesc, artifact?, rootCause }>`
+
+### components/bit-inspector.tsx
+
+数据底层比特显微镜（客户端组件），支持 UTF-8 与 IEEE 754 float64 双模式。
+
+**Props**：
+
+- `mode?: "utf8" | "float64"`
+- `utf8`：`defaultValue?: string`
+- `float64`：`defaultA?: number`、`defaultB?: number`、`presets?: Array<[number, number]>`
+
+### components/time-scale-demo.tsx
+
+宏观错觉 vs 微观现实交互模拟器（客户端组件）。
+
+**Props**：
+
+- `mode?: "cpu-multitask" | "signal-threshold"`
+- `cpu-multitask`：`tasks?: Array<{ label: string }>`、`defaultSpeedScale?: number`
+- `signal-threshold`：`defaultNoise?: number`
+
+### components/deep-dive.tsx
+
+折叠深挖盒（基于 shadcn `Accordion`），支持内部嵌套标准 Markdown / MDX 正文、数学公式与代码块。
+
+**Props**：
+
+- `title: string`、`summary?: string`、`defaultOpen?: boolean`、`badge?: string`、`children`
+
+### components/before-after-slider.tsx
+
+双图视觉卷帘对比器（基于 `@beui/before-after-slider` 封装），内部接收两张标准 Markdown 图片节点以兼容 GitOps 媒体同步。
+
+**Props**：
+
+- `title?: string`、`subtitle?: string`、`beforeLabel?: string`、`afterLabel?: string`、`defaultPosition?: number`、`aspectRatio?: "16/9" | "4/3" | "5/4" | "1/1" | "3/2"`、`children`
+
+### components/filter-lens.tsx
+
+认知滤镜 / “看见与看不见”对比器（客户端组件）。
+
+**Props**：
+
+- `title?: string`、`subtitle?: string`、`defaultFiltered?: boolean`、`filterOnLabel?: string`、`filterOffLabel?: string`
+- `metrics?: Array<{ label, value, badge? }>`、`omittedItems?: Array<{ tag, title, detail, cost? }>`
+- `insightWhenFiltered?: string`、`insightWhenRevealed?: string`、`scenarios?: FilterLensScenario[]`
+
+### components/complexity-shift.tsx
+
+复杂性转移天平（客户端组件，含离散阶段滑块与负载进度条）。
+
+**Props**：
+
+- `title?: string`、`subtitle?: string`、`defaultIndex?: number`
+- `stages: Array<{ id, era, label, userCode, codeLang?, userBurden, hiddenComplexity, comprehensionRatio?, hiddenLayers: string[], takeaway }>`
 
 ### components/katex-math.tsx
 

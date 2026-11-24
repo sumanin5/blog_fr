@@ -42,8 +42,8 @@ ENABLE_GIT_AUTO_SYNC=false
 
 ## Docker 与生产
 
-Compose 仍将宿主机 `./content` 挂载到 `/git_root/content`，容器中保持 `CONTENT_DIR=/git_root/content`。本机绝对路径不会直接作为容器内路径使用。要用外部内容目录，应明确修改绑定挂载的宿主机来源，或继续使用项目 content/。
+开发 Compose 默认将宿主机 `./content` 挂载到 `/git_root/content`，同时也支持在根目录 `.env` 中通过 `CONTENT_HOST_DIR` 覆盖宿主机内容目录（例如 `CONTENT_HOST_DIR=D:/project/python/blog/blog-content`），容器中保持 `CONTENT_DIR=/git_root/content`。本机绝对路径不会直接作为容器内路径使用。
 
 生产保留 `GIT_PULL_BEFORE_SYNC=true`、实际内容 Git clone、只读远程凭据与 `GIT_SYNC_BRANCH`。此时仍先拉取，再按提交增量导入。该开关默认 true，已有生产环境行为不变。
 
-开发 Compose 已在 backend 的 environment 中明确设置 `GIT_PULL_BEFORE_SYNC: "false"` 和 `ENABLE_GIT_AUTO_SYNC: "false"`；backend/.env.local 是本机配置，不应假定容器已加载它。
+开发 Compose 已在 backend 的 environment 中明确设置 `GIT_PULL_BEFORE_SYNC: "false"` 和 `ENABLE_GIT_AUTO_SYNC: "false"`；backend/.env.local 是本机配置，不应假定容器已加载它。修改挂载目录并重建 `backend` 容器后，可执行 `docker compose -f docker-compose.dev.yml exec backend python scripts/sync_git_content.py` 将挂载目录导入数据库。

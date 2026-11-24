@@ -12,12 +12,13 @@ description: MDX 内容处理、渲染架构与 Git 同步规范。涵盖自定�
 - **组件级交互 (CSR)**: 涉及代码高亮、复制按钮、Mermaid 图表等交互元素时，使用 `next-mdx-remote` 的客户端组件模式进行 Hydration。
 
 ### 2. 组件注册架构 (Registry Pattern)
-代码路径：`frontend/src/components/mdx/`
-- **注册层 (`registry/`)**: 仅负责 HTML 标签到 React 组件的映射（如 `pre` -> `CodeBlock`）。严禁在此层编写业务逻辑。
-- **实现层 (`components/`)**: 处理具体逻辑。例如，`CodeBlock` 组件应内部判断内容是否为 `mermaid` 语言并分发渲染逻辑。
+代码路径：`frontend/src/components/public/mdx/`
+- **注册层 (`registry/mdx-components.tsx`)**: 仅负责标签与白名单组件的映射（如 `pre` -> `CodeBlock`，以及复用的 `shadcn/ui` 原子组件）。严禁在此层编写业务逻辑。
+- **实现层 (`components/`)**: 处理自定义交互与渲染逻辑（如 `CodeBlock`、`TanStackChart`）。通用基础原子（`Button`、`Badge`、`Card`、`Alert`、`Tabs`、`Accordion`、`Table`、`Progress`、`Separator`、`Tooltip`、`Dialog`、`Sheet` 等）直接复用 `frontend/src/components/ui/`，不重复造轮子。
 - **添加新组件**:
-  1. 在 `components/` 创建实现。
-  2. 在 `registry/mdx-components.tsx` 注册映射。
+  1. 优先通过 `shadcn/ui`、`beUI` 或 `Coss UI` 安装或复用现有原语，如需特定业务组合再在 `frontend/src/components/public/mdx/components/` 创建 `"use client"` 实现。
+  2. 在 `registry/mdx-components.tsx` 的 `createMdxComponents()` 注册映射。
+  3. 同步更新 `content/AGENTS.md` 中的可用组件清单；若需要新的通用布局 Tailwind 工具类，在 `frontend/src/app/globals.css` 的 `@source inline(...)` 中补充。
 
 ### 3. 内容同步与元数据 (Git Sync)
 规范参考：`GIT_SYNC_GUIDE.md`

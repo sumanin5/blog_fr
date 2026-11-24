@@ -62,7 +62,7 @@ services:
       - ./backend:/app
       - ./.git:/git_root/.git
       - ./.git/modules/content:/git_root/.git/modules/content  # submodule 支持
-      - ./content:/git_root/content
+      - ${CONTENT_HOST_DIR:-./content}:/git_root/content
       - ~/.ssh:/tmp/.ssh:ro  # SSH key 用于 Git 推送 (挂载到新的 HOME)
       - /app/.venv
 

@@ -373,28 +373,25 @@ export function IdeaStreamView({
               )}
             </div>
 
-            {/* 底部内嵌领域切换栏：与顶部横幅融为一体，不再分离成独立图层 */}
-            <div className="relative z-10 border-t border-border/60 bg-background/50 px-3 py-2.5 backdrop-blur-md sm:px-5">
-              <TabsList className="flex h-auto w-full justify-start gap-1.5 overflow-x-auto bg-transparent p-0 scrollbar-none">
+            {/* 底部内嵌领域切换栏：轻量胶囊自动换行，保证桌面与移动端都能一屏扫全 */}
+            <div className="relative z-10 border-t border-border/60 bg-background/50 px-4 py-3 backdrop-blur-md sm:px-6">
+              <TabsList className="flex h-auto w-full flex-wrap items-center justify-start gap-2 bg-transparent p-0">
                 <TabsTrigger
                   value="all"
-                  className="h-auto flex-none cursor-pointer gap-2 rounded-xl border border-transparent px-3 py-1.5 data-[state=active]:border-primary/40 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                  className="h-auto flex-none cursor-pointer gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-1.5 transition-colors hover:border-border hover:bg-card/80 data-[state=active]:border-primary/45 data-[state=active]:bg-card data-[state=active]:shadow-xs"
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted/60 text-primary">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                     <Sparkles className="h-3.5 w-3.5" />
                   </span>
-                  <span className="text-xs font-medium text-foreground">
+                  <span className="text-xs font-medium text-foreground sm:text-sm">
                     全部
                   </span>
-                  <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                  <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs tabular-nums text-muted-foreground">
                     {totalCount}
                   </span>
                 </TabsTrigger>
 
                 {domainCards.map((domain) => {
-                  const thumb =
-                    getSafeImageUrl(domain.coverMedia, "small") ||
-                    getThumbnailUrl(domain.coverMediaId, "small");
                   const isEmpty = domain.count === 0;
 
                   return (
@@ -402,30 +399,28 @@ export function IdeaStreamView({
                       key={domain.id}
                       value={domain.slug}
                       className={cn(
-                        "h-auto flex-none cursor-pointer gap-2 rounded-xl border border-transparent px-2.5 py-1.5 transition-opacity data-[state=active]:border-primary/40 data-[state=active]:bg-card data-[state=active]:opacity-100 data-[state=active]:shadow-sm",
-                        isEmpty && "opacity-60 hover:opacity-90",
+                        "h-auto flex-none cursor-pointer gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-1.5 transition-all hover:border-border hover:bg-card/80 data-[state=active]:border-primary/45 data-[state=active]:bg-card data-[state=active]:opacity-100 data-[state=active]:shadow-xs",
+                        isEmpty && "opacity-60 hover:opacity-95",
                       )}
                     >
-                      <span className="relative h-7 w-9 shrink-0 overflow-hidden rounded-lg border border-border/50 bg-muted">
-                        {thumb ? (
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-muted/70 text-xs">
+                        {domain.iconUrl ? (
                           <Image
-                            src={thumb}
+                            src={domain.iconUrl}
                             alt=""
-                            fill
-                            sizes="36px"
+                            width={14}
+                            height={14}
                             unoptimized
-                            className="object-cover"
+                            className="h-3.5 w-3.5 object-contain"
                           />
                         ) : (
-                          <span className="flex h-full items-center justify-center text-xs">
-                            {domain.icon || "✦"}
-                          </span>
+                          <span>{domain.icon || "✦"}</span>
                         )}
                       </span>
-                      <span className="max-w-36 truncate text-xs font-medium text-foreground">
+                      <span className="max-w-52 truncate text-xs font-medium text-foreground sm:max-w-none sm:text-sm">
                         {domain.name}
                       </span>
-                      <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                      <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs tabular-nums text-muted-foreground">
                         {domain.count}
                       </span>
                     </TabsTrigger>
