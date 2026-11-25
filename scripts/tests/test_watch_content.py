@@ -1,13 +1,17 @@
-"""宿主机内容监听与预检同步脚本（scripts/watch_content.py）单元测试。"""
+"""宿主机 OS 事件推送与本地内容同步脚本（scripts/watch_content.py）单元测试。"""
 
 from __future__ import annotations
 
 import importlib.util
+import io
+import json
 import os
 from pathlib import Path
 import tempfile
+import threading
 import unittest
 from unittest import mock
+import urllib.error
 
 WATCH_SCRIPT_PATH = Path(__file__).resolve().parents[1] / "watch_content.py"
 
@@ -29,7 +33,7 @@ class WatchContentTests(unittest.TestCase):
             repo_root = Path(tmp)
             env_file = repo_root / ".env"
             env_file.write_text(
-                "# comment\nCONTENT_HOST_DIR=\"./from-env-file\"\nOTHER=secret\n",
+                '# comment\nCONTENT_HOST_DIR="./from-env-file"\nOTHER=secret\n',
                 encoding="utf-8",
             )
 
@@ -79,27 +83,70 @@ class WatchContentTests(unittest.TestCase):
                 f"expected watched path: {watched}",
             )
 
-    def test_diff_snapshots(self) -> None:
-        prev = {
-            "articles/tech/unchanged.md": (100, 10),
-            "articles/tech/edited.mdx": (100, 10),
-            "articles/tech/removed.md": (100, 10),
-        }
-        curr = {
-            "articles/tech/unchanged.md": (100, 10),
-            "articles/tech/edited.mdx": (200, 12),
-            "articles/tech/added.mdx": (150, 20),
-        }
+    def test_resolve_fs_event_handles_files_dirs_deletes_and_ignores(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cat_dir = root / "ideas" / "比特漫笔"
+            (cat_dir / "assets").mkdir(parents=True)
+            (cat_dir / "index.md").write_text("---\ntitle: Cat\nslug: cat\n---\n", encoding="utf-8")
+            (cat_dir / "post.mdx").write_text("---\ntitle: Post\nslug: post\n---\n", encoding="utf-8")
+
+            # 目录的 change 心跳事件应被忽略，但目录 rename/新建应展开内部文件
+            self.assertEqual(
+                watch_content.resolve_fs_event(root, r"ideas\比特漫笔", "change"),
+                [],
+            )
+            self.assertEqual(
+                watch_content.resolve_fs_event(root, r"ideas\比特漫笔", "rename"),
+                [
+                    ("A", "ideas/比特漫笔/index.md"),
+                    ("M", "ideas/比特漫笔/post.mdx"),
+                ],
+            )
+
+            # 文件写入/删除映射到相对 POSIX 路径
+            self.assertEqual(
+                watch_content.resolve_fs_event(root, r"ideas\比特漫笔\post.mdx", "change"),
+                [("M", "ideas/比特漫笔/post.mdx")],
+            )
+            self.assertEqual(
+                watch_content.resolve_fs_event(root, r"ideas\比特漫笔\deleted.mdx", "rename"),
+                [("D", "ideas/比特漫笔/deleted.mdx")],
+            )
+
+            # 隐藏与越界路径忽略
+            self.assertEqual(
+                watch_content.resolve_fs_event(root, r".git\index.lock", "rename"),
+                [],
+            )
+            self.assertEqual(
+                watch_content.resolve_fs_event(root, r"..\outside.mdx", "change"),
+                [],
+            )
+
+    def test_debounced_event_batcher_coalesces_events_without_polling(self) -> None:
+        flushed: list[list[tuple[str, str]]] = []
+        done = threading.Event()
+
+        def _on_flush(batch: list[tuple[str, str]]) -> None:
+            flushed.append(batch)
+            done.set()
+
+        batcher = watch_content.DebouncedEventBatcher(0.1, _on_flush)
+        try:
+            batcher.add_events([("M", "ideas/cat/a.mdx")])
+            batcher.add_events([("D", "ideas/cat/a.mdx"), ("M", "ideas/cat/b.mdx")])
+            self.assertTrue(done.wait(timeout=2.0))
+        finally:
+            batcher.close()
+
+        self.assertEqual(len(flushed), 1)
         self.assertEqual(
-            watch_content.diff_snapshots(prev, curr),
-            [
-                ("A", "articles/tech/added.mdx"),
-                ("M", "articles/tech/edited.mdx"),
-                ("D", "articles/tech/removed.md"),
-            ],
+            flushed[0],
+            [("D", "ideas/cat/a.mdx"), ("M", "ideas/cat/b.mdx")],
         )
 
-    def test_plan_sync_changes_maps_articles_assets_and_index(self) -> None:
+    def test_plan_sync_changes_maps_articles_assets_index_and_deleted_dirs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             cat_dir = root / "ideas" / "比特漫笔"
@@ -109,7 +156,6 @@ class WatchContentTests(unittest.TestCase):
             (cat_dir / "README.md").write_text("notes", encoding="utf-8")
             (cat_dir / "assets" / "fig.png").write_bytes(b"png")
 
-            # 非文章根目录文档变更忽略
             requires_full, changes = watch_content.plan_sync_changes(
                 [("M", "AGENTS.md"), ("M", "docs/notes.md")],
                 root,
@@ -117,7 +163,6 @@ class WatchContentTests(unittest.TestCase):
             self.assertFalse(requires_full)
             self.assertEqual(changes, [])
 
-            # 分类内资源变更联动刷新同专栏文章与 index.md（跳过 README.md）
             requires_full, changes = watch_content.plan_sync_changes(
                 [("M", "ideas/比特漫笔/assets/fig.png")],
                 root,
@@ -131,7 +176,6 @@ class WatchContentTests(unittest.TestCase):
                 ],
             )
 
-            # index.md 新增或删除触发全量对齐
             requires_full, changes = watch_content.plan_sync_changes(
                 [("A", "ideas/比特漫笔/index.md")],
                 root,
@@ -139,85 +183,67 @@ class WatchContentTests(unittest.TestCase):
             self.assertTrue(requires_full)
             self.assertEqual(changes, [])
 
-    def test_find_unregistered_jsx_tags_ignores_code_blocks(self) -> None:
-        registered = {"Tabs", "TabsList", "Callout"}
-        body = (
-            "正文开始 <Callout>hi</Callout>\n\n"
-            "行内示例 `<FakeInline />`。\n\n"
-            "```tsx\n<FakeInFence />\n```\n\n"
-            "<UnknownWidget title=\"bad\" />\n"
-        )
-        self.assertEqual(
-            watch_content.find_unregistered_jsx_tags(body, registered),
-            ["UnknownWidget"],
-        )
+            requires_full, _ = watch_content.plan_sync_changes(
+                [("D", "ideas/已删除专栏")],
+                root,
+            )
+            self.assertTrue(requires_full)
 
-    def test_execute_sync_cycle_gates_on_prechecks_and_builds_command(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            with (
-                mock.patch.object(
-                    watch_content, "run_contract_check", return_value=(False, "contract err")
-                ),
-                mock.patch.object(watch_content.subprocess, "run") as sub_run,
-            ):
-                ok = watch_content.execute_sync_cycle(
-                    repo_root=root,
-                    content_root=root / "content",
-                    python_exe="python",
-                    requires_full=False,
-                    changes=[("M", "ideas/cat/post.mdx")],
-                    mode="docker",
-                )
-            self.assertFalse(ok)
-            sub_run.assert_not_called()
+    def test_push_changes_to_backend_and_dispatch(self) -> None:
+        fake_resp = mock.MagicMock()
+        fake_resp.status = 200
+        fake_resp.read.return_value = json.dumps(
+            {
+                "status": "synced",
+                "stats": {"added": [], "updated": ["ideas/cat/post.mdx"], "deleted": [], "duration": 0.12},
+            }
+        ).encode("utf-8")
+        fake_resp.__enter__.return_value = fake_resp
+        fake_resp.__exit__.return_value = None
 
-            with (
-                mock.patch.object(
-                    watch_content, "run_contract_check", return_value=(True, "ok")
-                ),
-                mock.patch.object(
-                    watch_content, "run_mdx_precheck", return_value=(False, "mdx syntax err")
-                ),
-                mock.patch.object(watch_content.subprocess, "run") as sub_run,
-            ):
-                ok = watch_content.execute_sync_cycle(
-                    repo_root=root,
-                    content_root=root / "content",
-                    python_exe="python",
-                    requires_full=False,
-                    changes=[("M", "ideas/cat/post.mdx")],
-                    mode="docker",
-                )
-            self.assertFalse(ok)
-            sub_run.assert_not_called()
-
-            cmd, env, cwd = watch_content.build_sync_command(
-                mode="docker",
-                repo_root=root,
-                content_root=root / "content",
+        with mock.patch.object(urllib.request, "urlopen", return_value=fake_resp) as open_mock:
+            ok = watch_content.dispatch_push_or_cli(
+                repo_root=Path("."),
+                content_root=Path("."),
                 python_exe="python",
-                requires_full=False,
+                backend_url="http://localhost:8000",
+                secret="secret",
                 changes=[("M", "ideas/cat/post.mdx")],
+                requires_full=False,
+                mode="http",
             )
-            self.assertIsNone(env)
-            self.assertEqual(cwd, root)
-            self.assertEqual(
-                cmd,
-                [
-                    "docker",
-                    "compose",
-                    "-f",
-                    "docker-compose.dev.yml",
-                    "exec",
-                    "-T",
-                    "backend",
-                    "python",
-                    "scripts/sync_git_content.py",
-                    "--change",
-                    "M:ideas/cat/post.mdx",
-                ],
+        self.assertTrue(ok)
+        req = open_mock.call_args.args[0]
+        self.assertEqual(req.full_url, "http://localhost:8000/api/v1/ops/git/local-changes")
+        self.assertEqual(req.get_header("Authorization"), "Bearer secret")
+
+        err_422 = urllib.error.HTTPError(
+            url="http://localhost:8000/api/v1/ops/git/local-changes",
+            code=422,
+            msg="Unprocessable Entity",
+            hdrs={},  # type: ignore[arg-type]
+            fp=io.BytesIO(
+                json.dumps(
+                    {
+                        "status": "blocked",
+                        "stage": "mdx",
+                        "errors": ["ideas/cat/post.mdx: 未注册组件 Foo"],
+                    }
+                ).encode("utf-8")
+            ),
+        )
+        with mock.patch.object(urllib.request, "urlopen", side_effect=err_422):
+            ok_422 = watch_content.dispatch_push_or_cli(
+                repo_root=Path("."),
+                content_root=Path("."),
+                python_exe="python",
+                backend_url="http://localhost:8000",
+                secret="secret",
+                changes=[("M", "ideas/cat/post.mdx")],
+                requires_full=False,
+                mode="http",
             )
+        self.assertFalse(ok_422)
 
 
 if __name__ == "__main__":

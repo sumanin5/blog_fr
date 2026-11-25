@@ -46,15 +46,15 @@ ENABLE_GIT_AUTO_SYNC=false
 
 生产保留 `GIT_PULL_BEFORE_SYNC=true`、实际内容 Git clone、只读远程凭据与 `GIT_SYNC_BRANCH`。此时仍先拉取，再按提交增量导入。该开关默认 true，已有生产环境行为不变。
 
-开发 Compose 已在 backend 的 environment 中明确设置 `GIT_PULL_BEFORE_SYNC: "false"` 和 `ENABLE_GIT_AUTO_SYNC: "false"`；backend/.env.local 是本机配置，不应假定容器已加载它。修改挂载目录并重建 `backend` 容器后，可执行 `docker compose -f docker-compose.dev.yml exec backend python scripts/sync_git_content.py` 将挂载目录导入数据库。
+开发 Compose 已在 backend 的 environment 中明确设置 `GIT_PULL_BEFORE_SYNC: "false"`、`ENABLE_GIT_AUTO_SYNC: "false"` 与 `ENABLE_LOCAL_CONTENT_WATCHER: "true"`；backend/.env.local 是本机配置，不应假定容器已加载它。
 
-如果希望在本地写作时实时监听宿主机内容目录并自动同步到数据库，可在宿主机仓库根目录运行：
+### 纯事件驱动实时同步（方案 1：宿主机内核事件推送，后端零轮询）
 
-```bash
-python scripts/watch_content.py
-```
-
-说明：
-- 该脚本在宿主机通过目录快照轮询（绕过 Docker Desktop 挂载目录 `inotify` 事件丢失问题），默认自动读取 `.env` 中的 `CONTENT_HOST_DIR`（未设置时回退到 `./content`），并自动识别运行中的 `docker-compose.dev.yml` `backend` 容器或本机后端。
-- 防抖后（默认 `1.5s`）会先执行 `content_contract.py` 契约校验，并对修改后的 `.mdx`（或启用 `enable_jsx: true` 的 `.md`）文件检查 JSX 组件白名单与 `next-mdx-remote/rsc` 编译；预检全部通过才通过 `scripts/sync_git_content.py --change STATUS:REL_PATH` 定向增量更新数据库并刷新前端缓存，避免未写完的草稿破坏本地预览页。
-- 常用参数：`--once`（执行一次校验与全量同步后退出）、`--mode auto|docker|local`、`--debounce`、`--no-mdx-check`、`--no-contract-check`。
+- **为什么不在容器里轮询**：Windows NTFS 通过 Docker Desktop `9p`（`drvfs`）挂载进 Linux 容器时，Linux `inotify` 无法收到宿主机写文件事件；如果在容器内每秒循环扫描，会产生无效的跨系统 `stat` 开销。
+- **宿主机 OS 原生事件监听（零轮询）**：在宿主机仓库根目录运行：
+  ```bash
+  python scripts/watch_content.py
+  ```
+  脚本通过 Node `fs.watch(..., { recursive: true })` 直接挂接 Windows 内核 `ReadDirectoryChangesW`（macOS 为 `FSEvents`，Linux 为 `inotify`），平时 0% 轮询休眠；保存文章或图片防抖后（默认 `1.2s`），立即向后端发送 `POST /api/v1/ops/git/local-changes`（`--mode auto` 优先 HTTP 推送，不可用时可退回 CLI）。
+- **后端事件接收端点（生产严格关闭）**：后端不再跑任何目录轮询协程，仅在 `environment != "production"` 且 `ENABLE_LOCAL_CONTENT_WATCHER=true` 时开放 `/api/v1/ops/git/local-changes`（校验 `REVALIDATE_SECRET`）；收到推送后依次执行 `content_contract` 契约校验与前端开发接口 `POST /api/mdx-precheck` 真实 `compileMDX` 预检，全部通过才调用 `GitOpsService.sync_changed_files()` 入库并刷新 Next.js 缓存，拦截半成品草稿以免污染本地预览页。
+- **单次手动校验与全量导入**：`python scripts/watch_content.py --once` 或 `docker compose -f docker-compose.dev.yml exec backend python scripts/sync_git_content.py`。

@@ -28,6 +28,7 @@ def configure(project: Path, preferred: Path | None = None) -> Path:
         "CONTENT_DIR": '"' + selected.as_posix().replace('"', '\\"') + '"',
         "GIT_PULL_BEFORE_SYNC": "false",
         "ENABLE_GIT_AUTO_SYNC": "false",
+        "ENABLE_LOCAL_CONTENT_WATCHER": "true",
     }
     target = project / "backend/.env.local"
     original = target.read_text(encoding="utf-8-sig") if target.exists() else ""

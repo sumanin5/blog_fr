@@ -26,3 +26,7 @@ class GitOpsSettings:
         default=False,
         description="是否启用每 5 分钟的 Git → 数据库定时导入（只拉取，不推送）",
     )
+    ENABLE_LOCAL_CONTENT_WATCHER: bool = Field(
+        default=False,
+        description="是否在非生产环境下开启本地内容变更事件接收接口（/ops/git/local-changes）",
+    )

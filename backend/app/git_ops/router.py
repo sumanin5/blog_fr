@@ -1,8 +1,11 @@
-import logging
+import hmac
 import json
+import logging
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
@@ -10,12 +13,18 @@ from app.core.db import get_async_session
 from app.git_ops.background_tasks import run_background_sync
 from app.git_ops.components import verify_github_signature
 from app.git_ops.schema import (
+    LocalChangesRequest,
+    LocalChangesResponse,
     OperationResponse,
     PreviewResult,
     SyncStats,
     WebhookResponse,
 )
 from app.git_ops.service import GitOpsService
+from app.git_ops.watcher import (
+    is_local_event_push_enabled,
+    process_local_content_events,
+)
 from app.users.dependencies import get_current_adminuser
 from app.users.model import User
 
@@ -141,3 +150,37 @@ async def github_webhook(
     logger.info("✅ Valid webhook received, triggering background sync...")
     background_tasks.add_task(run_background_sync)
     return {"status": "triggered"}
+
+
+@router.post(
+    "/local-changes",
+    response_model=LocalChangesResponse,
+    summary="本地宿主机内容变动事件推送入口（仅非生产环境）",
+    description="接收宿主机 OS 原生事件监听推送的内容改动，执行契约与 MDX 预检后增量写入数据库。",
+)
+async def handle_local_content_changes(
+    payload: LocalChangesRequest,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    authorization: Annotated[str | None, Header()] = None,
+):
+    if not is_local_event_push_enabled(settings):
+        raise HTTPException(
+            status_code=404,
+            detail="Local content event push endpoint is disabled",
+        )
+
+    secret = getattr(settings, "REVALIDATE_SECRET", "")
+    expected = f"Bearer {secret}" if secret else ""
+    if not expected or not authorization or not hmac.compare_digest(authorization, expected):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    result = await process_local_content_events(
+        session,
+        Path(settings.CONTENT_DIR),
+        [(item.status, item.path) for item in payload.changes],
+        requires_full=payload.requires_full,
+        app_settings=settings,
+    )
+    if result.status == "blocked":
+        return JSONResponse(status_code=422, content=result.model_dump(mode="json"))
+    return result

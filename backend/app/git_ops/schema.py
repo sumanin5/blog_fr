@@ -3,7 +3,7 @@ GitOps 模块的数据模型和 Schema
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -70,3 +70,27 @@ class WebhookResponse(BaseModel):
 
     status: str
     reason: Optional[str] = None
+
+
+class LocalFileChange(BaseModel):
+    """宿主机事件推送的单个内容变更项"""
+
+    status: Literal["A", "M", "D"]
+    path: str
+
+
+class LocalChangesRequest(BaseModel):
+    """本地开发宿主机事件推送请求体"""
+
+    changes: List[LocalFileChange] = Field(default_factory=list)
+    requires_full: bool = False
+
+
+class LocalChangesResponse(BaseModel):
+    """本地开发事件同步响应"""
+
+    status: Literal["synced", "skipped", "blocked"]
+    stage: Optional[str] = None
+    message: Optional[str] = None
+    errors: List[str] = Field(default_factory=list)
+    stats: Optional[SyncStats] = None

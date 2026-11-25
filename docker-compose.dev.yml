@@ -78,6 +78,7 @@ services:
       CONTENT_DIR: /git_root/content
       GIT_PULL_BEFORE_SYNC: "false"
       ENABLE_GIT_AUTO_SYNC: "false"
+      ENABLE_LOCAL_CONTENT_WATCHER: "true"
       # 容器内不能把 localhost 当宿主机；缓存刷新走 Compose 服务名
       FRONTEND_URL: http://frontend:3000
       # 解决 Docker 挂载导致的 Git 仓库识别问题
