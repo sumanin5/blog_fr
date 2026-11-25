@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """
 本地内容目录原生事件推送工具（方案 1：零轮询、事件驱动）。
 
@@ -10,9 +14,10 @@
   并自动刷新 Next.js 缓存。
 
 用法：
-    python scripts/watch_content.py
-    python scripts/watch_content.py --content-dir D:/project/python/blog/blog-content
-    python scripts/watch_content.py --once
+    uv run scripts/watch_content.py
+    uv run --project backend python scripts/watch_content.py
+    uv run scripts/watch_content.py --content-dir D:/project/python/blog/blog-content
+    uv run scripts/watch_content.py --once
 """
 
 from __future__ import annotations
@@ -617,6 +622,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except OSError:
+                pass
+
     args = parse_args(argv)
     content_root = resolve_content_dir(REPO_ROOT, args.content_dir)
     backend_url = resolve_backend_url(REPO_ROOT, args.backend_url)
@@ -624,12 +637,13 @@ def main(argv: list[str] | None = None) -> int:
     python_exe = resolve_python_executable(REPO_ROOT)
 
     if not content_root.is_dir():
-        print(f"❌ 内容目录不存在: {content_root}", file=sys.stderr)
+        print(f"❌ 内容目录不存在: {content_root}", file=sys.stderr, flush=True)
         return 1
 
-    print(f"👀 正在通过 OS 原生事件监听内容目录（零轮询）: {content_root}")
+    print(f"👀 正在通过 OS 原生事件监听内容目录（零轮询）: {content_root}", flush=True)
     print(
-        f"⚙️  投递模式: {args.mode} | 后端地址: {backend_url} | 防抖: {args.debounce:.1f}s"
+        f"⚙️  投递模式: {args.mode} | 后端地址: {backend_url} | 防抖: {args.debounce:.1f}s",
+        flush=True,
     )
 
     if args.once:

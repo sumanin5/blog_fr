@@ -51,10 +51,10 @@ ENABLE_GIT_AUTO_SYNC=false
 ### 纯事件驱动实时同步（方案 1：宿主机内核事件推送，后端零轮询）
 
 - **为什么不在容器里轮询**：Windows NTFS 通过 Docker Desktop `9p`（`drvfs`）挂载进 Linux 容器时，Linux `inotify` 无法收到宿主机写文件事件；如果在容器内每秒循环扫描，会产生无效的跨系统 `stat` 开销。
-- **宿主机 OS 原生事件监听（零轮询）**：在宿主机仓库根目录运行：
+- **宿主机 OS 原生事件监听（零轮询）**：在宿主机仓库根目录通过 `uv` 运行：
   ```bash
-  python scripts/watch_content.py
+  uv run scripts/watch_content.py
   ```
-  脚本通过 Node `fs.watch(..., { recursive: true })` 直接挂接 Windows 内核 `ReadDirectoryChangesW`（macOS 为 `FSEvents`，Linux 为 `inotify`），平时 0% 轮询休眠；保存文章或图片防抖后（默认 `1.2s`），立即向后端发送 `POST /api/v1/ops/git/local-changes`（`--mode auto` 优先 HTTP 推送，不可用时可退回 CLI）。
+  脚本内置 PEP 723 零第三方依赖声明，可直接由 `uv run` 拉起（也可用 `uv run --project backend python scripts/watch_content.py`），并通过 Node `fs.watch(..., { recursive: true })` 直接挂接 Windows 内核 `ReadDirectoryChangesW`（macOS 为 `FSEvents`，Linux 为 `inotify`），平时 0% 轮询休眠；保存文章或图片防抖后（默认 `1.2s`），立即向后端发送 `POST /api/v1/ops/git/local-changes`（`--mode auto` 优先 HTTP 推送，不可用时可退回 CLI）。
 - **后端事件接收端点（生产严格关闭）**：后端不再跑任何目录轮询协程，仅在 `environment != "production"` 且 `ENABLE_LOCAL_CONTENT_WATCHER=true` 时开放 `/api/v1/ops/git/local-changes`（校验 `REVALIDATE_SECRET`）；收到推送后依次执行 `content_contract` 契约校验与前端开发接口 `POST /api/mdx-precheck` 真实 `compileMDX` 预检，全部通过才调用 `GitOpsService.sync_changed_files()` 入库并刷新 Next.js 缓存，拦截半成品草稿以免污染本地预览页。
-- **单次手动校验与全量导入**：`python scripts/watch_content.py --once` 或 `docker compose -f docker-compose.dev.yml exec backend python scripts/sync_git_content.py`。
+- **单次手动校验与全量导入**：`uv run scripts/watch_content.py --once` 或 `docker compose -f docker-compose.dev.yml exec backend python scripts/sync_git_content.py`。

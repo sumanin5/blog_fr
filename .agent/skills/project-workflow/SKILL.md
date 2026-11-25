@@ -63,8 +63,8 @@ description: 项目启动、环境搭建与日常开发工作流。涵盖 local 
 
 4. **内容同步**:
    ```bash
-   ./scripts/sync-posts.sh         # 首次手动将 content/ 全量同步到数据库
-   python scripts/watch_content.py # 宿主机 OS 原生事件监听（零轮询），保存后直接 HTTP 推给后端预检入库
+   ./scripts/sync-posts.sh            # 首次手动将 content/ 全量同步到数据库
+   uv run scripts/watch_content.py    # 使用 uv 启动宿主机 OS 原生事件监听（零轮询），保存后直接 HTTP 推给后端预检入库
    ```
 
 ---
