@@ -236,7 +236,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TiltCard } from "@/components/ui/tilt-card";
 import {
   Tooltip,
@@ -253,6 +252,12 @@ import { DeepDive } from "../components/deep-dive";
 import { FilterLens } from "../components/filter-lens";
 import { InteractiveButton } from "../components/interactive-button";
 import { LayerStepper } from "../components/layer-stepper";
+import {
+  MdxTabs,
+  MdxTabsContent,
+  MdxTabsList,
+  MdxTabsTrigger,
+} from "../components/mdx-tabs";
 import { TanStackChart } from "../components/tanstack-chart";
 import { TimeScaleDemo } from "../components/time-scale-demo";
 
@@ -420,10 +425,10 @@ export function createMdxComponents(
     TableRow: TableRow as React.ComponentType,
     TableCell: TableCell as React.ComponentType,
     TableCaption: TableCaption as React.ComponentType,
-    Tabs: Tabs as React.ComponentType,
-    TabsList: TabsList as React.ComponentType,
-    TabsTrigger: TabsTrigger as React.ComponentType,
-    TabsContent: TabsContent as React.ComponentType,
+    Tabs: MdxTabs as React.ComponentType,
+    TabsList: MdxTabsList as React.ComponentType,
+    TabsTrigger: MdxTabsTrigger as React.ComponentType,
+    TabsContent: MdxTabsContent as React.ComponentType,
     TiltCard: TiltCard as React.ComponentType,
     TooltipProvider: TooltipProvider as React.ComponentType,
     Tooltip: Tooltip as React.ComponentType,
