@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { stripLeadingMarkdownHeading } from "@/lib/markdown/leading-heading";
+import { convertHtmlStyleToJsx } from "@/lib/markdown/mdx-preprocess";
 import { cn } from "@/lib/utils";
 import "katex/dist/katex.min.css";
 
@@ -23,31 +24,6 @@ interface MdxServerRendererProps {
   mdx: string;
   toc: Array<{ id: string; title: string; level: number }>;
   articleClassName: string;
-}
-
-/**
- * 将 HTML style 字符串转换为 JSX 对象格式
- */
-function convertHtmlStyleToJsx(mdx: string): string {
-  return mdx.replace(/style="([^"]*)"/g, (match, styleStr) => {
-    // 将 CSS 字符串转换为 JSX 对象格式
-    const styles = styleStr
-      .split(";")
-      .filter((s: string) => s.trim())
-      .map((s: string) => {
-        const [key, value] = s.split(":").map((p: string) => p.trim());
-        if (!key || !value) return "";
-        // 转换 kebab-case 为 camelCase
-        const camelKey = key.replace(/-([a-z])/g, (g: string) =>
-          g[1].toUpperCase(),
-        );
-        return `${camelKey}: '${value}'`;
-      })
-      .filter(Boolean)
-      .join(", ");
-
-    return `style={{ ${styles} }}`;
-  });
 }
 
 export async function MdxServerRenderer({
