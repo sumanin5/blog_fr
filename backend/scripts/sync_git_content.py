@@ -9,6 +9,7 @@ Git 内容同步命令行脚本
     python -m scripts.sync_git_content
 """
 
+import argparse
 import asyncio
 import sys
 from pathlib import Path
@@ -18,9 +19,36 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Git 内容同步命令行脚本")
+    parser.add_argument(
+        "--change",
+        action="append",
+        default=[],
+        help="增量变更项，格式 STATUS:REL_PATH（例如 M:ideas/比特漫笔/post.mdx），可多次传入",
+    )
+    return parser.parse_args(argv)
 
-async def main():
+
+def parse_change_items(raw_items: list[str]) -> list[tuple[str, str]]:
+    changes: list[tuple[str, str]] = []
+    for item in raw_items:
+        if ":" not in item:
+            raise ValueError(f"无效的 --change 参数格式（应为 STATUS:REL_PATH）: {item}")
+        status, rel_path = item.split(":", 1)
+        status = status.strip().upper()
+        rel_path = rel_path.strip().replace("\\", "/")
+        if status not in {"A", "M", "D"} or not rel_path:
+            raise ValueError(f"无效的变更状态或路径: {item}")
+        changes.append((status, rel_path))
+    return changes
+
+
+async def main(argv: list[str] | None = None):
     """执行 Git 内容同步"""
+    args = parse_args(argv)
+    changed_files = parse_change_items(args.change)
+
     # 必须导入 MediaFile 模型，否则 SQLAlchemy 在初始化 Category 关系时会找不到 'MediaFile'
     import app.media.model  # noqa
     from app.core.db import get_async_session
@@ -28,7 +56,9 @@ async def main():
     from app.users.model import User, UserRole
     from sqlmodel import select
 
-    print("🚀 开始 Git 内容同步...")
+    print(
+        f"🚀 开始{'增量' if changed_files else '全量'}内容同步..."
+    )
     print("-" * 50)
 
     # 获取数据库会话
@@ -53,7 +83,12 @@ async def main():
 
             # 执行同步
             service = GitOpsService(session)
-            stats = await service.sync_all(default_user=admin_user)
+            if changed_files:
+                stats = await service.sync_changed_files(
+                    changed_files, default_user=admin_user
+                )
+            else:
+                stats = await service.sync_all(default_user=admin_user)
 
             # 输出结果
             print("📊 同步完成！")

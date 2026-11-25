@@ -342,9 +342,41 @@ class SyncService(BaseGitOpsService):
                 "Missing last sync state. Please run a full sync first."
             )
 
+        return await self._reconcile_paths_locked(
+            changed_files,
+            default_user=default_user,
+            start_time=start_time,
+            update_git_cursor=True,
+        )
+
+    async def sync_changed_files(
+        self,
+        changed_files: list[tuple[str, str]],
+        default_user: User | None = None,
+    ) -> SyncStats:
+        """仅同步指定工作区变更文件路径列表（不推进远程 Git 游标）。"""
+        sync_lock = self._get_sync_lock()
+        if sync_lock.locked():
+            logger.warning("GitOps sync is already in progress, waiting for lock...")
+
+        async with sync_lock, self.container.repository_lock(), self.database_lock(self.session):
+            return await self._reconcile_paths_locked(
+                changed_files,
+                default_user=default_user,
+                start_time=time.time(),
+                update_git_cursor=False,
+            )
+
+    async def _reconcile_paths_locked(
+        self,
+        changed_files: list[tuple[str, str]],
+        *,
+        default_user: User | None,
+        start_time: float,
+        update_git_cursor: bool,
+    ) -> SyncStats:
         stats = SyncStats()
         if not changed_files:
-            logger.info("No new commits or changed files detected.")
             stats.duration = time.time() - start_time
             return stats
 
@@ -360,26 +392,24 @@ class SyncService(BaseGitOpsService):
         if not target_paths:
             # Documentation/notes do not need a user lookup, database writes,
             # frontmatter processing or cache invalidation.
-            await self.hash_manager.save_current_hash()
+            if update_git_cursor:
+                await self.hash_manager.save_current_hash()
             stats.duration = time.time() - start_time
             return stats
 
         await self.container.validate_content()
         operating_user = await self._get_operating_user(default_user)
 
-        if target_paths:
-            # 读取全量 source_path 后统一归一化，才能兼容历史绝对路径，
-            # 并避免旧记录被当成孤儿删除。
-            existing_posts = await post_crud.get_posts_with_source_path(
-                self.session
-            )
-            existing_map = {
-                normalize_source_path(p.source_path, self.content_dir): p
-                for p in existing_posts
-                if p.source_path
-            }
-        else:
-            existing_map = {}
+        # 读取全量 source_path 后统一归一化，才能兼容历史绝对路径，
+        # 并避免旧记录被当成孤儿删除。
+        existing_posts = await post_crud.get_posts_with_source_path(
+            self.session
+        )
+        existing_map = {
+            normalize_source_path(p.source_path, self.content_dir): p
+            for p in existing_posts
+            if p.source_path
+        }
 
         # 7. 执行增量对齐
         await self.sync_processor.reconcile_incremental_sync(
@@ -393,12 +423,13 @@ class SyncService(BaseGitOpsService):
                 settings.FRONTEND_URL, settings.REVALIDATE_SECRET
             )
 
-        # 即便只有图片或其他非文章文件变化，也推进成功导入的游标。
-        if stats.errors:
-            self.hash_manager.mark_failed()
-        else:
-            self.hash_manager.clear_failed()
-            await self.hash_manager.save_current_hash()
+        if update_git_cursor:
+            # 即便只有图片或其他非文章文件变化，也推进成功导入的游标。
+            if stats.errors:
+                self.hash_manager.mark_failed()
+            else:
+                self.hash_manager.clear_failed()
+                await self.hash_manager.save_current_hash()
         stats.duration = time.time() - start_time
 
         logger.info(

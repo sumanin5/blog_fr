@@ -86,6 +86,12 @@ class GitOpsContainer:
         """执行增量同步"""
         return await self.sync_service.sync_incremental(default_user)
 
+    async def sync_changed_files(self, changed_files, default_user=None):
+        """仅按传入变更列表执行本地文件同步"""
+        return await self.sync_service.sync_changed_files(
+            changed_files, default_user
+        )
+
     @property
     def preview_service(self):
         """获取预览服务（单例）"""

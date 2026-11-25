@@ -64,6 +64,7 @@ description: 项目启动、环境搭建与日常开发工作流。涵盖 local 
 4. **内容同步**:
    ```bash
    ./scripts/sync-posts.sh  # 将 content/ 下的示例内容同步到数据库
+   python scripts/watch_content.py  # 宿主机监听 CONTENT_HOST_DIR/content 变动，预检通过后自动增量同步
    ```
 
 ---

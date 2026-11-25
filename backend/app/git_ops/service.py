@@ -36,6 +36,14 @@ class GitOpsService:
         """执行增量同步（基于 Git Diff）"""
         return await self.container.sync_incremental(default_user)
 
+    async def sync_changed_files(
+        self, changed_files: list[tuple[str, str]], default_user: User = None
+    ) -> SyncStats:
+        """仅同步指定相对路径列表（供本地文件监听使用）"""
+        return await self.container.sync_changed_files(
+            changed_files, default_user
+        )
+
     # ========================================
     # 预览相关方法 - 委托给 PreviewService
     # ========================================

@@ -47,3 +47,14 @@ ENABLE_GIT_AUTO_SYNC=false
 生产保留 `GIT_PULL_BEFORE_SYNC=true`、实际内容 Git clone、只读远程凭据与 `GIT_SYNC_BRANCH`。此时仍先拉取，再按提交增量导入。该开关默认 true，已有生产环境行为不变。
 
 开发 Compose 已在 backend 的 environment 中明确设置 `GIT_PULL_BEFORE_SYNC: "false"` 和 `ENABLE_GIT_AUTO_SYNC: "false"`；backend/.env.local 是本机配置，不应假定容器已加载它。修改挂载目录并重建 `backend` 容器后，可执行 `docker compose -f docker-compose.dev.yml exec backend python scripts/sync_git_content.py` 将挂载目录导入数据库。
+
+如果希望在本地写作时实时监听宿主机内容目录并自动同步到数据库，可在宿主机仓库根目录运行：
+
+```bash
+python scripts/watch_content.py
+```
+
+说明：
+- 该脚本在宿主机通过目录快照轮询（绕过 Docker Desktop 挂载目录 `inotify` 事件丢失问题），默认自动读取 `.env` 中的 `CONTENT_HOST_DIR`（未设置时回退到 `./content`），并自动识别运行中的 `docker-compose.dev.yml` `backend` 容器或本机后端。
+- 防抖后（默认 `1.5s`）会先执行 `content_contract.py` 契约校验，并对修改后的 `.mdx`（或启用 `enable_jsx: true` 的 `.md`）文件检查 JSX 组件白名单与 `next-mdx-remote/rsc` 编译；预检全部通过才通过 `scripts/sync_git_content.py --change STATUS:REL_PATH` 定向增量更新数据库并刷新前端缓存，避免未写完的草稿破坏本地预览页。
+- 常用参数：`--once`（执行一次校验与全量同步后退出）、`--mode auto|docker|local`、`--debounce`、`--no-mdx-check`、`--no-contract-check`。
