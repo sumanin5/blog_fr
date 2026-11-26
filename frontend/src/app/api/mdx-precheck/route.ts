@@ -1,14 +1,17 @@
 import { compileMDX } from "next-mdx-remote/rsc";
 import { NextRequest } from "next/server";
-import rehypeKatex from "rehype-katex";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 
 import { createMdxComponents } from "@/components/public/mdx/registry/mdx-components";
 import { stripLeadingMarkdownHeading } from "@/lib/markdown/leading-heading";
 import {
+  createLeakedEmphasisCollector,
+  createMdxCompileOptions,
+  type LeakedEmphasisWarning,
+} from "@/lib/markdown/mdx-options";
+import {
   convertHtmlStyleToJsx,
   findUnregisteredJsxTags,
+  countRemovedLeadingLines,
   stripMdxFrontmatter,
 } from "@/lib/markdown/mdx-preprocess";
 
@@ -19,6 +22,12 @@ interface PrecheckFileInput {
 
 interface PrecheckError {
   path: string;
+  message: string;
+}
+
+interface PrecheckWarning {
+  path: string;
+  line: number | null;
   message: string;
 }
 
@@ -63,6 +72,7 @@ export async function POST(request: NextRequest) {
     Object.keys(components).filter((key) => /^[A-Z]/.test(key)),
   );
   const errors: PrecheckError[] = [];
+  const warnings: PrecheckWarning[] = [];
 
   for (const item of rawFiles as PrecheckFileInput[]) {
     if (
@@ -87,19 +97,26 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    const processedMdx = convertHtmlStyleToJsx(
-      stripLeadingMarkdownHeading(bodyWithoutFrontmatter),
-    );
+    const bodyWithoutH1 = stripLeadingMarkdownHeading(bodyWithoutFrontmatter);
+    const lineOffset =
+      countRemovedLeadingLines(item.source, bodyWithoutFrontmatter) +
+      countRemovedLeadingLines(bodyWithoutFrontmatter, bodyWithoutH1);
+    const processedMdx = convertHtmlStyleToJsx(bodyWithoutH1);
+    const fileWarnings: LeakedEmphasisWarning[] = [];
     try {
       await compileMDX({
         source: processedMdx,
-        options: {
-          mdxOptions: {
-            remarkPlugins: [remarkGfm, remarkMath],
-            rehypePlugins: [rehypeKatex],
-          },
-        },
+        options: createMdxCompileOptions([
+          createLeakedEmphasisCollector(fileWarnings, lineOffset),
+        ]),
       });
+      for (const warn of fileWarnings) {
+        warnings.push({
+          path: item.path,
+          line: warn.line,
+          message: `检测到未解析的裸露 "**"（常见于内侧多余空格或单边未闭合）：${warn.snippet}`,
+        });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       errors.push({ path: item.path, message });
@@ -108,6 +125,10 @@ export async function POST(request: NextRequest) {
 
   if (errors.length > 0) {
     return Response.json({ ok: false, errors }, { status: 422 });
+  }
+
+  if (warnings.length > 0) {
+    return Response.json({ ok: true, checked: rawFiles.length, warnings });
   }
 
   return Response.json({ ok: true, checked: rawFiles.length });

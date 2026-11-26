@@ -518,3 +518,91 @@ title: Test
 
     assert "这是第一段内容" in processor.excerpt
     assert len(processor.excerpt) <= 203  # 200 + "..."
+
+
+def test_strip_mdx_components_excludes_jsx_keeps_prose_and_code():
+    """剥离大写 JSX 组件与 HTML 标签壳，保留普通正文、引语与代码语义。"""
+    from app.posts.utils.content_parser import strip_mdx_components
+
+    source = """import { Foo } from "./foo"
+
+<div className="not-prose mx-auto max-w-2xl">
+  <p>引用正文内容</p>
+</div>
+
+<LayerStepper
+  title="大量组件内部文案"
+  layers={[{ name: "层1", sample: "const fn = (a) => a > 0;" }]}
+/>
+
+<Tabs defaultValue="a">
+  <TabsList><TabsTrigger value="a">标签</TabsTrigger></TabsList>
+  <Tabs defaultValue="inner">
+    <TabsContent value="inner">嵌套组件内部文字不应该被计入</TabsContent>
+  </Tabs>
+</Tabs>
+
+真正的正文说明包含泛型 Promise<User>、未闭合标记 <T 以及行内 `<Card>`。
+
+```tsx
+<LayerStepper title="代码块里应保留" />
+```
+"""
+    stripped = strip_mdx_components(source)
+    assert "引用正文内容" in stripped
+    assert "not-prose" not in stripped
+    assert "max-w-2xl" not in stripped
+    assert "大量组件内部文案" not in stripped
+    assert "嵌套组件内部文字不应该被计入" not in stripped
+    assert "Promise<User>" in stripped
+    assert "未闭合标记 <T 以及行内 `<Card>`" in stripped
+    assert '<LayerStepper title="代码块里应保留" />' in stripped
+
+
+def test_calculate_reading_time_ignores_jsx_components_and_image_urls():
+    """阅读时长只统计正文与代码文字，不被 JSX 组件 Props/嵌套文案或图片 URL 撑大。"""
+    from app.posts.utils.content_parser import calculate_reading_time
+
+    prose = "真正的正文内容一共十个。" * 25  # 275 字 -> 1 分钟
+    heavy_components = (
+        """---
+title: Demo
+enable_jsx: true
+---
+
+# 主标题
+
+"""
+        + prose
+        + "\n\n"
+        + '<AttributionLab sharedDeliverable="不计字数" scenarios={['
+        + ('{ id: "s", label: "场景文案", context: "很多仅用于交互演示的说明文字", kpiInsight: "长段盲区点评" }, ' * 40)
+        + "]} profiles={[]} />\n\n"
+        + "<Dialog><DialogContent><p>"
+        + ("弹窗内部演示文字不应该计入阅读时长 " * 60)
+        + "</p></DialogContent></Dialog>\n\n"
+        + "![图片说明](assets/very-long-diagram-path-with-many-english-tokens.jpg)\n"
+        + "[参考资料](https://example.com/very/long/url/with/dozens/of/path/segments/here)\n"
+    )
+
+    assert calculate_reading_time(heavy_components) == 1
+
+
+def test_generate_excerpt_strips_jsx_components():
+    """摘要提取应忽略开头的 JSX 组件属性与交互结构。"""
+    from app.posts.utils.content_parser import generate_excerpt
+
+    source = """---
+title: Excerpt Test
+---
+
+<LayerStepper
+  title="组件标题"
+  layers={[{ surface: "组件属性描述不应出现在摘要里" }]}
+/>
+
+这里是真正应该进入摘要的核心段落内容。
+"""
+    excerpt = generate_excerpt(source)
+    assert "组件属性描述" not in excerpt
+    assert "这里是真正应该进入摘要的核心段落内容" in excerpt

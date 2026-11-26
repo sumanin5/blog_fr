@@ -7,6 +7,21 @@ describe("toPortableMarkdown", () => {
     expect(toPortableMarkdown("## 图表\n\n<TanStackChart />\n\n说明")).toBe(
       "## 图表\n\n*[交互内容：TanStackChart，请在原文页面查看]*\n\n说明",
     );
+    expect(
+      toPortableMarkdown(
+        "<AbstractionExtractor scenarios={[]} />\n\n<InfraFadeDemo scenarios={[]} />\n\n<AttributionLab sharedDeliverable=\"x\" scenarios={[]} profiles={[]} />\n\n<AgentHarnessDemo taskPrompt=\"y\" guardrails={[]} />",
+      ),
+    ).toBe(
+      [
+        "*[交互内容：AbstractionExtractor，请在原文页面查看]*",
+        "",
+        "*[交互内容：InfraFadeDemo，请在原文页面查看]*",
+        "",
+        "*[交互内容：AttributionLab，请在原文页面查看]*",
+        "",
+        "*[交互内容：AgentHarnessDemo，请在原文页面查看]*",
+      ].join("\n"),
+    );
   });
 
   it("keeps inner text of paired components and JSX-only HTML", () => {

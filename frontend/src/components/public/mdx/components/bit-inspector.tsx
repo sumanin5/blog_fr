@@ -301,7 +301,7 @@ function Utf8InspectorView({
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 gap-1 px-2 text-xs"
+              className="min-h-11 gap-1 px-3 text-xs sm:min-h-9"
               onClick={() => setText(defaultValue)}
             >
               <RotateCcw aria-hidden="true" className="size-3" />
@@ -375,17 +375,17 @@ function Utf8InspectorView({
                 </Badge>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {charInfo.bytes.map((byte, byteIndex) => (
                   <div
                     key={`${charIndex}-byte-${byteIndex}`}
-                    className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/25 px-2.5 py-2"
+                    className="flex min-w-0 flex-col gap-2 rounded-md border border-border/60 bg-muted/25 px-2.5 py-2 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <span className="font-mono text-xs font-semibold text-foreground">
+                    <span className="font-mono text-xs font-semibold text-foreground tabular-nums">
                       0x{byte.hex}
                     </span>
                     <div
-                      className="flex items-center gap-0.5 font-mono text-xs"
+                      className="grid grid-cols-4 gap-1 font-mono text-xs sm:grid-cols-8"
                       aria-label={`字节 0x${byte.hex} 二进制 ${byte.bits}`}
                     >
                       {byte.bits.split("").map((bit, bitIdx) => {
@@ -394,7 +394,7 @@ function Utf8InspectorView({
                           <span
                             key={`${bitIdx}-${bit}`}
                             className={cn(
-                              "inline-flex size-5 items-center justify-center rounded-xs border text-[11px] font-medium",
+                              "inline-flex size-6 items-center justify-center rounded-xs border text-[11px] font-medium tabular-nums sm:size-5",
                               isPrefix
                                 ? "border-info/45 bg-info/15 text-foreground"
                                 : "border-border/70 bg-background text-foreground",
@@ -515,7 +515,7 @@ function Float64InspectorView({
                 type="button"
                 size="sm"
                 variant={isSelected ? "default" : "outline"}
-                className="h-7 px-2.5 font-mono text-xs"
+                className="min-h-11 px-3 font-mono text-xs sm:min-h-9"
                 onClick={() => {
                   setRawA(String(pa));
                   setRawB(String(pb));
@@ -528,8 +528,8 @@ function Float64InspectorView({
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="min-w-0 space-y-1.5">
           <Label htmlFor={idA} className="text-xs text-muted-foreground">
             操作数 A（十进制输入）
           </Label>
@@ -542,7 +542,7 @@ function Float64InspectorView({
             className="font-mono text-sm"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label htmlFor={idB} className="text-xs text-muted-foreground">
             操作数 B（十进制输入）
           </Label>
@@ -557,14 +557,14 @@ function Float64InspectorView({
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-border/70 bg-muted/30 p-3.5 sm:grid-cols-2">
-        <div className="space-y-1">
+      <div className="grid grid-cols-1 gap-3 rounded-lg border border-border/70 bg-muted/30 p-3.5 sm:grid-cols-2">
+        <div className="min-w-0 space-y-1">
           <div className="text-xs text-muted-foreground">数学十进制精确期望</div>
           <div className="font-mono text-sm font-semibold text-foreground sm:text-base">
             {decimalExpectation}
           </div>
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">
               IEEE 754 实算结果
@@ -587,7 +587,7 @@ function Float64InspectorView({
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Tabs
             value={focusTarget}
@@ -595,14 +595,14 @@ function Float64InspectorView({
               setFocusTarget(value as "a" | "b" | "sum")
             }
           >
-            <TabsList className="h-auto p-1">
-              <TabsTrigger value="a" className="px-3 py-1 text-xs">
+            <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1 sm:w-fit">
+              <TabsTrigger value="a" className="min-h-11 px-3 py-2 text-xs sm:min-h-9">
                 查看 A
               </TabsTrigger>
-              <TabsTrigger value="b" className="px-3 py-1 text-xs">
+              <TabsTrigger value="b" className="min-h-11 px-3 py-2 text-xs sm:min-h-9">
                 查看 B
               </TabsTrigger>
-              <TabsTrigger value="sum" className="px-3 py-1 text-xs">
+              <TabsTrigger value="sum" className="min-h-11 px-3 py-2 text-xs sm:min-h-9">
                 查看 A + B
               </TabsTrigger>
             </TabsList>

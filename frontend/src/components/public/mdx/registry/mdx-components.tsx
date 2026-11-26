@@ -170,6 +170,27 @@
  *       title?: string; subtitle?: string; defaultIndex?: number
  *       stages: Array<{ id, era, label, userCode, codeLang?, userBurden, hiddenComplexity, comprehensionRatio?, hiddenLayers: string[], takeaway }>
  *
+ * (9) <AbstractionExtractor /> — 结构提取与“真抽象 vs 单纯信息丢失”演示器
+ *     Props:
+ *       title?: string; subtitle?: string; defaultMode?: "raw" | "abstracted" | "loss"
+ *       scenarios: Array<{ id, label, targetGoal, instances: Array<{ label, keptTrait, droppedTraits: string[], sample? }>, extractedModel: { name, contract, example? }, mereLossModel: { name, consequence } }>
+ *
+ * (10) <InfraFadeDemo /> — 技术隐形化与“故障显形”模拟器
+ *      Props:
+ *        title?: string; subtitle?: string; defaultStageIndex?: number // 默认 2
+ *        scenarios: Array<{ id, label, stages: Array<{ phase, userFocus, consciousnessLoad, hiddenScale, backgroundLayers: string[] }>, breakdown: { triggerLabel, symptom, exposedLayers: string[], takeaway } }>
+ *
+ * (11) <AttributionLab /> — 同果异因思想实验台：成果、能力与责任拆解
+ *      Props:
+ *        title?: string; subtitle?: string; sharedDeliverable: string
+ *        scenarios: Array<{ id, label, context, kpiInsight }>
+ *        profiles: Array<{ id, name, roleTag, methodSummary, outputScore, understandingScore, verificationScore, outcomesByScenario: Record<string, { status: "stable" | "warn" | "risk", headline, detail }> }>
+ *
+ * (12) <AgentHarnessDemo /> — AI Agent 确定性工程护栏闭环实验
+ *      Props:
+ *        title?: string; subtitle?: string; taskPrompt: string
+ *        guardrails: Array<{ id, label, category, defaultEnabled?, preventsRisk, exposedRisk, stage: "parse" | "generate" | "execute" | "commit" }>
+ *
  * 3. 其他已注册通用原子（shadcn/ui，推荐用于排版与局部组合）
  * ----------------------------------------------------------------------------
  * - 布局与提示：Card / CardHeader / CardTitle / CardDescription / CardAction / CardContent / CardFooter,
@@ -243,6 +264,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AbstractionExtractor } from "../components/abstraction-extractor";
+import { AgentHarnessDemo } from "../components/agent-harness-demo";
+import { AttributionLab } from "../components/attribution-lab";
 import { MdxBeforeAfterSlider } from "../components/before-after-slider";
 import { BitInspector } from "../components/bit-inspector";
 import { BoundaryCard } from "../components/boundary-card";
@@ -250,6 +274,7 @@ import { CodeBlock } from "../components/code-block";
 import { ComplexityShift } from "../components/complexity-shift";
 import { DeepDive } from "../components/deep-dive";
 import { FilterLens } from "../components/filter-lens";
+import { InfraFadeDemo } from "../components/infra-fade-demo";
 import { InteractiveButton } from "../components/interactive-button";
 import { LayerStepper } from "../components/layer-stepper";
 import {
@@ -436,12 +461,16 @@ export function createMdxComponents(
     TooltipContent: TooltipContent as React.ComponentType,
 
     // 自定义交互组件 & 专题通用阅读原语
+    AbstractionExtractor: AbstractionExtractor as React.ComponentType,
+    AgentHarnessDemo: AgentHarnessDemo as React.ComponentType,
+    AttributionLab: AttributionLab as React.ComponentType,
     BeforeAfterSlider: MdxBeforeAfterSlider as React.ComponentType,
     BitInspector: BitInspector as React.ComponentType,
     BoundaryCard: BoundaryCard as React.ComponentType,
     ComplexityShift: ComplexityShift as React.ComponentType,
     DeepDive: DeepDive as React.ComponentType,
     FilterLens: FilterLens as React.ComponentType,
+    InfraFadeDemo: InfraFadeDemo as React.ComponentType,
     InteractiveButton: InteractiveButton as React.ComponentType,
     LayerStepper: LayerStepper as React.ComponentType,
     TanStackChart: TanStackChart as React.ComponentType,

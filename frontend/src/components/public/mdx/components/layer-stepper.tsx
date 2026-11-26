@@ -153,7 +153,7 @@ export function LayerStepper({
                 variant={isSelected ? "default" : "outline"}
                 onClick={() => setActiveIndex(index)}
                 className={cn(
-                  "h-auto gap-1.5 px-3 py-1.5 text-xs sm:text-sm",
+                  "min-h-11 gap-1.5 px-3 py-2 text-xs sm:min-h-9 sm:text-sm",
                   !isSelected && "bg-background/80 text-foreground hover:bg-muted",
                 )}
               >
@@ -207,10 +207,10 @@ export function LayerStepper({
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-lg border border-info/35 bg-info/10 p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="min-w-0 rounded-lg border border-info/35 bg-info/10 p-4">
             <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-foreground">
-              <Eye aria-hidden="true" className="size-4 text-info" />
+              <Eye aria-hidden="true" className="size-4 shrink-0 text-info" />
               <span>{activeLayer.surfaceLabel ?? "对外承诺 / 表象"}</span>
             </div>
             <p className="text-sm leading-relaxed text-foreground">
@@ -218,9 +218,9 @@ export function LayerStepper({
             </p>
           </div>
 
-          <div className="rounded-lg border border-border/80 bg-muted/45 p-4">
+          <div className="min-w-0 rounded-lg border border-border/80 bg-muted/45 p-4">
             <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-foreground">
-              <Cpu aria-hidden="true" className="size-4 text-primary" />
+              <Cpu aria-hidden="true" className="size-4 shrink-0 text-primary" />
               <span>{activeLayer.beneathLabel ?? "底层真实运转"}</span>
             </div>
             <p className="text-sm leading-relaxed text-foreground">
@@ -230,10 +230,10 @@ export function LayerStepper({
         </div>
 
         {sampleInfo ? (
-          <div className="overflow-hidden rounded-lg border border-border/70 bg-muted/25">
-            <div className="flex items-center justify-between border-b border-border/60 bg-muted/40 px-3.5 py-2">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <Code2 aria-hidden="true" className="size-3.5 text-primary" />
+          <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-border/70 bg-muted/25">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-3.5 py-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Code2 aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
                 <span>同一份数据在本层的呈现形态</span>
                 <Badge variant="outline" className="font-mono text-[11px] uppercase">
                   {sampleInfo.label}
@@ -241,9 +241,9 @@ export function LayerStepper({
               </div>
               <CopyButton code={sampleInfo.raw} />
             </div>
-            <div className="markdown-body">
+            <div className="markdown-body min-w-0 max-w-full overflow-x-auto">
               <pre
-                className="tm-code m-0 overflow-x-auto p-3.5 text-xs leading-6 sm:text-[13px]"
+                className="tm-code m-0 max-w-full overflow-x-auto p-3.5 text-xs leading-6 sm:text-[13px]"
                 data-lang={sampleInfo.normalizedLang}
               >
                 <code
@@ -275,7 +275,7 @@ export function LayerStepper({
               size="sm"
               disabled={activeIndex <= 0}
               onClick={() => setActiveIndex((prev) => clampIndex(prev - 1))}
-              className="gap-1 text-xs"
+              className="min-h-11 gap-1 px-3 text-xs sm:min-h-9"
             >
               <ChevronLeft aria-hidden="true" className="size-3.5" />
               上浮一层
@@ -286,7 +286,7 @@ export function LayerStepper({
               size="sm"
               disabled={activeIndex >= safeLayers.length - 1}
               onClick={() => setActiveIndex((prev) => clampIndex(prev + 1))}
-              className="gap-1 text-xs"
+              className="min-h-11 gap-1 px-3 text-xs sm:min-h-9"
             >
               下潜一层
               <ChevronRight aria-hidden="true" className="size-3.5" />

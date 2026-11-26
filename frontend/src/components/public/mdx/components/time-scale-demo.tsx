@@ -205,13 +205,13 @@ function CpuMultitaskView({
             </Badge>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setIsPlaying((prev) => !prev)}
-              className="h-7 gap-1 px-2.5 text-xs"
+              className="min-h-11 gap-1 px-3 text-xs sm:min-h-9"
             >
               {isPlaying ? (
                 <>
@@ -233,7 +233,7 @@ function CpuMultitaskView({
                 setIsPlaying(false);
                 setSliceIndex((prev) => (prev + 1) % SLICE_COUNT);
               }}
-              className="h-7 gap-1 px-2.5 text-xs"
+              className="min-h-11 gap-1 px-3 text-xs sm:min-h-9"
             >
               <SkipForward aria-hidden="true" className="size-3.5" />
               下一微片
@@ -252,7 +252,7 @@ function CpuMultitaskView({
           formatValueText={(v) => `${sliderToSpeedFactor(v).toFixed(2)}x`}
         />
 
-        <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-muted-foreground">
           <span>0.01x（显微镜慢放）</span>
           <span>0.10x</span>
           <span>1.00x（人类肉眼实时）</span>
@@ -268,7 +268,7 @@ function CpuMultitaskView({
             <div
               key={`${task.label}-${taskIdx}`}
               className={cn(
-                "rounded-lg border p-3 transition-colors",
+                "min-w-0 rounded-lg border p-3 transition-colors",
                 isMacroIllusion
                   ? "border-border/80 bg-background/80"
                   : isExecutingNow
@@ -406,7 +406,7 @@ function SignalThresholdView({ defaultNoise = 18 }: { defaultNoise?: number }) {
               size="sm"
               variant={idx === patternIdx ? "default" : "outline"}
               onClick={() => setPatternIdx(idx)}
-              className="h-7 px-2.5 font-mono text-xs"
+              className="min-h-11 px-3 font-mono text-xs sm:min-h-9"
             >
               {pat.label}
             </Button>
@@ -451,14 +451,14 @@ function SignalThresholdView({ defaultNoise = 18 }: { defaultNoise?: number }) {
           aria-label="调整模拟信道噪声强度百分比"
           formatValueText={(v) => `噪声 ${v}%`}
         />
-        <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-muted-foreground">
           <span>0%（理想无噪）</span>
           <span>45%（容差警戒线）</span>
           <span>100%（强干扰穿帮）</span>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border/70 bg-background/80 p-3">
+      <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-border/70 bg-background/80 p-3">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           role="img"
@@ -538,7 +538,7 @@ function SignalThresholdView({ defaultNoise = 18 }: { defaultNoise?: number }) {
             <div
               key={`bit-${bit.index}`}
               className={cn(
-                "rounded-md border px-2 py-1.5 text-center font-mono text-xs transition-colors",
+                "min-w-0 rounded-md border px-2 py-1.5 text-center font-mono text-xs transition-colors",
                 bit.isError
                   ? "border-destructive/50 bg-destructive/15 text-foreground"
                   : "border-border/70 bg-muted/35 text-foreground",

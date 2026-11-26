@@ -158,7 +158,7 @@ export function MdxBeforeAfterSlider({
             valueText: `{value}% ${beforeLabel}`,
           }}
           className={cn(
-            "rounded-lg border border-border/60",
+            "min-w-0 select-none touch-pan-y rounded-lg border border-border/60",
             aspectClass,
           )}
           before={<div className={SLOT_IMAGE_CLASSES}>{beforeNode}</div>}
@@ -167,7 +167,7 @@ export function MdxBeforeAfterSlider({
       </CardContent>
 
       <CardFooter className="flex flex-col gap-2.5 border-t border-border/60 bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="outline" className="text-xs text-foreground">
             左：{beforeLabel}
           </Badge>
@@ -183,7 +183,7 @@ export function MdxBeforeAfterSlider({
             type="button"
             size="sm"
             variant={position >= 95 ? "default" : "outline"}
-            className="h-7 px-2.5 text-xs"
+            className="min-h-11 px-3 text-xs sm:min-h-9"
             onClick={() => setPosition(100)}
           >
             只看左侧
@@ -192,7 +192,7 @@ export function MdxBeforeAfterSlider({
             type="button"
             size="sm"
             variant={position > 40 && position < 60 ? "default" : "outline"}
-            className="h-7 px-2.5 text-xs"
+            className="min-h-11 px-3 text-xs sm:min-h-9"
             onClick={() => setPosition(50)}
           >
             平分 50%
@@ -201,7 +201,7 @@ export function MdxBeforeAfterSlider({
             type="button"
             size="sm"
             variant={position <= 5 ? "default" : "outline"}
-            className="h-7 px-2.5 text-xs"
+            className="min-h-11 px-3 text-xs sm:min-h-9"
             onClick={() => setPosition(0)}
           >
             只看右侧

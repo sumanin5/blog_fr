@@ -153,7 +153,7 @@ export function ComplexityShift({
                 size="sm"
                 disabled={activeIndex <= 0}
                 onClick={() => setActiveIndex((prev) => clampIndex(prev - 1))}
-                className="h-7 gap-1 px-2 text-xs"
+                className="min-h-11 gap-1 px-3 text-xs sm:min-h-9"
               >
                 <ChevronLeft aria-hidden="true" className="size-3.5" />
                 上一时代
@@ -164,7 +164,7 @@ export function ComplexityShift({
                 size="sm"
                 disabled={activeIndex >= safeStages.length - 1}
                 onClick={() => setActiveIndex((prev) => clampIndex(prev + 1))}
-                className="h-7 gap-1 px-2 text-xs"
+                className="min-h-11 gap-1 px-3 text-xs sm:min-h-9"
               >
                 下一时代
                 <ChevronRight aria-hidden="true" className="size-3.5" />
@@ -190,7 +190,7 @@ export function ComplexityShift({
                 variant={isSelected ? "default" : "outline"}
                 onClick={() => setActiveIndex(idx)}
                 className={cn(
-                  "h-auto gap-1.5 px-3 py-1.5 text-xs sm:text-sm",
+                  "min-h-11 gap-1.5 px-3 py-2 text-xs sm:min-h-9 sm:text-sm",
                   !isSelected && "bg-background/80 text-foreground hover:bg-muted",
                 )}
               >
@@ -220,21 +220,21 @@ export function ComplexityShift({
         ) : null}
       </CardHeader>
 
-      <CardContent className="space-y-5 px-4 py-5 sm:px-6">
+      <CardContent className="min-w-0 space-y-5 px-4 py-5 sm:px-6">
         {highlightedSample ? (
-          <div className="overflow-hidden rounded-lg border border-border/70 bg-muted/25">
-            <div className="flex items-center justify-between border-b border-border/60 bg-muted/40 px-3.5 py-2">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <Code2 aria-hidden="true" className="size-3.5 text-primary" />
+          <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-border/70 bg-muted/25">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-3.5 py-2">
+              <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Code2 aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
                 <span>
                   使用者眼前的表达式（{activeStage.era} · {activeStage.label}）
                 </span>
               </div>
               <CopyButton code={highlightedSample.raw} />
             </div>
-            <div className="markdown-body">
+            <div className="markdown-body min-w-0 max-w-full overflow-x-auto">
               <pre
-                className="tm-code m-0 overflow-x-auto p-3.5 text-xs leading-6 sm:text-[13px]"
+                className="tm-code m-0 max-w-full overflow-x-auto p-3.5 text-xs leading-6 sm:text-[13px]"
                 data-lang={highlightedSample.normalizedLang}
               >
                 <code
@@ -248,41 +248,41 @@ export function ComplexityShift({
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-2 rounded-lg border border-border/70 bg-background/70 p-3.5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="min-w-0 space-y-2 rounded-lg border border-border/70 bg-background/70 p-3.5">
             <div className="flex items-center justify-between gap-2 text-xs">
               <span className="text-muted-foreground">使用者认知负担</span>
-              <span className="font-mono font-semibold text-foreground">
+              <span className="font-mono font-semibold text-foreground tabular-nums">
                 {userBurden}%
               </span>
             </div>
-            <Progress value={userBurden} className="h-2" />
+            <Progress value={userBurden} className="h-1.5" />
             <p className="text-[11px] leading-relaxed text-muted-foreground">
               眼前需要记忆和手写的控制细节
             </p>
           </div>
 
-          <div className="space-y-2 rounded-lg border border-border/70 bg-background/70 p-3.5">
+          <div className="min-w-0 space-y-2 rounded-lg border border-border/70 bg-background/70 p-3.5">
             <div className="flex items-center justify-between gap-2 text-xs">
               <span className="text-muted-foreground">底座隐藏复杂度</span>
-              <span className="font-mono font-semibold text-foreground">
+              <span className="font-mono font-semibold text-foreground tabular-nums">
                 {hiddenComplexity}%
               </span>
             </div>
-            <Progress value={hiddenComplexity} className="h-2" />
+            <Progress value={hiddenComplexity} className="h-1.5" />
             <p className="text-[11px] leading-relaxed text-muted-foreground">
               转交给编译器、运行时、云底座与依赖链的重量
             </p>
           </div>
 
-          <div className="space-y-2 rounded-lg border border-border/70 bg-background/70 p-3.5">
+          <div className="min-w-0 space-y-2 rounded-lg border border-border/70 bg-background/70 p-3.5">
             <div className="flex items-center justify-between gap-2 text-xs">
               <span className="text-muted-foreground">单人可透视全貌比例</span>
-              <span className="font-mono font-semibold text-foreground">
+              <span className="font-mono font-semibold text-foreground tabular-nums">
                 {comprehensionRatio}%
               </span>
             </div>
-            <Progress value={comprehensionRatio} className="h-2" />
+            <Progress value={comprehensionRatio} className="h-1.5" />
             <p className="text-[11px] leading-relaxed text-muted-foreground">
               一位工程师能从头推演到底层的程度
             </p>

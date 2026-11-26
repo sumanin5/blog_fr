@@ -404,7 +404,7 @@ export function BeforeAfterSlider({
             onPointerLeave={() => setHovered(false)}
             animate={{ scale: reduce ? 1 : dragging ? 1.08 : hovered ? 1.04 : 1 }}
             transition={SPRING_PRESS}
-            className="pointer-events-auto flex size-10 items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_0_0_1px_rgb(0_0_0/0.12)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-black/20"
+            className="pointer-events-auto flex size-11 touch-none items-center justify-center rounded-full bg-white text-neutral-900 shadow-[0_0_0_1px_rgb(0_0_0/0.12)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-black/20"
           >
             {/* The chevrons part as the handle is hovered and grabbed. */}
             {([ChevronLeft, ChevronRight] as const).map((Icon, index) => {

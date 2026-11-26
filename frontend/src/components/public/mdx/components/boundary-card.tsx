@@ -144,12 +144,12 @@ export function BoundaryCard({
 
         {safeCases.length > 1 ? (
           <Tabs value={activeCase.id} onValueChange={setActiveCaseId}>
-            <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1 sm:w-fit">
+            <TabsList className="h-auto w-full max-w-full flex-wrap justify-start gap-1 overflow-x-auto p-1 sm:w-fit">
               {safeCases.map((item) => (
                 <TabsTrigger
                   key={item.id}
                   value={item.id}
-                  className="px-3 py-1.5 text-xs sm:text-sm"
+                  className="min-h-11 px-3 py-2 text-xs sm:min-h-9 sm:text-sm"
                 >
                   {item.label}
                 </TabsTrigger>
@@ -159,17 +159,17 @@ export function BoundaryCard({
         ) : null}
       </CardHeader>
 
-      <CardContent className="space-y-4 px-4 py-5 sm:px-6">
+      <CardContent className="min-w-0 space-y-4 px-4 py-5 sm:px-6">
         <div
           className={cn(
-            "rounded-lg border p-4 transition-colors",
+            "min-w-0 rounded-lg border p-4 transition-colors",
             breached
               ? "border-destructive/35 bg-destructive/5"
               : "border-success/35 bg-success/5",
           )}
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               {breached ? (
                 <ShieldAlert
                   aria-hidden="true"
@@ -191,7 +191,7 @@ export function BoundaryCard({
               variant="outline"
               size="sm"
               onClick={() => setBreached((prev) => !prev)}
-              className="h-7 gap-1.5 px-2.5 text-xs"
+              className="min-h-11 gap-1.5 px-3 text-xs sm:min-h-9"
             >
               <ArrowRightLeft aria-hidden="true" className="size-3.5" />
               {breached ? "回到边界内" : "模拟越界"}
@@ -209,17 +209,17 @@ export function BoundaryCard({
         {activeCase.artifact ? (
           <div
             className={cn(
-              "rounded-lg border px-3.5 py-3 transition-colors",
+              "min-w-0 max-w-full rounded-lg border px-3.5 py-3 transition-colors",
               breached
                 ? "border-destructive/30 bg-muted/60"
                 : "border-border/60 bg-muted/30",
             )}
           >
             <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Terminal aria-hidden="true" className="size-3.5" />
+              <Terminal aria-hidden="true" className="size-3.5 shrink-0" />
               <span>{breached ? "越界观测输出" : "实验现场对照样本"}</span>
             </div>
-            <pre className="overflow-x-auto font-mono text-xs leading-relaxed text-foreground sm:text-sm">
+            <pre className="max-w-full overflow-x-auto font-mono text-xs leading-relaxed text-foreground sm:text-sm">
               <code>{activeCase.artifact}</code>
             </pre>
           </div>

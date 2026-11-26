@@ -97,6 +97,23 @@ async def run_frontend_mdx_precheck(
         return True, []
 
     if response.status_code == 200:
+        try:
+            detail = response.json()
+        except ValueError:
+            detail = None
+        if isinstance(detail, dict):
+            warnings = detail.get("warnings") or []
+            if warnings:
+                formatted_warnings = [
+                    f"{item.get('path', 'unknown')}:{item.get('line') or '?'} {item.get('message', '')}"
+                    for item in warnings
+                    if isinstance(item, dict)
+                ]
+                if formatted_warnings:
+                    logger.warning(
+                        "⚠️ [LocalPush] MDX 预检排版提示（不阻塞同步）: %s",
+                        "; ".join(formatted_warnings[:5]),
+                    )
         return True, []
 
     if response.status_code != 422:

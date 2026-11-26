@@ -1,3 +1,5 @@
+import { stripLeadingMarkdownHeading } from "./leading-heading";
+
 const FRONTMATTER_BLOCK_RE = /^\uFEFF?---[\s\S]*?---\s*/;
 const FENCE_RE = /^\s*(```|~~~)/;
 const JSX_TAG_RE = /<\s*([A-Z][A-Za-z0-9_]*)\b/g;
@@ -7,6 +9,27 @@ const JSX_TAG_RE = /<\s*([A-Z][A-Za-z0-9_]*)\b/g;
  */
 export function stripMdxFrontmatter(source: string): string {
   return source.replace(FRONTMATTER_BLOCK_RE, "");
+}
+
+/**
+ * 统计字符串行数（用于预检告警行号回推至原文件位置）。
+ */
+export function countRemovedLeadingLines(
+  before: string,
+  after: string,
+): number {
+  if (!before.endsWith(after)) {
+    return Math.max(0, before.split(/\r?\n/).length - after.split(/\r?\n/).length);
+  }
+  const removed = before.slice(0, before.length - after.length);
+  return (removed.match(/\n/g) ?? []).length;
+}
+
+/**
+ * 统一规范化 MDX 源码：去掉重复的正文 H1，并将内联 HTML style="..." 转换为 JSX style={{ ... }}。
+ */
+export function prepareMdxSource(mdx: string): string {
+  return convertHtmlStyleToJsx(stripLeadingMarkdownHeading(mdx));
 }
 
 /**

@@ -124,4 +124,72 @@ describe("dev mdx-precheck API", () => {
     expect(syntaxBody.ok).toBe(false);
     expect(syntaxBody.errors[0]?.path).toBe("ideas/note/bad-indent.mdx");
   });
+
+  it("compiles CJK emphasis near Chinese punctuation cleanly without warnings", async () => {
+    const response = await POST(
+      buildRequest({
+        files: [
+          {
+            path: "ideas/note/cjk.mdx",
+            source: [
+              "---",
+              "title: CJK",
+              "---",
+              "# CJK",
+              "",
+              "从**“阶段性指标交付”**与**自指（Self-Reference）**继续，把**《道德经》**和~~（旧方案）~~看清楚。",
+            ].join("\n"),
+          },
+        ],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, checked: 1 });
+  });
+
+  it("returns non-blocking warnings with file line numbers for spaced or unclosed ** outside code", async () => {
+    const response = await POST(
+      buildRequest({
+        files: [
+          {
+            path: "ideas/note/warn.mdx",
+            source: [
+              "---",
+              "title: Warn",
+              "---",
+              "# Warn",
+              "",
+              "这里是** 多余空格 **的问题。",
+              "",
+              "这一行是**忘记闭合的加粗。",
+              "",
+              "行内代码 `**kwargs` 与下方代码块不该误报：",
+              "",
+              "```python",
+              "def fn(**kwargs):",
+              "    return 2 ** 3",
+              "```",
+            ].join("\n"),
+          },
+        ],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      ok: boolean;
+      checked: number;
+      warnings?: Array<{ path: string; line: number | null; message: string }>;
+    };
+    expect(body.ok).toBe(true);
+    expect(body.checked).toBe(1);
+    expect(body.warnings).toBeDefined();
+    expect(body.warnings?.length).toBe(2);
+    expect(body.warnings?.[0]?.path).toBe("ideas/note/warn.mdx");
+    expect(body.warnings?.[0]?.line).toBe(6);
+    expect(body.warnings?.[0]?.message).toContain("多余空格");
+    expect(body.warnings?.[1]?.line).toBe(8);
+    expect(body.warnings?.[1]?.message).toContain("忘记闭合");
+  });
 });

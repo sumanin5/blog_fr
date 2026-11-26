@@ -245,3 +245,49 @@ async def test_local_changes_router_auth_production_guard_and_responses(mocker, 
             assert ok_res.json()["status"] == "synced"
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.git_ops
+async def test_run_frontend_mdx_precheck_logs_non_blocking_warnings(tmp_path: Path, mocker, caplog):
+    """前端预检返回 200 且附带 warnings 时，应记录警告日志且不阻塞同步。"""
+    cat_dir = tmp_path / "ideas" / "cat"
+    cat_dir.mkdir(parents=True)
+    (cat_dir / "warn.mdx").write_text(
+        "---\ntitle: Warn\nenable_jsx: true\n---\n这里是** 空格 **。\n",
+        encoding="utf-8",
+    )
+
+    mock_client = mocker.MagicMock()
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=None)
+    mock_client.post = mocker.AsyncMock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "ok": True,
+                "checked": 1,
+                "warnings": [
+                    {
+                        "path": "ideas/cat/warn.mdx",
+                        "line": 5,
+                        "message": "检测到未解析的裸露 \"**\"：这里是** 空格 **。",
+                    }
+                ],
+            },
+        )
+    )
+    mocker.patch("app.git_ops.watcher.httpx.AsyncClient", return_value=mock_client)
+
+    with caplog.at_level("WARNING"):
+        ok, errors = await watcher.run_frontend_mdx_precheck(
+            tmp_path,
+            ["ideas/cat/warn.mdx"],
+            frontend_url="http://frontend:3000",
+            revalidate_secret="secret",
+        )
+
+    assert ok is True
+    assert errors == []
+    assert "ideas/cat/warn.mdx:5" in caplog.text

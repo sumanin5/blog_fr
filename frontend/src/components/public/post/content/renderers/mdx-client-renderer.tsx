@@ -4,10 +4,8 @@ import React from "react";
 import { MDXRemote } from "next-mdx-remote";
 import { serialize } from "next-mdx-remote/serialize";
 import { createMdxComponents } from "@/components/public/mdx/registry/mdx-components";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import remarkGfm from "remark-gfm";
-import { stripLeadingMarkdownHeading } from "@/lib/markdown/leading-heading";
+import { createMdxCompileOptions } from "@/lib/markdown/mdx-options";
+import { prepareMdxSource } from "@/lib/markdown/mdx-preprocess";
 import { cn } from "@/lib/utils";
 import "katex/dist/katex.min.css";
 
@@ -44,34 +42,11 @@ export function MdxClientRenderer({
     console.log("MDX 内容预览:", mdx.substring(0, 500));
 
     // 预处理：去掉重复的正文 H1，并将 HTML style 属性转换为 JSX 格式
-    const processedMdx = stripLeadingMarkdownHeading(mdx).replace(/style="([^"]*)"/g, (match, styleStr) => {
-      // 将 CSS 字符串转换为 JSX 对象格式
-      const styles = styleStr
-        .split(";")
-        .filter((s: string) => s.trim())
-        .map((s: string) => {
-          const [key, value] = s.split(":").map((p: string) => p.trim());
-          if (!key || !value) return "";
-          // 转换 kebab-case 为 camelCase
-          const camelKey = key.replace(/-([a-z])/g, (g: string) =>
-            g[1].toUpperCase(),
-          );
-          return `${camelKey}: '${value}'`;
-        })
-        .filter(Boolean)
-        .join(", ");
-
-      return `style={{ ${styles} }}`;
-    });
+    const processedMdx = prepareMdxSource(mdx);
 
     console.log("处理后的 MDX:", processedMdx.substring(0, 500));
 
-    serialize(processedMdx, {
-      mdxOptions: {
-        remarkPlugins: [remarkGfm, remarkMath],
-        rehypePlugins: [rehypeKatex],
-      },
-    })
+    serialize(processedMdx, createMdxCompileOptions())
       .then(setMdxSource)
       .catch((err) => {
         console.error("MDX serialization error:", err);

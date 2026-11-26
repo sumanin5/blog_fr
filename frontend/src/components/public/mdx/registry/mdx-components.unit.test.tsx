@@ -1,9 +1,17 @@
+import { render, screen } from "@testing-library/react";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { renderToStaticMarkup } from "react-dom/server";
-import rehypeKatex from "rehype-katex";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import { describe, expect, it } from "vitest";
+import { createMdxCompileOptions } from "@/lib/markdown/mdx-options";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { AbstractionExtractor } from "../components/abstraction-extractor";
+import { AgentHarnessDemo } from "../components/agent-harness-demo";
+import { AttributionLab } from "../components/attribution-lab";
 import { MdxBeforeAfterSlider } from "../components/before-after-slider";
 import {
   BitInspector,
@@ -15,6 +23,7 @@ import { BoundaryCard } from "../components/boundary-card";
 import { ComplexityShift } from "../components/complexity-shift";
 import { DeepDive } from "../components/deep-dive";
 import { FilterLens } from "../components/filter-lens";
+import { InfraFadeDemo } from "../components/infra-fade-demo";
 import { LayerStepper } from "../components/layer-stepper";
 import {
   evaluateSignalSample,
@@ -62,12 +71,16 @@ describe("MDX component registry", () => {
       "TiltCard",
       "TooltipProvider",
       "Tooltip",
+      "AbstractionExtractor",
+      "AgentHarnessDemo",
+      "AttributionLab",
       "BeforeAfterSlider",
       "BitInspector",
       "BoundaryCard",
       "ComplexityShift",
       "DeepDive",
       "FilterLens",
+      "InfraFadeDemo",
       "InteractiveButton",
       "LayerStepper",
       "TanStackChart",
@@ -430,17 +443,60 @@ describe("MDX component registry", () => {
 1. 公式 $e^2$
 
 </DeepDive>
+
+<AbstractionExtractor
+  defaultMode="abstracted"
+  scenarios={[{
+    id: "num3",
+    label: "3",
+    targetGoal: "计数",
+    instances: [{ label: "树", keptTrait: "3个对象", droppedTraits: ["叶子"] }],
+    extractedModel: { name: "数字 3", contract: "独立计数模型" },
+    mereLossModel: { name: "空泛多", consequence: "丧失精确相加" },
+  }]}
+/>
+
+<InfraFadeDemo
+  scenarios={[{
+    id: "power",
+    label: "供电",
+    stages: [{ phase: "隐形", userFocus: "开灯", consciousnessLoad: 5, hiddenScale: 95, backgroundLayers: ["变电站"] }],
+    breakdown: { triggerLabel: "断电", symptom: "黑灯", exposedLayers: ["变电站"], takeaway: "底座显形" },
+  }]}
+/>
+
+<AttributionLab
+  sharedDeliverable="相同 PR"
+  scenarios={[{ id: "s1", label: "验收", context: "正常", kpiInsight: "盲区" }]}
+  profiles={[{
+    id: "a",
+    name: "A",
+    roleTag: "独立",
+    methodSummary: "手写",
+    outputScore: 100,
+    understandingScore: 95,
+    verificationScore: 90,
+    outcomesByScenario: { s1: { status: "stable", headline: "稳态", detail: "可控" } },
+  }]}
+/>
+
+<AgentHarnessDemo
+  taskPrompt="执行变更"
+  guardrails={[{
+    id: "g1",
+    label: "Schema",
+    category: "Schema",
+    preventsRisk: "格式正确",
+    exposedRisk: "参数失真",
+    stage: "parse",
+  }]}
+/>
 `;
 
     const { content } = await compileMDX({
       source: mdxSource,
       components: createMdxComponents(),
-      options: {
-        mdxOptions: {
-          remarkPlugins: [remarkGfm, remarkMath],
-          rehypePlugins: [rehypeKatex],
-        },
-      },
+      options: createMdxCompileOptions(),
     });
 
     const html = renderToStaticMarkup(content);
@@ -450,5 +506,100 @@ describe("MDX component registry", () => {
     expect(html).toContain("滤镜开启");
     expect(html).toContain("现代");
     expect(html).toContain("深挖列表");
+    expect(html).toContain("独立计数模型");
+    expect(html).toContain("变电站");
+    expect(html).toContain("相同 PR");
+    expect(html).toContain("执行变更");
+  });
+
+  it("includes mobile responsive overflow, touch-action, and accessible modal sizing guards", () => {
+    const bitHtml = renderToStaticMarkup(
+      <BitInspector mode="utf8" defaultValue="A" />,
+    );
+    expect(bitHtml).toContain("grid-cols-4");
+    expect(bitHtml).toContain("sm:grid-cols-8");
+    expect(bitHtml).toContain("min-w-0");
+
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>移动端弹窗</DialogTitle>
+          <DialogDescription>可滚动高度限制</DialogDescription>
+        </DialogContent>
+      </Dialog>,
+    );
+    const dialogEl = screen.getByRole("dialog");
+    expect(dialogEl).toHaveClass("max-h-[85dvh]");
+    expect(dialogEl).toHaveClass("overflow-y-auto");
+
+    /* eslint-disable @next/next/no-img-element */
+    const sliderHtml = renderToStaticMarkup(
+      <MdxBeforeAfterSlider beforeLabel="A" afterLabel="B">
+        <p>
+          <img src="/a.png" alt="A" />
+        </p>
+        <p>
+          <img src="/b.png" alt="B" />
+        </p>
+      </MdxBeforeAfterSlider>,
+    );
+    /* eslint-enable @next/next/no-img-element */
+    expect(sliderHtml).toContain("touch-pan-y");
+    expect(sliderHtml).toContain("touch-none");
+    expect(sliderHtml).toContain("min-h-11");
+
+    const extractionHtml = renderToStaticMarkup(
+      <AbstractionExtractor scenarios={[]} />,
+    );
+    expect(extractionHtml).toContain("未配置对比场景");
+
+    const infraHtml = renderToStaticMarkup(
+      <InfraFadeDemo scenarios={[]} />,
+    );
+    expect(infraHtml).toContain("未配置基础设施场景");
+
+    const attrHtml = renderToStaticMarkup(
+      <AttributionLab
+        sharedDeliverable="X"
+        scenarios={[]}
+        profiles={[]}
+      />,
+    );
+    expect(attrHtml).toContain("未配置完整的实验对比数据");
+
+    const harnessHtml = renderToStaticMarkup(
+      <AgentHarnessDemo taskPrompt="X" guardrails={[]} />,
+    );
+    expect(harnessHtml).toContain("未配置工程护栏条目");
+  });
+
+  it("renders CJK bold and strikethrough near Chinese punctuation without leaking ** or ~~", async () => {
+    const mdxSource = [
+      "从**“阶段性指标交付”**的逻辑去看，这种**自指（Self-Reference）**不仅是概念。",
+      "",
+      "把**《道德经》**变成**(模型)**测试，中文~~（已废弃）~~继续，以及 `**kwargs` 保持原样。",
+      "",
+      "```python",
+      "def fn(**kwargs):",
+      "    return kwargs",
+      "```",
+    ].join("\n");
+
+    const { content } = await compileMDX({
+      source: mdxSource,
+      components: createMdxComponents(),
+      options: createMdxCompileOptions(),
+    });
+
+    const html = renderToStaticMarkup(content);
+    expect(html).toContain("<strong>“阶段性指标交付”</strong>");
+    expect(html).toContain("<strong>自指（Self-Reference）</strong>");
+    expect(html).toContain("<strong>《道德经》</strong>");
+    expect(html).toContain("<strong>(模型)</strong>");
+    expect(html).toContain("<del>（已废弃）</del>");
+    expect(html).toContain("**kwargs");
+    expect(html).not.toContain("**“");
+    expect(html).not.toContain("**自指");
+    expect(html).not.toContain("~~（");
   });
 });

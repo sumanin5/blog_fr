@@ -1,10 +1,7 @@
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { createMdxComponents } from "@/components/public/mdx/registry/mdx-components";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import { stripLeadingMarkdownHeading } from "@/lib/markdown/leading-heading";
-import { convertHtmlStyleToJsx } from "@/lib/markdown/mdx-preprocess";
+import { createMdxCompileOptions } from "@/lib/markdown/mdx-options";
+import { prepareMdxSource } from "@/lib/markdown/mdx-preprocess";
 import { cn } from "@/lib/utils";
 import "katex/dist/katex.min.css";
 
@@ -32,21 +29,14 @@ export async function MdxServerRenderer({
   articleClassName,
 }: MdxServerRendererProps) {
   // 预处理：去掉重复的正文 H1，并转换 HTML style 为 JSX 格式
-  const processedMdx = convertHtmlStyleToJsx(
-    stripLeadingMarkdownHeading(mdx),
-  );
+  const processedMdx = prepareMdxSource(mdx);
 
   return (
     <article className={cn(articleClassName, "markdown-body")}>
       <MDXRemote
         source={processedMdx}
         components={createMdxComponents(toc)}
-        options={{
-          mdxOptions: {
-            remarkPlugins: [remarkGfm, remarkMath],
-            rehypePlugins: [rehypeKatex],
-          },
-        }}
+        options={createMdxCompileOptions()}
       />
     </article>
   );
