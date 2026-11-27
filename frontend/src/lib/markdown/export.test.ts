@@ -9,7 +9,7 @@ describe("toPortableMarkdown", () => {
     );
     expect(
       toPortableMarkdown(
-        "<AbstractionExtractor scenarios={[]} />\n\n<InfraFadeDemo scenarios={[]} />\n\n<AttributionLab sharedDeliverable=\"x\" scenarios={[]} profiles={[]} />\n\n<AgentHarnessDemo taskPrompt=\"y\" guardrails={[]} />",
+        "<AbstractionExtractor scenarios={[]} />\n\n<InfraFadeDemo scenarios={[]} />\n\n<AttributionLab sharedDeliverable=\"x\" scenarios={[]} profiles={[]} />\n\n<AgentHarnessDemo taskPrompt=\"y\" guardrails={[]} />\n\n<ResilienceDemo defaultFailed={true} />",
       ),
     ).toBe(
       [
@@ -20,6 +20,8 @@ describe("toPortableMarkdown", () => {
         "*[交互内容：AttributionLab，请在原文页面查看]*",
         "",
         "*[交互内容：AgentHarnessDemo，请在原文页面查看]*",
+        "",
+        "*[交互内容：ResilienceDemo，请在原文页面查看]*",
       ].join("\n"),
     );
   });

@@ -4,6 +4,7 @@ import { AbstractionExtractor } from "./abstraction-extractor";
 import { AgentHarnessDemo } from "./agent-harness-demo";
 import { AttributionLab } from "./attribution-lab";
 import { InfraFadeDemo } from "./infra-fade-demo";
+import { ResilienceDemo } from "./resilience-demo";
 
 beforeAll(() => {
   if (!globalThis.ResizeObserver) {
@@ -117,7 +118,7 @@ describe("New MDX interactive components", () => {
     expect(screen.getByText(/隐入背景的设施立刻弹回意识焦点/)).toBeInTheDocument();
   });
 
-  it("AttributionLab switches stress scenarios and updates profile outcomes and KPI insight", () => {
+  it("AttributionLab switches stress scenarios and renders pure qualitative comparison without scores", () => {
     render(
       <AttributionLab
         sharedDeliverable="支持限流的订单导出接口"
@@ -126,21 +127,24 @@ describe("New MDX interactive components", () => {
             id: "release",
             label: "正常上线验收",
             context: "低并发测试环境一切绿色通过。",
-            kpiInsight: "仅看表观产出无法区分理解深度。",
+            kpiInsight: "仅看表观产出无法区分可靠性依据与接管边界。",
           },
           {
             id: "incident",
             label: "深夜生产事故",
             context: "流量洪峰导致连接池耗尽。",
-            kpiInsight: "事故瞬间暴露可接管能力差异。",
+            kpiInsight: "事故瞬间暴露可接管边界差异。",
           },
         ]}
         profiles={[
           {
             id: "a",
-            name: "程序员 A",
+            name: "方式 A",
             roleTag: "独立实现",
             methodSummary: "手写完整状态机。",
+            reliabilityBasis: "逐行推演与边界自测",
+            handoverBoundary: "对自写链路熟悉，跨模块对齐偏慢",
+            fitScenario: "范围明确的核心模块",
             outputScore: 100,
             understandingScore: 95,
             verificationScore: 92,
@@ -151,9 +155,12 @@ describe("New MDX interactive components", () => {
           },
           {
             id: "b",
-            name: "程序员 B",
+            name: "方式 B",
             roleTag: "AI 深度掌控",
             methodSummary: "先定契约再审验证。",
+            reliabilityBasis: "接口契约与回归测试护栏",
+            handoverBoundary: "整体可控，隐蔽分支仍需核对",
+            fitScenario: "主力迭代业务",
             outputScore: 100,
             understandingScore: 90,
             verificationScore: 95,
@@ -164,9 +171,12 @@ describe("New MDX interactive components", () => {
           },
           {
             id: "c",
-            name: "程序员 C",
+            name: "方式 C",
             roleTag: "黑盒交付",
             methodSummary: "直接复制整段生成代码。",
+            reliabilityBasis: "仅依赖表层演示跑通",
+            handoverBoundary: "异常时缺乏独立排障依据",
+            fitScenario: "一次性低风险原型",
             outputScore: 100,
             understandingScore: 20,
             verificationScore: 15,
@@ -179,14 +189,31 @@ describe("New MDX interactive components", () => {
       />,
     );
 
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(screen.queryByText("100%")).not.toBeInTheDocument();
+    expect(screen.queryByText("95%")).not.toBeInTheDocument();
+    expect(screen.queryByText("20%")).not.toBeInTheDocument();
+    expect(screen.queryByText("15%")).not.toBeInTheDocument();
+    expect(screen.queryByText("当前场景的 KPI 评估盲区")).not.toBeInTheDocument();
+
+    expect(screen.getAllByText("可靠性依据")).toHaveLength(3);
+    expect(screen.getAllByText("接管边界")).toHaveLength(3);
+    expect(screen.getAllByText("适用风险等级")).toHaveLength(3);
+    expect(screen.getByText("逐行推演与边界自测")).toBeInTheDocument();
+    expect(screen.getByText("整体可控，隐蔽分支仍需核对")).toBeInTheDocument();
+    expect(screen.getByText("一次性低风险原型")).toBeInTheDocument();
+    expect(screen.getByText("这一场景揭示了什么")).toBeInTheDocument();
+    expect(screen.getByText("思想实验示意")).toBeInTheDocument();
     expect(screen.getByText("A-稳态上线")).toBeInTheDocument();
-    expect(screen.getByText(/仅看表观产出无法区分理解深度/)).toBeInTheDocument();
+    expect(screen.getByText(/仅看表观产出无法区分可靠性依据与接管边界/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "深夜生产事故" }));
 
+    expect(screen.getByText("需人工补位")).toBeInTheDocument();
+    expect(screen.getByText("风险失控")).toBeInTheDocument();
     expect(screen.getByText("C-现场失控")).toBeInTheDocument();
     expect(screen.getByText(/无法解释并发锁语义/)).toBeInTheDocument();
-    expect(screen.getByText(/事故瞬间暴露可接管能力差异/)).toBeInTheDocument();
+    expect(screen.getByText(/事故瞬间暴露可接管边界差异/)).toBeInTheDocument();
   });
 
   it("AgentHarnessDemo toggles individual guardrails and bare/full presets cleanly", () => {
@@ -229,5 +256,60 @@ describe("New MDX interactive components", () => {
     expect(screen.getByText("已启用 2/2")).toBeInTheDocument();
     expect(screen.getByText("0 处暴露缺口")).toBeInTheDocument();
     expect(screen.getByText(/禁止直接读写宿主文件/)).toBeInTheDocument();
+  });
+
+  it("ResilienceDemo toggles primary failure, reroutes multi-path backups, and supports keyboard recovery", () => {
+    render(<ResilienceDemo />);
+
+    const singlePanel = screen.getByTestId("single-path-panel");
+    const multiPanel = screen.getByTestId("multi-path-panel");
+
+    expect(singlePanel).toHaveAttribute("data-state", "healthy");
+    expect(multiPanel).toHaveAttribute("data-active-route", "primary");
+    expect(screen.getByText("正常通信")).toBeInTheDocument();
+    expect(screen.getByText("正常通信（备用路径待命）")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "模拟主节点失效" }));
+    expect(singlePanel).toHaveAttribute("data-state", "failed");
+    expect(multiPanel).toHaveAttribute("data-active-route", "upper");
+    expect(screen.getByText("关键节点失效，通信中断")).toBeInTheDocument();
+    expect(screen.getByText("绕过故障节点，恢复通信")).toBeInTheDocument();
+
+    const upperNode = screen.getByRole("button", { name: /多路径上备用节点/ });
+    const lowerNode = screen.getByRole("button", { name: /多路径下备用节点/ });
+
+    // 上备用也损坏后，主中继已坏 -> 自动切到下备用
+    fireEvent.keyDown(upperNode, { key: "Enter" });
+    expect(upperNode).toHaveAttribute("aria-pressed", "true");
+    expect(multiPanel).toHaveAttribute("data-active-route", "lower");
+    expect(screen.getByText("绕过故障节点，恢复通信")).toBeInTheDocument();
+
+    // 下备用也损坏后，三条中继全部耗尽
+    fireEvent.keyDown(lowerNode, { key: " " });
+    expect(lowerNode).toHaveAttribute("aria-pressed", "true");
+    expect(multiPanel).toHaveAttribute("data-active-route", "none");
+    expect(screen.getByText("备用路径耗尽，通信中断")).toBeInTheDocument();
+
+    // 一键恢复全部节点
+    fireEvent.click(screen.getByRole("button", { name: "恢复全部节点" }));
+    expect(singlePanel).toHaveAttribute("data-state", "healthy");
+    expect(multiPanel).toHaveAttribute("data-active-route", "primary");
+    expect(screen.getByRole("button", { name: "模拟主节点失效" })).toBeInTheDocument();
+  });
+
+  it("ResilienceDemo respects defaultFailed prop on initial render", () => {
+    render(<ResilienceDemo defaultFailed />);
+
+    expect(screen.getByTestId("single-path-panel")).toHaveAttribute(
+      "data-state",
+      "failed",
+    );
+    expect(screen.getByTestId("multi-path-panel")).toHaveAttribute(
+      "data-active-route",
+      "upper",
+    );
+    expect(screen.getByText("关键节点失效，通信中断")).toBeInTheDocument();
+    expect(screen.getByText("绕过故障节点，恢复通信")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "恢复全部节点" })).toBeInTheDocument();
   });
 });

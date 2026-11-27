@@ -180,16 +180,23 @@
  *        title?: string; subtitle?: string; defaultStageIndex?: number // 默认 2
  *        scenarios: Array<{ id, label, stages: Array<{ phase, userFocus, consciousnessLoad, hiddenScale, backgroundLayers: string[] }>, breakdown: { triggerLabel, symptom, exposedLayers: string[], takeaway } }>
  *
- * (11) <AttributionLab /> — 同果异因思想实验台：成果、能力与责任拆解
+ * (11) <AttributionLab /> — 同果异因思想实验台：可靠性依据与责任边界（纯定性结构化对照，无数值打分/进度条）
  *      Props:
  *        title?: string; subtitle?: string; sharedDeliverable: string
  *        scenarios: Array<{ id, label, context, kpiInsight }>
- *        profiles: Array<{ id, name, roleTag, methodSummary, outputScore, understandingScore, verificationScore, outcomesByScenario: Record<string, { status: "stable" | "warn" | "risk", headline, detail }> }>
+ *        profiles: Array<{ id, name, roleTag, methodSummary, reliabilityBasis, handoverBoundary, fitScenario, outcomesByScenario: Record<string, { status: "stable" | "warn" | "risk", headline, detail }>, outputScore?: number (已废弃), understandingScore?: number (已废弃), verificationScore?: number (已废弃) }>
  *
  * (12) <AgentHarnessDemo /> — AI Agent 确定性工程护栏闭环实验
  *      Props:
  *        title?: string; subtitle?: string; taskPrompt: string
  *        guardrails: Array<{ id, label, category, defaultEnabled?, preventsRisk, exposedRisk, stage: "parse" | "generate" | "execute" | "commit" }>
+ *
+ * (13) <ResilienceDemo /> — 网络节点失效与韧性绕行实验（单路径 vs 备用路径绕行对照）
+ *      Props:
+ *        title?: string; subtitle?: string; sourceLabel?: string; targetLabel?: string
+ *        singlePathTitle?: string; singlePathTradeoff?: string
+ *        multiPathTitle?: string; multiPathTradeoff?: string
+ *        defaultFailed?: boolean; footnote?: string
  *
  * 3. 其他已注册通用原子（shadcn/ui，推荐用于排版与局部组合）
  * ----------------------------------------------------------------------------
@@ -277,6 +284,7 @@ import { FilterLens } from "../components/filter-lens";
 import { InfraFadeDemo } from "../components/infra-fade-demo";
 import { InteractiveButton } from "../components/interactive-button";
 import { LayerStepper } from "../components/layer-stepper";
+import { ResilienceDemo } from "../components/resilience-demo";
 import {
   MdxTabs,
   MdxTabsContent,
@@ -473,6 +481,7 @@ export function createMdxComponents(
     InfraFadeDemo: InfraFadeDemo as React.ComponentType,
     InteractiveButton: InteractiveButton as React.ComponentType,
     LayerStepper: LayerStepper as React.ComponentType,
+    ResilienceDemo: ResilienceDemo as React.ComponentType,
     TanStackChart: TanStackChart as React.ComponentType,
     TimeScaleDemo: TimeScaleDemo as React.ComponentType,
   };

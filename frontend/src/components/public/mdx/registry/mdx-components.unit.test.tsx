@@ -83,6 +83,7 @@ describe("MDX component registry", () => {
       "InfraFadeDemo",
       "InteractiveButton",
       "LayerStepper",
+      "ResilienceDemo",
       "TanStackChart",
       "TimeScaleDemo",
     ];
@@ -470,12 +471,12 @@ describe("MDX component registry", () => {
   scenarios={[{ id: "s1", label: "验收", context: "正常", kpiInsight: "盲区" }]}
   profiles={[{
     id: "a",
-    name: "A",
+    name: "方式 A",
     roleTag: "独立",
     methodSummary: "手写",
-    outputScore: 100,
-    understandingScore: 95,
-    verificationScore: 90,
+    reliabilityBasis: "逐行推演与自测",
+    handoverBoundary: "边界明确",
+    fitScenario: "核心低容错模块",
     outcomesByScenario: { s1: { status: "stable", headline: "稳态", detail: "可控" } },
   }]}
 />
@@ -491,6 +492,8 @@ describe("MDX component registry", () => {
     stage: "parse",
   }]}
 />
+
+<ResilienceDemo defaultFailed={true} />
 `;
 
     const { content } = await compileMDX({
@@ -509,7 +512,12 @@ describe("MDX component registry", () => {
     expect(html).toContain("独立计数模型");
     expect(html).toContain("变电站");
     expect(html).toContain("相同 PR");
+    expect(html).toContain("逐行推演与自测");
+    expect(html).toContain("这一场景揭示了什么");
     expect(html).toContain("执行变更");
+    expect(html).toContain("当一个节点突然失效");
+    expect(html).toContain("关键节点失效，通信中断");
+    expect(html).toContain("绕过故障节点，恢复通信");
   });
 
   it("includes mobile responsive overflow, touch-action, and accessible modal sizing guards", () => {
