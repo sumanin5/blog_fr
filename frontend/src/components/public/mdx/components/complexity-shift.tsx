@@ -190,7 +190,7 @@ export function ComplexityShift({
                 variant={isSelected ? "default" : "outline"}
                 onClick={() => setActiveIndex(idx)}
                 className={cn(
-                  "min-h-11 gap-1.5 px-3 py-2 text-xs sm:min-h-9 sm:text-sm",
+                  "min-h-11 h-auto max-w-full gap-1.5 px-3 py-2 text-left text-xs whitespace-normal sm:min-h-9 sm:text-sm",
                   !isSelected && "bg-background/80 text-foreground hover:bg-muted",
                 )}
               >
@@ -300,7 +300,7 @@ export function ComplexityShift({
                 <Badge
                   key={`${layerName}-${idx}`}
                   variant="secondary"
-                  className="text-xs font-normal"
+                  className="max-w-full whitespace-normal text-left text-xs font-normal"
                 >
                   {layerName}
                 </Badge>

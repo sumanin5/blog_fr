@@ -150,7 +150,7 @@ export function FilterLens({
 
   return (
     <Card className="not-prose my-8 gap-0 overflow-hidden border-border/70 bg-card/70 py-0 shadow-sm">
-      <CardHeader className="gap-4 border-b border-border/60 bg-muted/30 px-4 py-4 sm:px-6">
+      <CardHeader className="min-w-0 gap-4 border-b border-border/60 bg-muted/30 px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -212,12 +212,12 @@ export function FilterLens({
         <div className="flex flex-wrap items-center justify-between gap-2">
           {normalizedScenarios.length > 1 ? (
             <Tabs value={activeScenario.id} onValueChange={setActiveScenarioId}>
-              <TabsList className="h-auto flex-wrap justify-start gap-1 p-1">
+              <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1 p-1">
                 {normalizedScenarios.map((scenario) => (
                   <TabsTrigger
                     key={scenario.id}
                     value={scenario.id}
-                    className="px-3 py-1 text-xs sm:text-sm"
+                    className="min-h-11 max-w-full whitespace-normal px-3 py-1.5 text-left text-xs sm:min-h-9 sm:text-center sm:text-sm"
                   >
                     {scenario.label}
                   </TabsTrigger>
@@ -235,7 +235,7 @@ export function FilterLens({
             variant={filtered ? "default" : "outline"}
             size="sm"
             onClick={() => setFiltered((prev) => !prev)}
-            className="h-7 gap-1.5 px-2.5 text-xs"
+            className="min-h-11 h-auto max-w-full gap-1.5 px-3 py-2 text-left text-xs whitespace-normal sm:min-h-8 sm:py-1.5"
           >
             {filtered ? (
               <>
@@ -252,7 +252,7 @@ export function FilterLens({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5 px-4 py-5 sm:px-6">
+      <CardContent className="min-w-0 space-y-5 px-4 py-5 sm:px-6">
         {activeMetrics.length > 0 ? (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between text-xs text-muted-foreground">

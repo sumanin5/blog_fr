@@ -149,7 +149,7 @@ export function BoundaryCard({
                 <TabsTrigger
                   key={item.id}
                   value={item.id}
-                  className="min-h-11 px-3 py-2 text-xs sm:min-h-9 sm:text-sm"
+                  className="min-h-11 max-w-full whitespace-normal px-3 py-2 text-left text-xs sm:min-h-9 sm:text-center sm:text-sm"
                 >
                   {item.label}
                 </TabsTrigger>

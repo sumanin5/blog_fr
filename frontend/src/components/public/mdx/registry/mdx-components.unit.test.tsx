@@ -610,4 +610,94 @@ describe("MDX component registry", () => {
     expect(html).not.toContain("**自指");
     expect(html).not.toContain("~~（");
   });
+
+  it("wraps registered Button, Badge, Table, TabsTrigger, and Markdown tables for mobile wrapping without horizontal overflow", async () => {
+    const components = createMdxComponents() as Record<
+      string,
+      React.ComponentType<Record<string, unknown>>
+    >;
+    const {
+      Badge,
+      Button,
+      Table,
+      TableBody,
+      TableCell,
+      TableHead,
+      TableHeader,
+      TableRow,
+      Tabs,
+      TabsContent,
+      TabsList,
+      TabsTrigger,
+    } = components;
+
+    const buttonHtml = renderToStaticMarkup(
+      <Button variant="outline" size="sm">
+        翻看旧图：1908 年的地理式伦敦地铁图，如何催生出后来的新地铁图？
+      </Button>,
+    );
+    expect(buttonHtml).toContain('data-slot="button"');
+    expect(buttonHtml).toContain("whitespace-normal");
+    expect(buttonHtml).toContain("max-w-full");
+    expect(buttonHtml).toContain("h-auto");
+    expect(buttonHtml).not.toContain("whitespace-nowrap");
+
+    const badgeHtml = renderToStaticMarkup(
+      <Badge variant="outline">一个在移动端可能需要折行的超长标签文案</Badge>,
+    );
+    expect(badgeHtml).toContain('data-slot="badge"');
+    expect(badgeHtml).toContain("whitespace-normal");
+    expect(badgeHtml).toContain("max-w-full");
+    expect(badgeHtml).not.toContain("whitespace-nowrap");
+
+    const tableHtml = renderToStaticMarkup(
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>对比维度</TableHead>
+            <TableHead>传统制图思路</TableHead>
+            <TableHead>贝克的制图思路</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>核心问题</TableCell>
+            <TableCell>如何准确绘制地铁的地理位置？</TableCell>
+            <TableCell>如何帮助乘客理解地铁网络？</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    expect(tableHtml).toContain('data-slot="table-container"');
+    expect(tableHtml).toContain("overflow-x-auto");
+    expect(tableHtml).toContain("whitespace-normal");
+    expect(tableHtml).toContain("break-words");
+    expect(tableHtml).not.toContain("whitespace-nowrap");
+
+    const tabsHtml = renderToStaticMarkup(
+      <Tabs defaultValue="a">
+        <TabsList>
+          <TabsTrigger value="a">超长选项卡标题测试折行</TabsTrigger>
+        </TabsList>
+        <TabsContent value="a">内容</TabsContent>
+      </Tabs>,
+    );
+    expect(tabsHtml).toContain("whitespace-normal");
+    expect(tabsHtml).toContain("max-w-full");
+    expect(tabsHtml).not.toContain("whitespace-nowrap");
+
+    const gfmTableMdx = [
+      "| 列 A | 列 B |",
+      "| :--- | :--- |",
+      "| 内容 1 | 内容 2 |",
+    ].join("\n");
+    const { content } = await compileMDX({
+      source: gfmTableMdx,
+      components: createMdxComponents(),
+      options: createMdxCompileOptions(),
+    });
+    const gfmHtml = renderToStaticMarkup(content);
+    expect(gfmHtml).toContain('data-slot="markdown-table-container"');
+    expect(gfmHtml).toContain("overflow-x-auto");
+  });
 });

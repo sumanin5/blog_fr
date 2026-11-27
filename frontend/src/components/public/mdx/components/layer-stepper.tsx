@@ -153,7 +153,7 @@ export function LayerStepper({
                 variant={isSelected ? "default" : "outline"}
                 onClick={() => setActiveIndex(index)}
                 className={cn(
-                  "min-h-11 gap-1.5 px-3 py-2 text-xs sm:min-h-9 sm:text-sm",
+                  "min-h-11 h-auto max-w-full gap-1.5 px-3 py-2 text-left text-xs whitespace-normal sm:min-h-9 sm:text-sm",
                   !isSelected && "bg-background/80 text-foreground hover:bg-muted",
                 )}
               >
@@ -166,7 +166,7 @@ export function LayerStepper({
 
         {safeLayers.length > 1 ? (
           <div className="space-y-1.5 pt-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs text-muted-foreground">
               <span>表层抽象（L1）</span>
               <span className="font-mono text-foreground">
                 当前：L{activeIndex + 1} · {activeLayer.name}
@@ -190,7 +190,7 @@ export function LayerStepper({
         ) : null}
       </CardHeader>
 
-      <CardContent className="space-y-4 px-4 py-5 sm:px-6">
+      <CardContent className="min-w-0 space-y-4 px-4 py-5 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="font-mono text-xs">

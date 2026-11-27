@@ -207,11 +207,25 @@
 .prose [data-slot="table-container"] {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
+  max-width: 100%;
 }
 
 .prose [data-slot="table"] {
   margin-top: 0;
   margin-bottom: 0;
+}
+
+.prose [data-slot="table"] th,
+.prose [data-slot="table"] td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.prose .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.25rem;
 }
 
 .prose :where([data-slot="card"], [data-slot="alert"], [data-slot="tabs"], [data-slot="accordion"]) {

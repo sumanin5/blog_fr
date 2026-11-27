@@ -89,7 +89,7 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
     : undefined;
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen overflow-x-clip">
       <ArticleTracker postId={post.id} />
 
       <div className="border-b border-border/50 bg-background/60 backdrop-blur-sm">
@@ -160,7 +160,7 @@ export async function PostDetailView({ post }: PostDetailViewProps) {
           />
 
           <div className="min-w-0">
-            <article className="mx-auto max-w-4xl">
+            <article className="mx-auto w-full min-w-0 max-w-4xl">
               <header
                 className={
                   coverUrl

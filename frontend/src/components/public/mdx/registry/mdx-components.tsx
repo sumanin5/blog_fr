@@ -218,8 +218,6 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardAction,
@@ -255,12 +253,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
-  Table,
   TableBody,
   TableCaption,
-  TableCell,
   TableFooter,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
@@ -284,6 +279,14 @@ import { FilterLens } from "../components/filter-lens";
 import { InfraFadeDemo } from "../components/infra-fade-demo";
 import { InteractiveButton } from "../components/interactive-button";
 import { LayerStepper } from "../components/layer-stepper";
+import {
+  MdxBadge,
+  MdxButton,
+  MdxMarkdownTable,
+  MdxTable,
+  MdxTableCell,
+  MdxTableHead,
+} from "../components/mdx-primitives";
 import { ResilienceDemo } from "../components/resilience-demo";
 import {
   MdxTabs,
@@ -408,8 +411,9 @@ export function createMdxComponents(
     p: createHtmlElement("p"),
     section: createHtmlElement("section"),
     article: createHtmlElement("article"),
+    table: MdxMarkdownTable as React.ComponentType,
 
-    // 通用 shadcn/ui 原子与组合组件
+    // 通用 shadcn/ui 原子与组合组件（含 MDX 移动端防溢出包装）
     Accordion: Accordion as React.ComponentType,
     AccordionItem: AccordionItem as React.ComponentType,
     AccordionTrigger: AccordionTrigger as React.ComponentType,
@@ -420,8 +424,8 @@ export function createMdxComponents(
     Avatar: Avatar as React.ComponentType,
     AvatarImage: AvatarImage as React.ComponentType,
     AvatarFallback: AvatarFallback as React.ComponentType,
-    Badge: Badge as React.ComponentType,
-    Button: Button as React.ComponentType,
+    Badge: MdxBadge as React.ComponentType,
+    Button: MdxButton as React.ComponentType,
     Card: Card as React.ComponentType,
     CardHeader: CardHeader as React.ComponentType,
     CardTitle: CardTitle as React.ComponentType,
@@ -450,13 +454,13 @@ export function createMdxComponents(
     SheetClose: SheetClose as React.ComponentType,
     Skeleton: Skeleton as React.ComponentType,
     Switch: Switch as React.ComponentType,
-    Table: Table as React.ComponentType,
+    Table: MdxTable as React.ComponentType,
     TableHeader: TableHeader as React.ComponentType,
     TableBody: TableBody as React.ComponentType,
     TableFooter: TableFooter as React.ComponentType,
-    TableHead: TableHead as React.ComponentType,
+    TableHead: MdxTableHead as React.ComponentType,
     TableRow: TableRow as React.ComponentType,
-    TableCell: TableCell as React.ComponentType,
+    TableCell: MdxTableCell as React.ComponentType,
     TableCaption: TableCaption as React.ComponentType,
     Tabs: MdxTabs as React.ComponentType,
     TabsList: MdxTabsList as React.ComponentType,

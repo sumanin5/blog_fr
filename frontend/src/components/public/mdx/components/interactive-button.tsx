@@ -47,7 +47,12 @@ export function InteractiveButton({
   };
 
   return (
-    <Button onClick={handleClick} variant={variant} size={size}>
+    <Button
+      onClick={handleClick}
+      variant={variant}
+      size={size}
+      className="h-auto max-w-full whitespace-normal py-2 text-left"
+    >
       {children}
     </Button>
   );

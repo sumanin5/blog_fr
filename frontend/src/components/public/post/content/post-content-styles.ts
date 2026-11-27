@@ -11,7 +11,7 @@
  * 适用于所有渲染模式（HTML/RSC/客户端）
  */
 export const ARTICLE_BASE_CLASSNAME = `
-  prose prose-lg dark:prose-invert max-w-none
+  prose prose-lg dark:prose-invert min-w-0 max-w-none max-w-full break-words
   prose-headings:scroll-mt-20
   prose-a:text-primary prose-a:no-underline hover:prose-a:underline
   prose-code:before:content-none prose-code:after:content-none

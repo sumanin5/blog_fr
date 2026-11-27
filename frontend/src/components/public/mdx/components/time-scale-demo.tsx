@@ -406,7 +406,7 @@ function SignalThresholdView({ defaultNoise = 18 }: { defaultNoise?: number }) {
               size="sm"
               variant={idx === patternIdx ? "default" : "outline"}
               onClick={() => setPatternIdx(idx)}
-              className="min-h-11 px-3 font-mono text-xs sm:min-h-9"
+              className="min-h-11 h-auto max-w-full whitespace-normal px-3 font-mono text-xs sm:min-h-9"
             >
               {pat.label}
             </Button>

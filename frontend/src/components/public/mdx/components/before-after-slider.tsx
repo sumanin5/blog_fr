@@ -168,11 +168,11 @@ export function MdxBeforeAfterSlider({
 
       <CardFooter className="flex flex-col gap-2.5 border-t border-border/60 bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="outline" className="text-xs text-foreground">
+          <Badge variant="outline" className="max-w-full whitespace-normal text-xs text-foreground">
             左：{beforeLabel}
           </Badge>
           <span aria-hidden="true">⇄</span>
-          <Badge variant="outline" className="text-xs text-foreground">
+          <Badge variant="outline" className="max-w-full whitespace-normal text-xs text-foreground">
             右：{afterLabel}
           </Badge>
           <span className="hidden sm:inline">· 支持拖动中线或方向键微调</span>
